@@ -84,6 +84,15 @@ impl Harness {
         std::fs::write(data.join("config.toml"), format!(
             "model = \"gpt-5.1-codex\"\nmodel_provider = \"caidex_fixture\"\n[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
         )).unwrap();
+        if mode.starts_with("goal-") {
+            use std::io::Write;
+            std::fs::OpenOptions::new()
+                .append(true)
+                .open(data.join("config.toml"))
+                .unwrap()
+                .write_all(b"\n[features]\ngoals = true\n")
+                .unwrap();
+        }
         if mode == "mcp" {
             let fixture =
                 PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mcp_server.py");
@@ -740,5 +749,437 @@ async fn real_long_running_process_rejects_duplicate_handle_and_stops_on_explici
         }
     }
     assert!(matches!(client.call("process/writeStdin", Some(json!({"processHandle": "fixture-running", "deltaBase64": STANDARD.encode(b"late\n")})), DEADLINE).await, Err(Error::Rpc(_, _, _))));
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
+async fn real_queue_reorder_busy_start_and_interrupt_preserve_native_identity() {
+    let mut harness = Harness::start("queue").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    let first_turn = client
+        .start_turn(
+            &thread,
+            vec![json!({"type": "text", "text": "Hold queue fixture at approval"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        if let RuntimeEvent::Interaction(request) = harness.next().await {
+            assert_eq!(request.kind, InteractionKind::CommandApproval);
+            break;
+        }
+    }
+    let mut submissions = vec![];
+    for name in ["A", "B", "C"] {
+        let added = client.call("thread/queue/add", Some(json!({"threadId": thread, "clientUserMessageId": name, "input": [{"type": "text", "text": name}]})), DEADLINE).await.unwrap();
+        submissions.push(added["queuedSubmission"].clone());
+    }
+    assert!(matches!(
+        client
+            .call(
+                "thread/queue/reorder",
+                Some(json!({"threadId": thread, "queuedSubmissionIds": [submissions[0]["id"]]})),
+                DEADLINE
+            )
+            .await,
+        Err(Error::Rpc(_, _, _))
+    ));
+    let order = vec![
+        submissions[2].clone(),
+        submissions[0].clone(),
+        submissions[1].clone(),
+    ];
+    client.call("thread/queue/reorder", Some(json!({"threadId": thread, "queuedSubmissionIds": order.iter().map(|v| v["id"].clone()).collect::<Vec<_>>()})), DEADLINE).await.unwrap();
+    let page = client
+        .call(
+            "thread/queue/list",
+            Some(json!({"threadId": thread, "limit": 1})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(page["data"], json!([order[0]]));
+    assert!(page["nextCursor"].is_string());
+    let rest = client
+        .call(
+            "thread/queue/list",
+            Some(json!({"threadId": thread, "cursor": page["nextCursor"], "limit": 2})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(rest["data"], json!([order[1], order[2]]));
+    assert_eq!(rest["nextCursor"], Value::Null);
+    assert!(matches!(
+        client
+            .call(
+                "thread/queue/start",
+                Some(json!({"threadId": thread, "queuedSubmissionId": submissions[1]["id"]})),
+                DEADLINE
+            )
+            .await,
+        Err(Error::Rpc(_, _, _))
+    ));
+    client
+        .interrupt_turn(
+            &thread,
+            first_turn["turn"]["id"].as_str().unwrap(),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        if let RuntimeEvent::Notification(event) = harness.next().await
+            && event.method == "turn/completed"
+        {
+            assert_eq!(event.raw["params"]["turn"]["status"], "interrupted");
+            break;
+        }
+    }
+    let preserved = client
+        .call(
+            "thread/queue/list",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(preserved["data"], json!(order));
+    // Explicitly start B (non-head), interrupt it, then start C (head, no ID).
+    for (selected, remaining, explicit) in [
+        (&order[2], vec![order[0].clone(), order[1].clone()], true),
+        (&order[0], vec![order[1].clone()], false),
+    ] {
+        let mut params = json!({"threadId": thread});
+        if explicit {
+            params["queuedSubmissionId"] = selected["id"].clone();
+        }
+        let started = client
+            .call("thread/queue/start", Some(params), DEADLINE)
+            .await
+            .unwrap();
+        let mut user_message = false;
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Notification(event) => {
+                    if event.method == "item/started"
+                        && event.raw["params"]["item"]["type"] == "userMessage"
+                    {
+                        assert_eq!(
+                            event.raw["params"]["item"]["clientId"],
+                            selected["clientUserMessageId"]
+                        );
+                        user_message = true;
+                    }
+                }
+                RuntimeEvent::Interaction(request) => {
+                    assert_eq!(request.kind, InteractionKind::CommandApproval);
+                    assert_eq!(request.turn_id(), started["turn"]["id"].as_str());
+                    break;
+                }
+            }
+        }
+        assert!(
+            user_message,
+            "queued client message identity was not emitted"
+        );
+        let listed = client
+            .call(
+                "thread/queue/list",
+                Some(json!({"threadId": thread})),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        assert_eq!(listed["data"], json!(remaining));
+        client
+            .interrupt_turn(&thread, started["turn"]["id"].as_str().unwrap(), DEADLINE)
+            .await
+            .unwrap();
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await
+                && event.method == "turn/completed"
+            {
+                assert_eq!(event.raw["params"]["turn"]["status"], "interrupted");
+                break;
+            }
+        }
+    }
+    assert_eq!(harness.trace()["requests"], 3);
+    assert!(
+        !harness
+            .directory
+            .0
+            .join("project/caidex-tool-marker.txt")
+            .exists()
+    );
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
+async fn real_goal_pause_resume_budget_and_clear_are_runtime_owned() {
+    let mut harness = Harness::start("goal-budget").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    let created = client.call("thread/goal/set", Some(json!({"threadId": thread, "objective": "Isolated budget fixture", "status": "paused", "tokenBudget": 10})), DEADLINE).await.unwrap();
+    assert_eq!(created["goal"]["status"], "paused");
+    assert_eq!(created["goal"]["tokensUsed"], 0);
+    assert!(matches!(
+        client
+            .call(
+                "thread/goal/set",
+                Some(json!({"threadId": thread, "tokenBudget": -1})),
+                DEADLINE
+            )
+            .await,
+        Err(Error::Rpc(_, _, _))
+    ));
+    let paused = client
+        .call(
+            "thread/goal/get",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(paused["goal"], created["goal"]);
+    let active = client
+        .call(
+            "thread/goal/set",
+            Some(json!({"threadId": thread, "status": "active"})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(active["goal"]["objective"], "Isolated budget fixture");
+    assert_eq!(active["goal"]["tokenBudget"], 10);
+    let mut completed = false;
+    let mut limited = false;
+    while !completed || !limited {
+        if let RuntimeEvent::Notification(event) = harness.next().await {
+            if event.method == "turn/completed" {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                completed = true;
+            }
+            if event.method == "thread/goal/updated"
+                && event.raw["params"]["goal"]["status"] == "budgetLimited"
+            {
+                limited = true;
+            }
+        }
+    }
+    let budget = client
+        .call(
+            "thread/goal/get",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(budget["goal"]["status"], "budgetLimited");
+    assert!(budget["goal"]["tokensUsed"].as_i64().unwrap() >= 10);
+    let cleared = client
+        .call(
+            "thread/goal/clear",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(cleared["cleared"], true);
+    loop {
+        if let RuntimeEvent::Notification(event) = harness.next().await
+            && event.method == "thread/goal/cleared"
+        {
+            assert_eq!(event.raw["params"]["threadId"], thread);
+            break;
+        }
+    }
+    let absent = client
+        .call(
+            "thread/goal/get",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(absent["goal"], Value::Null);
+    assert_eq!(harness.trace()["requests"], 1);
+    assert_eq!(harness.trace()["authorizationSeen"], false);
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
+async fn real_goal_empty_continuations_block_without_client_retry() {
+    let mut harness = Harness::start("goal-empty").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    client
+        .call(
+            "thread/goal/set",
+            Some(json!({"threadId": thread, "objective": "Isolated empty response fixture"})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    let mut completed = 0;
+    let mut blocked = false;
+    while completed < 3 || !blocked {
+        if let RuntimeEvent::Notification(event) = harness.next().await {
+            if event.method == "turn/completed" {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                completed += 1;
+            }
+            if event.method == "thread/goal/updated"
+                && event.raw["params"]["goal"]["status"] == "blocked"
+            {
+                blocked = true;
+            }
+        }
+    }
+    assert_eq!(completed, 3);
+    let goal = client
+        .call(
+            "thread/goal/get",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(goal["goal"]["status"], "blocked");
+    assert_eq!(harness.trace()["requests"], 3);
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
+async fn real_manual_compaction_emits_lifecycle_and_carries_summary_forward() {
+    let mut harness = Harness::start("compact").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    client
+        .start_turn(
+            &thread,
+            vec![json!({"type": "text", "text": "Seed local compaction history"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        if let RuntimeEvent::Notification(event) = harness.next().await
+            && event.method == "turn/completed"
+        {
+            assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+            break;
+        }
+    }
+    let result = client
+        .call(
+            "thread/compact/start",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(result, json!({}));
+    let mut started = None;
+    let mut finished = None;
+    loop {
+        if let RuntimeEvent::Notification(event) = harness.next().await {
+            if event.raw["params"]["item"]["type"] == "contextCompaction" {
+                if event.method == "item/started" {
+                    started = Some(event.raw["params"]["item"]["id"].clone());
+                }
+                if event.method == "item/completed" {
+                    finished = Some(event.raw["params"]["item"]["id"].clone());
+                }
+            }
+            if event.method == "turn/completed" {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+    }
+    assert!(started.is_some());
+    assert_eq!(started, finished);
+    client
+        .start_turn(
+            &thread,
+            vec![json!({"type": "text", "text": "Continue after compaction"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        if let RuntimeEvent::Notification(event) = harness.next().await
+            && event.method == "turn/completed"
+        {
+            assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+            break;
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 3);
+    assert_eq!(trace["summarySeen"], json!([false, false, true]));
+    assert_eq!(trace["authorizationSeen"], false);
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
+async fn real_idle_queue_add_starts_a_turn_and_preserves_client_identity() {
+    let mut harness = Harness::start("message").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    let added = client.call("thread/queue/add", Some(json!({"threadId": thread, "clientUserMessageId": "fixture-auto-queue", "input": [{"type": "text", "text": "Start via native queue"}]})), DEADLINE).await.unwrap();
+    assert_eq!(
+        added["queuedSubmission"]["clientUserMessageId"],
+        "fixture-auto-queue"
+    );
+    let mut started = None;
+    let mut user_message = false;
+    loop {
+        let RuntimeEvent::Notification(event) = harness.next().await else {
+            panic!("message-only queue fixture requested interaction")
+        };
+        if event.method == "turn/started" {
+            started = Some(event.raw["params"]["turn"]["id"].clone());
+        }
+        if event.method == "item/started" && event.raw["params"]["item"]["type"] == "userMessage" {
+            assert_eq!(
+                event.raw["params"]["item"]["clientId"],
+                "fixture-auto-queue"
+            );
+            assert_eq!(
+                event.raw["params"]["item"]["content"][0]["text"],
+                "Start via native queue"
+            );
+            user_message = true;
+        }
+        if event.method == "turn/completed" {
+            assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+            assert_eq!(Some(event.raw["params"]["turn"]["id"].clone()), started);
+            break;
+        }
+    }
+    assert!(user_message);
+    let queue = client
+        .call(
+            "thread/queue/list",
+            Some(json!({"threadId": thread})),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    assert_eq!(queue["data"], json!([]));
+    assert_eq!(harness.trace()["requests"], 1);
     harness.shutdown().await;
 }

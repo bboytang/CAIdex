@@ -17,6 +17,8 @@
 
 - 本轮新增（三平台已验证）：patch accept/cancel 两项；MCP stdio 发现/资源读取/工具调用/form accept/decline/cancel 一项；PTY 输入/resize/UTF-8 一项；长运行进程 duplicate handle/kill/过期输入一项。累计真实集成 Linux 10 项、Windows/macOS 各 9 项。
 
+- 本轮续接：Linux Queue 排序/分页/busy/中断恢复/指定启动、Goal 暂停/激活/预算/clear/空回复 breaker、经典手动压缩与后续摘要承接通过；空闲 Queue add 自动启动亦通过；新增 5 项待三平台 CI。
+
 ## 已核实的交互约束
 
 - 审批 UI 采用请求的 availableDecisions。当前测试的 require_escalated 命令不提供 decline，可提供 cancel；取消结束轮次，批准允许执行。模拟用例覆盖 decline，不冒称该具体真实提示提供所有四个按钮。
@@ -26,6 +28,10 @@
 - 不同模型元数据改变可用工具与 wire：固定 bundled gpt-5.5 声明经典 Responses/freeform patch；gpt-6.1-sol 等声明 `use_responses_lite=true`、`tool_mode=code_mode_only`。本轮 patch 明确使用前者的本地元数据，不调用商业模型；原 gpt-5.1-codex fixture 为未知模型 fallback。F/G 必须分别验证经典与 Lite/Code Mode，不能以旧 fallback 测试覆盖整个能力范围。
 - 补丁 cancel 进入 interrupted，可能只有 fileChange started 而无 item/completed；UI 应依据轮次终态结束交互，不能一直等待不存在的 item 完成通知。
 - process/* 为连接范围的 Host 进程接口，不自动归属于某个线程，也不能据此宣称生产 Host 断连恢复已实现。
+
+- Queue reorder 要求每个现存 submission ID 恰好出现一次；busy start 不消费条目；中断后队列暂停，显式 start 可选非队首。用户消息事件的 `clientId` 对应队列 `clientUserMessageId`。
+- Goal 另需 `features.goals`，不是 initialize 的实验 opt-in 就能保证支持。active 可自动开始轮次；负预算拒绝；budgetLimited/blocked 是上游状态。blocked 更新可先于最后一轮 turn/completed，UI 分别处理目标与轮次终态。
+- 手动 compact/start 返回 `{}` 只代表请求受理；最终依据 contextCompaction item 与 turn/completed。本轮本地经典摘要可进入后续模型输入，未证明远端 encrypted_content 或 Lite 路径。
 
 ## 原 V2 原生能力逐项验收
 
@@ -48,14 +54,14 @@
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
 | MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
-| Context compaction | compact/start、compacted 保留 | 真实压缩及模型 opaque 数据 |
+| Context compaction | Linux 经典手动压缩 lifecycle/后续摘要承接通过 | 新增跨平台、远端 opaque 与 Lite 路径 F/G |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
-| Queue | 真实活动轮次 add/list/update/delete | reorder/start、自动启动与多端 |
+| Queue | CRUD 已跨平台；Linux reorder/分页/busy/中断保留/指定及默认启动通过 | 新增跨平台与多端 H |
 | Steer | 真实 expectedTurnId 前置条件与已有轮次输入通过 | 多端竞争、跨模型轮次边界 |
 | Diff | turn diff 与 file patch 通知保留 | 真实 diff/review 与 UI 展示 |
 | Plan | Plan collaborationMode、输入工具通过；plan 通知保留 | 真实 plan 输出与 UI |
-| Goal | thread/goal set/get/clear、通知保留 | 目标推进/暂停/预算实际执行 |
+| Goal | Linux paused/active、预算耗尽、clear、三次空回复 blocked 通过 | 新增跨平台、真实模型推进及多端 H |
 | Sub-agent | Runtime 配置及工具事件保留 | 原生 delegation 与生命周期 |
 | Tool result handling | 真实命令、用户输入、patch、MCP 结果回送；opaque 字段不丢失 | 图像等结果及 Provider 对照 |
 | Usage tracking | 真实 tokenUsage 通知通过（fixture 为零） | 真实计费/限流/Provider usage |
@@ -195,13 +201,13 @@
 | `thread/backgroundTerminals/clean` | 实验 opt-in | 协议保留，待验收 |
 | `thread/backgroundTerminals/list` | 实验 opt-in | 协议保留，待验收 |
 | `thread/backgroundTerminals/terminate` | 实验 opt-in | 协议保留，待验收 |
-| `thread/compact/start` | 常规 | 协议保留，待验收 |
+| `thread/compact/start` | 常规 | Linux 真实链路；跨平台待 CI |
 | `thread/decrement_elicitation` | 实验 opt-in | 协议保留，待验收 |
 | `thread/delete` | 常规 | 协议保留，待验收 |
 | `thread/fork` | 常规 | 真实链路 |
-| `thread/goal/clear` | 常规 | 协议保留，待验收 |
-| `thread/goal/get` | 常规 | 协议保留，待验收 |
-| `thread/goal/set` | 常规 | 协议保留，待验收 |
+| `thread/goal/clear` | 常规 | Linux 真实链路；跨平台待 CI |
+| `thread/goal/get` | 常规 | Linux 真实链路；跨平台待 CI |
+| `thread/goal/set` | 常规 | Linux 真实链路；跨平台待 CI |
 | `thread/increment_elicitation` | 实验 opt-in | 协议保留，待验收 |
 | `thread/inject_items` | 常规 | 协议保留，待验收 |
 | `thread/items/list` | 常规 | 协议保留，待验收 |
@@ -213,8 +219,8 @@
 | `thread/queue/add` | 实验 opt-in | 真实链路 |
 | `thread/queue/delete` | 实验 opt-in | 真实链路 |
 | `thread/queue/list` | 实验 opt-in | 真实链路 |
-| `thread/queue/reorder` | 实验 opt-in | 协议保留，待验收 |
-| `thread/queue/start` | 实验 opt-in | 协议保留，待验收 |
+| `thread/queue/reorder` | 实验 opt-in | Linux 真实链路；跨平台待 CI |
+| `thread/queue/start` | 实验 opt-in | Linux 真实链路；跨平台待 CI |
 | `thread/queue/update` | 实验 opt-in | 真实链路 |
 | `thread/read` | 常规 | 真实链路 |
 | `thread/realtime/appendAudio` | 实验 opt-in | 协议保留，待验收 |

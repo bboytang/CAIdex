@@ -32,6 +32,8 @@ class Handler(BaseHTTPRequestHandler):
         for item in body.get("input", []):
             if item.get("type") in ["function_call_output", "custom_tool_call_output"]:
                 trace["toolOutputs"].append(item.get("output"))
+        if mode == "compact":
+            trace.setdefault("summarySeen", []).append("CAIDEX_COMPACT_SUMMARY" in json.dumps(body.get("input", [])))
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
         if mode == "patch" and trace["requests"] == 1:
@@ -44,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
             patch = f"*** Begin Patch\n*** Add File: {marker.as_posix()}\n+CAIDEX_PATCH_APPLIED\n*** End Patch"
             trace["tool"] = "apply_patch"
             events.append(event("response.output_item.done", item={"type": "custom_tool_call", "call_id": "fixture-patch-1", "name": "apply_patch", "input": patch}))
-        elif mode in ["approval", "questions"] and trace["requests"] == 1:
+        elif mode == "queue" or (mode in ["approval", "questions"] and trace["requests"] == 1):
             tools = body.get("tools", [])
             names = [tool.get("name") for tool in tools]
             if mode == "questions" and "request_user_input" in names:
@@ -65,11 +67,16 @@ class Handler(BaseHTTPRequestHandler):
             trace["tool"] = name
             events.append(event("response.output_item.done", item={"type": "function_call", "call_id": "fixture-command-1", "name": name, "arguments": json.dumps(arguments)}))
         else:
-            item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": "CAIdex local fixture complete"}]}
+            text = "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode == "compact" and trace["requests"] == 2 else "CAIdex local fixture complete"
+            item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": text}]}
+            if mode.startswith("goal-"):
+                item["phase"] = "final_answer"
             events.append(event("response.output_item.added", item={**item, "content": []}))
-            events.append(event("response.output_text.delta", delta="CAIdex local fixture complete"))
+            if text:
+                events.append(event("response.output_text.delta", delta=text))
             events.append(event("response.output_item.done", item=item))
-        events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}}))
+        tokens = 100 if mode == "goal-budget" else 0
+        events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": tokens, "output_tokens": 0, "total_tokens": tokens}}))
         Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
         data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
         self.send_response(200)
