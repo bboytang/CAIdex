@@ -50,7 +50,7 @@
 ## 问题 / 阻塞
 
 - `.git` 对普通执行仍为只读挂载，已通过授权提权完成初始化；读状态可用，写 Git 元数据需使用相应权限，不删除目录。
-- 文档公开授权已补齐。Git credential helper 可推源码，但缺少 workflow scope；CI 新增/更新可通过已连接 GitHub 插件写入，再 fetch/合并该提交后推源码，已成功验证。不要输出凭据。
+- 文档公开授权已补齐。本机 GitHub CLI 2.45.0 已登录 `bboytang`，`gh api user` 验证成功，OAuth scope 包含 `repo`、`workflow`；后续可通过 gh 管理工作流。此前 Git credential helper 使用的凭据缺少 workflow scope，与当前 gh 凭据应区别记录；未修改 Git 凭据配置。插件写工作流再 fetch/合并的备用路径已验证。不要输出凭据。
 - Windows、Swift/Xcode 不在本机；对应平台检查需 GitHub runner。环境无 OPENAI_API_KEY；当前只做离线协议验证，不使用付费模型或用户凭据。
 - 无真实客户端逐状态截图和真机验证覆盖；现有 UI 资料足够建立基准，缺失状态按 UI 规范补齐并保留验收项。
 
@@ -71,6 +71,7 @@
 ## 测试 / 验证
 
 - Git 读取、暂存、提交和完整源码 push 成功；此前文档授权/工作流 scope 问题已按上述方式解决。
+- 本机 `gh auth status` 成功，活动账户已启用；`gh api user` 返回 `bboytang`，权限响应包含 `workflow`。此次仅核验权限并更新交接，无代码或工作流改动。
 - `codex --version`、`codex mcp list`：成功返回版本及 enabled 配置；官方 Docs 搜索/读取工具可用。CLI 有无法创建 PATH aliases 的只读文件系统警告。
 - 文档检查通过：8 类必需信息齐全；新建文档格式正常，已检查新增文件差异。原方案及四份品牌资产的 SHA-256 与附件原件完全一致；原有 UI 规范未修改。
 - `cargo test --workspace --locked`：9 项协议测试通过；覆盖乱序、未知字段、审批转交/回应、错误数据、退出、超时、取消、溢出与坏消息。
