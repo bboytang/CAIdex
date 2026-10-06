@@ -1,6 +1,6 @@
 # CAIdex 凭据层：设计与验收
 
-阶段 E；代码位置 `credentials/core`。本地编译、Clippy、安全回归和 CLI 回归已通过；平台原生读写待本轮 GitHub CI 验证。
+阶段 E；代码位置 `credentials/core`。本地编译、Clippy、安全回归和 CLI 回归已通过；Linux/Windows/macOS CI 全通过；当前凭据核心/CLI 范围已验收，后续模块输出通道另行验证。
 
 ## 执行端与 profiles
 
@@ -14,10 +14,10 @@
 
 | 后端 | 当前代码行为 | 当前验收 |
 | --- | --- | --- |
-| Windows Credential Manager | keyring 3.6.3 的显式 windows-native；独立 CAIdex service + 完整 reference | 原生 CRUD/Unicode/超长替换回归已写，待 GitHub Windows 验证 |
-| Linux Secret Service | 显式 sync-secret-service + crypto-rust + vendored DBus；默认 feature 启用 | 隔离 DBus/keyring fixture 已写，待 GitHub Linux 验证 |
-| Linux/Unix protected file | owner 0700 目录、0600 普通文件；拒绝 symlink/hardlink/权限过宽/Git worktree；持有目录 FD，原子替换并 fsync | 本地 5 项安全回归通过 |
-| Environment | 每个 reference 明确映射变量；无默认探测或跨 profile fallback；只读 | 隔离子进程本地 5 项安全回归通过 |
+| Windows Credential Manager | keyring 3.6.3 的显式 windows-native；独立 CAIdex service + 完整 reference | GitHub Windows 原生 CRUD/Unicode/超长拒绝且保留原值通过 |
+| Linux Secret Service | 显式 sync-secret-service + crypto-rust + vendored DBus；默认 feature 启用 | GitHub Linux 私有 DBus/临时 XDG fixture 原生读写通过 |
+| Linux/Unix protected file | owner 0700 目录、0600 普通文件；拒绝 symlink/hardlink/权限过宽/Git worktree；持有目录 FD，原子替换并 fsync | Linux/macOS 5 项文件安全回归通过 |
+| Environment | 每个 reference 明确映射变量；无默认探测或跨 profile fallback；只读 | 本地隔离子进程与 CLI 只读回归通过 |
 | iOS Keychain | 接入同一 `SecretStore` 契约 | 原生实现/UniFFI 接入仍待 M |
 
 - 系统存储不可用时明确返回安全错误，不自动降级到文件。用户可明确选择文件后端；文件是权限保护的明文存储，适用于原方案允许的 headless Host，不宣称已加密。
@@ -57,5 +57,8 @@ cargo run -p caidex-cli -- credentials status --owner local --provider custom --
 - 本机 `cargo check --workspace`、fmt、Clippy（-D warnings）、workspace 测试通过；凭据核心 12 项、CLI 3 项、不可 Serialize 的 compile_fail 1 项及既有 Runtime 协议 19 项通过。环境子进程只使用合成变量。
 - 正常沙箱注入 `/tmp/.git`，文件测试因此被安全保护拒绝；在已授权的正常执行环境中复测通过，未削弱 Git worktree 检查。无需修改生产保护来迁就环境。
 - Cargo.lock 已更新；`bash -n scripts/test-linux-secret-service.sh` 通过。审批额度问题已恢复，GitHub CLI 凭据经有网络执行环境核验有效。
-- Windows 原生测试默认运行；Linux native 仅由脚本在临时 XDG/私有 DBus/unlocked fixture 中显式运行，禁止在用户 keyring 上执行 ignored native 测试。当前本机缺 gnome-keyring-daemon，本轮通过 GitHub 验证。
-- 待完成：本轮三平台 CI/native 验证及结果记录；UI/Host/Gateway/同步输出通道接入和 iOS 原生实现仍属于后续阶段。不读取用户模型密钥，不调用商业模型。
+- Windows 原生测试默认运行；Linux native 仅由脚本在临时 XDG/私有 DBus/unlocked fixture 中显式运行，禁止在用户 keyring 上执行 ignored native 测试。本机缺 gnome-keyring-daemon，首轮 GitHub 私有服务测试已通过。
+- [CI 37546559022](https://github.com/bboytang/CAIdex/actions/runs/37546559022)，提交 4cab5c1：三平台全部 success。凭据 Linux 13 项/Windows 8 项/macOS 11 项，CLI 3/2/3 项，各平台 compile_fail 1 项；另有 Runtime 协议 19 项、目录同 tick 回归 1 项、真实集成 15/14/14 项通过。
+- CI 发现的既有 Runtime fixture 时钟目录碰撞已修复：原子序号保证进程内唯一、创建成功后才取得清理所有权；未禁用测试。Unix 文件测试也采用原子序号。生产 Runtime 行为未改变。
+- headless `--no-default-features` 编译通过；可用文件/显式环境存储，不要求 native 服务。fmt/Clippy/脚本语法/final diff 检查通过。
+- 后续：F/G 用于 Provider 认证和诊断副本；H/I 接入安全 Host/快照/同步 DTO，J/M 接入设置及 iOS Keychain。尚未实现的模块不列为已验收；不读取用户模型密钥，不调用商业模型。

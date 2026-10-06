@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C 已完成，D Runtime 边界已验收。当前 E 凭据核心/CLI 本地回归及 Windows/Linux 原生凭据 CI 均通过；首轮 CI 的 Linux 真实 Runtime 测试发生临时目录时钟冲突，正在修复隔离并复跑全三平台。
+- A/B/C 已完成，D Runtime 边界已验收。E 凭据核心及 CLI 当前模块范围已验收，三平台 CI 全通过（4cab5c1 / 37546559022）。下一阶段 F/G 模型核心与 Gateway 尚未开始实现；未来 UI/Host/同步/iOS 接入仍按后续阶段验收。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -19,15 +19,15 @@
 
 ## 未完成
 
-- E 本轮 Windows 原生 CRUD/Unicode/超长替换与 Linux 隔离 Secret Service CI 待运行；iOS 已定义 SecretStore 接入契约，Swift Keychain/UniFFI 原生实现待 M。UI/Host/Gateway/同步模块尚未接入凭据与诊断脱敏。
+- iOS 已定义 SecretStore 接入契约，Swift Keychain/UniFFI 原生实现待 M。UI/Host/Gateway/同步模块尚未接入凭据与诊断脱敏，不宣称未来全部输出通道已验证。
 - F–R：模型核心/Gateway/Provider、生产持久化 Host、独立 Chat/同步、Windows/iOS UI、SSH、完整英文 CLI/attach、生产 Relay、签名/打包/UAT 未完成；未配置模型 Key 或调用商业模型。
 - macOS Rust CI 不等于 iOS 应用构建；尚无 iOS 工程。其他原生工具/模型能力按后续相关阶段逐项补验收。
 
 ## 下一步顺序
 
-1. E 代码 dc65d06 已 push；[CI 37546292054](https://github.com/bboytang/CAIdex/actions/runs/37546292054) Windows/macOS success，Linux 原生凭据 success，Runtime fixture 目录碰撞失败。目录原子序号/创建后清理所有权与同 tick 回归已实现，本地真实 Runtime 15 项和文件 5 项通过；提交修复并复跑三平台；Linux native 只能通过私有服务脚本运行，不用用户 keyring。
-2. 记录 CI 链接、平台原生验证及限制；更新本交接与凭据验收文档后再确认 E 当前范围验收。不要把未来 UI/Host/iOS 接入标为完成。
-3. F/G：先核对锁定上游模型元数据与经典 Responses、Lite/code_mode_only 协议，写最小模型核心/Gateway 与离线回归；保留 opaque 推理/签名。实际付费 API 或用户凭据复用/创建前明确授权。
+1. 读本交接与 Git 状态，基于代码 4cab5c1/已通过 CI 37546559022 继续，无需重做 A–E 或重复请求公开授权。
+2. F/G：核对固定上游模型元数据、经典 Responses 与 Lite/code_mode_only 的实际 wire/tool mode，再实现最小模型核心/Gateway。优先离线流事件、取消、工具消息/opaque 保留、错误和限流回归；Gateway 不执行工具。
+3. 各 Provider/模型逐项形成兼容性报告，不以经典 fixture 外推全部模型。实际付费 API 或用户凭据复用/创建前明确授权；缺少 Key 不阻止已授权离线协议开发。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
 
 ## 重要架构决定
@@ -53,12 +53,14 @@
 - `docs/CAIdex-实施计划-V3.md`、`docs/CAIdex-UI-规范-V1.md`、`docs/CAIdex-Runtime-能力对照.md`：执行与验收基准；原 V2 在 docs 归档。
 - `credentials/core/`、`apps/cli/src/credentials.rs`、`apps/cli/tests/credentials.rs`、`docs/CAIdex-Credentials-设计与验收.md`：E 实现/回归/限制。
 - `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
-- `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归，本轮未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；E HEAD `dc65d06` 已 push，提交后工作区干净。当前未提交：Runtime fixture 目录唯一性/清理所有权修复及同 clock tick 回归、E 文件测试目录追加原子序号、本交接 CI 状态；无其他已知用户修改。D 验证代码 `5a593a4`。
+- `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮仅修复测试目录唯一性/清理所有权，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
+- branch `main` 跟踪 `origin/main`；代码基准 `4cab5c1` 已 push 并通过 CI，E 主实现 `dc65d06`。源码无未提交修改；本次交接/验收记录随文档提交发布，最新文档提交以 `git log -1` 为准。无其他已知用户修改。
 
 ## 测试结果
 
-- 当前本地 E：workspace check、fmt、Clippy `-D warnings`、workspace 测试通过：凭据核心 12 项（含 native 错误分类）、CLI 3 项、Secret compile_fail 1 项、既有协议 19 项；环境 child 由父测试显式运行。CLI 最后补充非法输入/保留空格后 focused 回归再次通过。
-- `bash -n scripts/test-linux-secret-service.sh`、`git diff --check` 通过；Cargo.lock 已更新。当前 Linux native ignored，等私有服务 CI；首轮 CI Linux Runtime 因目录碰撞失败；已补同 clock tick 隔离测试（通过），修复后本机真实 Runtime 15 项与文件 5 项再次通过。Windows/macOS 首轮完整检查 success；Linux native success。
-- D 基准 [CI 37523663697](https://github.com/bboytang/CAIdex/actions/runs/37523663697) 全三平台 success：协议 19、真实集成 Linux 15/其他 14、fmt/Clippy/schema 指纹/offline doctor；不能当作 E 原生验收。
-- iOS、商业模型/其他 Provider、Windows Shell 批准后真实执行、真机/UAC/签名均尚未执行。所有当前新增回归用合成秘密，不读用户模型 Key。
+- [CI 37546559022](https://github.com/bboytang/CAIdex/actions/runs/37546559022)，代码 `4cab5c1`：ubuntu-24.04、windows-2022、macos-15 全部 success；fmt/Clippy/workspace 测试、固定 schema 重新生成与 SHA/offline doctor 均通过。
+- E 凭据回归 Linux 13 项（含私有服务 native），Windows 8 项（含 Credential Manager native/UTF-16 超长替换拒绝），macOS 11 项（Unix 文件/环境核心，无原生 Mac backend）。CLI Linux/macOS 各 3 项、Windows 2 项；各平台 Secret compile_fail 1 项。环境 child 由父测试显式运行，不重复计数。
+- 既有 Runtime 协议 19 项与同 clock tick 目录隔离回归 1 项三平台通过；真实 Runtime 集成 Linux 15 项、Windows/macOS 各 14 项通过。首轮时钟目录碰撞已修复（原子序号/创建成功才取得清理所有权），未禁用或盲目重试失败测试。
+- 本机 workspace check/fmt/Clippy/测试、安全文件回归、CLI/非法输入/保留空格回归及真实 Runtime 15 项通过；`cargo check -p caidex-credentials --no-default-features --locked --offline` 通过，headless 不要求 native 服务。脚本 bash -n 与 final diff 检查通过。
+- 日志 `/tmp/caidex-ci-37546559022.log` 可用于本机复查，跨机器以 GitHub 链接为准。所有新增凭据回归用合成秘密，不读用户模型 Key；真实 Runtime 使用本地 fixture/隔离临时项目。
+- iOS、商业模型/其他 Provider、Windows Shell 批准后实际执行、真机/UAC/签名尚未执行；macOS Rust 验证不代表 iOS 构建。
