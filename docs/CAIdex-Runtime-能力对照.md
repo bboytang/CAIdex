@@ -13,11 +13,17 @@
 - 新增接口回归与原有传输回归共 19 项。真实 Runtime 测试使用脚本化 loopback Responses SSE，不连接商业提供商，也不读取用户配置/Key；这些测试证明真实 Runtime 处理链路，不证明真实模型或其他 Provider 兼容。
 - 上次已验收真实 Linux 用例 5 项：消息/usage/历史/resume/fork；活动轮次原生 Queue CRUD 与审批取消；批准后实际执行临时标记命令并回传工具结果；Plan request_user_input；Steer 前置条件、interrupt 及过期审批撤销。CI 显式执行 ignored 集成测试；Windows/macOS 不执行 Linux 专用批准命令用例。
 
-- [三平台 CI 37522762794](https://github.com/bboytang/CAIdex/actions/runs/37522762794)，代码基准 `1a9abd5`：全部 success。Linux 10 项、Windows/macOS 各 9 项真实 Runtime 集成通过；19 项协议回归、常规/实验指纹与 doctor 均通过。归档 bundle 固定 LF，测试服务不依赖反向 DNS。
+- [三平台 CI 37523663697](https://github.com/bboytang/CAIdex/actions/runs/37523663697)，代码基准 `5a593a4`：全部 success。Linux 15 项、Windows/macOS 各 14 项真实 Runtime 集成通过；19 项协议回归、常规/实验指纹与 doctor 均通过。归档 bundle 固定 LF，测试服务不依赖反向 DNS。
 
-- 本轮新增（三平台已验证）：patch accept/cancel 两项；MCP stdio 发现/资源读取/工具调用/form accept/decline/cancel 一项；PTY 输入/resize/UTF-8 一项；长运行进程 duplicate handle/kill/过期输入一项。累计真实集成 Linux 10 项、Windows/macOS 各 9 项。
+- 此前新增（三平台已验证）：patch accept/cancel 两项；MCP stdio 发现/资源读取/工具调用/form accept/decline/cancel 一项；PTY 输入/resize/UTF-8 一项；长运行进程 duplicate handle/kill/过期输入一项。当时累计 Linux 10 项、Windows/macOS 各 9 项。
 
-- 本轮续接：Linux Queue 排序/分页/busy/中断恢复/指定启动、Goal 暂停/激活/预算/clear/空回复 breaker、经典手动压缩与后续摘要承接通过；空闲 Queue add 自动启动亦通过；新增 5 项待三平台 CI。
+- 本轮续接（三平台通过）：Queue 排序/分页/busy/中断恢复/指定启动、Goal 暂停/激活/预算/clear/空回复 breaker、经典手动压缩与后续摘要承接通过；空闲 Queue add 自动启动亦通过；新增 5 项全部通过；累计 Linux 15 项、Windows/macOS 各 14 项。
+
+## D 边界验收
+
+- 已实现的完整请求入口、11 类服务端请求与未知事件/扩展字段保留，由 19 项协议回归验证；实验方法显式门控、审批显式回应、无自动重试。
+- 真实固定 app-server 的线程/轮次、审批、用户输入、MCP、进程、Queue、Goal 与经典压缩链路已在三平台验证；CLI 对照明确 doctor 当前入口和 P 阶段整合项。
+- 达到 V3 D 的接口边界验收，进入 E。下表保留待验收能力，分别由 F/G 的真实模型/协议兼容、H 的持久 Host、K/O 的客户端端到端及 P 的 CLI 集成继续完成。
 
 ## 已核实的交互约束
 
@@ -54,17 +60,17 @@
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
 | MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
-| Context compaction | Linux 经典手动压缩 lifecycle/后续摘要承接通过 | 新增跨平台、远端 opaque 与 Lite 路径 F/G |
+| Context compaction | 三平台经典手动压缩 lifecycle/后续摘要承接通过 | 远端 opaque 与 Lite 路径 F/G |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
-| Queue | CRUD 已跨平台；Linux reorder/分页/busy/中断保留/指定及默认启动通过 | 新增跨平台与多端 H |
+| Queue | 三平台 CRUD/reorder/分页/busy/中断保留/指定及默认/自动启动通过 | 多端与持久 Host H |
 | Steer | 真实 expectedTurnId 前置条件与已有轮次输入通过 | 多端竞争、跨模型轮次边界 |
 | Diff | turn diff 与 file patch 通知保留 | 真实 diff/review 与 UI 展示 |
 | Plan | Plan collaborationMode、输入工具通过；plan 通知保留 | 真实 plan 输出与 UI |
-| Goal | Linux paused/active、预算耗尽、clear、三次空回复 blocked 通过 | 新增跨平台、真实模型推进及多端 H |
+| Goal | 三平台 paused/active、预算耗尽、clear、三次空回复 blocked 通过 | 真实模型推进及多端 H |
 | Sub-agent | Runtime 配置及工具事件保留 | 原生 delegation 与生命周期 |
 | Tool result handling | 真实命令、用户输入、patch、MCP 结果回送；opaque 字段不丢失 | 图像等结果及 Provider 对照 |
-| Usage tracking | 真实 tokenUsage 通知通过（fixture 为零） | 真实计费/限流/Provider usage |
+| Usage tracking | 真实 tokenUsage 通知与 Goal usage/预算限制通过（脚本化数值） | 真实计费/限流/Provider usage |
 | Session state | 线程元数据/历史读取与通知保留 | Host journal/snapshot 与跨设备 H |
 | Thread persistence | 真实临时数据目录内历史/resume/fork通过 | durable Host、重启不盲重跑工具 |
 
@@ -201,13 +207,13 @@
 | `thread/backgroundTerminals/clean` | 实验 opt-in | 协议保留，待验收 |
 | `thread/backgroundTerminals/list` | 实验 opt-in | 协议保留，待验收 |
 | `thread/backgroundTerminals/terminate` | 实验 opt-in | 协议保留，待验收 |
-| `thread/compact/start` | 常规 | Linux 真实链路；跨平台待 CI |
+| `thread/compact/start` | 常规 | 三平台真实链路 |
 | `thread/decrement_elicitation` | 实验 opt-in | 协议保留，待验收 |
 | `thread/delete` | 常规 | 协议保留，待验收 |
 | `thread/fork` | 常规 | 真实链路 |
-| `thread/goal/clear` | 常规 | Linux 真实链路；跨平台待 CI |
-| `thread/goal/get` | 常规 | Linux 真实链路；跨平台待 CI |
-| `thread/goal/set` | 常规 | Linux 真实链路；跨平台待 CI |
+| `thread/goal/clear` | 常规 | 三平台真实链路 |
+| `thread/goal/get` | 常规 | 三平台真实链路 |
+| `thread/goal/set` | 常规 | 三平台真实链路 |
 | `thread/increment_elicitation` | 实验 opt-in | 协议保留，待验收 |
 | `thread/inject_items` | 常规 | 协议保留，待验收 |
 | `thread/items/list` | 常规 | 协议保留，待验收 |
@@ -219,8 +225,8 @@
 | `thread/queue/add` | 实验 opt-in | 真实链路 |
 | `thread/queue/delete` | 实验 opt-in | 真实链路 |
 | `thread/queue/list` | 实验 opt-in | 真实链路 |
-| `thread/queue/reorder` | 实验 opt-in | Linux 真实链路；跨平台待 CI |
-| `thread/queue/start` | 实验 opt-in | Linux 真实链路；跨平台待 CI |
+| `thread/queue/reorder` | 实验 opt-in | 三平台真实链路 |
+| `thread/queue/start` | 实验 opt-in | 三平台真实链路 |
 | `thread/queue/update` | 实验 opt-in | 真实链路 |
 | `thread/read` | 常规 | 真实链路 |
 | `thread/realtime/appendAudio` | 实验 opt-in | 协议保留，待验收 |
