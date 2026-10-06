@@ -1,3 +1,4 @@
+mod credentials;
 mod doctor;
 
 use std::{ffi::OsString, process::ExitCode};
@@ -6,6 +7,16 @@ use std::{ffi::OsString, process::ExitCode};
 async fn main() -> ExitCode {
     let mut args = std::env::args_os().skip(1);
     match args.next().as_deref().and_then(|arg| arg.to_str()) {
+        Some("credentials") => match credentials::run(args.collect()) {
+            Ok(report) => {
+                println!("{report}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                eprintln!("CAIdex credentials failed: {error}");
+                ExitCode::FAILURE
+            }
+        },
         Some("doctor") if args.next().is_none() => match doctor::run().await {
             Ok(report) => {
                 println!("{report}");
@@ -26,14 +37,12 @@ async fn main() -> ExitCode {
         }
         Some("--help") if args.next().is_none() => {
             println!(
-                "CAIdex development CLI\n\nCommands:\n  doctor      Offline check of the pinned Codex app-server\n  --version   Show integration version\n\nFull CLI/Host attach is not implemented yet."
+                "CAIdex development CLI\n\nCommands:\n  doctor        Offline check of the pinned Codex app-server\n  credentials   Manage executor-local credentials (--help for usage)\n  --version     Show integration version\n\nFull CLI/Host attach is not implemented yet."
             );
             ExitCode::SUCCESS
         }
         _ => {
-            eprintln!(
-                "Use 'caidex doctor' or 'caidex --help'. Full CLI/Host attach is not implemented yet."
-            );
+            eprintln!("Use 'caidex --help'. Full CLI/Host attach is not implemented yet.");
             ExitCode::FAILURE
         }
     }

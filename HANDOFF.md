@@ -1,99 +1,64 @@
 # CAIdex 项目交接
 
-更新：2026-10-06。开始工作先读本文件，再检查 Git；按下一步继续，不重新规划已确认的方向。
+更新：2026-10-06。开始工作先读本文件，再检查 Git；按下一步继续，不重新规划已确认方向。
 
 ## 当前任务
 
-- A 基础准备、B 协议风险验证、C 基础 CI、D Runtime 边界已验收；代码基准 `5a593a4`。19 项协议回归与真实集成 Linux 15 项/Windows、macOS 各 14 项三平台通过。当前进入 E：执行端凭据 Broker、Provider profiles 与脱敏；尚未实现凭据模块或客户端 UI。
-- 用户已明确允许完整项目以及原始方案、HANDOFF、UI 规范、架构/实施计划公开到 `bboytang/CAIdex`，后续按此授权续接。
+- A/B/C 已完成，D Runtime 边界已验收。当前 E 凭据核心及 CLI 管理已实现，本地编译/安全回归通过，待本轮三平台 CI 与原生存储验收。
+- 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
 
-- 固化 Windows/iOS UI 规范：尽量 1:1 参考官方，缺失部分自行补齐；CAIdex 功能融入原有位置，API Key 在设置中配置。
-- 建立本文件及项目级 `AGENTS.md` 续接规则。
-- 本地 Git 初始化成功，分支 `main` 跟踪 `origin/main`；当前已验证工程基准 `5a593a4`。确认 Rust 1.99.0、Node 22.23.3、npm 10.9.9、Python 3.12.3。
-- 上游 `rust-v0.160.1` 已核对：tag object `c3e23d4c4385619ecec78408766e46b7fa7dd9ad`，源码 commit `d27764b82f7118f674371e6d6e76271d9d606edb`。
-- V3 计划已落盘；建立 Rust workspace、锁依赖、stdio 双向适配、开发阶段 `caidex doctor` 与 9 项协议测试。
-- doctor 在隔离临时目录验证真实 app-server 初始化、线程创建/列表/读取与事件，不启动模型轮次。
-- 公共仓库 `https://github.com/bboytang/CAIdex` 已上传完整工程；连接器确认 push/admin 权限，origin 已设置。
-- 三平台基础 CI 实际通过；action SHA 固定，Windows 使用 npm 中的原生二进制。仅更新交接文档不会重复触发 push CI。
-- 将用户原始 V2 方案与四份品牌原件归档到项目内；V2 仅作历史参考，已确认调整优先。
-- 本环境 `codex-cli 0.160.1`；`openaiDeveloperDocs` MCP 已配置且 enabled，此前会话实际完成官方文档搜索/读取，本轮通过官方网页核对协议。本机 CLI 配置不随项目迁移。
-- D 第一步：已归档固定版本完整常规/实验 schema；分别包含 104/167 个客户端请求、10/11 个服务端请求、83 个通知。实验 schema 指纹已写入锁定文件；默认生成会遗漏实验方法，不能用它代表全部上游功能。
-- D 第二/三步：facade、19 项协议回归与真实历史/resume/fork、Queue CRUD、审批、Plan 输入、Steer/interrupt 通过。跨平台修复已验证：归档 bundle LF 保持 Windows 指纹；本地服务不依赖反向 DNS。
-
-- D 第四步：三平台两项真实 apply_patch 回归通过；批准后仅写临时目标，取消后不写文件且轮次 interrupted（上游此时不保证 fileChange item/completed）。仅 Responses fixture，未调用商业模型。
-
-- D 第五步：真实 MCP stdio fixture 经 Runtime 完成 handshake、工具/资源发现、资源读取、手动工具调用及 form elicitation→显式 accept；structuredContent/_meta 完整保留。三平台 accept/decline/cancel 全部通过。
-
-- D 第六步：三平台真实 PTY 输入/resize/UTF-8 字节/exit 通过；长运行进程重复 handle 拒绝、显式 kill、过期 stdin 拒绝通过。base64 仅新增为锁定 dev-dependency；生产接口未新增依赖。
-
-- D 第七步：三平台真实 Queue reorder 全量校验/分页、活动轮次 start 拒绝且不丢队列、中断保留、指定非队首/默认队首启动、clientId 回传已验证；空闲 add 自动启动亦通过。
-- D 第八步：三平台 Goal paused→active 保留目标/预算、负预算拒绝、预算耗尽、clear 和三次空回复后 blocked 均通过；状态由上游提供，不在客户端重做续跑器。
-- D 第九步：三平台经典手动压缩返回/开始/完成/轮次终态及摘要进入后续模型输入通过。远端 opaque 压缩与 Lite/Code Mode 尚待 F/G。
+- V3 执行计划、UI 规范、品牌原件归档、项目续接规则、Rust workspace、固定依赖和三平台 CI 已建立。原始 V2 仅历史参考，已确认调整优先。
+- D：真实 app-server 双向 JSONL/facade、完整常规/实验方法门控、未知字段保留、审批/输入转交、取消/溢出关闭、不自动重试；19 项协议回归通过。
+- D 真实 Runtime：历史/resume/fork、Queue CRUD/reorder/page/自动启动、审批 accept/cancel、Plan 输入、Steer/interrupt、apply_patch、MCP 工具/资源/elicitation、PTY/长进程、Goal 生命周期/预算/blocked、经典压缩已验证。Linux 15 项、Windows/macOS 各 14 项在旧 CI 通过，详见能力对照。
+- E：`credentials/core` Broker 固定 owner，reference 按 owner/provider/profile/kind 隔离；Secret 不可 Serialize/Display/Clone、释放时自身缓冲清零；配置状态仅公开元数据。
+- E：Windows native keyring、Linux Secret Service（显式 feature，无 mock/fallback）、明确只读环境映射、Unix 私有文件 backend 已实现。文件保护含 0700/0600、symlink/hardlink/Git 拒绝、持有目录 FD、原子替换/fsync。
+- E：结构化字段/HTTP header/已知值脱敏；已替换/删除秘密仍遮蔽。native 错误安全分类，不带原始 payload；锁定/访问拒绝与底层长度上限有专用错误。
+- E：CLI `credentials status|set|remove` 已接入；明确 store/owner/provider/profile。set 必须 `--stdin` 管道输入，无 get/export 或秘密参数，env 只读。坏编码/空值/超长不覆盖原值。
 
 ## 未完成
 
-- 尚无 iOS 应用工程；macOS 基础 Rust CI 不等于 iOS 构建。
-- 其他工具、权限、插件、真实模型能力仍需按相关后续阶段验收，见能力对照；持久化恢复、生产 Host 尚未实现。
-- Gateway/提供商/凭据、Windows/iOS UI、完整 CLI attach、Chat 同步、SSH/Relay 未实现；未配置或验证模型 API Key。
+- E 本轮 Windows 原生 CRUD/Unicode/超长替换与 Linux 隔离 Secret Service CI 待运行；iOS 已定义 SecretStore 接入契约，Swift Keychain/UniFFI 原生实现待 M。UI/Host/Gateway/同步模块尚未接入凭据与诊断脱敏。
+- F–R：模型核心/Gateway/Provider、生产持久化 Host、独立 Chat/同步、Windows/iOS UI、SSH、完整英文 CLI/attach、生产 Relay、签名/打包/UAT 未完成；未配置模型 Key 或调用商业模型。
+- macOS Rust CI 不等于 iOS 应用构建；尚无 iOS 工程。其他原生工具/模型能力按后续相关阶段逐项补验收。
 
 ## 下一步顺序
 
-1. 读取本文件和 Git 状态；代码基准 `5a593a4`，三平台 CI `37523663697` 通过。开始 E：建立 `credentials/core` 的 Broker、执行端/Provider/profile 标识与 secret 类型；仅使用合成测试秘密，不读取用户 Key。
-2. 实现 Windows Credential Manager、Linux 环境变量、Secret Service/keyring 与受保护文件（0600，禁止进入 Git）与统一字段/已知值脱敏；定义 iOS Keychain 接口，随 M 落实原生后端。验证隔离、权限、更新/删除、日志/序列化不泄漏；Windows 原生验收在 GitHub。
-3. 进入 F/G 模型核心、Gateway、Provider；经典与 Lite/Code Mode 分别验收。实际付费 API/凭据复用或创建前明确授权；已授权的离线协议测试继续使用本地服务。
-4. 依阶段推进 H/I Host/持久化/Chat/同步、Windows、SSH/iOS、CLI、Relay；未验收的原生工具能力在相关阶段逐项补齐。iOS 应用测试/无签名构建在 GitHub macOS runner。
+1. 提交当前 E 代码/锁文件/CI/文档并 push，使用已验证 gh 凭据 helper。检查 Linux/Windows/macOS CI，修复实际失败；Linux native 只能通过私有服务脚本运行，不用用户 keyring。
+2. 记录 CI 链接、平台原生验证及限制；更新本交接与凭据验收文档后再确认 E 当前范围验收。不要把未来 UI/Host/iOS 接入标为完成。
+3. F/G：先核对锁定上游模型元数据与经典 Responses、Lite/code_mode_only 协议，写最小模型核心/Gateway 与离线回归；保留 opaque 推理/签名。实际付费 API 或用户凭据复用/创建前明确授权。
+4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
 
 ## 重要架构决定
 
-- 客户端：Windows Tauri 2 + React/TypeScript/Rust；iOS SwiftUI，初期 Swift 5 模式；共享 Rust 核心经 UniFFI 接入 iOS；CLI 继承上游英文体验。首批目标 Windows 11 x64、Linux x86_64 Host/CLI、iOS 17+。
-- 上游：https://github.com/openai/codex 。使用真实 app-server/Runtime，固定 commit、最小补丁；运行状态和审批由 Runtime 提供，不自造第二套 Agent。接口通过验证后版本化，取消原 V2 的永久冻结要求。
-- 普通 Chat 独立于 Codex Host，无 Shell/Git/项目写权限；按提供商实际能力展示搜索、图片、附件等入口，不宣称所有模型能力相同。
-- Gateway 面向 Codex 的 Responses HTTP/SSE 协议；保留提供商不透明签名/推理数据，统一工具消息，Gateway 不执行工具。提供商分阶段适配与验收。
-- 模型切换在明确的轮次边界生效；同提供商仅允许已验证兼容组合，跨提供商通过关联分支/新线程和适配后的历史承接。
-- API Key 由对应执行端的凭据管理层保存；Remote 使用执行 Host 的 Key，手机不读取已保存的远程 Key；聊天历史同步不携带 Key。
-- Host 独立运行，GUI/SSH 断开不决定任务生命周期；事件按 Host/stream 编号、持久化后广播，缺口通过快照恢复；提交幂等、有效审批首次处理生效，不承诺外部工具恰好执行一次。
-- 固定 CLI 模型元数据存在两条路径：经典 Responses（如 bundled gpt-5.5，独立 freeform apply_patch）与 Responses Lite/code_mode_only（如 gpt-6.1-sol）。旧测试 gpt-5.1-codex 属未知元数据 fallback；不能由它外推所有模型工具能力。F/G 必须按真实 model/tool_mode/use_responses_lite 验证 Gateway；本轮 patch 只验证经典路径。
-- Runtime 请求的 availableDecisions 决定 UI 审批选项；空闲 Queue add 可能启动轮次；turn 完成/中断也撤销线程待回应请求，不依赖逐项 resolved。固定源码和真实用例已核实。
-- Remote 先 SSH，后 Relay；生产 Relay 从首版使用成熟方案的端到端加密。保留原生 Queue/Steer。切换 Host 不迁移运行中的线程。
-- Chat 历史自动同步到自托管 VPS，SQLite 本地缓存/outbox/cursor；完成或中断轮次同步，冲突分支与删除 tombstone；HTTPS 服务端属于信任边界，当前不承诺历史同步端到端加密。
-- iOS 先测试及无签名构建，尚未进入签名/TestFlight；无签名产物不等于可安装 IPA。其他客户端当前环境优先，环境不足的检查转 GitHub；真机/UAC 等验证单独记录。
-- UI/品牌规则见 UI 规范；普通布局与缺失状态已授权自主判断。API Key 在“设置 → 模型与提供商”，本机与 Host 配置归属必须清楚。
+- Windows Tauri 2 + React/TypeScript/Rust；iOS SwiftUI（初期 Swift 5/iOS 17+）+ UniFFI 共享 Rust；CLI 继承上游英文体验；首批 Windows 11 x64、Linux x86_64 Host/CLI。
+- 使用真实固定 Runtime，不造第二套 Agent；上游 commit `d27764b82f7118f674371e6d6e76271d9d606edb`，CLI `0.160.1`/tag `rust-v0.160.1`。协议实验 opt-in；常规 104 客户端/10 服务端/83 通知，实验 167/11/83。
+- 普通 Chat 独立于 Codex Host，无 Shell/Git/项目写权限；按提供商实际能力展示工具。Remote 用执行 Host Key，手机不读已保存 Host Key；历史同步不含凭据。
+- Gateway 面向 Responses HTTP/SSE，保留不透明签名/推理数据，不执行工具。经典 gpt-5.5 与 Lite/code_mode_only gpt-6.1-sol 路径不同，旧未知模型 fallback fixture 不能代表全部兼容性；F/G 分别验收。
+- 模型切换在轮次边界生效；跨提供商关联分支/新线程承接适配历史。Host 独立运行、SQLite 事件持久化后广播、快照补缺口、请求幂等、审批首次有效处理；不承诺外部工具恰好执行一次。
+- UI 尽量 1:1 参考官方，缺失部分自主补齐；用户品牌原件为准。CAIdex 模型/API Key 放“设置 → 模型与提供商”，清楚区分本机与 Host 归属。
+- Remote 先 SSH 后 Relay，生产 Relay 首版成熟方案端到端加密；Host 切换不迁移活动线程。Chat 自动同步自托管 VPS，SQLite/outbox/cursor、冲突分支/删除 tombstone；HTTPS 服务端为信任边界，不承诺历史同步 E2EE。
+- iOS 先测试/无签名构建，未进入 TestFlight；无签名产物不等于可安装 IPA。真机、UAC、签名留独立验收。
 
 ## 问题 / 阻塞
 
-- `.git` 对普通执行仍为只读挂载，已通过授权提权完成初始化；读状态可用，写 Git 元数据需使用相应权限，不删除目录。
-- 文档公开授权已补齐。本机 GitHub CLI 2.45.0 已登录 `bboytang`，`gh api user` 验证成功，OAuth scope 包含 `repo`、`workflow`；后续可通过 gh 管理工作流。此前 Git credential helper 使用的凭据缺少 workflow scope，与当前 gh 凭据应区别记录；未修改 Git 凭据配置。插件写工作流再 fetch/合并的备用路径已验证。不要输出凭据。
-- Windows、Swift/Xcode 不在本机；对应平台检查需 GitHub runner。环境无 OPENAI_API_KEY；当前只做离线协议验证，不使用付费模型或用户凭据。
-- 无真实客户端逐状态截图和真机验证覆盖；现有 UI 资料足够建立基准，缺失状态按 UI 规范补齐并保留验收项。
+- 原自动审批额度问题已恢复，依赖下载/编译成功。正常沙箱注入 `/tmp/.git` 导致文件保护测试被拒绝；相同代码在获授权的正常执行环境通过，未削弱保护。
+- `.git` 普通执行只读，提交/push 用 require_escalated。GitHub CLI 2.45.0 已核验登录 `bboytang`、scope repo/workflow；普通沙箱网络受限时 auth status 的 invalid 提示不能作为凭据失效证据。
+- 旧 Git helper 缺 workflow scope。发布使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不输出凭据或修改用户全局配置。
+- 本机没有 Windows/Xcode/gnome-keyring-daemon，相关验证转 GitHub。无真实模型、客户端逐状态截图/真机验证；按计划保留明确验收项。
 
-## 相关文件与工作区修改
+## 文件与 Git 状态
 
-- `AGENTS.md`：开始工作及交接更新规则。
-- `HANDOFF.md`：当前续接入口。
-- `docs/CAIdex-UI-规范-V1.md`：已确认的布局、功能入口、状态、品牌与 UI 验收要求。
-- `docs/CAIdex-原始方案-V2.md`：用户原文归档；其中永久冻结等内容已被上述调整替代。
-- `docs/CAIdex-实施计划-V3.md`：已落盘执行顺序与验收条件。
-- `docs/CAIdex-Runtime-能力对照.md`：V2 原生能力逐项验收、完整方法/请求/通知清单及 CLI 入口对照。
-- `Cargo.toml`、`Cargo.lock`、`rust-toolchain.toml`：Rust workspace 与锁定工具链。
-- `runtime/bridge/src/{protocol,runtime,stdio}.rs`：锁定方法清单、Runtime facade 与传输；`tests/{runtime,real_runtime,stdio}.rs` 及本地 fixtures：回归/真实 Runtime 场景。
-- `apps/cli/`：通过 facade 运行的隔离离线 doctor。
-- `upstream/codex/`：锁定文件、生成 schema 与上游 LICENSE/NOTICE。
-- `.github/workflows/ci.yml`、`scripts/{codex-binary,verify-codex-schema}.mjs`：三平台 CI、原生二进制定位和 schema 指纹核验。
-- `assets/brand/`：最新 dark 1024 应用图标、Windows ICO、透明 symbol 与完整 Logo 原件。
-- branch：`main` 跟踪 `origin/main`；新增回归实现 `5a593a4` 已上传并通过三平台 CI。代码无未完成修改；本次交接与能力对照收尾随文档提交，提交后应为干净工作区。续接以 Git status 核对。构建缓存已忽略。
+- `docs/CAIdex-实施计划-V3.md`、`docs/CAIdex-UI-规范-V1.md`、`docs/CAIdex-Runtime-能力对照.md`：执行与验收基准；原 V2 在 docs 归档。
+- `credentials/core/`、`apps/cli/src/credentials.rs`、`apps/cli/tests/credentials.rs`、`docs/CAIdex-Credentials-设计与验收.md`：E 实现/回归/限制。
+- `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
+- `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归，本轮未改；`assets/brand/`：四份原始品牌资产未改。
+- branch `main` 跟踪 `origin/main`；HEAD `fb1100c`，D 验证代码 `5a593a4`。当前未提交：E crate/CLI/测试/设计文档/私有服务脚本、workspace/锁文件/CI/secret 文件忽略、README、本交接。无其他已知用户修改。
 
-## 测试 / 验证
+## 测试结果
 
-- Git 读取、暂存、提交和完整源码 push 成功；此前文档授权/工作流 scope 问题已按上述方式解决。
-- 本机 `gh auth status` 成功，活动账户已启用；`gh api user` 返回 `bboytang`，权限响应包含 `workflow`。gh 凭据将用于此次包含工作流的发布；不输出凭据。
-- `codex --version`、`codex mcp list`：成功返回版本及 enabled 配置；官方 Docs 搜索/读取工具可用。CLI 有无法创建 PATH aliases 的只读文件系统警告。
-- 文档检查通过：8 类必需信息齐全；新建文档格式正常，已检查新增文件差异。原方案及四份品牌资产的 SHA-256 与附件原件完全一致；原有 UI 规范未修改。
-- `cargo test --workspace --locked`：19 项协议回归通过（9 transport + 10 facade）；真实集成用例默认 ignored，CI 单独显式运行。
-- `cargo test -p caidex-runtime --test real_runtime --locked -- --ignored`：Linux 15 项真实 Runtime/本地 Responses/MCP/进程/Queue/Goal/压缩用例通过；无商业模型/Key，工具执行和文件修改仅使用隔离临时测试目录。Windows/macOS 各 14 项在 GitHub runner 通过。
-- `node scripts/verify-codex-schema.mjs`：常规/实验固定 schema 重新生成及归档 SHA-256 均匹配。
-- `cargo clippy --workspace --all-targets --locked -- -D warnings`、`cargo fmt --all -- --check`：通过。
-- `cargo run -p caidex-cli --locked -- doctor`：真实 Codex 0.160.1/Linux 输出 status=ok，模型轮次未启动，新增 thread/read 检查。生成 schema 指纹与锁定文件一致。
-- [CI run 37523663697](https://github.com/bboytang/CAIdex/actions/runs/37523663697)，基准 `5a593a4`：ubuntu-24.04、windows-2022、macos-15 全部 success；各平台格式、Clippy、19 项协议测试、常规/实验 schema 指纹及离线 doctor 均通过；真实集成 Linux 15 项、Windows/macOS 各 14 项通过。
-- iOS 构建、商业真实模型、其他 Provider、Windows Shell 批准后实际执行与真机测试：尚未执行。真实 Linux 工具链仅验证临时标记场景，不能外推所有工具。
+- 当前本地 E：workspace check、fmt、Clippy `-D warnings`、workspace 测试通过：凭据核心 12 项（含 native 错误分类）、CLI 3 项、Secret compile_fail 1 项、既有协议 19 项；环境 child 由父测试显式运行。CLI 最后补充非法输入/保留空格后 focused 回归再次通过。
+- `bash -n scripts/test-linux-secret-service.sh`、`git diff --check` 通过；Cargo.lock 已更新。当前 Linux native ignored，等私有服务 CI；真实 Runtime 集成未因本轮改动在本机重复运行，由本轮 CI 回归。
+- D 基准 [CI 37523663697](https://github.com/bboytang/CAIdex/actions/runs/37523663697) 全三平台 success：协议 19、真实集成 Linux 15/其他 14、fmt/Clippy/schema 指纹/offline doctor；不能当作 E 原生验收。
+- iOS、商业模型/其他 Provider、Windows Shell 批准后真实执行、真机/UAC/签名均尚未执行。所有当前新增回归用合成秘密，不读用户模型 Key。

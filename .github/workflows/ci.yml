@@ -9,6 +9,7 @@ on:
       - rust-toolchain.toml
       - .gitattributes
       - runtime/**
+      - credentials/**
       - apps/**
       - scripts/**
       - upstream/codex/**
@@ -51,6 +52,12 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Protocol tests
         run: cargo test --workspace --locked
+      - name: Install Linux native credential test service
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gnome-keyring dbus-x11 libglib2.0-bin
+      - name: Linux native credential store in an isolated session
+        if: runner.os == 'Linux'
+        run: bash scripts/test-linux-secret-service.sh
       - name: Install pinned upstream CLI
         run: npm install --prefix .tools/codex --no-audit --no-fund --ignore-scripts @openai/codex@0.160.1
       - name: Locate native Codex executable

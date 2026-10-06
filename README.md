@@ -2,7 +2,7 @@
 
 基于真实 Codex Runtime 的 Windows、iOS 和 CLI 多模型客户端，支持独立 Chat、远程 Codex 与自托管历史同步。当前处于基础工程开发阶段，完整客户端尚未实现。
 
-当前可以运行：固定版本 app-server 的双向 JSONL 适配、Runtime facade（线程/轮次/Steer/interrupt、能力门控、审批/输入转交）、协议回归测试与离线 `caidex doctor`。完整协议调用入口保留常规和实验方法；具体模型/工具能力仍需逐项验证，详见能力对照。doctor 只创建隔离的临时线程，不启动模型轮次、不执行项目命令、不读取用户 Codex 登录配置。
+当前可以运行：执行端凭据 Broker、脱敏及 CLI 凭据状态/保存/删除，固定版本 app-server 的双向 JSONL 适配、Runtime facade（线程/轮次/Steer/interrupt、能力门控、审批/输入转交）、协议回归测试与离线 `caidex doctor`。完整协议调用入口保留常规和实验方法；具体模型/工具能力仍需逐项验证，详见能力对照。doctor 只创建隔离的临时线程，不启动模型轮次、不执行项目命令、不读取用户 Codex 登录配置。
 
 ## 开发与验证
 
@@ -28,7 +28,8 @@ node scripts/codex-binary.mjs
 ## 工程位置
 
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
-- `apps/cli`：开发阶段诊断命令；最终 CLI/共享 Host 接入仍待实现。
+- `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
+- `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
 - `upstream/codex`：版本/源码锁定、协议基准和上游许可证。
 - `assets/brand`：用户指定的品牌原件。
 - `docs/CAIdex-实施计划-V3.md`：阶段顺序与验收条件。
@@ -36,7 +37,7 @@ node scripts/codex-binary.mjs
 - `docs/CAIdex-UI-规范-V1.md`：UI 布局和 CAIdex 功能入口。
 - `HANDOFF.md`：当前进度、验证与下一步；每次续接先读。
 
-当前适配层是本地传输组件，尚不包含生产 Host 的持久化、重连和生命周期管理。普通 Chat、模型 Key 设置和 Windows/iOS 页面尚未实现。
+当前适配层是本地传输组件，尚不包含生产 Host 的持久化、重连和生命周期管理。CLI 可通过 `caidex credentials --help` 查看凭据管理用法；没有秘密导出命令，保存只接受显式管道输入。普通 Chat、模型 Key 设置页面和 Windows/iOS 页面尚未实现。
 
 ## CI 与许可证
 

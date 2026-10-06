@@ -11,3 +11,5 @@ xcuserdata/
 Thumbs.db
 __pycache__/
 *.pyc
+*.caidex-secret
+*.caidex-credential-tmp
