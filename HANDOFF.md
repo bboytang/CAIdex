@@ -4,14 +4,14 @@
 
 ## 当前任务
 
-- 阶段 A 基础准备与 C 基础 CI 已完成；B 的元数据/stdio 验证通过。正在推进 D：完整 Runtime facade 与上游功能对照；已完成完整清单、facade、19 项协议回归及 5 项真实 Runtime/本地 Responses 集成；正在补能力对照并验证三平台 CI。客户端 UI 尚未开始。
+- 阶段 A 基础准备与 C 基础 CI 已完成；B 的元数据/stdio 验证通过。正在推进 D：完整 Runtime facade 与上游功能对照；已完成完整清单、facade、19 项协议回归及 5 项真实 Runtime/本地 Responses 集成；能力对照已落盘，三平台 CI 已通过；下一步继续 D 的未验收能力。客户端 UI 尚未开始。
 - 用户已明确允许完整项目以及原始方案、HANDOFF、UI 规范、架构/实施计划公开到 `bboytang/CAIdex`，后续按此授权续接。
 
 ## 已完成
 
 - 固化 Windows/iOS UI 规范：尽量 1:1 参考官方，缺失部分自行补齐；CAIdex 功能融入原有位置，API Key 在设置中配置。
 - 建立本文件及项目级 `AGENTS.md` 续接规则。
-- 本地 Git 初始化成功，分支 `main` 跟踪 `origin/main`；首批实现 `edb946f`，已上传集成提交 `eebc0cc`。确认 Rust 1.99.0、Node 22.23.3、npm 10.9.9、Python 3.12.3。
+- 本地 Git 初始化成功，分支 `main` 跟踪 `origin/main`；当前已验证工程基准 `7209e21`。确认 Rust 1.99.0、Node 22.23.3、npm 10.9.9、Python 3.12.3。
 - 上游 `rust-v0.160.1` 已核对：tag object `c3e23d4c4385619ecec78408766e46b7fa7dd9ad`，源码 commit `d27764b82f7118f674371e6d6e76271d9d606edb`。
 - V3 计划已落盘；建立 Rust workspace、锁依赖、stdio 双向适配、开发阶段 `caidex doctor` 与 9 项协议测试。
 - doctor 在隔离临时目录验证真实 app-server 初始化、线程创建/列表/读取与事件，不启动模型轮次。
@@ -20,17 +20,17 @@
 - 将用户原始 V2 方案与四份品牌原件归档到项目内；V2 仅作历史参考，已确认调整优先。
 - 本环境 `codex-cli 0.160.1`；`openaiDeveloperDocs` MCP 已配置且 enabled，此前会话实际完成官方文档搜索/读取，本轮通过官方网页核对协议。本机 CLI 配置不随项目迁移。
 - D 第一步：已归档固定版本完整常规/实验 schema；分别包含 104/167 个客户端请求、10/11 个服务端请求、83 个通知。实验 schema 指纹已写入锁定文件；默认生成会遗漏实验方法，不能用它代表全部上游功能。
-- D 第二/三步：19 项协议回归通过；真实 Runtime/本地 Responses 集成 5 项 Linux 通过（历史/resume/fork、Queue CRUD/审批 cancel、Linux accept 实际命令/工具结果、Plan 用户输入、Steer/interrupt/过期审批）。两份 schema 重新生成指纹通过。初次新增 CI `37519900562`：Linux success，Windows schema 指纹失败（已复现 CRLF 转换），macOS 测试服务启动超时；正在修复并重跑，不标三平台通过。
+- D 第二/三步：19 项协议回归通过；真实 Runtime/本地 Responses 集成 5 项 Linux 通过（历史/resume/fork、Queue CRUD/审批 cancel、Linux accept 实际命令/工具结果、Plan 用户输入、Steer/interrupt/过期审批）。两份 schema 重新生成指纹通过。跨平台修复已验证：固定 bundle LF 避免 Windows checkout 改字节；本地测试服务跳过反向 DNS，macOS 启动恢复。最终 CI `37520407878` 三平台 success（Linux 5 项，Windows/macOS 4 项真实集成）。
 
 ## 未完成
 
 - 尚无 iOS 应用工程；macOS 基础 Rust CI 不等于 iOS 构建。
-- Runtime facade 已接入 doctor；线程/turn/Steer/interrupt、能力门控、全方法入口、服务端交互转交、局部一次回应与轮次终止撤销已实现。完整能力验收仍有缺口，见能力对照；持久化恢复、生产 Host 尚未实现。
+- 完整 Runtime 能力验收仍有缺口（真实 patch/MCP/elicitation/PTY 等），见能力对照；持久化恢复、生产 Host 尚未实现。
 - Gateway/提供商/凭据、Windows/iOS UI、完整 CLI attach、Chat 同步、SSH/Relay 未实现；未配置或验证模型 API Key。
 
 ## 下一步顺序
 
-1. 读取本文件和 Git 状态，先核对此次三平台 CI。按 `docs/CAIdex-Runtime-能力对照.md` 继续 D：真实 patch/文件审批、MCP/elicitation、PTY/长运行、Queue start/reorder、Goal/compaction 等协议与上游对照；能力未验证就保留待验收状态。
+1. 读取本文件和 Git 状态，确认当前验证基准 `7209e21`；按 `docs/CAIdex-Runtime-能力对照.md` 继续 D：真实 patch/文件审批、MCP/elicitation、PTY/长运行、Queue start/reorder、Goal/compaction 等协议与上游对照；能力未验证就保留待验收状态。
 2. 使用可重复协议场景与上游对照验证；实际模型/工具执行与模拟测试分别记录。当前底层 transport 的断开/超时不等于持久 Host 恢复完成。
 3. 推进 E/F 的凭据层、模型核心与 Responses Gateway；实际付费 API/凭据复用或创建前明确授权，离线验证继续使用测试服务。
 4. 依阶段推进多模型、持久 Host、Chat/同步、Windows、SSH/iOS、CLI 整合、Relay；iOS 应用测试/无签名构建在 GitHub macOS runner。
@@ -71,7 +71,7 @@
 - `upstream/codex/`：锁定文件、生成 schema 与上游 LICENSE/NOTICE。
 - `.github/workflows/ci.yml`、`scripts/{codex-binary,verify-codex-schema}.mjs`：三平台 CI、原生二进制定位和 schema 指纹核验。
 - `assets/brand/`：最新 dark 1024 应用图标、Windows ICO、透明 symbol 与完整 Logo 原件。
-- branch：`main` 跟踪 `origin/main`；D 实现已提交并通过 gh 凭据推送（含工作流），基准 `c15d447`。未提交 CI 修复：`.gitattributes` 固定归档 bundle 的 LF、schema 错误显示两侧指纹、loopback 测试服务跳过标准 HTTPServer 的 getfqdn、保留测试服务 stderr、CI 路径和交接更新。下一步验证、提交并重跑三平台 CI；macOS 超时原因需据新结果确认。构建缓存已忽略。
+- branch：`main` 跟踪 `origin/main`；D 实现 `c15d447`、跨平台修复 `7209e21` 均已上传，代码验证基准 `7209e21`。本轮收尾文档随当前提交提交，工程无保留的未完成修改；续接仍以 Git status 核对。构建缓存已忽略。
 
 ## 测试 / 验证
 
@@ -84,6 +84,6 @@
 - `node scripts/verify-codex-schema.mjs`：常规/实验固定 schema 重新生成及归档 SHA-256 均匹配。
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`、`cargo fmt --all -- --check`：通过。
 - `cargo run -p caidex-cli --locked -- doctor`：真实 Codex 0.160.1/Linux 输出 status=ok，模型轮次未启动，新增 thread/read 检查。生成 schema 指纹与锁定文件一致。
-- [CI run 37516548646](https://github.com/bboytang/CAIdex/actions/runs/37516548646)，基准 `eebc0cc`：ubuntu-24.04、windows-2022、macos-15 全部 success；各平台格式、Clippy、9 项协议测试、真实离线 doctor 均通过。
-- 初始仅登记工作流的提交 `d437a58` 无完整工程，其 run 37516452005 为 failure；已由上述完整集成提交的成功运行取代，不能将登记提交用于验收。
+- [CI run 37520407878](https://github.com/bboytang/CAIdex/actions/runs/37520407878)，基准 `7209e21`：ubuntu-24.04、windows-2022、macos-15 全部 success；各平台格式、Clippy、19 项协议测试、常规/实验 schema 指纹及离线 doctor 均通过；真实 Runtime/本地 Responses 集成 Linux 5 项、Windows/macOS 各 4 项通过。
+- 初次新增 CI `37519900562` 的 Windows 换行指纹失败与 macOS 测试服务启动超时，已由 `7209e21` 修复并在上述新运行验证，不作为当前验收结果。
 - iOS 构建、商业真实模型、其他 Provider、Windows 实际批准执行与真机测试：尚未执行。真实 Linux 工具链仅验证临时标记场景，不能外推所有工具。

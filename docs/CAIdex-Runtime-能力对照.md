@@ -13,6 +13,8 @@
 - 新增接口回归与原有传输回归共 19 项。真实 Runtime 测试使用脚本化 loopback Responses SSE，不连接商业提供商，也不读取用户配置/Key；这些测试证明真实 Runtime 处理链路，不证明真实模型或其他 Provider 兼容。
 - 真实 Linux 用例 5 项：消息/usage/历史/resume/fork；活动轮次原生 Queue CRUD 与审批取消；批准后实际执行临时标记命令并回传工具结果；Plan request_user_input；Steer 前置条件、interrupt 及过期审批撤销。CI 显式执行 ignored 集成测试；Windows/macOS 不执行 Linux 专用批准命令用例。
 
+- [三平台 CI 37520407878](https://github.com/bboytang/CAIdex/actions/runs/37520407878)，代码基准 `7209e21`：全部 success。Linux 5 项、Windows/macOS 各 4 项真实 Runtime 集成通过；19 项协议回归、常规/实验指纹与 doctor 均通过。归档 bundle 固定 LF，测试服务不依赖反向 DNS。
+
 ## 已核实的交互约束
 
 - 审批 UI 采用请求的 availableDecisions。当前测试的 require_escalated 命令不提供 decline，可提供 cancel；取消结束轮次，批准允许执行。模拟用例覆盖 decline，不冒称该具体真实提示提供所有四个按钮。
