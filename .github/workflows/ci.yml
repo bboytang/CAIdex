@@ -54,5 +54,9 @@ jobs:
         run: npm install --prefix .tools/codex --no-audit --no-fund --ignore-scripts @openai/codex@0.160.1
       - name: Locate native Codex executable
         run: node scripts/codex-binary.mjs --github-env
+      - name: Verify pinned stable and experimental schemas
+        run: node scripts/verify-codex-schema.mjs
       - name: Verify real app-server without a model turn
         run: cargo run -p caidex-cli --locked -- doctor
+      - name: Real Runtime with local Responses fixtures
+        run: cargo test -p caidex-runtime --test real_runtime --locked -- --ignored

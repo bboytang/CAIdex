@@ -1,0 +1,73 @@
+"""Loopback-only scripted Responses SSE server, never an AI provider or gateway.
+
+Events follow the fixed upstream core/tests/common/responses.rs test format.
+The only command offered by the approval cases writes a marker in a temp project.
+"""
+
+import json
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+import sys
+
+mode, trace_path = sys.argv[1:]
+trace = {"requests": 0, "authorizationSeen": False, "tool": None, "toolOutputs": []}
+
+
+def event(kind, **fields):
+    return {"type": kind, **fields}
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        trace["requests"] += 1
+        trace["authorizationSeen"] |= "Authorization" in self.headers
+        if self.path != "/v1/responses":
+            self.send_error(404)
+            return
+        for item in body.get("input", []):
+            if item.get("type") == "function_call_output":
+                trace["toolOutputs"].append(item.get("output"))
+        identity = f"fixture-response-{trace['requests']}"
+        events = [event("response.created", response={"id": identity})]
+        if mode in ["approval", "questions"] and trace["requests"] == 1:
+            tools = body.get("tools", [])
+            names = [tool.get("name") for tool in tools]
+            if mode == "questions" and "request_user_input" in names:
+                name = "request_user_input"
+                arguments = {"questions": [{"id": "choice", "header": "Fixture", "question": "Choose a local fixture option", "options": [{"label": "A", "description": "First fixture option"}, {"label": "B", "description": "Second fixture option"}]}]}
+            elif mode == "questions":
+                self.send_error(500, "expected upstream plan-mode input tool")
+                return
+            elif "exec_command" in names:
+                name = "exec_command"
+                arguments = {"cmd": "echo CAIDEX_TOOL_EXECUTED > caidex-tool-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated CAIdex test marker only", "yield_time_ms": 1000}
+            elif "shell_command" in names:
+                name = "shell_command"
+                arguments = {"command": "echo CAIDEX_TOOL_EXECUTED > caidex-tool-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated CAIdex test marker only", "timeout_ms": 1000}
+            else:
+                self.send_error(500, "expected upstream shell tool")
+                return
+            trace["tool"] = name
+            events.append(event("response.output_item.done", item={"type": "function_call", "call_id": "fixture-command-1", "name": name, "arguments": json.dumps(arguments)}))
+        else:
+            item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": "CAIdex local fixture complete"}]}
+            events.append(event("response.output_item.added", item={**item, "content": []}))
+            events.append(event("response.output_text.delta", delta="CAIdex local fixture complete"))
+            events.append(event("response.output_item.done", item=item))
+        events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}}))
+        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+        data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+
+server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+print(json.dumps({"port": server.server_port}), flush=True)
+server.serve_forever()

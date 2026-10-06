@@ -42,6 +42,10 @@ pub enum Error {
     Timeout,
     #[error("request was cancelled; its runtime outcome is unknown")]
     Cancelled,
+    #[error("runtime method is unavailable on this connection: {0}")]
+    Unavailable(String),
+    #[error("server request is no longer pending")]
+    NotPending,
     #[error("app-server error {0}: {1}")]
     Rpc(i64, String, Option<Value>),
 }
@@ -83,10 +87,30 @@ impl Drop for CancellationGuard {
 }
 
 impl RpcClient {
+    pub(crate) fn fail(&self, error: Error) {
+        close(&self.state, error);
+    }
+
+    pub(crate) fn check_open(&self) -> Result<(), Error> {
+        match &self.state.lock().expect("runtime state poisoned").closed {
+            Some(error) => Err(error.clone()),
+            None => Ok(()),
+        }
+    }
+
     pub async fn request(
         &self,
         method: &str,
         params: Value,
+        deadline: Duration,
+    ) -> Result<Value, Error> {
+        self.request_optional(method, Some(params), deadline).await
+    }
+
+    pub(crate) async fn request_optional(
+        &self,
+        method: &str,
+        params: Option<Value>,
         deadline: Duration,
     ) -> Result<Value, Error> {
         let (send, receive) = oneshot::channel();
@@ -108,8 +132,11 @@ impl RpcClient {
             active: true,
         };
         let operation = async {
-            self.write(json!({"id": id, "method": method, "params": params}))
-                .await?;
+            let mut message = json!({"id": id, "method": method});
+            if let Some(params) = params {
+                message["params"] = params;
+            }
+            self.write(message).await?;
             receive.await.map_err(|_| Error::Closed)?
         };
         let result = match tokio::time::timeout(deadline, operation).await {
@@ -151,14 +178,15 @@ impl RpcClient {
         let mut bytes =
             serde_json::to_vec(&message).map_err(|error| Error::Protocol(error.to_string()))?;
         bytes.push(b'\n');
-        let mut input = self.input.lock().await;
-        if let Some(error) = &self.state.lock().expect("runtime state poisoned").closed {
-            return Err(error.clone());
-        }
+        self.check_open()?;
         let mut guard = CancellationGuard {
             state: self.state.clone(),
             active: true,
         };
+        let mut input = self.input.lock().await;
+        if let Some(error) = &self.state.lock().expect("runtime state poisoned").closed {
+            return Err(error.clone());
+        }
         let result = async {
             input.write_all(&bytes).await?;
             input.flush().await
@@ -239,6 +267,11 @@ impl AppServer {
 
     pub async fn next_event(&mut self) -> Option<ServerEvent> {
         self.events.recv().await
+    }
+
+    pub(crate) fn take_events(&mut self) -> mpsc::Receiver<ServerEvent> {
+        let (_, replacement) = mpsc::channel(1);
+        std::mem::replace(&mut self.events, replacement)
     }
 
     /// Terminates only this explicitly owned child, not a persistent shared Host.

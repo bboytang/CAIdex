@@ -1,7 +1,14 @@
-//! The version-pinned Codex stdio boundary. Runtime payloads remain opaque here.
+//! CAIdex's version-pinned Codex boundary; no upstream Rust types escape it.
 
+mod protocol;
+mod runtime;
 mod stdio;
 
+pub use protocol::{MethodInfo, ProtocolSurface, protocol_surface};
+pub use runtime::{
+    ApprovalDecision, ClientOptions, Interaction, InteractionKind, Runtime, RuntimeClient,
+    RuntimeEvent, RuntimeInfo,
+};
 pub use stdio::{AppServer, Error, RequestId, RpcClient, RpcError, ServerEvent};
 
 pub const CODEX_VERSION: &str = "0.160.1";
