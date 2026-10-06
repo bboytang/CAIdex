@@ -221,10 +221,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-model-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "caidex-runtime"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "caidex-model-core",
  "serde",
  "serde_json",
  "thiserror",

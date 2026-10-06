@@ -28,11 +28,13 @@ node scripts/codex-binary.mjs
 ## 工程位置
 
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
+- `model/core`：经典/Lite 请求/工具/usage 视图、增量 SSE 和流生命周期；HTTP Gateway/Provider Adapter 待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
 - `upstream/codex`：版本/源码锁定、协议基准和上游许可证。
 - `assets/brand`：用户指定的品牌原件。
 - `docs/CAIdex-实施计划-V3.md`：阶段顺序与验收条件。
+- `docs/CAIdex-Model-Gateway-设计与验收.md`：模型协议/真实 wire 验证与 Gateway 恢复点。
 - `docs/CAIdex-Runtime-能力对照.md`：完整固定协议清单、实现范围与 CLI 对照验收状态。
 - `docs/CAIdex-UI-规范-V1.md`：UI 布局和 CAIdex 功能入口。
 - `HANDOFF.md`：当前进度、验证与下一步；每次续接先读。

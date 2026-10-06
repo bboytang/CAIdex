@@ -29,6 +29,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/v1/responses":
             self.send_error(404)
             return
+        if mode.startswith("wire-"):
+            trace.setdefault("wireRequests", []).append({"body": body, "liteHeader": self.headers.get("x-openai-internal-codex-responses-lite"), "accept": self.headers.get("Accept")})
         for item in body.get("input", []):
             if item.get("type") in ["function_call_output", "custom_tool_call_output"]:
                 trace["toolOutputs"].append(item.get("output"))
@@ -36,6 +38,8 @@ class Handler(BaseHTTPRequestHandler):
             trace.setdefault("summarySeen", []).append("CAIDEX_COMPACT_SUMMARY" in json.dumps(body.get("input", [])))
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
+        if mode.startswith("wire-"):
+            events.append(event("response.output_item.done", item={"type": "reasoning", "id": f"rs_{identity}", "summary": [], "encrypted_content": "CAIDEX_OPAQUE_REASONING+/==", "provider_signature": "CAIDEX_FUTURE_SIGNATURE=="}))
         if mode == "patch" and trace["requests"] == 1:
             trace["offeredTools"] = [{"name": tool.get("name"), "type": tool.get("type"), "nestedNames": [nested.get("name") for nested in tool.get("tools", [])]} for tool in body.get("tools", [])]
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
@@ -69,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             text = "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode == "compact" and trace["requests"] == 2 else "CAIdex local fixture complete"
             item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": text}]}
-            if mode.startswith("goal-"):
+            if mode.startswith("goal-") or mode.startswith("wire-"):
                 item["phase"] = "final_answer"
             events.append(event("response.output_item.added", item={**item, "content": []}))
             if text:
@@ -77,6 +81,8 @@ class Handler(BaseHTTPRequestHandler):
             events.append(event("response.output_item.done", item=item))
         tokens = 100 if mode == "goal-budget" else 0
         events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": tokens, "output_tokens": 0, "total_tokens": tokens}}))
+        if mode.startswith("wire-"):
+            trace.setdefault("wireResponses", []).append(events)
         Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
         data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
         self.send_response(200)

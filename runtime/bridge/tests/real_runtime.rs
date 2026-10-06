@@ -103,8 +103,13 @@ impl Harness {
         let port = serde_json::from_str::<Value>(&line).unwrap()["port"]
             .as_u64()
             .unwrap();
+        let model = match mode {
+            "wire-classic" => "gpt-5.5",
+            "wire-lite" => "gpt-6.1-sol",
+            _ => "gpt-5.1-codex",
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "model = \"gpt-5.1-codex\"\nmodel_provider = \"caidex_fixture\"\n[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
+            "model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -1204,4 +1209,134 @@ async fn real_idle_queue_add_starts_a_turn_and_preserves_client_identity() {
     assert_eq!(queue["data"], json!([]));
     assert_eq!(harness.trace()["requests"], 1);
     harness.shutdown().await;
+}
+
+async fn real_model_wire(mode: &str, dialect: caidex_model_core::ResponsesDialect) {
+    use caidex_model_core::{
+        CanonicalRequest, ResponseItem, ResponsesDialect, ResponsesStream, StreamState,
+    };
+    let mut harness = Harness::start(mode).await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    for text in [
+        "Offline model boundary fixture",
+        "Continue with opaque reasoning history",
+    ] {
+        client
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text", "text":text})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            let RuntimeEvent::Notification(event) = harness.next().await else {
+                panic!("wire fixture must not request a tool or permission")
+            };
+            if event.method == "turn/completed" {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 2);
+    assert_eq!(trace["authorizationSeen"], false);
+    let requests = trace["wireRequests"].as_array().unwrap();
+    for request in requests {
+        assert_eq!(request["accept"], "text/event-stream");
+        let body = &request["body"];
+        let normalized = CanonicalRequest::new(body.clone(), dialect).unwrap();
+        assert!(normalized.is_streaming());
+        assert_eq!(serde_json::to_value(&normalized).unwrap(), *body);
+        assert_eq!(body["store"], false);
+        assert!(
+            body["include"]
+                .as_array()
+                .unwrap()
+                .contains(&json!("reasoning.encrypted_content"))
+        );
+        match dialect {
+            ResponsesDialect::Classic => {
+                assert_eq!(normalized.model(), "gpt-5.5");
+                assert_eq!(request["liteHeader"], Value::Null);
+                assert!(body["instructions"].is_string());
+                assert!(body["tools"].is_array());
+            }
+            ResponsesDialect::Lite => {
+                assert_eq!(normalized.model(), "gpt-6.1-sol");
+                assert_eq!(request["liteHeader"], "true");
+                assert!(body.get("instructions").is_none());
+                assert!(body.get("tools").is_none());
+                assert_eq!(body["parallel_tool_calls"], false);
+                assert_eq!(body["reasoning"]["context"], "all_turns");
+                assert_eq!(body["input"][0]["type"], "additional_tools");
+                assert_eq!(body["input"][0]["role"], "developer");
+                assert!(body["input"][0]["id"].as_str().unwrap().starts_with("at_"));
+                assert!(body["input"][0]["tools"].is_array());
+                assert!(body["input"][1]["id"].as_str().unwrap().starts_with("msg_"));
+            }
+        }
+    }
+    let followup = &requests[1]["body"]["input"];
+    assert!(
+        followup
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["type"] == "reasoning"
+                && item["encrypted_content"] == "CAIDEX_OPAQUE_REASONING+/==")
+    );
+    if dialect == ResponsesDialect::Lite {
+        assert_eq!(&requests[0]["body"]["input"][0], &followup[0]);
+        assert_eq!(&requests[0]["body"]["input"][1], &followup[1]);
+    }
+    for response in trace["wireResponses"].as_array().unwrap() {
+        let mut stream = ResponsesStream::new(16 * 1024).unwrap();
+        let mut decoded = Vec::new();
+        for raw in response.as_array().unwrap() {
+            let frame = format!("event: {}\ndata: {raw}\n\n", raw["type"].as_str().unwrap());
+            for chunk in frame.as_bytes().chunks(3) {
+                decoded.extend(stream.push(chunk).unwrap());
+            }
+        }
+        assert_eq!(stream.finish().unwrap(), StreamState::Completed);
+        assert_eq!(decoded.len(), response.as_array().unwrap().len());
+        for (event, raw) in decoded.iter().zip(response.as_array().unwrap()) {
+            assert_eq!(event.response.wire(), raw);
+        }
+        let reasoning = decoded
+            .iter()
+            .find_map(|event| {
+                event
+                    .response
+                    .item()
+                    .unwrap()
+                    .filter(|item| item.kind() == "reasoning")
+            })
+            .unwrap();
+        assert_eq!(
+            reasoning.wire()["provider_signature"],
+            "CAIDEX_FUTURE_SIGNATURE=="
+        );
+        assert_eq!(
+            serde_json::to_value(ResponseItem::new(reasoning.wire().clone()).unwrap()).unwrap(),
+            *reasoning.wire()
+        );
+    }
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; validates classic wire with synthetic reasoning"]
+async fn real_classic_model_wire_matches_core_and_replays_opaque_reasoning() {
+    real_model_wire("wire-classic", caidex_model_core::ResponsesDialect::Classic).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; validates Lite wire, not Code Mode tool execution"]
+async fn real_lite_model_wire_matches_core_and_keeps_stable_prefix() {
+    real_model_wire("wire-lite", caidex_model_core::ResponsesDialect::Lite).await;
 }

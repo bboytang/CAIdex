@@ -12,3 +12,4 @@ tokio.workspace = true
 
 [dev-dependencies]
 base64 = "=0.22.1"
+caidex-model-core = { path = "../../model/core" }
