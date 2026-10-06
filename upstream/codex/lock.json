@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/openai/codex",
+  "tag": "rust-v0.160.1",
+  "tagObject": "c3e23d4c4385619ecec78408766e46b7fa7dd9ad",
+  "commit": "d27764b82f7118f674371e6d6e76271d9d606edb",
+  "cliVersion": "0.160.1",
+  "npmPackage": "@openai/codex@0.160.1",
+  "schemaBundleSha256": "8683f6fd9fbb994fa2bfb704ab5b02c9890238fa507a4c0ff33ff45884cd0a2e",
+  "verifiedOn": "2026-10-06"
+}

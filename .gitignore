@@ -1,0 +1,13 @@
+/target/
+**/node_modules/
+/.caidex/
+/.tools/
+.env
+.env.*
+!.env.example
+*.xcuserstate
+xcuserdata/
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc

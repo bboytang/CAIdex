@@ -1,0 +1,14 @@
+[workspace]
+members = ["runtime/bridge", "apps/cli"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+
+[workspace.dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+thiserror = "=2.0.21"
+tokio = { version = "=1.53.2", features = ["io-util", "macros", "process", "rt-multi-thread", "sync", "time"] }
