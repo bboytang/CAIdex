@@ -13,9 +13,9 @@
 - 新增接口回归与原有传输回归共 19 项。真实 Runtime 测试使用脚本化 loopback Responses SSE，不连接商业提供商，也不读取用户配置/Key；这些测试证明真实 Runtime 处理链路，不证明真实模型或其他 Provider 兼容。
 - 上次已验收真实 Linux 用例 5 项：消息/usage/历史/resume/fork；活动轮次原生 Queue CRUD 与审批取消；批准后实际执行临时标记命令并回传工具结果；Plan request_user_input；Steer 前置条件、interrupt 及过期审批撤销。CI 显式执行 ignored 集成测试；Windows/macOS 不执行 Linux 专用批准命令用例。
 
-- [三平台 CI 37520407878](https://github.com/bboytang/CAIdex/actions/runs/37520407878)，代码基准 `7209e21`：全部 success。Linux 5 项、Windows/macOS 各 4 项真实 Runtime 集成通过；19 项协议回归、常规/实验指纹与 doctor 均通过。归档 bundle 固定 LF，测试服务不依赖反向 DNS。
+- [三平台 CI 37522762794](https://github.com/bboytang/CAIdex/actions/runs/37522762794)，代码基准 `1a9abd5`：全部 success。Linux 10 项、Windows/macOS 各 9 项真实 Runtime 集成通过；19 项协议回归、常规/实验指纹与 doctor 均通过。归档 bundle 固定 LF，测试服务不依赖反向 DNS。
 
-- 本轮新增（Linux 已验证，跨平台待 CI）：patch accept/cancel 两项；MCP stdio 发现/资源读取/工具调用/form accept/decline/cancel 一项；PTY 输入/resize/UTF-8 一项；长运行进程 duplicate handle/kill/过期输入一项。累计真实集成 Linux 10 项，Windows/macOS 当前代码各 9 项；两平台新增结果尚待验证。
+- 本轮新增（三平台已验证）：patch accept/cancel 两项；MCP stdio 发现/资源读取/工具调用/form accept/decline/cancel 一项；PTY 输入/resize/UTF-8 一项；长运行进程 duplicate handle/kill/过期输入一项。累计真实集成 Linux 10 项、Windows/macOS 各 9 项。
 
 ## 已核实的交互约束
 
@@ -34,20 +34,20 @@
 | Agent lifecycle | 真实启动、消息轮次、中断、完成事件 | 多 Host/后台生命周期 H/K/O |
 | Shell | Linux 批准后实际执行临时命令及工具结果回传 | Windows 执行、真实模型选择 |
 | Unified exec | 真实上游 exec_command 测试工具链 | 长运行、重启及不同平台 |
-| PTY | Linux 真实 process PTY stdin/resize/UTF-8 字节/exit 通过 | 新增 Windows/macOS 回归及平台特殊情况 |
-| Long-running processes | Linux 真实进程存活、重复句柄拒绝、显式 kill/过期输入拒绝通过 | Windows/macOS 回归、工具级背景进程与 Host 重启 |
-| apply_patch | Linux 真实 freeform patch accept/cancel 通过，实际临时目标/changes 事件核对 | 新增跨平台回归及其他路径/文件类型 |
+| PTY | 三平台真实 process PTY stdin/resize/UTF-8 字节/exit 通过 | 工具级 PTY 与平台特殊情况 |
+| Long-running processes | 三平台真实进程存活、重复句柄拒绝、显式 kill/过期输入拒绝通过 | 工具级背景进程与 Host 重启 |
+| apply_patch | 三平台真实 freeform patch accept/cancel 通过，实际临时目标/changes 事件核对 | 其他路径/文件类型与真实模型 |
 | Filesystem | 全 fs 方法保留 | 真实读写/watch/平台权限 |
 | Git | 上游工具/command 通道未替换 | worktree、状态、commit/diff 端到端 |
 | Sandbox | 真实 read-only 线程与用户审批 | 真实 Windows sandbox/UAC、权限边界 |
 | Approval | 原 ID、availableDecisions、局部一次回应、真实 accept/cancel | 跨客户端竞争与持久化 H |
 | Network approval | 复杂 decision 原样 reply | 实际 network policy amendment |
-| MCP | Linux 真实 stdio MCP 握手/发现、resource read、tool call、structuredContent/_meta 通过 | 新增跨平台、HTTP/OAuth/stream、失败恢复 |
+| MCP | 三平台真实 stdio MCP 握手/发现、resource read、tool call、structuredContent/_meta 通过 | HTTP/OAuth/stream、失败恢复 |
 | Plugins / Apps | 全 marketplace/plugin/app 方法保留 | 安装/移除、缺依赖、执行权限 |
 | Skills | list/config/read 方法及技能输入保留 | 发现、启用/禁用和实际选择 |
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
-| MCP elicitation | Linux 真实 MCP form accept/decline/cancel 均显式处理 | 新增跨平台、url/富表单/UI 验证 |
+| MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
 | Context compaction | compact/start、compacted 保留 | 真实压缩及模型 opaque 数据 |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
@@ -57,7 +57,7 @@
 | Plan | Plan collaborationMode、输入工具通过；plan 通知保留 | 真实 plan 输出与 UI |
 | Goal | thread/goal set/get/clear、通知保留 | 目标推进/暂停/预算实际执行 |
 | Sub-agent | Runtime 配置及工具事件保留 | 原生 delegation 与生命周期 |
-| Tool result handling | 真实命令和用户输入结果回送；opaque 字段不丢失 | MCP/patch/图像等结果及 Provider 对照 |
+| Tool result handling | 真实命令、用户输入、patch、MCP 结果回送；opaque 字段不丢失 | 图像等结果及 Provider 对照 |
 | Usage tracking | 真实 tokenUsage 通知通过（fixture 为零） | 真实计费/限流/Provider usage |
 | Session state | 线程元数据/历史读取与通知保留 | Host journal/snapshot 与跨设备 H |
 | Thread persistence | 真实临时数据目录内历史/resume/fork通过 | durable Host、重启不盲重跑工具 |
@@ -141,9 +141,9 @@
 | `mcpServer/event/stream/start` | 实验 opt-in | 协议保留，待验收 |
 | `mcpServer/event/stream/stop` | 实验 opt-in | 协议保留，待验收 |
 | `mcpServer/oauth/login` | 常规 | 协议保留，待验收 |
-| `mcpServer/resource/read` | 常规 | 协议保留，待验收 |
-| `mcpServer/tool/call` | 常规 | 协议保留，待验收 |
-| `mcpServerStatus/list` | 常规 | 协议保留，待验收 |
+| `mcpServer/resource/read` | 常规 | 三平台真实链路 |
+| `mcpServer/tool/call` | 常规 | 三平台真实链路 |
+| `mcpServerStatus/list` | 常规 | 三平台真实链路 |
 | `memory/reset` | 实验 opt-in | 协议保留，待验收 |
 | `memory/status` | 实验 opt-in | 协议保留，待验收 |
 | `mock/experimentalMethod` | 实验 opt-in | 协议保留，待验收 |
@@ -163,10 +163,10 @@
 | `plugin/share/updateTargets` | 常规 | 协议保留，待验收 |
 | `plugin/skill/read` | 常规 | 协议保留，待验收 |
 | `plugin/uninstall` | 常规 | 协议保留，待验收 |
-| `process/kill` | 实验 opt-in | 协议保留，待验收 |
-| `process/resizePty` | 实验 opt-in | 协议保留，待验收 |
-| `process/spawn` | 实验 opt-in | 协议保留，待验收 |
-| `process/writeStdin` | 实验 opt-in | 协议保留，待验收 |
+| `process/kill` | 实验 opt-in | 三平台真实链路 |
+| `process/resizePty` | 实验 opt-in | 三平台真实链路 |
+| `process/spawn` | 实验 opt-in | 三平台真实链路 |
+| `process/writeStdin` | 实验 opt-in | 三平台真实链路 |
 | `project/create` | 实验 opt-in | 协议保留，待验收 |
 | `project/delete` | 实验 opt-in | 协议保留，待验收 |
 | `project/import` | 实验 opt-in | 协议保留，待验收 |
@@ -264,11 +264,11 @@
 | `currentTime/read` | 实验 | 转交回归；实际功能待验收 |
 | `execCommandApproval` | 常规 | 转交回归；实际功能待验收 |
 | `item/commandExecution/requestApproval` | 常规 | 真实链路 |
-| `item/fileChange/requestApproval` | 常规 | 转交回归；实际功能待验收 |
+| `item/fileChange/requestApproval` | 常规 | 三平台真实链路 |
 | `item/permissions/requestApproval` | 常规 | 转交回归；实际功能待验收 |
 | `item/tool/call` | 常规 | 转交回归；实际功能待验收 |
 | `item/tool/requestUserInput` | 常规 | 真实链路 |
-| `mcpServer/elicitation/request` | 常规 | 转交回归；实际功能待验收 |
+| `mcpServer/elicitation/request` | 常规 | 三平台真实链路 |
 
 
 ## 固定通知清单
