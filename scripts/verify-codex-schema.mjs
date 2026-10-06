@@ -35,8 +35,10 @@ try {
       ...(name === 'experimental' ? ['--experimental'] : [])]);
     const generated = readFileSync(join(output, 'codex_app_server_protocol.schemas.json'));
     const archived = readFileSync(join(root, `upstream/codex/schemas/protocol.${name}.json`));
-    if (fingerprint(generated) !== lock[key] || fingerprint(archived) !== lock[key]) {
-      throw new Error(`${name} schema differs from the pinned fingerprint`);
+    const generatedHash = fingerprint(generated);
+    const archivedHash = fingerprint(archived);
+    if (generatedHash !== lock[key] || archivedHash !== lock[key]) {
+      throw new Error(`${name} schema differs: expected=${lock[key]}, generated=${generatedHash}, archived=${archivedHash}`);
     }
     console.log(`${name} schema matches Codex ${lock.cliVersion}`);
   }

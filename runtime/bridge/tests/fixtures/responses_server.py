@@ -7,6 +7,7 @@ The only command offered by the approval cases writes a marker in a temp project
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from socketserver import TCPServer
 import sys
 
 mode, trace_path = sys.argv[1:]
@@ -68,6 +69,14 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+class LoopbackServer(ThreadingHTTPServer):
+    def server_bind(self):
+        # HTTPServer normally calls getfqdn; this offline fixture needs no DNS.
+        TCPServer.server_bind(self)
+        self.server_name = "localhost"
+        self.server_port = self.server_address[1]
+
+
+server = LoopbackServer(("127.0.0.1", 0), Handler)
 print(json.dumps({"port": server.server_port}), flush=True)
 server.serve_forever()

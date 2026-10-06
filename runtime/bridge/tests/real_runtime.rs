@@ -69,7 +69,7 @@ impl Harness {
             .arg(directory.0.join("trace.json"))
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::null());
+            .stderr(std::process::Stdio::inherit());
         let mut provider = provider_command.spawn().unwrap();
         let mut output = BufReader::new(provider.stdout.take().unwrap()).lines();
         let line = tokio::time::timeout(DEADLINE, output.next_line())

@@ -20,7 +20,7 @@
 - 将用户原始 V2 方案与四份品牌原件归档到项目内；V2 仅作历史参考，已确认调整优先。
 - 本环境 `codex-cli 0.160.1`；`openaiDeveloperDocs` MCP 已配置且 enabled，此前会话实际完成官方文档搜索/读取，本轮通过官方网页核对协议。本机 CLI 配置不随项目迁移。
 - D 第一步：已归档固定版本完整常规/实验 schema；分别包含 104/167 个客户端请求、10/11 个服务端请求、83 个通知。实验 schema 指纹已写入锁定文件；默认生成会遗漏实验方法，不能用它代表全部上游功能。
-- D 第二/三步：19 项协议回归通过；真实 Runtime/本地 Responses 集成 5 项通过（历史/resume/fork、Queue CRUD/审批 cancel、Linux accept 实际命令/工具结果、Plan 用户输入、Steer/interrupt/过期审批）。两份 schema 重新生成指纹通过；CI 已加入相同验证，尚待此次运行结果。
+- D 第二/三步：19 项协议回归通过；真实 Runtime/本地 Responses 集成 5 项 Linux 通过（历史/resume/fork、Queue CRUD/审批 cancel、Linux accept 实际命令/工具结果、Plan 用户输入、Steer/interrupt/过期审批）。两份 schema 重新生成指纹通过。初次新增 CI `37519900562`：Linux success，Windows schema 指纹失败（已复现 CRLF 转换），macOS 测试服务启动超时；正在修复并重跑，不标三平台通过。
 
 ## 未完成
 
@@ -71,7 +71,7 @@
 - `upstream/codex/`：锁定文件、生成 schema 与上游 LICENSE/NOTICE。
 - `.github/workflows/ci.yml`、`scripts/{codex-binary,verify-codex-schema}.mjs`：三平台 CI、原生二进制定位和 schema 指纹核验。
 - `assets/brand/`：最新 dark 1024 应用图标、Windows ICO、透明 symbol 与完整 Logo 原件。
-- branch：`main` 跟踪 `origin/main`；上次代码验证基准为 `eebc0cc`。本轮 D 开发尚未提交：完整 schema/锁定指纹、protocol/runtime facade、stdio 可选 params/事件接管、10 项接口回归、5 项真实 Runtime 测试、doctor 接入、能力对照与 CI/README/交接更新。下一步提交并验证三平台 CI。续接时以 Git status 核对。构建缓存已忽略。
+- branch：`main` 跟踪 `origin/main`；D 实现已提交并通过 gh 凭据推送（含工作流），基准 `c15d447`。未提交 CI 修复：`.gitattributes` 固定归档 bundle 的 LF、schema 错误显示两侧指纹、loopback 测试服务跳过标准 HTTPServer 的 getfqdn、保留测试服务 stderr、CI 路径和交接更新。下一步验证、提交并重跑三平台 CI；macOS 超时原因需据新结果确认。构建缓存已忽略。
 
 ## 测试 / 验证
 
