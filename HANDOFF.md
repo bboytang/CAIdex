@@ -4,14 +4,14 @@
 
 ## 当前任务
 
-- A/B/C 已完成，D Runtime 边界已验收。E 凭据核心及 CLI 当前模块范围已验收，三平台 CI 全通过（4cab5c1 / 37546559022）。当前 F 第一步协议核心已实现，本机 15 项核心及 17 项真实 Runtime 通过，待三平台 CI；HTTP Gateway/Adapters 未实现；未来 UI/Host/同步/iOS 接入仍按后续阶段验收。
+- A/B/C 已完成，D Runtime 边界、E 凭据核心及 CLI 当前模块范围已验收。F 第一步协议核心及经典/Lite wire 回归已验收，三平台 CI 全通过（9bb6a91 / 37548091006）；HTTP Gateway/Adapters 未实现，下一步为 F 第二步；未来 UI/Host/同步/iOS 接入仍按后续阶段验收。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
 
 - V3 执行计划、UI 规范、品牌原件归档、项目续接规则、Rust workspace、固定依赖和三平台 CI 已建立。原始 V2 仅历史参考，已确认调整优先。
 - D：真实 app-server 双向 JSONL/facade、完整常规/实验方法门控、未知字段保留、审批/输入转交、取消/溢出关闭、不自动重试；19 项协议回归通过。
-- D 真实 Runtime：历史/resume/fork、Queue CRUD/reorder/page/自动启动、审批 accept/cancel、Plan 输入、Steer/interrupt、apply_patch、MCP 工具/资源/elicitation、PTY/长进程、Goal 生命周期/预算/blocked、经典压缩已验证。Linux 15 项、Windows/macOS 各 14 项在旧 CI 通过，详见能力对照。
+- D 真实 Runtime：历史/resume/fork、Queue CRUD/reorder/page/自动启动、审批 accept/cancel、Plan 输入、Steer/interrupt、apply_patch、MCP 工具/资源/elicitation、PTY/长进程、Goal 生命周期/预算/blocked、经典压缩已验证；本轮 CI 再次通过，详见能力对照。
 - E：`credentials/core` Broker 固定 owner，reference 按 owner/provider/profile/kind 隔离；Secret 不可 Serialize/Display/Clone、释放时自身缓冲清零；配置状态仅公开元数据。
 - E：Windows native keyring、Linux Secret Service（显式 feature，无 mock/fallback）、明确只读环境映射、Unix 私有文件 backend 已实现。文件保护含 0700/0600、symlink/hardlink/Git 拒绝、持有目录 FD、原子替换/fsync。
 - E：结构化字段/HTTP header/已知值脱敏；已替换/删除秘密仍遮蔽。native 错误安全分类，不带原始 payload；锁定/访问拒绝与底层长度上限有专用错误。
@@ -27,10 +27,9 @@
 
 ## 下一步顺序
 
-1. 本轮 F 代码尚未提交，先提交并完成三平台 CI（本地 fmt/Clippy/workspace/真实 Runtime 17 项通过），更新验收结果；不重做 A–E 或重复请求公开授权。
-2. F 第二步：读模型/Gateway 设计文档，实现本地 HTTP/SSE Gateway + Custom Responses Adapter，执行端 Broker 认证/显式模型路由。离线验证转发、实际 socket 取消、断开/超时/背压、HTTP 429 与安全诊断；Gateway 不执行工具、不自动重放 POST。
-3. 随各 Provider Adapter 实现完整接口/模型 Registry 和兼容性报告；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权，当前离线工作可继续。
-4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
+1. F 第二步：读模型/Gateway 设计文档，实现本地 HTTP/SSE Gateway + Custom Responses Adapter，执行端 Broker 认证/显式模型路由。离线验证转发、实际 socket 取消、断开/超时/背压、HTTP 429 与安全诊断；Gateway 不执行工具、不自动重放 POST。不重做 A–E 或重复请求公开授权。
+2. 随各 Provider Adapter 实现完整接口/模型 Registry 和兼容性报告；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权，当前离线工作可继续。
+3. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
 
 ## 重要架构决定
 
@@ -58,15 +57,14 @@
 - `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
 - `model/core/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：当前 F 协议核心及下一步；Runtime tests 新增经典/Lite fixture，model core 仅为 Runtime dev-dependency。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD `7806241`；未提交：model/core、workspace/锁文件/CI model 路径、Runtime dev-dependency/经典与 Lite 真实回归/fixture、模型设计文档/本交接。E 验证基准 4cab5c1，无其他已知用户修改。
+- branch `main` 跟踪 `origin/main`；源码验收基准 `9bb6a91` 已 push，随后仅提交交接/模型验收文档的 CI 结果更新；源码无未提交修改，无其他已知用户修改。下一次工作先核验实际 HEAD 和工作区。
 
 ## 测试结果
 
-- 当前 F 本机：fmt/Clippy/workspace tests 与真实 Runtime 17 项通过，模型核心 15 项；与 E/19 协议/目录隔离回归无已知回归。本轮三平台 CI 待发布；以下 CI 链接为上一 E 基准。
-
-- [CI 37546559022](https://github.com/bboytang/CAIdex/actions/runs/37546559022)，代码 `4cab5c1`：ubuntu-24.04、windows-2022、macos-15 全部 success；fmt/Clippy/workspace 测试、固定 schema 重新生成与 SHA/offline doctor 均通过。
+- [CI 37548091006](https://github.com/bboytang/CAIdex/actions/runs/37548091006)，代码 `9bb6a91`：ubuntu-24.04、windows-2022、macos-15 全部 success；fmt/Clippy/workspace 测试、固定 schema 重新生成与 SHA/offline doctor 均通过。
+- F 模型核心 15 项三平台通过；真实 Runtime 集成 Linux 17 项、Windows/macOS 各 16 项通过，含经典/Lite 两轮请求与 encrypted_content 回放。均为本地合成回复，不代表商业模型或 Code Mode 工具执行已验收。
 - E 凭据回归 Linux 13 项（含私有服务 native），Windows 8 项（含 Credential Manager native/UTF-16 超长替换拒绝），macOS 11 项（Unix 文件/环境核心，无原生 Mac backend）。CLI Linux/macOS 各 3 项、Windows 2 项；各平台 Secret compile_fail 1 项。环境 child 由父测试显式运行，不重复计数。
-- 既有 Runtime 协议 19 项与同 clock tick 目录隔离回归 1 项三平台通过；真实 Runtime 集成 Linux 15 项、Windows/macOS 各 14 项通过。首轮时钟目录碰撞已修复（原子序号/创建成功才取得清理所有权），未禁用或盲目重试失败测试。
-- 本机 workspace check/fmt/Clippy/测试、安全文件回归、CLI/非法输入/保留空格回归及真实 Runtime 15 项通过；`cargo check -p caidex-credentials --no-default-features --locked --offline` 通过，headless 不要求 native 服务。脚本 bash -n 与 final diff 检查通过。
-- 日志 `/tmp/caidex-ci-37546559022.log` 可用于本机复查，跨机器以 GitHub 链接为准。所有新增凭据回归用合成秘密，不读用户模型 Key；真实 Runtime 使用本地 fixture/隔离临时项目。
+- 既有 Runtime 协议 19 项与同 clock tick 目录隔离回归 1 项三平台通过。首轮时钟目录碰撞已修复（原子序号/创建成功才取得清理所有权），未禁用或盲目重试失败测试。
+- 本机 workspace check/fmt/Clippy/测试与真实 Runtime 17 项通过；E 安全文件/CLI/非法输入/保留空格回归无已知回归。`cargo check -p caidex-credentials --no-default-features --locked --offline` 通过，headless 不要求 native 服务；脚本 bash -n 通过。
+- 日志 `/tmp/caidex-ci-37548091006.log` 可用于本机复查，跨机器以 GitHub 链接为准。所有凭据回归用合成秘密，不读用户模型 Key；真实 Runtime 使用本地 fixture/隔离临时项目。
 - iOS、商业模型/其他 Provider、Windows Shell 批准后实际执行、真机/UAC/签名尚未执行；macOS Rust 验证不代表 iOS 构建。

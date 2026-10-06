@@ -45,12 +45,11 @@ SSE framing 依据 [WHATWG 标准](https://html.spec.whatwg.org/multipage/server
 ## 验证与恢复点
 
 - 本地 fmt、Clippy -D warnings、workspace tests 通过；新增核心回归 15 项，包含每个字节分割点/逐字节、多种换行、未知数据/工具/用量、取消/EOF/乱序/身份混合/终态冲突。
-- 真实 Runtime Linux 17 项通过（既有 15 + 新经典/Lite 2）；新两项均完成两轮请求，并使用本地合成推理数据。当前尚待本轮 GitHub 三平台验证（预期 Linux 17/Windows、macOS 16）。
+- [三平台 CI 37548091006](https://github.com/bboytang/CAIdex/actions/runs/37548091006) 全部通过，源码 `9bb6a91`：核心 15 项在 Linux/Windows/macOS 通过；真实 Runtime Linux 17 项、Windows/macOS 各 16 项通过。新经典/Lite 两项均完成两轮请求，并使用本地合成推理数据；既有协议、凭据、schema 和 doctor 回归继续通过。
 - 未实现/未验证：HTTP Gateway/流背压/socket 取消，HTTP 错误/限流与安全诊断，凭据 Adapter 接入、模型能力 Registry，真实 Provider/商业推理、Lite Code Mode 工具执行、远端 opaque compaction。E 原生 keyring 回归继续由 CI 保持。
 
 ## 下一步顺序
 
-1. 提交本轮协议核心、fixture/回归和文档，完成三平台 CI，记录结果。
-2. F 第二步：实现受控的本地 Responses HTTP/SSE Gateway 与 Custom Responses Adapter；模型路由和目标端点来自显式配置，认证经执行端 Broker；用合成认证/本地服务验收端到端转发、真实 Runtime、断开/取消、背压、超时、HTTP 429/错误，不自动重放 POST。
-3. 完整 Provider 接口/模型 Registry 随 Adapter 实现落地，依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，补请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility。不要把 Responses pass-through 当作最终跨提供商 Gateway。
-4. 按每个模型的真实能力验收经典与 Code Mode、多轮历史/签名/切换。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。
+1. F 第二步：实现受控的本地 Responses HTTP/SSE Gateway 与 Custom Responses Adapter；模型路由和目标端点来自显式配置，认证经执行端 Broker；用合成认证/本地服务验收端到端转发、真实 Runtime、断开/取消、背压、超时、HTTP 429/错误，不自动重放 POST。
+2. 完整 Provider 接口/模型 Registry 随 Adapter 实现落地，依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，补请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility。不要把 Responses pass-through 当作最终跨提供商 Gateway。
+3. 按每个模型的真实能力验收经典与 Code Mode、多轮历史/签名/切换。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。
