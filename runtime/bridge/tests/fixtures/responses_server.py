@@ -30,11 +30,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         for item in body.get("input", []):
-            if item.get("type") == "function_call_output":
+            if item.get("type") in ["function_call_output", "custom_tool_call_output"]:
                 trace["toolOutputs"].append(item.get("output"))
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
-        if mode in ["approval", "questions"] and trace["requests"] == 1:
+        if mode == "patch" and trace["requests"] == 1:
+            trace["offeredTools"] = [{"name": tool.get("name"), "type": tool.get("type"), "nestedNames": [nested.get("name") for nested in tool.get("tools", [])]} for tool in body.get("tools", [])]
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            if not any(tool.get("name") == "apply_patch" for tool in body.get("tools", [])):
+                self.send_error(500, "expected upstream patch tool; offered " + str([(tool.get("name"), tool.get("type")) for tool in body.get("tools", [])]))
+                return
+            marker = Path(trace_path).parent / "caidex-patch-marker.txt"
+            patch = f"*** Begin Patch\n*** Add File: {marker.as_posix()}\n+CAIDEX_PATCH_APPLIED\n*** End Patch"
+            trace["tool"] = "apply_patch"
+            events.append(event("response.output_item.done", item={"type": "custom_tool_call", "call_id": "fixture-patch-1", "name": "apply_patch", "input": patch}))
+        elif mode in ["approval", "questions"] and trace["requests"] == 1:
             tools = body.get("tools", [])
             names = [tool.get("name") for tool in tools]
             if mode == "questions" and "request_user_input" in names:

@@ -11,15 +11,21 @@
 - 用户输入按 question ID 回答，保留 isBlocking/isSecret/options 等提示信息；回答不进入日志。resolved 通知、turn 完成/中断、thread 关闭/删除撤销相应待回应状态；遗留 conversationId 也用于线程归属。
 - 本连接上一个请求只允许一次回应尝试；写失败或取消表示结果未知，不重试。多客户端/跨重启幂等和审批竞争依赖 H 阶段生产 Host，当前局部状态不等于该验收完成。
 - 新增接口回归与原有传输回归共 19 项。真实 Runtime 测试使用脚本化 loopback Responses SSE，不连接商业提供商，也不读取用户配置/Key；这些测试证明真实 Runtime 处理链路，不证明真实模型或其他 Provider 兼容。
-- 真实 Linux 用例 5 项：消息/usage/历史/resume/fork；活动轮次原生 Queue CRUD 与审批取消；批准后实际执行临时标记命令并回传工具结果；Plan request_user_input；Steer 前置条件、interrupt 及过期审批撤销。CI 显式执行 ignored 集成测试；Windows/macOS 不执行 Linux 专用批准命令用例。
+- 上次已验收真实 Linux 用例 5 项：消息/usage/历史/resume/fork；活动轮次原生 Queue CRUD 与审批取消；批准后实际执行临时标记命令并回传工具结果；Plan request_user_input；Steer 前置条件、interrupt 及过期审批撤销。CI 显式执行 ignored 集成测试；Windows/macOS 不执行 Linux 专用批准命令用例。
 
 - [三平台 CI 37520407878](https://github.com/bboytang/CAIdex/actions/runs/37520407878)，代码基准 `7209e21`：全部 success。Linux 5 项、Windows/macOS 各 4 项真实 Runtime 集成通过；19 项协议回归、常规/实验指纹与 doctor 均通过。归档 bundle 固定 LF，测试服务不依赖反向 DNS。
+
+- 本轮新增（Linux 已验证，跨平台待 CI）：patch accept/cancel 两项；MCP stdio 发现/资源读取/工具调用/form accept/decline/cancel 一项；PTY 输入/resize/UTF-8 一项；长运行进程 duplicate handle/kill/过期输入一项。累计真实集成 Linux 10 项，Windows/macOS 当前代码各 9 项；两平台新增结果尚待验证。
 
 ## 已核实的交互约束
 
 - 审批 UI 采用请求的 availableDecisions。当前测试的 require_escalated 命令不提供 decline，可提供 cancel；取消结束轮次，批准允许执行。模拟用例覆盖 decline，不冒称该具体真实提示提供所有四个按钮。
 - 空闲线程添加 Queue 可能立刻触发新轮次。活动轮次中添加后可 list/update/delete；不要在客户端实现另一套队列调度或假定 add 永远只存草稿。
 - interrupt 成功是请求被接受，最终状态以 turn/completed 为准。固定上游取消线程回调时不一定发出逐项 resolved 通知，所以终止轮次也必须清理该线程的待回应请求。
+
+- 不同模型元数据改变可用工具与 wire：固定 bundled gpt-5.5 声明经典 Responses/freeform patch；gpt-6.1-sol 等声明 `use_responses_lite=true`、`tool_mode=code_mode_only`。本轮 patch 明确使用前者的本地元数据，不调用商业模型；原 gpt-5.1-codex fixture 为未知模型 fallback。F/G 必须分别验证经典与 Lite/Code Mode，不能以旧 fallback 测试覆盖整个能力范围。
+- 补丁 cancel 进入 interrupted，可能只有 fileChange started 而无 item/completed；UI 应依据轮次终态结束交互，不能一直等待不存在的 item 完成通知。
+- process/* 为连接范围的 Host 进程接口，不自动归属于某个线程，也不能据此宣称生产 Host 断连恢复已实现。
 
 ## 原 V2 原生能力逐项验收
 
@@ -28,20 +34,20 @@
 | Agent lifecycle | 真实启动、消息轮次、中断、完成事件 | 多 Host/后台生命周期 H/K/O |
 | Shell | Linux 批准后实际执行临时命令及工具结果回传 | Windows 执行、真实模型选择 |
 | Unified exec | 真实上游 exec_command 测试工具链 | 长运行、重启及不同平台 |
-| PTY | command/exec、process 系列协议保留 | PTY 输入/resize/退出实际测试 |
-| Long-running processes | process/backgroundTerminals 方法保留 | 存活、停止、断连与 Host 重启 |
-| apply_patch | 文件审批与 patch 通知转交 | 真实补丁接受/拒绝、workspace 根归属 |
+| PTY | Linux 真实 process PTY stdin/resize/UTF-8 字节/exit 通过 | 新增 Windows/macOS 回归及平台特殊情况 |
+| Long-running processes | Linux 真实进程存活、重复句柄拒绝、显式 kill/过期输入拒绝通过 | Windows/macOS 回归、工具级背景进程与 Host 重启 |
+| apply_patch | Linux 真实 freeform patch accept/cancel 通过，实际临时目标/changes 事件核对 | 新增跨平台回归及其他路径/文件类型 |
 | Filesystem | 全 fs 方法保留 | 真实读写/watch/平台权限 |
 | Git | 上游工具/command 通道未替换 | worktree、状态、commit/diff 端到端 |
 | Sandbox | 真实 read-only 线程与用户审批 | 真实 Windows sandbox/UAC、权限边界 |
 | Approval | 原 ID、availableDecisions、局部一次回应、真实 accept/cancel | 跨客户端竞争与持久化 H |
 | Network approval | 复杂 decision 原样 reply | 实际 network policy amendment |
-| MCP | 配置、状态、tool/resource/stream 方法保留 | MCP 工具/生命周期及失败恢复 |
+| MCP | Linux 真实 stdio MCP 握手/发现、resource read、tool call、structuredContent/_meta 通过 | 新增跨平台、HTTP/OAuth/stream、失败恢复 |
 | Plugins / Apps | 全 marketplace/plugin/app 方法保留 | 安装/移除、缺依赖、执行权限 |
 | Skills | list/config/read 方法及技能输入保留 | 发现、启用/禁用和实际选择 |
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
-| MCP elicitation | 请求转交、原始 reply 保留 | form/url/取消的真实 MCP 流程 |
+| MCP elicitation | Linux 真实 MCP form accept/decline/cancel 均显式处理 | 新增跨平台、url/富表单/UI 验证 |
 | Context compaction | compact/start、compacted 保留 | 真实压缩及模型 opaque 数据 |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |

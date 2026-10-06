@@ -51,6 +51,7 @@ UI 实现内部顺序参考 UI 规范，整个项目顺序以上表的 Runtime/�
 - 官方 [app-server 文档](https://learn.chatgpt.com/docs/app-server) 标记该接口及 WebSocket 传输为实验性。固定版本、回归与升级评估是发布前置条件，不将其稳定性视为已获保证。
 - `initialize` 成功后发送 `initialized`；请求/响应通过 ID 关联；带 ID 的服务端方法是请求，需要明确回应，不是普通通知。
 - 上游 wire 不要求 `jsonrpc` 头。未知方法/扩展字段保留原样；后续应用协议在独立 facade 中映射。
+- 固定模型元数据含经典 Responses 与 `use_responses_lite`/`code_mode_only` 两条工具路径；F/G 需按模型实际 wire/tool mode 分别适配和验收，经典测试不能代表 Lite/Code Mode 已支持。
 - 当前 doctor 是离线元数据检查，不验证模型推理、工具执行、真实审批、存储恢复或生产 Host。
 - request 超时/取消或事件溢出时连接进入不可复用状态；调用方需通过 Host 状态恢复确认结果，不自动重试动作。当前生产恢复流程待 H 阶段实现。
 

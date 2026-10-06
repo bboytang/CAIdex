@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 阶段 A 基础准备与 C 基础 CI 已完成；B 的元数据/stdio 验证通过。正在推进 D：完整 Runtime facade 与上游功能对照；已完成完整清单、facade、19 项协议回归及 5 项真实 Runtime/本地 Responses 集成；能力对照已落盘，三平台 CI 已通过；下一步继续 D 的未验收能力。客户端 UI 尚未开始。
+- 阶段 A 基础准备与 C 基础 CI 已完成；B 的元数据/stdio 验证通过。正在推进 D：完整 Runtime facade 与上游功能对照；已完成完整清单、facade、19 项协议回归及 5 项真实 Runtime/本地 Responses 集成；能力对照已落盘，三平台 CI 已通过；本轮已继续完成真实 patch accept/cancel，MCP form accept/decline/cancel 与 PTY/长运行已通过 Linux；正在完善能力对照并准备三平台 CI。客户端 UI 尚未开始。
 - 用户已明确允许完整项目以及原始方案、HANDOFF、UI 规范、架构/实施计划公开到 `bboytang/CAIdex`，后续按此授权续接。
 
 ## 已完成
@@ -22,15 +22,21 @@
 - D 第一步：已归档固定版本完整常规/实验 schema；分别包含 104/167 个客户端请求、10/11 个服务端请求、83 个通知。实验 schema 指纹已写入锁定文件；默认生成会遗漏实验方法，不能用它代表全部上游功能。
 - D 第二/三步：19 项协议回归通过；真实 Runtime/本地 Responses 集成 5 项 Linux 通过（历史/resume/fork、Queue CRUD/审批 cancel、Linux accept 实际命令/工具结果、Plan 用户输入、Steer/interrupt/过期审批）。两份 schema 重新生成指纹通过。跨平台修复已验证：固定 bundle LF 避免 Windows checkout 改字节；本地测试服务跳过反向 DNS，macOS 启动恢复。最终 CI `37520407878` 三平台 success（Linux 5 项，Windows/macOS 4 项真实集成）。
 
+- D 第四步：Linux 两项真实 apply_patch 回归通过；批准后仅写临时目标，取消后不写文件且轮次 interrupted（上游此时不保证 fileChange item/completed）。仅 Responses fixture，未调用商业模型。
+
+- D 第五步：真实 MCP stdio fixture 经 Runtime 完成 handshake、工具/资源发现、资源读取、手动工具调用及 form elicitation→显式 accept；structuredContent/_meta 完整保留。Linux accept/decline/cancel 全部通过，跨平台待 CI。
+
+- D 第六步：Linux 真实 PTY 输入/resize/UTF-8 字节/exit 通过；长运行进程重复 handle 拒绝、显式 kill、过期 stdin 拒绝通过。base64 仅新增为锁定 dev-dependency；生产接口未新增依赖。
+
 ## 未完成
 
 - 尚无 iOS 应用工程；macOS 基础 Rust CI 不等于 iOS 构建。
-- 完整 Runtime 能力验收仍有缺口（真实 patch/MCP/elicitation/PTY 等），见能力对照；持久化恢复、生产 Host 尚未实现。
+- 完整 Runtime 能力验收仍有缺口（Queue start/reorder、Goal/compaction、其他工具场景等）；本轮 patch/MCP/PTY 尚待跨平台 CI，见能力对照；持久化恢复、生产 Host 尚未实现。
 - Gateway/提供商/凭据、Windows/iOS UI、完整 CLI attach、Chat 同步、SSH/Relay 未实现；未配置或验证模型 API Key。
 
 ## 下一步顺序
 
-1. 读取本文件和 Git 状态，确认当前验证基准 `7209e21`；按 `docs/CAIdex-Runtime-能力对照.md` 继续 D：真实 patch/文件审批、MCP/elicitation、PTY/长运行、Queue start/reorder、Goal/compaction 等协议与上游对照；能力未验证就保留待验收状态。
+1. 读取本文件和 Git 状态，先提交并验证当前 patch/MCP/PTY/长运行用例的三平台 CI；通过后按 `docs/CAIdex-Runtime-能力对照.md` 继续 D：Queue start/reorder、Goal/compaction 等协议与上游对照；能力未验证就保留待验收状态。
 2. 使用可重复协议场景与上游对照验证；实际模型/工具执行与模拟测试分别记录。当前底层 transport 的断开/超时不等于持久 Host 恢复完成。
 3. 推进 E/F 的凭据层、模型核心与 Responses Gateway；实际付费 API/凭据复用或创建前明确授权，离线验证继续使用测试服务。
 4. 依阶段推进多模型、持久 Host、Chat/同步、Windows、SSH/iOS、CLI 整合、Relay；iOS 应用测试/无签名构建在 GitHub macOS runner。
@@ -44,6 +50,7 @@
 - 模型切换在明确的轮次边界生效；同提供商仅允许已验证兼容组合，跨提供商通过关联分支/新线程和适配后的历史承接。
 - API Key 由对应执行端的凭据管理层保存；Remote 使用执行 Host 的 Key，手机不读取已保存的远程 Key；聊天历史同步不携带 Key。
 - Host 独立运行，GUI/SSH 断开不决定任务生命周期；事件按 Host/stream 编号、持久化后广播，缺口通过快照恢复；提交幂等、有效审批首次处理生效，不承诺外部工具恰好执行一次。
+- 固定 CLI 模型元数据存在两条路径：经典 Responses（如 bundled gpt-5.5，独立 freeform apply_patch）与 Responses Lite/code_mode_only（如 gpt-6.1-sol）。旧测试 gpt-5.1-codex 属未知元数据 fallback；不能由它外推所有模型工具能力。F/G 必须按真实 model/tool_mode/use_responses_lite 验证 Gateway；本轮 patch 只验证经典路径。
 - Runtime 请求的 availableDecisions 决定 UI 审批选项；空闲 Queue add 可能启动轮次；turn 完成/中断也撤销线程待回应请求，不依赖逐项 resolved。固定源码和真实用例已核实。
 - Remote 先 SSH，后 Relay；生产 Relay 从首版使用成熟方案的端到端加密。保留原生 Queue/Steer。切换 Host 不迁移运行中的线程。
 - Chat 历史自动同步到自托管 VPS，SQLite 本地缓存/outbox/cursor；完成或中断轮次同步，冲突分支与删除 tombstone；HTTPS 服务端属于信任边界，当前不承诺历史同步端到端加密。
@@ -71,7 +78,7 @@
 - `upstream/codex/`：锁定文件、生成 schema 与上游 LICENSE/NOTICE。
 - `.github/workflows/ci.yml`、`scripts/{codex-binary,verify-codex-schema}.mjs`：三平台 CI、原生二进制定位和 schema 指纹核验。
 - `assets/brand/`：最新 dark 1024 应用图标、Windows ICO、透明 symbol 与完整 Logo 原件。
-- branch：`main` 跟踪 `origin/main`；D 实现 `c15d447`、跨平台修复 `7209e21` 均已上传，代码验证基准 `7209e21`。本轮收尾文档随当前提交提交，工程无保留的未完成修改；续接仍以 Git status 核对。构建缓存已忽略。
+- branch：`main` 跟踪 `origin/main`；D 实现 `c15d447`、跨平台修复 `7209e21` 均已上传，代码验证基准 `7209e21`。本轮未提交：5 项新增真实 patch/MCP/PTY/进程回归、本地 Responses/MCP fixtures、base64 dev-dependency/Cargo.lock 与交接/能力对照；新增用例跨平台 CI 待执行。续接以 Git status 核对。构建缓存已忽略。
 
 ## 测试 / 验证
 
@@ -80,7 +87,7 @@
 - `codex --version`、`codex mcp list`：成功返回版本及 enabled 配置；官方 Docs 搜索/读取工具可用。CLI 有无法创建 PATH aliases 的只读文件系统警告。
 - 文档检查通过：8 类必需信息齐全；新建文档格式正常，已检查新增文件差异。原方案及四份品牌资产的 SHA-256 与附件原件完全一致；原有 UI 规范未修改。
 - `cargo test --workspace --locked`：19 项协议回归通过（9 transport + 10 facade）；真实集成用例默认 ignored，CI 单独显式运行。
-- `cargo test -p caidex-runtime --test real_runtime --locked -- --ignored`：Linux 5 项真实 Runtime/本地 Responses 用例通过；无商业模型/Key，只有 accept 用例在临时目录执行标记命令。
+- `cargo test -p caidex-runtime --test real_runtime --locked -- --ignored`：Linux 10 项真实 Runtime/本地 Responses/MCP/进程用例通过；无商业模型/Key，工具执行和文件修改仅使用隔离临时测试目录。新增 Windows/macOS 结果待 CI。
 - `node scripts/verify-codex-schema.mjs`：常规/实验固定 schema 重新生成及归档 SHA-256 均匹配。
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`、`cargo fmt --all -- --check`：通过。
 - `cargo run -p caidex-cli --locked -- doctor`：真实 Codex 0.160.1/Linux 输出 status=ok，模型轮次未启动，新增 thread/read 检查。生成 schema 指纹与锁定文件一致。
