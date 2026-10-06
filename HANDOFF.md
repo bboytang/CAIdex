@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C 已完成，D Runtime 边界已验收。当前 E 凭据核心及 CLI 管理已实现，本地编译/安全回归通过，待本轮三平台 CI 与原生存储验收。
+- A/B/C 已完成，D Runtime 边界已验收。当前 E 凭据核心/CLI 本地回归及 Windows/Linux 原生凭据 CI 均通过；首轮 CI 的 Linux 真实 Runtime 测试发生临时目录时钟冲突，正在修复隔离并复跑全三平台。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -25,7 +25,7 @@
 
 ## 下一步顺序
 
-1. 提交当前 E 代码/锁文件/CI/文档并 push，使用已验证 gh 凭据 helper。检查 Linux/Windows/macOS CI，修复实际失败；Linux native 只能通过私有服务脚本运行，不用用户 keyring。
+1. E 代码 dc65d06 已 push；[CI 37546292054](https://github.com/bboytang/CAIdex/actions/runs/37546292054) Windows/macOS success，Linux 原生凭据 success，Runtime fixture 目录碰撞失败。目录原子序号/创建后清理所有权与同 tick 回归已实现，本地真实 Runtime 15 项和文件 5 项通过；提交修复并复跑三平台；Linux native 只能通过私有服务脚本运行，不用用户 keyring。
 2. 记录 CI 链接、平台原生验证及限制；更新本交接与凭据验收文档后再确认 E 当前范围验收。不要把未来 UI/Host/iOS 接入标为完成。
 3. F/G：先核对锁定上游模型元数据与经典 Responses、Lite/code_mode_only 协议，写最小模型核心/Gateway 与离线回归；保留 opaque 推理/签名。实际付费 API 或用户凭据复用/创建前明确授权。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
@@ -54,11 +54,11 @@
 - `credentials/core/`、`apps/cli/src/credentials.rs`、`apps/cli/tests/credentials.rs`、`docs/CAIdex-Credentials-设计与验收.md`：E 实现/回归/限制。
 - `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归，本轮未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；HEAD `fb1100c`，D 验证代码 `5a593a4`。当前未提交：E crate/CLI/测试/设计文档/私有服务脚本、workspace/锁文件/CI/secret 文件忽略、README、本交接。无其他已知用户修改。
+- branch `main` 跟踪 `origin/main`；E HEAD `dc65d06` 已 push，提交后工作区干净。当前未提交：Runtime fixture 目录唯一性/清理所有权修复及同 clock tick 回归、E 文件测试目录追加原子序号、本交接 CI 状态；无其他已知用户修改。D 验证代码 `5a593a4`。
 
 ## 测试结果
 
 - 当前本地 E：workspace check、fmt、Clippy `-D warnings`、workspace 测试通过：凭据核心 12 项（含 native 错误分类）、CLI 3 项、Secret compile_fail 1 项、既有协议 19 项；环境 child 由父测试显式运行。CLI 最后补充非法输入/保留空格后 focused 回归再次通过。
-- `bash -n scripts/test-linux-secret-service.sh`、`git diff --check` 通过；Cargo.lock 已更新。当前 Linux native ignored，等私有服务 CI；真实 Runtime 集成未因本轮改动在本机重复运行，由本轮 CI 回归。
+- `bash -n scripts/test-linux-secret-service.sh`、`git diff --check` 通过；Cargo.lock 已更新。当前 Linux native ignored，等私有服务 CI；首轮 CI Linux Runtime 因目录碰撞失败；已补同 clock tick 隔离测试（通过），修复后本机真实 Runtime 15 项与文件 5 项再次通过。Windows/macOS 首轮完整检查 success；Linux native success。
 - D 基准 [CI 37523663697](https://github.com/bboytang/CAIdex/actions/runs/37523663697) 全三平台 success：协议 19、真实集成 Linux 15/其他 14、fmt/Clippy/schema 指纹/offline doctor；不能当作 E 原生验收。
 - iOS、商业模型/其他 Provider、Windows Shell 批准后真实执行、真机/UAC/签名均尚未执行。所有当前新增回归用合成秘密，不读用户模型 Key。

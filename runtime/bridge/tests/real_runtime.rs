@@ -2,6 +2,7 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
+    sync::atomic::{AtomicU64, Ordering},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -19,6 +20,30 @@ use tokio::{
 const DEADLINE: Duration = Duration::from_secs(30);
 
 struct TestDirectory(PathBuf);
+
+impl TestDirectory {
+    fn create(timestamp: u128) -> Self {
+        static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+        let sequence = SEQUENCE.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!(
+            "caidex-runtime-{}-{timestamp}-{sequence}",
+            std::process::id()
+        ));
+        // Acquire ownership only after creation succeeds; a failed create must
+        // never run Drop against another fixture's existing directory.
+        std::fs::create_dir(&path).unwrap();
+        Self(path)
+    }
+}
+
+#[test]
+fn runtime_fixture_directories_are_independent_even_at_the_same_clock_tick() {
+    let first = TestDirectory::create(0);
+    let second = TestDirectory::create(0);
+    assert_ne!(first.0, second.0);
+    drop(first);
+    assert!(second.0.is_dir());
+}
 
 impl Drop for TestDirectory {
     fn drop(&mut self) {
@@ -50,10 +75,7 @@ impl Harness {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let directory = TestDirectory(
-            std::env::temp_dir().join(format!("caidex-runtime-{}-{unique}", std::process::id())),
-        );
-        std::fs::create_dir(&directory.0).unwrap();
+        let directory = TestDirectory::create(unique);
         let data = directory.0.join("data");
         let project = directory.0.join("project");
         std::fs::create_dir(&data).unwrap();
