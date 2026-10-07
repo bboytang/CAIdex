@@ -245,3 +245,5 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 本地验证：结构化 6、HTTP 45、投影 9、协议 15 项通过；完整 workspace/Clippy/fmt/diff 通过。新增提示映射缺失的 RED、usage null-counter 断流的真实 RED 均已复现并修复。真实 Lite 3 项通过：两轮与落盘 v3 签名/大整数、Code Mode 命令审批后实际临时 marker/原生工具结果回放、interrupt 关闭实际上游 socket。完整实际 Runtime 回归排除尚未实现的经典 builtin 用例后 28 项通过；经典单独仍因 invalid_anthropic_tools 失败。Runtime fixture 接线尚未提交，以上是本地证据，未验三平台或商业模型；不授予 Full。
 
 依据：[OpenAI text.verbosity](https://developers.openai.com/api/docs/guides/deployment-checklist#set-up-textverbosity)、[Anthropic response length guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5#response-length-and-verbosity)。该原生指导说明 effort 与可见回复长度不同；CAIdex 不把 verbosity 偷换为 effort。
+
+生产提示映射/partial usage 修复源码 aa5d3bfeeeafbe8e1465daca22cecc60f501bf45 的 [CI 37641597463](https://github.com/bboytang/CAIdex/actions/runs/37641597463) 三平台全部 completed/success，逐平台核对新增 2 项提示映射、style v3 HTTP 门控及 usage/fallback 回归通过（结构化6、HTTP45、投影9、协议15）；workspace/fmt/Clippy/native credentials/schema/doctor 与既有 Runtime Linux25/WindowsmacOS24通过。独立审查无重要问题。Runtime 新接线两文件仍未提交，本地 Lite3与经典 RED 不属于本次 CI；完整 Adapter 和商业能力仍未验收。
