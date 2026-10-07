@@ -45,7 +45,7 @@ F/G：Gemini请求编译基础已提交/push并三平台验收，源码08402e6ca
 
 ## 文件与 Git 状态
 
-- branch main跟踪origin/main，本轮起点5861e95；源码08402e6已提交/push并精确三平台验收。当前仅HANDOFF/Gemini/Model-Gateway验收文档更新，单独提交/push后核对工作区干净、HEAD=origin/main；无未提交源码/既有用户修改。文档提交不触发路径限定CI，验收锚定上述源码SHA。
+- branch main跟踪origin/main，本轮起点5861e95；源码08402e6已提交/push并精确三平台验收。源码与HANDOFF/Gemini/Model-Gateway验收文档分别提交/push；结束状态为工作区干净、HEAD=origin/main，无未提交修改。文档提交不触发路径限定CI，验收锚定上述源码SHA。
 - 执行基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅背景，冲突以V3为准。详细历史证据留Runtime-能力对照及各Provider/Credentials/Model-Gateway验收文档。
 - 当前相关：model/providers/google/src/{request,history,tools,client,content,stream,transfer}.rs、tests/{request,http,history,tools}.rs；下一步参考Anthropic request/reasoning/structured/runtime_parameters及model/core，不复制HTTP栈。
 - 代码边界：credentials/core、apps/cli、model/core/providers/gateway、runtime/bridge、upstream/codex、.github/workflows/ci.yml、scripts；assets/brand四份原件未改。
