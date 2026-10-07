@@ -1,6 +1,6 @@
 # CAIdex 模型核心与 Gateway：设计和验收
 
-阶段 F/G，依 V3 顺序推进。本轮完成 F 第一步 `model/core` 的协议核心及真实 Runtime 经典/Lite wire 验证。HTTP Gateway、Provider Adapter、模型 Registry 和实际模型兼容性尚未实现；不能将本轮当作 F/G 全部验收。
+阶段 F/G，依 V3 顺序推进。F 第一步 `model/core` 协议核心已通过三平台 CI；F 第二步 `model/gateway` 本地 HTTP/SSE 与 Custom Responses 路由已实现并通过本机回归，待本轮三平台 CI。其他 Provider、模型 Registry 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
 
 ## 固定协议依据
 
@@ -31,12 +31,32 @@ Lite 的 tools 编码还依赖 Provider 的 namespace_tools 能力，不保证�
 - 帧上限由调用方显式提供，覆盖同一帧的多行；CRLF 视为一个换行终结符。非法 UTF-8 直接失败，避免替换字节损坏签名/推理数据；这是针对模型协议的严格处理，不宣称完全等同浏览器 EventSource。
 - ResponsesStream 区分 Open/Completed/Interrupted/Incomplete/Failed/Cancelled/Truncated/Invalid。只有 response.completed 可作为成功；response.incomplete 的 interrupted 单独标识，其他原因保留不完整。response.failed/error 为失败。
 - 已提供的 sequence_number 要递增，允许缺省/间隔；同一流不能混合 response.id。显式 SSE event 名与 JSON type 矛盾、坏编码/坏 JSON/超限、终态后新的事件均失败关闭。
-- 终态后的配对 CRLF 尾字节、注释/空行可以解码；finish 后状态保持，不允许重开。取消只关闭本模块解析；实际取消 socket/task、超时和背压待 HTTP 实现，不能冒称网络已取消。
+- 终态后的配对 CRLF 尾字节、注释/空行可以解码；finish 后状态保持，不允许重开。core 的取消只关闭解析；HTTP Gateway 另行负责取消 task/socket，见下。
 - 不把 [DONE] 或 EOF 当作 Responses 成功，不做模型 POST 自动重试。Chat Completions 的 [DONE] 转换将由对应 Adapter 处理。
 
 SSE framing 依据 [WHATWG 标准](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)。终态处理也核对了 [官方完成事件指导](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference#3-wait-for-completed-inference)，历史/工具 correlation 与 encrypted reasoning 核对 [Responses 迁移清单](https://developers.openai.com/api/docs/guides/migrate-to-responses#incremental-rollout-checklist)。
 
+## 本地 HTTP/SSE Gateway
+
+- `model/gateway` 是供执行进程嵌入的 Rust 库，入口 `start(routes, Arc<Broker>, Limits)` 返回 `RunningGateway`；目前没有生产 Host/CLI 启动或配置管理入口。只监听 `127.0.0.1` 随机端口，提供 `POST /v1/responses` 的 stream=true SSE 和非流式 JSON。
+- 每次启动生成 256-bit 本机 bearer token，常数时间比较；无凭据、重复 Authorization、Origin、query、非 JSON/压缩输入拒绝。token 加入 Broker 的诊断 Redactor，只给隔离 Runtime 的子进程环境，不写入 config/历史。它不是提供商 API Key，也不替代后续 Host 身份授权。
+- ModelRoute 明确公开 model → upstream model/endpoint/profile 和允许的经典/Lite dialect；未知模型、重复路由或不支持 dialect 拒绝，无默认提供商/环境 Key 回退。只改 model 名，其余未知请求字段、input 前缀、图片及工具字符串保留。
+- CustomResponses 使用准确 Responses endpoint，支持显式无认证或 Broker 的 bearer credential；Broker 在执行端解析 reference、校验 owner，阻塞 native backend 放在 blocking pool。已发起的同步存储读取不能强制中止，超时/取消后不会继续向提供商发请求。
+- URL 拒绝 userinfo/query/fragment；明文 HTTP 只允许 literal loopback，其他地址需 HTTPS。reqwest 的 rustls 默认验证配置保持启用，关闭环境 proxy、redirect、POST 重试和空闲连接池；当前回归使用 HTTP loopback，尚未做真实提供商 TLS/证书链兼容性验证。
+- 不转发客户端 Authorization、cookies/任意头；提供商 Key 仅构造上游 Authorization 并标记 sensitive，Lite header 由已验证 dialect 生成。不向 Runtime 暴露保存的 Key。以后需要 provider-specific header/turn-state 语义时由对应 Adapter 明确接入，不通过全量头转发解决。
+- SSE 使用核心逐帧验证，派发完整事件；保留原 data 字符串和 id/retry 语义，不承诺原始注释/换行逐字节一致。上游字节持续活动而没有模型事件时，最多每秒发送规范化注释 heartbeat；不把部分 JSON 或 heartbeat 当作成功事件。合法终态后立即结束此次上游传输。
+- 单槽有界发送队列、分片解析和 in-flight permit 提供背压；不积攒整个流。客户端丢弃 HTTP Body 会 abort producer、释放 permit 并关闭上游 socket；响应头返回前断开也取消请求。显式 shutdown/handle Drop 终止监听及活动生成。
+- connect/header/idle/absolute deadline 与 request/frame/nonstream response 大小有明确可配置上限。absolute deadline 在下游不读时仍生效；坏 UTF-8/JSON/序号/response ID、超限、EOF 缺终态关闭流，能投递时提供安全 error 事件；背压超过 deadline 时直接关闭，不无限等待错误通知。
+- HTTP 401/403/429/5xx/redirect 分类为静态错误，丢弃第三方 body/cookie/Location。429 仅转发合法且不超过一天的数字 Retry-After 秒数提示，不自动等待/重发；HTTP-date 提示待后续兼容性补齐。SSE error（含顶层 message）/response.failed 与非流式 response.error 只在诊断部分使用 Redactor；opaque item/history 不按日志脱敏。
+- 默认上限：请求 8 MiB、SSE 帧 2 MiB、非流式回复 16 MiB、同时 16 个请求；connect 10s、header 30s、idle 90s、total 600s。这些是传输边界，不冒充具体模型 context/output 能力。
+
+固定 Runtime 接入：base_url=`http://127.0.0.1:<port>/v1`，wire_api=`responses`，env_key 指向仅该子进程注入的 Gateway token，requires_openai_auth=false。必须设置 request_max_retries=0 和 stream_max_retries=0；Gateway 禁重试不能替调用方关闭 Runtime 自身重试。生产 Host/CLI 接入待 H/P，当前真实验证在隔离测试 harness 内完成。
+
+HTTP 库依据：[reqwest 0.13.5 禁重试](https://docs.rs/reqwest/0.13.5/reqwest/retry/fn.never.html)、[ClientBuilder](https://docs.rs/reqwest/0.13.5/reqwest/struct.ClientBuilder.html)、[axum 0.8.9 HTTP body](https://docs.rs/axum/0.8.9/axum/body/struct.Body.html)。依赖锁文件新增传输/TLS 包，未升级已有包版本；TLS 编译需要 C 工具链，三平台实际构建由 CI 验证。
+
 ## 不透明数据的边界限制
+
+HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经删除的数据。
 
 - 本轮 core 保留“收到的 wire”。固定上游在 non-OpenAI 请求构造时清除 internal metadata/encrypted_function_args；Runtime 反序列化也可能丢掉未知字段。Gateway 无法恢复早已被上游删除的数据。
 - 真实用例证明 encrypted_content 进入下一轮；额外 provider_signature 只证明 core 解析/序列化保留，未宣称 Runtime 会把未知签名回传。
@@ -46,10 +66,11 @@ SSE framing 依据 [WHATWG 标准](https://html.spec.whatwg.org/multipage/server
 
 - 本地 fmt、Clippy -D warnings、workspace tests 通过；新增核心回归 15 项，包含每个字节分割点/逐字节、多种换行、未知数据/工具/用量、取消/EOF/乱序/身份混合/终态冲突。
 - [三平台 CI 37548091006](https://github.com/bboytang/CAIdex/actions/runs/37548091006) 全部通过，源码 `9bb6a91`：核心 15 项在 Linux/Windows/macOS 通过；真实 Runtime Linux 17 项、Windows/macOS 各 16 项通过。新经典/Lite 两项均完成两轮请求，并使用本地合成推理数据；既有协议、凭据、schema 和 doctor 回归继续通过。
-- 未实现/未验证：HTTP Gateway/流背压/socket 取消，HTTP 错误/限流与安全诊断，凭据 Adapter 接入、模型能力 Registry，真实 Provider/商业推理、Lite Code Mode 工具执行、远端 opaque compaction。E 原生 keyring 回归继续由 CI 保持。
+- F 第二步本机：Gateway 16 项真实 socket 回归通过；workspace/fmt/Clippy 检查通过，最终新增源码的 CI 待发布。真实 Runtime Linux 20 项通过，新增 3 项包含经典/Lite 两轮 Gateway/Broker 认证，以及两条模型路径 interrupt 后上游 EOF/reset、无重放；最终 EOF 判据修正已单独复验通过。
+- 未实现/未验证：其他 Provider/统一完整 ModelProvider 接口与 Registry、原生 opaque history 重建、真实 TLS/Provider/商业推理、Lite Code Mode 工具执行、远端 opaque compaction；HTTP-date 限流提示和 provider-specific header 待对应兼容性实现。E 原生 keyring 回归继续由 CI 保持。
 
 ## 下一步顺序
 
-1. F 第二步：实现受控的本地 Responses HTTP/SSE Gateway 与 Custom Responses Adapter；模型路由和目标端点来自显式配置，认证经执行端 Broker；用合成认证/本地服务验收端到端转发、真实 Runtime、断开/取消、背压、超时、HTTP 429/错误，不自动重放 POST。
+1. 发布 F 第二步代码/回归，完成三平台 CI，按实际结果修复/记录，不把 Custom Responses pass-through 视为最终 Gateway。
 2. 完整 Provider 接口/模型 Registry 随 Adapter 实现落地，依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，补请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility。不要把 Responses pass-through 当作最终跨提供商 Gateway。
 3. 按每个模型的真实能力验收经典与 Code Mode、多轮历史/签名/切换。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。

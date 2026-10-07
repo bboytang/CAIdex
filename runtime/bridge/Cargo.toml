@@ -13,3 +13,5 @@ tokio.workspace = true
 [dev-dependencies]
 base64 = "=0.22.1"
 caidex-model-core = { path = "../../model/core" }
+caidex-model-gateway = { path = "../../model/gateway" }
+caidex-credentials = { path = "../../credentials/core", default-features = false }

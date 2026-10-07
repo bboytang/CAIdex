@@ -30,6 +30,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         if mode.startswith("wire-"):
+            trace["gatewayCredentialMatched"] = self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
             trace.setdefault("wireRequests", []).append({"body": body, "liteHeader": self.headers.get("x-openai-internal-codex-responses-lite"), "accept": self.headers.get("Accept")})
         for item in body.get("input", []):
             if item.get("type") in ["function_call_output", "custom_tool_call_output"]:
@@ -38,6 +39,26 @@ class Handler(BaseHTTPRequestHandler):
             trace.setdefault("summarySeen", []).append("CAIDEX_COMPACT_SUMMARY" in json.dumps(body.get("input", [])))
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
+        if mode == "wire-stall":
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            self.protocol_version = "HTTP/1.1"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            data = f"event: response.created\ndata: {json.dumps(events[0])}\n\n".encode()
+            self.wfile.write(f"{len(data):x}\r\n".encode() + data + b"\r\n")
+            self.wfile.flush()
+            Path(trace_path).with_name("gateway-streaming").touch()
+            try:
+                disconnected = self.connection.recv(1) == b""
+            except OSError:
+                disconnected = True  # Reset and EOF both prove socket cancellation.
+            trace["gatewayDisconnected"] = disconnected
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            Path(trace_path).with_name("gateway-disconnected").touch()
+            self.close_connection = True
+            return
         if mode.startswith("wire-"):
             events.append(event("response.output_item.done", item={"type": "reasoning", "id": f"rs_{identity}", "summary": [], "encrypted_content": "CAIDEX_OPAQUE_REASONING+/==", "provider_signature": "CAIDEX_FUTURE_SIGNATURE=="}))
         if mode == "patch" and trace["requests"] == 1:

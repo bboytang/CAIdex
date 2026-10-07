@@ -2,6 +2,7 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
+    sync::Arc,
     sync::atomic::{AtomicU64, Ordering},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -55,10 +56,38 @@ struct Harness {
     runtime: Runtime,
     provider: Child,
     directory: TestDirectory,
+    gateway: Option<caidex_model_gateway::RunningGateway>,
+}
+
+struct GatewayFixtureStore;
+impl caidex_credentials::SecretStore for GatewayFixtureStore {
+    fn get(
+        &self,
+        _: &caidex_credentials::CredentialRef,
+    ) -> caidex_credentials::Result<Option<caidex_credentials::Secret>> {
+        caidex_credentials::Secret::new("CAIDEX_GATEWAY_PROVIDER_TEST_KEY".into()).map(Some)
+    }
+    fn set(
+        &self,
+        _: &caidex_credentials::CredentialRef,
+        _: &caidex_credentials::Secret,
+    ) -> caidex_credentials::Result<()> {
+        unreachable!("fixture is read-only")
+    }
+    fn remove(&self, _: &caidex_credentials::CredentialRef) -> caidex_credentials::Result<bool> {
+        unreachable!("fixture is read-only")
+    }
 }
 
 impl Harness {
     async fn start(mode: &str) -> Self {
+        let through_gateway = mode.starts_with("gateway-");
+        let fixture_mode = match mode {
+            "gateway-classic" => "wire-classic",
+            "gateway-lite" => "wire-lite",
+            "gateway-stall-classic" | "gateway-stall-lite" => "wire-stall",
+            _ => mode,
+        };
         let binary = std::env::var_os("CAIDEX_CODEX_BIN").unwrap_or_else(|| "codex".into());
         let version = Command::new(&binary)
             .arg("--version")
@@ -88,7 +117,7 @@ impl Harness {
                 PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                     .join("tests/fixtures/responses_server.py"),
             )
-            .arg(mode)
+            .arg(fixture_mode)
             .arg(directory.0.join("trace.json"))
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
@@ -103,13 +132,57 @@ impl Harness {
         let port = serde_json::from_str::<Value>(&line).unwrap()["port"]
             .as_u64()
             .unwrap();
-        let model = match mode {
-            "wire-classic" => "gpt-5.5",
-            "wire-lite" => "gpt-6.1-sol",
+        let model = match (fixture_mode, mode) {
+            ("wire-lite", _) | (_, "gateway-stall-lite") => "gpt-6.1-sol",
+            ("wire-classic" | "wire-stall", _) => "gpt-5.5",
             _ => "gpt-5.1-codex",
         };
+        let gateway = if through_gateway {
+            use caidex_credentials::{Broker, CredentialRef, Id, SecretKind};
+            use caidex_model_core::ResponsesDialect;
+            use caidex_model_gateway::{CustomResponses, Limits, ModelRoute};
+            let owner = Id::new("fixture-host").unwrap();
+            let credential = CredentialRef {
+                owner: owner.clone(),
+                provider: Id::new("custom").unwrap(),
+                profile: Id::new("fixture").unwrap(),
+                kind: SecretKind::ApiKey,
+            };
+            let adapter = CustomResponses::new(
+                &format!("http://127.0.0.1:{port}/v1/responses"),
+                Some(credential),
+            )
+            .unwrap();
+            Some(
+                caidex_model_gateway::start(
+                    vec![
+                        ModelRoute::new(
+                            model.into(),
+                            model.into(),
+                            vec![ResponsesDialect::Classic, ResponsesDialect::Lite],
+                            adapter,
+                        )
+                        .unwrap(),
+                    ],
+                    Arc::new(Broker::new(owner, GatewayFixtureStore)),
+                    Limits::default(),
+                )
+                .await
+                .unwrap(),
+            )
+        } else {
+            None
+        };
+        let port = gateway
+            .as_ref()
+            .map_or(port, |gateway| u64::from(gateway.address().port()));
+        let authentication = if through_gateway {
+            "env_key = \"CAIDEX_GATEWAY_TEST_TOKEN\"\n"
+        } else {
+            ""
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
+            "model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -139,6 +212,9 @@ impl Harness {
                 .unwrap();
         }
         let mut command = isolated_command(&binary);
+        if let Some(gateway) = &gateway {
+            command.env("CAIDEX_GATEWAY_TEST_TOKEN", gateway.token().expose());
+        }
         command
             .env("CODEX_HOME", &data)
             .current_dir(&project)
@@ -158,6 +234,7 @@ impl Harness {
             runtime,
             provider,
             directory,
+            gateway,
         }
     }
 
@@ -182,6 +259,9 @@ impl Harness {
 
     async fn shutdown(&mut self) {
         self.runtime.shutdown().await.unwrap();
+        if let Some(gateway) = self.gateway.take() {
+            gateway.shutdown().await.unwrap();
+        }
         self.provider.kill().await.unwrap();
     }
 }
@@ -1243,7 +1323,11 @@ async fn real_model_wire(mode: &str, dialect: caidex_model_core::ResponsesDialec
     }
     let trace = harness.trace();
     assert_eq!(trace["requests"], 2);
-    assert_eq!(trace["authorizationSeen"], false);
+    assert_eq!(trace["authorizationSeen"], mode.starts_with("gateway-"));
+    assert_eq!(
+        trace["gatewayCredentialMatched"],
+        mode.starts_with("gateway-")
+    );
     let requests = trace["wireRequests"].as_array().unwrap();
     for request in requests {
         assert_eq!(request["accept"], "text/event-stream");
@@ -1339,4 +1423,73 @@ async fn real_classic_model_wire_matches_core_and_replays_opaque_reasoning() {
 #[ignore = "requires pinned Codex and loopback; validates Lite wire, not Code Mode tool execution"]
 async fn real_lite_model_wire_matches_core_and_keeps_stable_prefix() {
     real_model_wire("wire-lite", caidex_model_core::ResponsesDialect::Lite).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; classic two-turn via authenticated Gateway"]
+async fn real_classic_runtime_via_gateway_with_executor_credential() {
+    real_model_wire(
+        "gateway-classic",
+        caidex_model_core::ResponsesDialect::Classic,
+    )
+    .await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; Lite two-turn via authenticated Gateway"]
+async fn real_lite_runtime_via_gateway_with_executor_credential() {
+    real_model_wire("gateway-lite", caidex_model_core::ResponsesDialect::Lite).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; interrupt closes classic/Lite Gateway upstream socket"]
+async fn real_runtime_interrupt_via_gateway_closes_provider_socket() {
+    for mode in ["gateway-stall-classic", "gateway-stall-lite"] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        let client = harness.runtime.client();
+        let turn = client
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text", "text":"Offline cancellable Gateway fixture"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        // Markers are written after trace updates, so polling never reads a
+        // partially written JSON file or relies on a speculative timer.
+        let streaming = harness.directory.0.join("gateway-streaming");
+        tokio::time::timeout(DEADLINE, async {
+            while !streaming.exists() {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(harness.trace()["gatewayCredentialMatched"], true);
+        client
+            .interrupt_turn(&thread, turn["turn"]["id"].as_str().unwrap(), DEADLINE)
+            .await
+            .unwrap();
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await
+                && event.method == "turn/completed"
+            {
+                assert_eq!(event.raw["params"]["turn"]["status"], "interrupted");
+                break;
+            }
+        }
+        let disconnected = harness.directory.0.join("gateway-disconnected");
+        tokio::time::timeout(DEADLINE, async {
+            while !disconnected.exists() {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(harness.trace()["gatewayDisconnected"], true);
+        assert_eq!(harness.trace()["requests"], 1);
+        harness.shutdown().await;
+    }
 }

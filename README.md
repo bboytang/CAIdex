@@ -28,7 +28,8 @@ node scripts/codex-binary.mjs
 ## 工程位置
 
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
-- `model/core`：经典/Lite 请求/工具/usage 视图、增量 SSE 和流生命周期；HTTP Gateway/Provider Adapter 待实现。
+- `model/core`：经典/Lite 请求/工具/usage 视图、增量 SSE 和流生命周期。
+- `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway、Custom Responses 路由、执行端 Broker 认证、取消/超时/背压与安全错误；生产 Host/CLI 配置入口和其他 Provider 待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
 - `upstream/codex`：版本/源码锁定、协议基准和上游许可证。
