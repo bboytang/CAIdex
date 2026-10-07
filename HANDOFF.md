@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- Anthropic input_transformations 正在验收：原生 JSON/SSE 检查报告形状并保留未知项；最终 message_delta 顶层非 null 数组替换 message_start 报告，缺省/null 不覆盖。共同投影/回放检查阻止已识别 thinking_dropped / thinking_mismatch_allowed 交付工具 done、完成或新载体；原生接口仍提供完整报告。不重试、不删除历史。新增 5 项回归；协议 13/投影 8/增量投影 5/HTTP 28、最终 workspace/Clippy/fmt/diff 本地通过，三平台 CI 待验。
+- Anthropic input_transformations 源码 b4d05fd 已提交/push；CI 37618365350（SHA b4d05fdfc623343992fdb5592456b03718dd247d）已启动，待核对同一运行及新增 5 项逐平台日志。原生 JSON/SSE 检查报告形状并保留未知项；最终 message_delta 顶层非 null 数组替换 message_start 报告，缺省/null 不覆盖。共同投影/回放检查阻止已识别 thinking_dropped / thinking_mismatch_allowed 交付工具 done、完成或新载体；原生接口仍提供完整报告。不重试、不删除历史。协议 13/投影 8/增量投影 5/HTTP 28、最终 workspace/Clippy/fmt/diff 本地通过。
 - Anthropic 上下文头已三平台验收：源码 f35d2a7，CI 37616230221 completed/success，新增 4 项及扩展流式/配置测试逐平台日志通过。Config.with_local_runtime_context 显式接受三项本地 metadata，不外发；turn-state/错误方向头拒绝。原生 request-id 映射 x-request-id，JSON/SSE 接至 Provider；坏值拒绝。HTTP 26、workspace/Clippy/fmt/diff 本地通过。下一阶段：请求前缀/执行端账户历史绑定，不重做已验传输。
 - 本轮发现并修正上一步遗漏：Provider profile 字符串 input 导致 Lite-only / Lite-first 初始化失败，现用合法消息数组，回归已通过且不读 Key。请求前缀/账户契约及 Gateway/实际 Runtime 尚未接入。
 - ModelProvider 六方法此前已三平台验收：源码 6ae83b9，CI 37614432384 success（HTTP 22），其余能力及限制详见设计文档。本轮基于该实现继续，不重新实现传输。
@@ -74,7 +74,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，上轮验收 6739642 已提交/push；本轮 input_transformations 改动：Anthropic message/projection/stream/response_stream、对应协议/投影/HTTP 测试及两份交接/设计文档，将随本轮源码提交/push。实现与本地检查已完成，CI 验收待完成；没有请求前缀/账户绑定源码改动。恢复按当前任务验收后继续下一步。
+- branch `main` 跟踪 `origin/main`，本轮源码 b4d05fd 已提交/push；当前仅 HANDOFF.md 的 CI checkpoint 待提交，无未完成源码修改。恢复先确认 CI 37618365350 和新增 5 项逐平台日志，再继续前缀/账户绑定及 fallback 身份核对；上轮验收 6739642 不重复执行。
 
 ## 测试结果
 
@@ -96,4 +96,4 @@
 - SSE [CI 37613084679](https://github.com/bboytang/CAIdex/actions/runs/37613084679)，源码 SHA 6a3986a0b705f3e8ce0937c9def712bd906b32cf：三平台 success，新增投影 4/HTTP 2 逐平台日志通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-response-stream-workspace.log、/tmp/caidex-ci-37613084679.log。
 - ModelProvider [CI 37614432384](https://github.com/bboytang/CAIdex/actions/runs/37614432384)，源码 SHA 6ae83b96b29d7767de46c5052b595c6f3a53b375：三平台 success，新增 6 项逐平台日志通过（HTTP 累计 22），workspace/fmt/Clippy/native keyring/schema/doctor 全过，既有真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-anthropic-provider-workspace.log、/tmp/caidex-ci-37614432384.log；末次仅增强测试后 HTTP/Clippy 本地复验通过。仍未做实际 Anthropic Gateway/Runtime 工具执行或商业 API 验收。
 - 本地上下文/响应关联 [CI 37616230221](https://github.com/bboytang/CAIdex/actions/runs/37616230221)，源码 SHA f35d2a7ba6f53794d20b9c8cf9d07b918231a98d：三平台 completed/success，新增 4 项及扩展流式/配置测试逐平台日志核对通过（HTTP 26），包含 Lite-only/Lite-first 初始化回归。workspace/fmt/Clippy/native keyring/schema/doctor 及既有真实 Runtime Linux 25、Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过；日志 /tmp/caidex-anthropic-context-workspace.log、/tmp/caidex-ci-37616230221.log。请求前缀/账户历史、完整 Anthropic Gateway/Runtime 工具执行与商业 API 尚未验收。
-- 本轮 input_transformations：新增 5 项本地通过（协议 13/投影 8/增量投影 5/HTTP 28），完整 workspace/Clippy/fmt/diff 通过；最终 null 保留初始报告修正后已完整复验，日志 /tmp/caidex-anthropic-input-bindings-workspace.log。三平台 CI 待验；未调用商业 API，完整前缀/账户绑定与 Anthropic Gateway/Runtime 工具执行未验。
+- Input transformations 源码 b4d05fd：[CI 37618365350](https://github.com/bboytang/CAIdex/actions/runs/37618365350) 待验。新增 5 项本地通过（协议 13/投影 8/增量投影 5/HTTP 28），完整 workspace/Clippy/fmt/diff 通过；最终 null 保留初始报告修正后已完整复验，日志 /tmp/caidex-anthropic-input-bindings-workspace.log。未调用商业 API，完整前缀/账户绑定与 Anthropic Gateway/Runtime 工具执行未验。
