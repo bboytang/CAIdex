@@ -19,6 +19,8 @@
 
 - 本轮续接（三平台通过）：Queue 排序/分页/busy/中断恢复/指定启动、Goal 暂停/激活/预算/clear/空回复 breaker、经典手动压缩与后续摘要承接通过；空闲 Queue add 自动启动亦通过；新增 5 项全部通过；累计 Linux 15 项、Windows/macOS 各 14 项。
 
+- F/G 后续验收：[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266)，源码 e7253c8，三平台通过；累计真实 Runtime Linux 23、Windows/macOS 各 22 项。新增原生 OpenAI Adapter 经典/Lite 两轮、两路径 interrupt 关闭上游 socket，与此前直接/Custom Gateway wire 验证均保持通过；仍使用合成回复，不代表商业推理或 Code Mode 工具执行。详见 [原生 Provider 验收](CAIdex-OpenAI-Provider-设计与验收.md)。
+
 ## D 边界验收
 
 - 已实现的完整请求入口、11 类服务端请求与未知事件/扩展字段保留，由 19 项协议回归验证；实验方法显式门控、审批显式回应、无自动重试。

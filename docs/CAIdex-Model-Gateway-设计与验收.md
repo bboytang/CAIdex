@@ -2,6 +2,8 @@
 
 阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。其他原生 Provider 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
 
+原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic/Gemini/兼容 API/Ollama 与真实模型兼容性仍待后续。
+
 ## 固定协议依据
 
 源码固定 `d27764b82f7118f674371e6d6e76271d9d606edb` / Codex 0.160.1，不从当前 main 或未知模型 fallback 推断行为。

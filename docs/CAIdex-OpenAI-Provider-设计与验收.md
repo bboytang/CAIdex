@@ -41,8 +41,9 @@ Gateway 在调用 Adapter 前自行验证模型 metadata/ID、dialect 和明确�
 - 新增 `model/providers/openai/tests/provider.rs` 11 项实际 socket 测试：原生 GET/清单交集/空或坏清单、原生未来字段、六方法、固定 scope 与认证、两轮回放/图片/工具/结构化输出、store opt-in/前台门控、经典/Lite SSE、取消/timeout/Drop/slot 释放、HTTP 分类/429/redirect/大小/类型与注入 Gateway。
 - 新增 `model/gateway/tests/injected.rs` 4 项：模型/dialect/能力/metadata 门控、响应头方向、Adapter 忽略 context 时的两种 deadline、shutdown Drop；均经实际 Gateway HTTP。
 - 复用现有核心 20、Custom 7、Gateway HTTP 18 项回归，包含 TLS 信任/hostname/过期、畸形或截断 SSE、诊断脱敏等边界；这些不是商业模型证据。
-- 本机上述定向回归、完整 workspace、fmt/Clippy/diff 与固定 Runtime Linux 23 项已通过；三平台 CI 待验，结果在 HANDOFF 与此文档更新，不提前宣称已验。
+- [CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266)，源码 e7253c8：ubuntu-24.04、windows-2022、macos-15 全部 success。各平台上述 OpenAI 11/Gateway 注入 4/core 20/Custom 7/Gateway HTTP 18 项通过；完整 workspace/fmt/Clippy、固定 stable/experimental schema 指纹、doctor 与既有 native keyring 回归通过。
+- 固定 Runtime 累计 Linux 23、Windows/macOS 各 22 项通过，新增原生经典/Lite 两轮与两个路径 interrupt 实际 EOF/reset 均通过；Windows/macOS 不执行 Linux 专用批准命令用例。本机完整 workspace/fmt/Clippy/diff 与 Runtime Linux 23 项通过。日志 `/tmp/caidex-ci-37573720266.log` 供本机复查，跨机器以 GitHub 链接为准。
 - 新增真实 Runtime 测试分别使用原生 OpenAI Adapter 经典/Lite 两轮和两条路径 interrupt；回复合成、不收费、不配置真实模型 Key。Runtime 生产代码/固定版本及品牌资产未改。
 - Cargo.lock 只新增 workspace crate 与 Runtime dev-dependency 引用，没有新增或升级第三方 package。
 
-下一步：通过本机完整回归及 GitHub 三平台 CI 后，按 V3 接入 Anthropic，再 Gemini、兼容 API/Ollama；逐 Provider 验证原生历史/工具/usage/能力与兼容性报告，之后推进 H/I 客户端基础。真实 API/Key 授权、iOS 工程/真机/签名/UAT 尚未完成。
+下一步：按 V3 接入 Anthropic，再 Gemini、兼容 API/Ollama；逐 Provider 验证原生历史/工具/usage/能力与兼容性报告，之后推进 H/I 客户端基础。真实 API/Key 授权、iOS 工程/真机/签名/UAT 尚未完成。
