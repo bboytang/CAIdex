@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-F/G：Gemini原生流式HTTP已实现并完成本地验证/独立审查，尚待提交push和本轮精确源码三平台CI。恢复点：完成CI后继续版本化敏感历史与Responses转换，再六方法/Registry/Gateway/固定Runtime；不重复已验Models/JSON/SSE解析或Anthropic阶段。Google全30项、workspace252passed/0failed/32ignored、Clippy/fmt/diff通过；审查无Critical/Important，满槽取消/Drop专项覆盖Minor暂缓（满槽deadline与读取期取消/Drop已实测）。原有重复usage等Minor继续暂缓，完整F/G未验收，H–R尚未实施。
+F/G：Gemini原生流式HTTP已提交/push并三平台验收，源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项各平台通过。当前恢复点：建立版本化敏感原生历史与Responses转换，再六方法/Registry/Gateway/固定Runtime；不重复已验Models/JSON/SSE/HTTP或Anthropic阶段。独立审查无Critical/Important；满槽取消/Drop专项覆盖Minor暂缓（满槽deadline与读取期取消/Drop已实测）。原有重复usage等Minor继续暂缓，完整F/G未验收，H–R尚未实施。
 
 沿 V3 离线 fixture 授权；完整项目/文档公开、提交/push/CI 已获授权，不重复询问。不读取用户模型 Key，不调用商业 API。默认经典 Anthropic cached web_search 明确不支持；显式禁用网页的正例不授予 Full。
 
@@ -16,11 +16,11 @@ F/G：Gemini原生流式HTTP已实现并完成本地验证/独立审查，尚待
 - tool_search 共享 wire 契约：专用 call/output 借用视图，JSON arguments/原 tools 保留，client call_id 与完整终态校验；源码 d29234c90f512f1f839753612194783f4f8afe6e，CI 37644294771 三平台成功。
 - Anthropic 发现：专用客户端 call、pending 匹配与加载、deferred reference/新或修订 definition、初始 top tools 稳定、显式 beta/profile/组织门控、v4 原始 discoveries/前缀绑定、JSON/SSE 三轮回放。源码46d03d5的CI37650049761三平台通过；独立审查的重要问题（结果后追加用户文字）已 RED→GREEN 修复，载体降级遗漏也已 RED→GREEN 修复。
 
-- Gemini Models GET 与 generateContent JSON POST 已三平台验收；完整 native 回复/Part/签名/usage/未来字段与大数保留，安全终态/原文回放、真实socket取消和共用slot通过。原生SSE解析亦已验收；完整raw chunks独立于派生视图，Part不合并，明确候选终态及调用方EOF才完成。流式HTTP/投影/历史/六方法/Gateway/Runtime未接，详细证据与范围见Gemini文档。
+- Gemini Models GET 与 generateContent JSON POST 已三平台验收；完整 native 回复/Part/签名/usage/未来字段与大数保留，安全终态/原文回放、真实socket取消和共用slot通过。原生SSE解析与流式HTTP亦已三平台验收；完整raw chunks独立于派生视图，Part不合并，明确候选终态及正常HTTP EOF才完成，单槽背压/安全错误/Drop取消/socket/共享slot通过。投影/历史/六方法/Gateway/Runtime未接，详细证据与范围见Gemini文档。
 
 ## 未完成与下一步顺序
 
-1. Gemini原生流式HTTP（`:streamGenerateContent?alt=sse`）本地实现已完成：共享JSON请求/认证/status/TLS、单槽worker、正常HTTP EOF才完成，candidateCount缺省1，Drop/取消/deadline释放真实socket与共享slot。先提交/push并核对本轮精确源码三平台CI；成功后建立版本化历史、Responses请求/工具/图片/推理/结构化输出转换，再六方法/Registry/Gateway/固定真实Runtime。native HTTP不执行工具、不造Agent、不标商业Full。
+1. Gemini：Models/JSON/SSE解析/原生流式HTTP已三平台验收，不重做。继续版本化敏感原生历史与模型/请求归属，保留raw chunks和派生投影的一致性、完整Part/thoughtSignature/function call/result/usage；以原生generateContent而非Interactions核对签名回放要求。随后Responses请求/工具/图片/推理/结构化输出转换，再六方法/Registry/Gateway/固定真实Runtime的经典/Lite/审批/工具/取消/恢复。Gateway不执行工具，不造Agent，不标商业Full。
 2. 预检已核对 [Models](https://ai.google.dev/api/models)、[generateContent](https://ai.google.dev/api/generate-content) 和 [认证](https://ai.google.dev/gemini-api/docs/api-key)：Models 使用 pageSize/pageToken/nextPageToken，原始字段保留；能力不从名称猜。当前 thinking/function-calling 指南示例多为 Interactions，不能混用其 signature/事件字段与 generateContent Part.thoughtSignature；实现时以所选原生 API reference 验证。
 3. 留下审查 Minor：重启用例单独精确比较第三轮回复；Lite Code Mode 输出与落盘 custom_tool_call_output 完整对比。现有检查证明实际执行/审批及 MCP 结果原文相等，两项覆盖补充暂缓。
 4. Anthropic 缓存网页仍无等价 cached/text+image 证据；默认请求认证/POST为0，Gateway 不过滤工具，不标 Full。原生映射获得等价证据才能开放，缺口不阻碍其他 Provider。
@@ -46,7 +46,7 @@ F/G：Gemini原生流式HTTP已实现并完成本地验证/独立审查，尚待
 
 ## 文件与 Git 状态
 
-- branch main跟踪origin/main，起点bd99800；本轮未提交修改：Google client.rs共享generation_request/execute、Arc semaphore/stream_content；新增transfer.rs单槽worker/Stream/Drop；stream.rs取走完成记录；lib.rs、Google Cargo.toml/Cargo.lock已有futures-util直接依赖；tests/http.rs新增6项和stall3/4 fixture；HANDOFF/Gemini文档记录阶段。源码待提交push/新CI，本地通过不等于三平台完成。
+- branch main跟踪origin/main；native流式HTTP源码27d227aeac01e19216d44a920896ac6618b89e28已提交push，CI37666947624已三平台完成。源码无未完成修改；本次checkpoint只更新HANDOFF、Gemini/Model-Gateway文档的验收和下一步状态，开始下一阶段先核对实际Git状态。关键实现：Google client.rs共享请求/认证与stream_content、transfer.rs单槽worker/Stream/Drop、stream.rs取走完成记录、HTTP6与stall3/4 fixture；futures-util沿既有锁定版本只增加Google直接依赖。
 - Google 模块沿原方案路径，GeminiConfig/Client 使用执行端 google/ApiKey Broker、x-goog-api-key；已验目录阶段只原生 Models GET；已提交生成POST复用同一JSON/auth/生命周期，复用现有 Limits/endpoint/TLS，不增加通用传输抽象。raw 字段保留、完整分页才返回、能力只采用显式字段，不从名称推断。
 - 上轮新增原生接线已在 b403b0d 提交：runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py；Provider web_search/SSE门控在 model/providers/anthropic/src/tools.rs、tests/http/discovery.rs。详见 docs/CAIdex-Anthropic-Provider-设计与验收.md、Runtime-能力对照。
 - docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md 是执行基准；原 V2 仅历史参考。Runtime-能力对照、Credentials/Model-Gateway/OpenAI/Anthropic/Gemini 设计与验收保留详细阶段证据。
@@ -54,7 +54,7 @@ F/G：Gemini原生流式HTTP已实现并完成本地验证/独立审查，尚待
 
 ## 测试与审查结果
 
-- 本轮native流式HTTP6有效RED→GREEN，既有13项HTTP保持通过；Google catalog4/content3/HTTP19/解析4共30项本地通过，完整workspace252passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过。日志 /tmp/caidex-google-stream-http-{red,green,workspace,clippy}.log。唯一fresh-context审查无Critical/Important，满槽取消/Drop专项Minor暂缓；已有读取期取消/Drop及未消费满槽caller/total timeout真实socket/slot证据，未冒称覆盖该组合。精确源码三平台CI待执行。详细边界/审查裁定见Gemini文档。
+- 本轮native流式HTTP6有效RED→GREEN，既有13项HTTP保持通过；Google catalog4/content3/HTTP19/解析4共30项本地通过，完整workspace252passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过。日志 /tmp/caidex-google-stream-http-{red,green,workspace,clippy}.log。唯一fresh-context审查无Critical/Important，满槽取消/Drop专项Minor暂缓；已有读取期取消/Drop及未消费满槽caller/total timeout真实socket/slot证据，未冒称覆盖该组合。源码`27d227aeac01e19216d44a920896ac6618b89e28`的[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，精确head及所有步骤已核对。每个平台Google catalog4/content3/HTTP19/解析4共30个测试名各通过一次；workspace Linux252/Windows247/macOS251（0失败，ignored32/30/30），真实Runtime Linux30/WindowsmacOS29，fmt/Clippy/native credentials/schema/doctor通过。日志 /tmp/caidex-ci-37666947624-status.json 与{,-linux,-windows,-macos}.log；跨机器以GitHub为准。 详细边界/审查裁定见Gemini文档。
 
 - SSE解析：四项初始RED→GREEN；审查Important阻断状态覆盖已两项回归RED→GREEN修复；重复usage专项覆盖Minor暂缓。日志 /tmp/caidex-google-stream-{red,green,block-red,block-green}.log；修复后完整workspace246passed/0failed、Clippy/fmt/diff通过；源码4c9571a已push，CI37664189813精确head已核对，三平台completed/success；各平台Google24个测试名各通过一次，workspace Linux246/Windows241/macOS245（0失败），既有实际Runtime Linux30/WindowsmacOS29、fmt/Clippy/native credentials/schema/doctor通过。日志 /tmp/caidex-ci-37664189813-status.json 与{,-linux,-macos,-windows}.log，跨机器以GitHub为准；原生流式HTTP未接。
 

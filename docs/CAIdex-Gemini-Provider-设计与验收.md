@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。原生非流式 generateContent/NativeResponse 已实现并三平台验收，源码5c41ae2aaea2632b5c98689f7c14b26ba826d0ef已提交/push，CI37661724323 completed/success；SSE解析已三平台验收（源码4c9571a/CI37664189813）；原生流式HTTP已实现、本地Google30项通过，工作区252passed/0failed、Clippy已通过，独立审查无Critical/Important、三平台CI待验收；Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
+阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP已实现并三平台验收；最新传输源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项逐平台通过。Responses转换、版本化历史、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -34,7 +34,7 @@
 ## 下一步
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
-2. generateContent JSON及原生SSE解析已验收；streamGenerateContent?alt=sse 的真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已实现，完成本轮工作区/审查/三平台验收后继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
+2. generateContent JSON、原生SSE解析和streamGenerateContent?alt=sse真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已三平台验收，继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
 3. 建立版本化原生历史、请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
 ## 独立审查记录
@@ -81,7 +81,7 @@ NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未�
 
 完成结果分别提供完整原生chunks与派生NativeResponse：原始chunks保留每次未知字段/空值/数值精度及签名位置；派生候选按index排序，Part按候选内到达顺序原样追加，不合并不同text/thought/signature Part。派生普通metadata采用末次非null值，usage按已提供字段覆盖而非相加；重复/替换的完整metadata仍留raw chunks，不能把派生视图当无损原生历史。此阶段不证明重组后的签名回放真实性，版本化历史/模型归属/Runtime回放仍需后续验证；服务端工具与预测调用只是数据，解析器不执行或抓取。
 
-4项解析回归先RED后GREEN，涵盖所有字节切分/逐字节、BOM/CRLF、原始chunks/签名/未来Part/独立大数字面值、末尾usage、多候选不同停止原因/缺候选或第二候选未停、prompt阻断、身份与生命周期冲突、静态原生错误、残帧/取消及预算。日志 `/tmp/caidex-google-stream-{red,green}.log`；修复后完整workspace246passed/0failed、Clippy -D warnings、fmt/diff通过；独立审查结果及修复见下，源码 `4c9571a4e4cc90fda907d2e6a2c79136166de0e6` 已提交/push，[CI37664189813](https://github.com/bboytang/CAIdex/actions/runs/37664189813)三平台completed/success，精确head已核对。逐平台Google catalog4/回复3/HTTP13/解析4共24个测试名各通过一次；workspace Linux246/Windows241/macOS245（0失败），既有实际Runtime Linux30/WindowsmacOS29，fmt/Clippy/native credentials/schema/doctor通过。日志 `/tmp/caidex-ci-37664189813-status.json` 与{,-linux,-macos,-windows}.log，跨机器以GitHub为准。真实流式HTTP/socket/背压尚未实现，不能用已有JSON的CI代验。
+4项解析回归先RED后GREEN，涵盖所有字节切分/逐字节、BOM/CRLF、原始chunks/签名/未来Part/独立大数字面值、末尾usage、多候选不同停止原因/缺候选或第二候选未停、prompt阻断、身份与生命周期冲突、静态原生错误、残帧/取消及预算。日志 `/tmp/caidex-google-stream-{red,green}.log`；修复后完整workspace246passed/0failed、Clippy -D warnings、fmt/diff通过；独立审查结果及修复见下，源码 `4c9571a4e4cc90fda907d2e6a2c79136166de0e6` 已提交/push，[CI37664189813](https://github.com/bboytang/CAIdex/actions/runs/37664189813)三平台completed/success，精确head已核对。逐平台Google catalog4/回复3/HTTP13/解析4共24个测试名各通过一次；workspace Linux246/Windows241/macOS245（0失败），既有实际Runtime Linux30/WindowsmacOS29，fmt/Clippy/native credentials/schema/doctor通过。日志 `/tmp/caidex-ci-37664189813-status.json` 与{,-linux,-macos,-windows}.log，跨机器以GitHub为准。该解析阶段未包含真实流式HTTP/socket/背压；当前传输阶段的新CI见下，不能用JSON/解析旧CI代验。
 
 
 本轮唯一独立只读审查：无Critical，1项Important（空feedback覆盖阻断状态后可接受候选）已复现RED，并在同一修复pass独立锁定阻断原因后GREEN。已有两项回归增强覆盖空/null feedback后候选、显式恢复UNSPECIFIED，以及阻断后只追加metadata仍保留原因/完整chunks；未增加其他审查或重做旧阶段。日志 `/tmp/caidex-google-stream-block-{red,green}.log`。
@@ -91,7 +91,7 @@ NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未�
 本轮排除项裁定：原生HTTP/cleanEOF检测/背压/socket/slot是下一接线阶段（误用解析证据会漏传输问题）；Responses投影/版本历史/六方法/Gateway/实际Gemini Runtime未接（误判漏功能）；签名真实性/重组Part的提供商回放未验（误判签名请求被拒）；商业/Full无live证据（误判错误能力承诺）；全ProtoJSON/完整媒体函数schema沿已知形状canonical边界（误判兼容端点拒绝）；字节/JSON空白不承诺，只保留native JSON语义（误判失去逐字节一致性）；停止后无新Part的metadata与未知停止原因保留，不授予任务成功（误判未知语义被误当成功）；comment/control-only尾不作为生成数据，残data/event不完成（误判会把截断当完成，当前严格尾查询亦拒绝残未结束comment行）；生产历史访问控制留H/I（误判历史泄漏，raw不作为公共日志）。以上均保留既定阶段边界，后续接线继续逐项验证。
 
 
-## 原生流式 HTTP（本地已实现，三平台待验收）
+## 原生流式 HTTP（三平台已验收）
 
 `GeminiClient::stream_content(model, native_json, context)` POST `models/<id>:streamGenerateContent?alt=sse`；请求原文/安全路径与JSON生成共用generation_request，Broker/header/status/media与Models/JSON共用execute；认证仍只在sensitive x-goog-api-key。不新增通用传输层，不改变JSON生成接受的原生参数范围。stream独立校验generationConfig对象及canonical正整数candidateCount，缺省/null为1；真实模型支持的候选上限由原生服务判定，不按名称猜测。[原生流式方法](https://ai.google.dev/api/generate-content)
 
@@ -99,7 +99,7 @@ NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未�
 
 worker拥有socket与Models/JSON共用owned permit；读取与send均受绝对caller/total deadline及CancellationToken约束，读取另受idle限制。Drop abort worker；满槽而无人消费时timeout仍关闭socket、释放slot。安全error另存于队列外，已排队Event之后交付一次，不因满槽等待塞入error；debug不打印wire。无redirect/retry/环境proxy/TLS弱化，签名/工具均只为数据。沿既有Broker边界，同步Key读取开始后无法强停，但取消后不POST。
 
-新增HTTP6有效RED→GREEN，Google全30项本地通过：精确原生请求/代理路径/只header认证、候选数及前置零Key/网络、multi-candidate签名Part/大数字字面值/末尾usage、static错误/429/redirect/media/超限/原生坏帧/真实不完整Content-Length、Drop/取消真实socket关闭及共享slot释放、未消费流caller与total deadline满槽错误保存、header/STOP后idle timeout。日志 /tmp/caidex-google-stream-http-{red,green}.log。完整workspace252passed/0failed/32ignored，Clippy -D warnings、fmt/diff通过；独立审查无Critical/Important，精确源码三平台CI待执行，不能用旧解析CI代验。日志 /tmp/caidex-google-stream-http-{workspace,clippy}.log。
+新增HTTP6有效RED→GREEN，Google全30项本地通过：精确原生请求/代理路径/只header认证、候选数及前置零Key/网络、multi-candidate签名Part/大数字字面值/末尾usage、static错误/429/redirect/media/超限/原生坏帧/真实不完整Content-Length、Drop/取消真实socket关闭及共享slot释放、未消费流caller与total deadline满槽错误保存、header/STOP后idle timeout。日志 /tmp/caidex-google-stream-http-{red,green}.log。完整workspace252passed/0failed/32ignored，Clippy -D warnings、fmt/diff通过；独立审查无Critical/Important；源码`27d227aeac01e19216d44a920896ac6618b89e28`的[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，精确head及所有步骤已核对。每个平台Google catalog4/content3/HTTP19/解析4共30个测试名各通过一次；workspace Linux252/Windows247/macOS251（0失败，ignored32/30/30），真实Runtime Linux30/WindowsmacOS29，fmt/Clippy/native credentials/schema/doctor通过。日志 /tmp/caidex-ci-37666947624-status.json 与{,-linux,-windows,-macos}.log；跨机器以GitHub为准。 不能用旧解析CI代验。日志 /tmp/caidex-google-stream-http-{workspace,clippy}.log。
 
 阶段边界仍为native HTTP：版本化敏感历史/Responses投影/六方法/Registry/Gateway/实际Gemini Runtime未接，商业签名回放和Full无live证据；生产历史访问控制留H/I，raw不作为公共日志。既有重复/部分usage专项覆盖Minor仍暂缓，不能用本轮单次末尾usage测试宣称已补齐。
 
