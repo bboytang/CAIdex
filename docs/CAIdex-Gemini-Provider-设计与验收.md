@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP已实现并三平台验收；最新传输源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项逐平台通过。v1原生历史与Responses输出投影已本地实现（Google37项通过，本轮完整验证/审查/三平台CI待验）；Responses请求编译/工具映射、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP已实现并三平台验收；最新传输源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项逐平台通过。v1原生历史与Responses输出投影已实现并三平台验收（源码421ead5/CI37672020384，Google37项各平台通过）；Responses请求编译/工具映射、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -35,7 +35,7 @@
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
 2. generateContent JSON、原生SSE解析和streamGenerateContent?alt=sse真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已三平台验收，继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
-3. 建立版本化原生历史、请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
+3. 版本化原生历史与Responses输出投影已三平台验收；继续Responses请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
 ## 独立审查记录
 
@@ -109,7 +109,7 @@ worker拥有socket与Models/JSON共用owned permit；读取与send均受绝对ca
 排除项裁定：投影/历史/六方法/Registry/Gateway/真实Gemini Runtime留下一步，误用native证据会漏功能；商业/签名真实性/重组后实际回放/Full无live证据，误判会错误授予能力或提交被拒；生产Host/历史权限留H/I，误判会泄漏敏感数据，raw不作日志；全ProtoJSON/完整schema/媒体/模型参数沿canonical已知形状边界，误判会原生拒绝，不把形状检查当完整能力；旧parser/Minors不重复独立审查、不冒称已修复，成本为既有覆盖边界仍在；同步SecretStore开始后不能强停，只保证取消后无迟到POST，成本为后台读取资源；Windows/macOS必须本轮精确源码新CI，旧parserCI不能代验，误用会漏平台新增问题。均沿既定架构和阶段边界。
 
 
-## v1原生历史与Responses输出投影（本地已实现，三平台待验收）
+## v1原生历史与Responses输出投影（三平台已验收）
 
 NativeHistory沿既有opaque载体模式使用caidex.google.native-history.v1:，provider=google/version=1，保存执行端选定的安全models资源、原始native request、独立CAIdex generation_id、显式candidate_index和完整response；流式另存所有原生JSON chunks。responseId/modelVersion缺失仍为未知，不拿请求路由或本地ID伪造服务端身份。请求校验提取自既有client供HTTP/历史复用，JSON HTTP原有参数接受范围保持；history按stream相同canonical candidateCount（缺省1）核对完整候选及范围。多候选必须选一条，完整替代候选原文仍保存；prompt阻断选择None。
 
@@ -121,9 +121,9 @@ NativeHistory沿既有opaque载体模式使用caidex.google.native-history.v1:�
 
 usageMetadata.promptTokenCount已含cache，totalTokenCount含prompt+thoughts+candidates；规范化input直接取prompt，output取已知candidates+thoughts或明确total-prompt，total取原值/精确和。不会加cache或toolUsePrompt两次、不补缺省0；不足推导完整三计数时usage=null而raw保持。参与当前归一化计算的计数矛盾或u64相加溢出拒绝，cache/reasoning细节只在明确提供时设置；部分计数的已知下界矛盾覆盖边界见下列Minor。多候选计数为整次generation，不按所选候选猜分摊。[原生UsageMetadata](https://ai.google.dev/api/generate-content#UsageMetadata)
 
-新增history6与真实HTTP1已有效RED→GREEN，Google全37项通过：JSON/SSE完整wire/chunks/签名/未知Part/大数字面值与classic/Lite往返、选择/终态/安全拒绝/展示一致性、重复部分usage按字段覆盖、独立模型/request归属、native可选ID；实际JSON/SSE→canonical序列化→restore→下一原生POST精确保留Content/签名/functionResponse。reply/Key全部合成、没有执行工具或商业API；此HTTP正例使用客户端明确组装下一native body，不冒称六方法/Gateway/实际Gemini Runtime已接。日志 /tmp/caidex-google-history-{red,green,http-red,http-green}.log；完整workspace259passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过；独立审查/精确源码新CI尚未完成。日志 /tmp/caidex-google-history-{workspace,clippy}.log。
+新增history6与真实HTTP1已有效RED→GREEN，Google全37项通过：JSON/SSE完整wire/chunks/签名/未知Part/大数字面值与classic/Lite往返、选择/终态/安全拒绝/展示一致性、重复部分usage按字段覆盖、独立模型/request归属、native可选ID；实际JSON/SSE→canonical序列化→restore→下一原生POST精确保留Content/签名/functionResponse。reply/Key全部合成、没有执行工具或商业API；此HTTP正例使用客户端明确组装下一native body，不冒称六方法/Gateway/实际Gemini Runtime已接。日志 /tmp/caidex-google-history-{red,green,http-red,http-green}.log；完整workspace259passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过；独立审查无Critical/Important，2项代码Minor见下。源码`421ead55b8c516021c81be277808bda37a2f886a`已提交/push，[CI37672020384](https://github.com/bboytang/CAIdex/actions/runs/37672020384)三平台completed/success，精确head及全部步骤已核对。每个平台catalog4/content3/history6/HTTP20/stream4共37个Google测试名各通过一次；workspace Linux259/Windows254/macOS258，0失败，ignored32/30/30；真实Runtime Linux30/WindowsmacOS29，0失败/0ignored。fmt/Clippy/native credentials/schema/doctor通过；日志 /tmp/caidex-ci-37672020384-status.json 与{,-linux,-windows,-macos}.log，跨机器以GitHub为准。日志 /tmp/caidex-google-history-{workspace,clippy}.log。
 
-下一步：完成本轮验收后接Responses请求编译和原生工具映射（经典/Lite、namespace/custom/结果配对、图片、推理/结构输出/Runtime参数），再六方法/Registry/Gateway和固定Runtime。商业/签名实际验证/Full、生产访问控制仍保留边界，不混用Interactions的signature/事件字段。旧SSE重复/部分usage覆盖Minor由本轮history回归补齐（候选计数1→7、thought及末尾total补齐与raw值全保留）；旧满槽取消/Drop直接专项覆盖等其余Minor保持原边界。
+下一步：接Responses请求编译和原生工具映射（经典/Lite、namespace/custom/结果配对、图片、推理/结构输出/Runtime参数），再六方法/Registry/Gateway和固定Runtime。商业/签名实际验证/Full、生产访问控制仍保留边界，不混用Interactions的signature/事件字段。旧SSE重复/部分usage覆盖Minor由本轮history回归补齐（候选计数1→7、thought及末尾total补齐与raw值全保留）；旧满槽取消/Drop直接专项覆盖等其余Minor保持原边界。
 
 
 本轮唯一fresh-context只读审查无Critical/Important，2项代码Minor暂缓，1项交接旧checkpoint文本在常规阶段更新中删除：
