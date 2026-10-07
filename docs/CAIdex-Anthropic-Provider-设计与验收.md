@@ -112,6 +112,6 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 `ThinkingContext` 声明实际原生模型保留策略 CurrentTurn/AllTurns；只有请求 context 与配置完全一致才通过。不会靠模型名字推断、编造原生字段、裁掉旧签名或把 all_turns 降为 current_turn。声明和离线 fixture 不是模型实际保留推理的证明；原生 API 的模型/账户/前缀绑定仍需后续验收。
 
-新增 3 项推理测试（累计 8 项），覆盖经典/Lite、配置缺失/不匹配、display 覆盖、禁用思考/无 effort 不被隐式启用、坏 summary/context、重复配置及当前轮策略不删历史；实际 HTTP 两轮 fixture 包含 summary/context 和既有结构化输出、签名工具历史。修正 between_tools 禁止 display。完整测试状态见 HANDOFF.md。
+新增 3 项推理测试（累计 8 项），覆盖经典/Lite、配置缺失/不匹配、display 覆盖、禁用思考/无 effort 不被隐式启用、坏 summary/context、重复配置及当前轮策略不删历史；实际 HTTP 两轮 fixture 包含 summary/context 和既有结构化输出、签名工具历史。修正 between_tools 禁止 display。完整 workspace/Clippy/fmt/diff 已通过；[CI 37610039312](https://github.com/bboytang/CAIdex/actions/runs/37610039312)（源码 024b211）三平台全部 success，新增 3 项和扩展 HTTP 两轮逐平台通过。
 
 依据：[OpenAI reasoning summaries](https://developers.openai.com/api/docs/guides/reasoning)、[Anthropic thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)。较新原生模型还检查签名的模型、账户和 system/tools/messages 前缀；现有载体不证明这些匹配，完整 Adapter 需请求前缀契约与 mode/tools/trim/resume 回归，不能自动 drop_block 或 retry 掩盖失败。参见 [Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)。
