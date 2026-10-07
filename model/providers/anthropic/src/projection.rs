@@ -1,8 +1,9 @@
-use crate::{MessageOutcome, NativeMessage};
+use crate::{MessageOutcome, NativeMessage, ToolMap};
 use caidex_model_core::{CanonicalResponse, ProviderError, ProviderResult};
 use serde_json::{Value, json};
 
 const PREFIX: &str = "caidex.anthropic.native-message.v1:";
+const TOOLS_PREFIX: &str = "caidex.anthropic.native-message.v2:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "invalid_anthropic_replay")
 }
@@ -12,10 +13,33 @@ impl NativeMessage {
     /// carrier, not a claim that this JSON is encrypted or an OpenAI ciphertext.
     /// The original native message is authoritative; display items are views.
     pub fn to_responses(&self, max_replay_bytes: usize) -> ProviderResult<CanonicalResponse> {
-        let capsule = format!(
-            "{PREFIX}{}",
-            json!({"provider":"anthropic","version":1,"message":self.wire()})
-        );
+        self.project_response(None, max_replay_bytes)
+    }
+    /// Bind tools to the declarations that produced this reply, rather than
+    /// reinterpret old native aliases using the next request's tools.
+    pub fn to_responses_with_tools(
+        &self,
+        tools: &ToolMap,
+        max_replay_bytes: usize,
+    ) -> ProviderResult<CanonicalResponse> {
+        self.project_response(Some(tools), max_replay_bytes)
+    }
+    fn project_response(
+        &self,
+        tools: Option<&ToolMap>,
+        max_replay_bytes: usize,
+    ) -> ProviderResult<CanonicalResponse> {
+        let (prefix, envelope) = match tools {
+            Some(tools) => (
+                TOOLS_PREFIX,
+                json!({"provider":"anthropic","version":2,"message":self.wire(),"tools":tools.source()}),
+            ),
+            None => (
+                PREFIX,
+                json!({"provider":"anthropic","version":1,"message":self.wire()}),
+            ),
+        };
+        let capsule = format!("{prefix}{envelope}");
         if max_replay_bytes == 0 || capsule.len() > max_replay_bytes {
             return Err(ProviderError::new(502, "anthropic_replay_too_large"));
         }
@@ -23,7 +47,7 @@ impl NativeMessage {
             json!({"type":"reasoning","id":format!("rs_{}_native",self.id()),
             "summary":self.reasoning_summary(),"encrypted_content":capsule}),
         ];
-        output.extend(self.projected_items());
+        output.extend(self.projected_items(tools)?);
         let (status, reason) = match self.outcome() {
             MessageOutcome::EndTurn
             | MessageOutcome::StopSequence
@@ -62,9 +86,15 @@ impl NativeMessage {
         if max_replay_bytes == 0 || capsule.len() > max_replay_bytes {
             return Err(invalid());
         }
-        let text = capsule.strip_prefix(PREFIX).ok_or_else(invalid)?;
+        let (text, version) = if let Some(text) = capsule.strip_prefix(PREFIX) {
+            (text, 1)
+        } else if let Some(text) = capsule.strip_prefix(TOOLS_PREFIX) {
+            (text, 2)
+        } else {
+            return Err(invalid());
+        };
         let envelope: Value = serde_json::from_str(text).map_err(|_| invalid())?;
-        if envelope["provider"] != "anthropic" || envelope["version"] != 1 {
+        if envelope["provider"] != "anthropic" || envelope["version"] != version {
             return Err(invalid());
         }
         let message = Self::parse(envelope["message"].clone()).map_err(|_| invalid())?;
@@ -74,7 +104,23 @@ impl NativeMessage {
         if item["summary"] != message.reasoning_summary() {
             return Err(invalid());
         }
-        let projected = message.projected_items();
+        let tools = if version == 2 {
+            Some(
+                ToolMap::new(
+                    envelope["tools"].as_array().ok_or_else(invalid)?,
+                    max_replay_bytes,
+                )
+                .map_err(|_| invalid())?,
+            )
+        } else {
+            if envelope.get("tools").is_some() {
+                return Err(invalid());
+            }
+            None
+        };
+        let projected = message
+            .projected_items(tools.as_ref())
+            .map_err(|_| invalid())?;
         if output.len() != projected.len() + 1 {
             return Err(invalid());
         }
@@ -92,7 +138,7 @@ impl NativeMessage {
                     if actual["type"] != "function_call"
                         || actual["call_id"] != expected["call_id"]
                         || actual["name"] != expected["name"]
-                        || actual.get("namespace").is_some_and(|v| !v.is_null())
+                        || actual["namespace"] != expected["namespace"]
                     {
                         return Err(invalid());
                     }
@@ -103,6 +149,16 @@ impl NativeMessage {
                         serde_json::from_str(expected["arguments"].as_str().unwrap())
                             .expect("projected native JSON");
                     if actual != expected {
+                        return Err(invalid());
+                    }
+                }
+                "custom_tool_call" => {
+                    if actual["type"] != "custom_tool_call"
+                        || actual["call_id"] != expected["call_id"]
+                        || actual["name"] != expected["name"]
+                        || actual["namespace"] != expected["namespace"]
+                        || actual["input"] != expected["input"]
+                    {
                         return Err(invalid());
                     }
                 }
@@ -119,7 +175,7 @@ impl NativeMessage {
             .collect::<Vec<_>>()
             .into()
     }
-    fn projected_items(&self) -> Vec<Value> {
+    fn projected_items(&self, tools: Option<&ToolMap>) -> ProviderResult<Vec<Value>> {
         let mut output = Vec::new();
         let phase = if matches!(
             self.outcome(),
@@ -133,6 +189,11 @@ impl NativeMessage {
             match block["type"].as_str().unwrap() {
                 "text" => output.push(json!({"type":"message","id":format!("msg_{}_{index}",self.id()),
                     "role":"assistant","phase":phase,"content":[{"type":"output_text","text":block["text"]}]})),
+                "tool_use" if tools.is_some() => {
+                    let mut item = tools.unwrap().responses_call(block)?.wire().clone();
+                    item["id"] = format!("fc_{}_{index}", self.id()).into();
+                    output.push(item);
+                }
                 "tool_use" => output.push(json!({"type":"function_call","id":format!("fc_{}_{index}",self.id()),
                     "call_id":block["id"],"name":block["name"],"arguments":block["input"].to_string()})),
                 // Server tools and future blocks stay native inside the carrier;
@@ -140,7 +201,7 @@ impl NativeMessage {
                 _=>(),
             }
         }
-        output
+        Ok(output)
     }
     fn normalized_usage(&self) -> ProviderResult<Value> {
         let raw = &self.wire()["usage"];

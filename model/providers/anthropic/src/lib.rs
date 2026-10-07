@@ -5,6 +5,7 @@ mod client;
 mod message;
 mod projection;
 mod stream;
+mod tools;
 mod transfer;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};
@@ -12,6 +13,7 @@ pub use catalog::{ModelCatalog, ModelsPage, NativeModel};
 pub use client::{AnthropicClient, AnthropicConfig};
 pub use message::{MessageOutcome, NativeMessage};
 pub use stream::{MessageEvent, MessageStream, NativeStreamState};
+pub use tools::ToolMap;
 pub use transfer::{NativeStreamEvent, NativeStreamingResponse};
 
 use caidex_model_core::{ProviderError, ProviderResult};

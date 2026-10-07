@@ -22,7 +22,17 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 `from_responses_output` 仅恢复完整回复组：检查前缀/provider/version、大小、原生 schema、准确模型版本，以及展示文本/工具/推理与载体的一致性，拒绝丢失、修改或错误作用域的投影。允许 Runtime 展示 ID/status 变化和等价工具 JSON 格式；结构一致性校验不防止同时伪造载体和展示内容，提供商仍负责验证 thinking 签名。原生字段、内容顺序、signature/redacted data、citations/未来块/usage 保留在载体，不能从展示文本重建。
 
-文本显示及基本 function 工具投影已实现；服务端工具/未知块保持原生数据，绝不投影为 Runtime 可执行客户端工具。命名空间/custom 工具转换、引用展示、工具结果/完整请求翻译、流式 Responses 事件转换仍待实现。stop reason 分开保留；max_tokens/context 上限/pause/未知原因转 incomplete。refusal/tool_use 的 completed 仅是生成结束，不代表任务成功。usage 输入归一化为未缓存+缓存读+缓存写，缺失保持未知，累计值不重复相加；原始 usage 单独完整保存。
+文本显示及基本 function 工具投影已实现；服务端工具/未知块保持原生数据，绝不投影为 Runtime 可执行客户端工具。命名空间/custom 工具声明与调用映射已实现；引用展示、工具结果/完整请求翻译、流式 Responses 事件转换仍待实现。stop reason 分开保留；max_tokens/context 上限/pause/未知原因转 incomplete。refusal/tool_use 的 completed 仅是生成结束，不代表任务成功。usage 输入归一化为未缓存+缓存读+缓存写，缺失保持未知，累计值不重复相加；原始 usage 单独完整保存。
+
+## 工具映射与历史绑定
+
+`ToolMap` 支持 function/custom 和一层 namespace。原生名称为工具 kind/namespace/name 身份的 SHA-256 稳定别名，不受声明顺序、增删其他工具或 schema 修改影响；同名不同 namespace 分开映射。function 保留 JSON schema 和 strict，custom 将完整文本放入唯一 `input` 字符串属性，恢复时保留空白、转义及 Unicode。工具执行仍由 Runtime 负责；服务端工具不会变成客户端调用。
+
+原始声明及未知字段由 `source()` 完整保留，未知字段不代表已映射的原生参数。custom Lark/regex 格式只写入原生描述，JSON Schema 不实施该语法；`has_grammar_tools()` 明确暴露此限制，不授予硬约束或完整 Code Mode 兼容性。
+
+`to_responses_with_tools` 使用 v2 专用前缀，把本次工具声明随完整 native message 保存。回放只用该历史快照重建映射，不用当前请求声明重新解释旧调用；严格校验 function namespace/name/call_id/JSON 与 custom 原文。v1 仍可回放，v1 不接受 tools 扩展。v2 同样只是敏感 JSON 载体，不是密码学认证或加密；同时伪造载体与投影仍不在结构一致性检查的防护范围。
+
+新增 7 项工具测试覆盖稳定别名/同名隔离/并行 ID/大整数/custom 原文、缺字段安全拒绝、坏声明与上限，以及 v2 在经典/Lite canonical wire 中的往返、历史身份/文本/声明篡改拒绝。实际 Runtime 的既有载体测试针对 v1；v2 namespace/custom 在真实 Runtime 的工具执行和整套 Adapter 接入尚未验收。
 
 ## 验证
 
