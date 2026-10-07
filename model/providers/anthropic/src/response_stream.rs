@@ -158,7 +158,10 @@ impl ResponsesProjection {
                                 block.item = Some(item);
                                 self.output_count += 1;
                                 if native["input"].as_object().is_some_and(|v| !v.is_empty())
-                                    && block.item.as_ref().unwrap()["type"] == "function_call"
+                                    && matches!(
+                                        block.item.as_ref().unwrap()["type"].as_str(),
+                                        Some("function_call" | "tool_search_call")
+                                    )
                                 {
                                     block.arguments = native["input"].to_string();
                                 }
@@ -175,7 +178,12 @@ impl ResponsesProjection {
                         if !block.text.is_empty() {
                             self.text_delta(&block, &block.text, &mut output)?;
                         }
-                        if !block.arguments.is_empty() {
+                        if !block.arguments.is_empty()
+                            && block
+                                .item
+                                .as_ref()
+                                .is_some_and(|item| item["type"] == "function_call")
+                        {
                             self.argument_delta(&block, &block.arguments, &mut output)?;
                         }
                         self.blocks.push(block);
@@ -203,13 +211,17 @@ impl ResponsesProjection {
                                 self.blocks[i].text.push_str(text);
                             }
                             Some("input_json_delta")
-                                if block
-                                    .item
-                                    .as_ref()
-                                    .is_some_and(|item| item["type"] == "function_call") =>
+                                if block.item.as_ref().is_some_and(|item| {
+                                    matches!(
+                                        item["type"].as_str(),
+                                        Some("function_call" | "tool_search_call")
+                                    )
+                                }) =>
                             {
                                 let partial = delta["partial_json"].as_str().ok_or_else(invalid)?;
-                                self.argument_delta(block, partial, &mut output)?;
+                                if block.item.as_ref().unwrap()["type"] == "function_call" {
+                                    self.argument_delta(block, partial, &mut output)?;
+                                }
                                 self.blocks[i].arguments.push_str(partial);
                             }
                             _ => (), // signatures and native metadata are never display text
@@ -227,12 +239,17 @@ impl ResponsesProjection {
                             if item["type"] == "message" && native["text"] != block.text {
                                 return Err(invalid());
                             }
-                            if item["type"] == "function_call" || item["type"] == "custom_tool_call"
-                            {
+                            if matches!(
+                                item["type"].as_str(),
+                                Some("function_call" | "custom_tool_call" | "tool_search_call")
+                            ) {
                                 let mut complete =
                                     self.tools.responses_call(native)?.wire().clone();
                                 complete["id"] = item["id"].clone();
-                                if complete["type"] == "function_call" {
+                                if matches!(
+                                    complete["type"].as_str(),
+                                    Some("function_call" | "tool_search_call")
+                                ) {
                                     if block.arguments.is_empty() {
                                         block.arguments = native["input"].to_string();
                                     }
@@ -241,7 +258,9 @@ impl ResponsesProjection {
                                     if parsed != native["input"] {
                                         return Err(invalid());
                                     }
-                                    complete["arguments"] = block.arguments.clone().into();
+                                    if complete["type"] == "function_call" {
+                                        complete["arguments"] = block.arguments.clone().into();
+                                    }
                                 }
                                 block.item = Some(complete);
                             }
@@ -327,6 +346,7 @@ impl ResponsesProjection {
                         }
                         Some("function_call") => self.emit(json!({"type":"response.function_call_arguments.done","item_id":item["id"],"output_index":i,"arguments":item["arguments"]}), &mut output)?,
                         Some("custom_tool_call") => self.emit(json!({"type":"response.custom_tool_call_input.done","item_id":item["id"],"output_index":i,"input":item["input"]}), &mut output)?,
+                        Some("tool_search_call") => (),
                         _ => return Err(invalid()),
                     }
                     self.emit(

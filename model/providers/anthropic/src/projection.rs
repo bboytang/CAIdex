@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 
 const PREFIX: &str = "caidex.anthropic.native-message.v1:";
 const BOUND_PREFIX: &str = "caidex.anthropic.native-message.v3:";
+const DISCOVERY_PREFIX: &str = "caidex.anthropic.native-message.v4:";
 const TOOLS_PREFIX: &str = "caidex.anthropic.native-message.v2:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "invalid_anthropic_replay")
@@ -40,7 +41,17 @@ impl NativeMessage {
         max_replay_bytes: usize,
     ) -> ProviderResult<CanonicalResponse> {
         crate::message::check_input_bindings(self.wire())?;
+        if tools.is_some_and(ToolMap::needs_discovery) && binding.is_none() {
+            return Err(ProviderError::new(
+                400,
+                "anthropic_tool_discovery_binding_required",
+            ));
+        }
         let (prefix, envelope) = match (tools, binding) {
+            (Some(tools), Some(binding)) if tools.needs_discovery() => (
+                DISCOVERY_PREFIX,
+                json!({"provider":"anthropic","version":4,"message":self.wire(),"tools":tools.source(),"discoveries":tools.discoveries(),"binding":binding.wire()}),
+            ),
             (Some(tools), Some(binding)) => (
                 BOUND_PREFIX,
                 json!({"provider":"anthropic","version":3,"message":self.wire(),"tools":tools.source(),"binding":binding.wire()}),
@@ -108,7 +119,7 @@ impl NativeMessage {
         if item["summary"] != message.reasoning_summary() {
             return Err(invalid());
         }
-        let tools = if version >= 2 {
+        let mut tools = if version >= 2 {
             Some(
                 ToolMap::new(
                     envelope["tools"].as_array().ok_or_else(invalid)?,
@@ -122,6 +133,26 @@ impl NativeMessage {
             }
             None
         };
+        if version == 4 {
+            let tools = tools.as_mut().expect("v4 includes tools");
+            if !tools.needs_discovery() {
+                return Err(invalid());
+            }
+            for output in envelope["discoveries"].as_array().ok_or_else(invalid)? {
+                tools
+                    .load(
+                        &caidex_model_core::ResponseItem::new(output.clone())
+                            .map_err(|_| invalid())?,
+                        max_replay_bytes,
+                    )
+                    .map_err(|_| invalid())?;
+            }
+        } else if envelope.get("discoveries").is_some() {
+            return Err(invalid());
+        }
+        if version != 4 && tools.as_ref().is_some_and(ToolMap::needs_discovery) {
+            return Err(invalid());
+        }
         if let Some(binding) = binding {
             binding.check_tools(tools.as_ref().expect("v3 includes tools"))?;
         }
@@ -165,6 +196,18 @@ impl NativeMessage {
                         || actual["name"] != expected["name"]
                         || actual["namespace"] != expected["namespace"]
                         || actual["input"] != expected["input"]
+                    {
+                        return Err(invalid());
+                    }
+                }
+                "tool_search_call" => {
+                    if actual["type"] != "tool_search_call"
+                        || actual["execution"] != "client"
+                        || actual["call_id"] != expected["call_id"]
+                        || actual["arguments"] != expected["arguments"]
+                        || actual
+                            .get("status")
+                            .is_some_and(|status| status != &expected["status"])
                     {
                         return Err(invalid());
                     }
@@ -275,7 +318,7 @@ fn replay_binding(
     envelope: &Value,
     version: u64,
 ) -> ProviderResult<Option<crate::binding::ReplayBinding>> {
-    if version == 3 {
+    if matches!(version, 3 | 4) {
         Ok(Some(crate::binding::ReplayBinding::parse(
             envelope["binding"].clone(),
         )?))
@@ -296,6 +339,8 @@ fn replay_envelope(item: &Value, max_bytes: usize) -> ProviderResult<(Value, u64
         (text, 2)
     } else if let Some(text) = capsule.strip_prefix(BOUND_PREFIX) {
         (text, 3)
+    } else if let Some(text) = capsule.strip_prefix(DISCOVERY_PREFIX) {
+        (text, 4)
     } else {
         return Err(invalid());
     };

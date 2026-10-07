@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；Gateway 的真实 Lite 接线正在本地验收，经典 builtin 工具和完整 Runtime 互操作尚未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；客户端动态工具发现及 v4 已接入，验收状态见下节与 HANDOFF.md。Gateway 的真实 Lite 接线正在本地验收，经典缓存网页搜索和完整 Runtime 互操作尚未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -33,6 +33,22 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 `to_responses_with_tools` 使用 v2 专用前缀，把本次工具声明随完整 native message 保存。回放只用该历史快照重建映射，不用当前请求声明重新解释旧调用；严格校验 function namespace/name/call_id/JSON 与 custom 原文。v1 仍可回放，v1 不接受 tools 扩展。v2 同样只是敏感 JSON 载体，不是密码学认证或加密；同时伪造载体与投影仍不在结构一致性检查的防护范围。
 
 新增 7 项工具测试覆盖稳定别名/同名隔离/并行 ID/大整数/custom 原文、缺字段安全拒绝、坏声明与上限，以及 v2 在经典/Lite canonical wire 中的往返、历史身份/文本/声明篡改拒绝。实际 Runtime 的既有载体测试针对 v1；v2 namespace/custom 在真实 Runtime 的工具执行和整套 Adapter 接入尚未验收。
+
+## 客户端动态发现与 v4 载体
+
+固定 Runtime 的 `tool_search execution=client` 现在映射为原生客户端 `tool_use`，回到 Responses 时仍是专用 `tool_search_call`，保留对象 arguments/call_id，不冒充普通 function 或原生服务端搜索。Gateway 不搜索注册表、不执行发现或加载后的工具；发现结果由 Runtime 返回 `tool_search_output`。只有匹配待完成调用、client/completed 的结果可加载，server/错误 ID/重复结果/错误工具种类/超限明确拒绝。
+
+`ToolMap` 保持初始 source 和 native top-level tools 不变，另存完整原始发现输出。已声明且相同的 deferred 工具通过原生 `tool_reference` 激活；新工具或相同身份的新 schema 用 `tool_definition`，相同已加载定义不重复追加。每轮的新定义在完整并行结果及相邻用户文字之后、下一 assistant 边界或请求结尾追加为原生 system/tool_addition，后续请求在相同位置重建，不移动已绑定的签名前缀。function/custom/一层 namespace 沿用稳定别名与原文规则；发现后的工具立即可用，原始 Responses defer_loading/未来字段保留在 source，原生 inline 定义移除延迟标记。
+
+执行端须同时配置 `AnthropicConfig::with_inline_tools()`、模型 `supports_tool_discovery=true`、`supports_system_messages=true` 和预期认证组织。默认不启用，不从模型名称猜能力；缺配置在读取 Key/联网前拒绝。inline beta 固定为 `inline-tools-2026-09-15`，与 thinking-binding beta 可同时发送。独立原生 Messages 入口对 inline addition/removal 也执行 beta 门控；单独的原生 deferred 声明不被错误地要求使用 inline beta。
+
+该路径使用 v4：完整 native message、初始 tools、按发生顺序的原始 discoveries，以及实际 compiled prefix/组织 binding。恢复逐项重建映射，检查历史中的客户端发现调用、原始结果和 inline 定义一致，再核对请求前缀。篡改/丢失记录、错误 ID 和降级拒绝；已有 v1–v3 非延迟工具路径保持原读取规则，旧载体中的动态/延迟声明不自动升级或认领。v4 仍是敏感 JSON 载体，不是加密、密码学认证或历史访问控制。
+
+SSE 搜索 JSON 分片内部累积，专用 call 不发送 function arguments 事件；只有原生 Completed、完整 v4/预算/历史门控成功后交付可执行 output_item.done。HTTP 合成 fixture 验证 JSON/SSE 三轮签名回放、工具加载及后续调用；没有在这个 fixture 中执行工具或调用商业 API。新增工具2、编译器4、HTTP4项，完整 workspace/Clippy/fmt 与 CI 状态见 HANDOFF.md；既有实际 Runtime Lite 接线仍是独立未提交验证，完整经典尚未通过。
+
+独立审查的用户追加文字问题已用 RED→GREEN 回归修复。保留一个 Minor：搜索的 output_item.added 暂用 completed 占位状态；执行仍只取完整验证后的 done，后续修正展示状态。经典 `web_search external_web_access=false / text+image` 仍无已验证的 Anthropic 缓存语义映射，不能删除该工具、改成实时搜索或据此标记 Full。
+
+契约依据：[OpenAI 客户端 tool search](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[Anthropic 原位置工具变更](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking#add-or-remove-tools-with-tool_addition-and-tool_removal)、[中途 system 消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)。模型配置和合成 fixture 不是商业模型能力证明。
 
 ## 验证
 

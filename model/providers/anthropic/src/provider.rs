@@ -19,6 +19,7 @@ pub struct AnthropicModel {
     pub retain_runtime_metadata: bool,
     pub service_tier_mappings: Vec<ServiceTierMapping>,
     pub supports_system_messages: bool,
+    pub supports_tool_discovery: bool,
     pub supports_structured_outputs: bool,
     pub verbosity_mappings: Vec<crate::VerbosityMapping>,
     pub summary_mappings: Vec<SummaryMapping>,
@@ -34,6 +35,7 @@ impl AnthropicModel {
             retain_runtime_metadata: false,
             service_tier_mappings: Vec::new(),
             supports_system_messages: false,
+            supports_tool_discovery: false,
             supports_structured_outputs: false,
             verbosity_mappings: Vec::new(),
             summary_mappings: Vec::new(),
@@ -66,6 +68,7 @@ impl AnthropicModel {
                 retain_runtime_metadata: self.retain_runtime_metadata,
                 service_tier_mappings: &self.service_tier_mappings,
                 supports_system_messages: self.supports_system_messages,
+                supports_tool_discovery: self.supports_tool_discovery,
                 supports_structured_outputs: self.supports_structured_outputs,
                 verbosity_mappings: &self.verbosity_mappings,
                 summary_mappings: &self.summary_mappings,
@@ -94,6 +97,16 @@ impl<S: SecretStore + 'static> AnthropicProvider<S> {
         }
         let mut profiles = BTreeMap::new();
         for model in models {
+            if model.supports_tool_discovery
+                && (!client.inline_tools()
+                    || !model.supports_system_messages
+                    || client.expected_organization().is_none())
+            {
+                return Err(ProviderError::new(
+                    400,
+                    "anthropic_tool_discovery_profile_required",
+                ));
+            }
             if !client.thinking_binding_controls()
                 && model.reasoning_mappings.iter().any(|mapping| {
                     mapping.native_parameters()["thinking"]

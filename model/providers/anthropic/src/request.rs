@@ -1,7 +1,7 @@
 use crate::{NativeMessage, ReasoningMapping, ToolMap};
 use base64::Engine;
 use caidex_model_core::{
-    CanonicalRequest, ProviderError, ProviderResult, ResponseItem, ResponsesDialect, ToolKind,
+    CanonicalRequest, ProviderError, ProviderResult, ResponseItem, ResponsesDialect,
 };
 use serde_json::{Value, json};
 use std::{
@@ -16,7 +16,7 @@ fn unsupported() -> ProviderError {
     ProviderError::new(400, "unsupported_anthropic_request")
 }
 struct Pending {
-    kind: ToolKind,
+    kind: crate::tools::CallKind,
     name: String,
     namespace: Option<String>,
 }
@@ -35,6 +35,7 @@ pub struct RequestOptions<'a> {
     pub retain_runtime_metadata: bool,
     pub service_tier_mappings: &'a [crate::ServiceTierMapping],
     pub supports_system_messages: bool,
+    pub supports_tool_discovery: bool,
     pub supports_structured_outputs: bool,
     pub verbosity_mappings: &'a [crate::VerbosityMapping],
     pub summary_mappings: &'a [crate::SummaryMapping],
@@ -185,7 +186,17 @@ impl MessagesRequest {
                 seen_tools = true;
             }
         }
-        let tools = ToolMap::new(&declarations, max_tools)?;
+        let mut tools = ToolMap::new(&declarations, max_tools)?;
+        if tools.needs_discovery()
+            && (!options.supports_tool_discovery
+                || !options.supports_system_messages
+                || options.expected_organization.is_none())
+        {
+            return Err(ProviderError::new(
+                400,
+                "unsupported_anthropic_tool_discovery",
+            ));
+        }
         let mut system = Vec::new();
         if let Some(instructions) = source.get("instructions") {
             let text = instructions.as_str().ok_or_else(invalid)?;
@@ -197,9 +208,24 @@ impl MessagesRequest {
         let mut replays = Vec::new();
         let mut pending: BTreeMap<String, Pending> = BTreeMap::new();
         let mut ids = BTreeSet::new();
+        let mut additions = Vec::new();
         let mut index = 0;
         while index < input.len() {
             let item = &input[index];
+            // Finish the entire user turn, including text after parallel tool
+            // results, before offering tools at the next assistant boundary.
+            if pending.is_empty()
+                && !additions.is_empty()
+                && (item["role"] == "assistant"
+                    || matches!(
+                        item["type"].as_str(),
+                        Some(
+                            "reasoning" | "function_call" | "custom_tool_call" | "tool_search_call"
+                        )
+                    ))
+            {
+                append(&mut messages, "system", std::mem::take(&mut additions));
+            }
             if item.get("clear_at").is_some() || item.get("output_config").is_some() {
                 return Err(unsupported());
             }
@@ -231,7 +257,10 @@ impl MessagesRequest {
                 continue;
             }
             let kind = item["type"].as_str();
-            if matches!(kind, Some("function_call" | "custom_tool_call")) {
+            if matches!(
+                kind,
+                Some("function_call" | "custom_tool_call" | "tool_search_call")
+            ) {
                 if !pending.is_empty() && messages.last().is_some_and(|v| v["role"] != "assistant")
                 {
                     return Err(invalid());
@@ -240,6 +269,26 @@ impl MessagesRequest {
                 let native = tools.native_call(&call)?;
                 register(item, &mut pending, &mut ids)?;
                 append(&mut messages, "assistant", vec![native]);
+            } else if kind == Some("tool_search_output") {
+                let output = ResponseItem::new(item.clone()).map_err(|_| invalid())?;
+                let result = output
+                    .tool_search_output()
+                    .map_err(|_| invalid())?
+                    .ok_or_else(invalid)?;
+                let id = result.call_id.ok_or_else(invalid)?;
+                if pending
+                    .get(id)
+                    .is_none_or(|p| p.kind != crate::tools::CallKind::ClientSearch)
+                {
+                    return Err(invalid());
+                }
+                additions.extend(tools.load(&output, max_tools)?);
+                pending.remove(id);
+                append(
+                    &mut messages,
+                    "user",
+                    vec![crate::tools::search_result(item)],
+                );
             } else if matches!(
                 kind,
                 Some("function_call_output" | "custom_tool_call_output")
@@ -256,7 +305,7 @@ impl MessagesRequest {
                     let candidates: Vec<_> = pending
                         .iter()
                         .filter(|(_, p)| {
-                            p.kind == result.kind
+                            p.kind == crate::tools::CallKind::Callable(result.kind)
                                 && p.name == name
                                 && p.namespace.as_deref() == result.namespace
                         })
@@ -268,7 +317,7 @@ impl MessagesRequest {
                     candidates[0].clone()
                 };
                 let binding = pending.get(&id).ok_or_else(invalid)?;
-                if binding.kind != result.kind
+                if binding.kind != crate::tools::CallKind::Callable(result.kind)
                     || result.name.is_some_and(|v| v != binding.name)
                     || result
                         .namespace
@@ -316,6 +365,9 @@ impl MessagesRequest {
         }
         if !pending.is_empty() || messages.is_empty() {
             return Err(invalid());
+        }
+        if !additions.is_empty() {
+            append(&mut messages, "system", additions);
         }
         validate_system_positions(&messages)?;
         let mut wire = json!({"model":native_model,"max_tokens":max_tokens,"messages":messages,"stream":request.is_streaming()});
@@ -397,9 +449,26 @@ fn register(
         pending.insert(
             call.call_id.to_owned(),
             Pending {
-                kind: call.kind,
+                kind: crate::tools::CallKind::Callable(call.kind),
                 name: call.name.to_owned(),
                 namespace: call.namespace.map(str::to_owned),
+            },
+        );
+    }
+    if let Some(call) = item.tool_search_call().map_err(|_| invalid())? {
+        let id = call
+            .call_id
+            .filter(|_| call.execution == "client")
+            .ok_or_else(invalid)?;
+        if !ids.insert(id.to_owned()) {
+            return Err(invalid());
+        }
+        pending.insert(
+            id.to_owned(),
+            Pending {
+                kind: crate::tools::CallKind::ClientSearch,
+                name: String::new(),
+                namespace: None,
             },
         );
     }

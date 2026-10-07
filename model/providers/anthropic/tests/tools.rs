@@ -11,6 +11,52 @@ fn declarations() -> Vec<Value> {
     ]
 }
 #[test]
+fn client_search_projects_dedicated_json_calls_without_selecting_server_execution() {
+    let search = json!({"type":"tool_search","execution":"client","description":"Find tools","parameters":{"type":"object","properties":{"query":{"type":"string"}}},"future":"retain"});
+    let map = ToolMap::new(&[search.clone(), function("tool_search")], 10).unwrap();
+    assert_eq!(map.source()[0], search);
+    assert_eq!(map.native_tools().len(), 2);
+    let call = json!({"type":"tool_search_call","execution":"client","call_id":"search-1","arguments":{"query":"calendar","limit":1,"future":18446744073709551616_u128}});
+    let native = map
+        .native_call(&ResponseItem::new(call.clone()).unwrap())
+        .unwrap();
+    assert_eq!(native["type"], "tool_use");
+    assert_eq!(native["input"], call["arguments"]);
+    let projected = map.responses_call(&native).unwrap();
+    assert_eq!(projected.wire()["type"], "tool_search_call");
+    assert_eq!(projected.wire()["execution"], "client");
+    assert_eq!(projected.wire()["call_id"], "search-1");
+    assert_eq!(projected.wire()["arguments"], call["arguments"]);
+    assert!(projected.wire().get("name").is_none());
+    assert!(projected.tool_call().unwrap().is_none());
+    for execution in ["server", "future"] {
+        let mut invalid = call.clone();
+        invalid["execution"] = execution.into();
+        assert!(
+            map.native_call(&ResponseItem::new(invalid).unwrap())
+                .is_err()
+        );
+        let mut invalid = search.clone();
+        invalid["execution"] = execution.into();
+        assert!(ToolMap::new(&[invalid], 10).is_err());
+    }
+    let mut invalid = native;
+    invalid["type"] = "server_tool_use".into();
+    assert!(map.responses_call(&invalid).is_err());
+}
+
+#[test]
+fn deferred_tools_cannot_be_projected_before_client_discovery_loads_them() {
+    let mut deferred = function("hidden");
+    deferred["defer_loading"] = true.into();
+    let map = ToolMap::new(&[deferred], 10).unwrap();
+    assert_eq!(map.native_tools()[0]["defer_loading"], true);
+    let native =
+        json!({"type":"tool_use","id":"hidden-1","name":map.native_tools()[0]["name"],"input":{}});
+    assert!(map.responses_call(&native).is_err());
+    assert!(map.native_call(&ResponseItem::new(json!({"type":"function_call","call_id":"hidden-1","name":"hidden","arguments":"{}"})).unwrap()).is_err());
+}
+#[test]
 fn declarations_keep_schema_and_source_and_names_are_stable_across_reordering_and_additions() {
     let source = declarations();
     let map = ToolMap::new(&source, 10).unwrap();

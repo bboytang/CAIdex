@@ -17,6 +17,7 @@ pub struct AnthropicConfig {
     workspace: Option<HeaderValue>,
     local_runtime_context: bool,
     thinking_binding_controls: bool,
+    inline_tools: bool,
     expected_organization: Option<String>,
 }
 impl AnthropicConfig {
@@ -30,6 +31,7 @@ impl AnthropicConfig {
             workspace: None,
             local_runtime_context: false,
             thinking_binding_controls: false,
+            inline_tools: false,
             expected_organization: None,
         })
     }
@@ -66,6 +68,11 @@ impl AnthropicConfig {
         self.thinking_binding_controls = true;
         self
     }
+    /// Opt into native inline definitions; model capability is a separate gate.
+    pub fn with_inline_tools(mut self) -> Self {
+        self.inline_tools = true;
+        self
+    }
     /// Require authenticated organization identity before sending model input.
     /// This is an expectation, not an organization-selection request header.
     pub fn with_expected_organization(mut self, organization: &str) -> Result<Self, Error> {
@@ -98,6 +105,9 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
     }
     pub(crate) fn expected_organization(&self) -> Option<&str> {
         self.config.expected_organization.as_deref()
+    }
+    pub(crate) fn inline_tools(&self) -> bool {
+        self.config.inline_tools
     }
     pub(crate) fn thinking_binding_controls(&self) -> bool {
         self.config.thinking_binding_controls
@@ -285,6 +295,24 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
                 "anthropic_thinking_binding_beta_required",
             ));
         }
+        if !self.config.inline_tools
+            && wire["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .flat_map(|message| message["content"].as_array().into_iter().flatten())
+                .any(|block| {
+                    matches!(
+                        block["type"].as_str(),
+                        Some("tool_addition" | "tool_removal")
+                    )
+                })
+        {
+            return Err(ProviderError::new(
+                400,
+                "anthropic_inline_tools_beta_required",
+            ));
+        }
         wire["model"] = model.into();
         wire["stream"] = stream.into();
         let body = serde_json::to_vec(wire).expect("JSON value");
@@ -434,8 +462,15 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         if let Some(workspace) = &self.config.workspace {
             outgoing = outgoing.header("anthropic-workspace-id", workspace.clone());
         }
+        let mut betas = Vec::new();
         if self.config.thinking_binding_controls {
-            outgoing = outgoing.header("anthropic-beta", "thinking-binding-controls-2026-08-01");
+            betas.push("thinking-binding-controls-2026-08-01");
+        }
+        if self.config.inline_tools {
+            betas.push("inline-tools-2026-09-15");
+        }
+        if !betas.is_empty() {
+            outgoing = outgoing.header("anthropic-beta", betas.join(","));
         }
         let response = guard(outgoing.send(), context, header_deadline)
             .await?

@@ -50,6 +50,67 @@ impl ReplayBinding {
         if tool_set(&self.0["prefix"]["tools"]) != tool_set(&json!(tools.native_tools())) {
             return Err(ProviderError::new(400, "invalid_anthropic_replay"));
         }
+        let messages = self.0["prefix"]["messages"]
+            .as_array()
+            .expect("validated prefix");
+        let blocks: Vec<_> = messages
+            .iter()
+            .flat_map(|message| {
+                message["content"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(move |block| (&message["role"], block))
+            })
+            .collect();
+        let inline: Vec<_> = blocks
+            .iter()
+            .filter(|(role, block)| {
+                *role == "system"
+                    && matches!(
+                        block["type"].as_str(),
+                        Some("tool_addition" | "tool_removal")
+                    )
+            })
+            .map(|(_, block)| *block)
+            .collect();
+        let searches = blocks
+            .iter()
+            .filter(|(role, block)| *role == "assistant" && tools.is_client_search(block))
+            .count();
+        if inline != tools.additions().iter().collect::<Vec<_>>()
+            || searches != tools.discoveries().len()
+        {
+            return Err(ProviderError::new(400, "invalid_anthropic_replay"));
+        }
+        for output in tools.discoveries() {
+            let calls: Vec<_> = blocks
+                .iter()
+                .enumerate()
+                .filter(|(_, (role, block))| {
+                    *role == "assistant"
+                        && tools.is_client_search(block)
+                        && block["id"] == output["call_id"]
+                })
+                .collect();
+            let results: Vec<_> = blocks
+                .iter()
+                .enumerate()
+                .filter(|(_, (role, block))| {
+                    *role == "user"
+                        && block["type"] == "tool_result"
+                        && block["tool_use_id"] == output["call_id"]
+                })
+                .collect();
+            if calls.len() != 1
+                || results.len() != 1
+                || calls[0].0 >= results[0].0
+                || *results[0].1.1 != crate::tools::search_result(output)
+                || tools.responses_call(calls[0].1.1)?.kind() != "tool_search_call"
+            {
+                return Err(ProviderError::new(400, "invalid_anthropic_replay"));
+            }
+        }
         Ok(())
     }
     pub(crate) fn check(

@@ -21,6 +21,8 @@ mod binding;
 mod compiled;
 #[path = "http/context.rs"]
 mod context;
+#[path = "http/discovery.rs"]
+mod discovery;
 #[path = "http/organization.rs"]
 mod organization;
 #[path = "http/provider.rs"]

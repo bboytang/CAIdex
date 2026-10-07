@@ -96,6 +96,7 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
                 summary_mappings: &summaries,
                 thinking_context: Some(ThinkingContext::AllTurns),
                 expected_organization: None,
+                supports_tool_discovery: false,
                 verbosity_mappings: &[],
             },
         )
