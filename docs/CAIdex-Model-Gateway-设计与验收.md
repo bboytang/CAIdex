@@ -2,7 +2,7 @@
 
 阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。后续 Provider 与实际商业模型兼容性仍需验收，不能将已有离线证据当作 F/G 全部验收。
 
-原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic 原生适配及实际 Runtime 离线接线范围已三平台验收，见 [Anthropic 当前范围](CAIdex-Anthropic-Provider-设计与验收.md)；Gemini Models、generateContent JSON、原生SSE解析及流式HTTP、v1绑定原生历史与Responses输出投影已三平台验收（最新源码421ead5/CI37672020384），Responses请求编译/工具映射、六方法及实际Gemini Runtime接线尚未完成，见 [Gemini 当前范围](CAIdex-Gemini-Provider-设计与验收.md)。兼容 API/Ollama 与真实商业模型兼容性仍待后续。
+原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic 原生适配及实际 Runtime 离线接线范围已三平台验收，见 [Anthropic 当前范围](CAIdex-Anthropic-Provider-设计与验收.md)；Gemini Models、generateContent JSON、原生SSE解析及流式HTTP、v1原生历史/Responses输出投影及工具身份映射/v2声明绑定历史已三平台验收（最新源码d2a363d/CI37675979615），Responses请求编译/工具结果转换、六方法及实际Gemini Runtime接线尚未完成，见 [Gemini 当前范围](CAIdex-Gemini-Provider-设计与验收.md)。兼容 API/Ollama 与真实商业模型兼容性仍待后续。
 
 ## 固定协议依据
 
@@ -95,7 +95,7 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 - 本机 workspace/fmt/Clippy、Gateway 16 项、真实 Runtime Linux 20 项通过；最终大整数/高精度小数 wire 和 EOF/reset 判据分别定向复验通过。全部使用本地合成推理数据，不代表真实商业模型兼容性。
 - F 第三步 [三平台 CI 37552752561](https://github.com/bboytang/CAIdex/actions/runs/37552752561) 全部 success，源码 `42fdaa3`（接口源码 e834549 + 证书 fixture 修正）：核心 20、独立 provider 7、Gateway 18 项各平台通过，真实 Runtime Linux 20、Windows/macOS 各 19 项通过。新增验证包含独立 client 六方法/经典与 Lite、配置能力与未验证标记、完整同步 response、header 双向筛选、HTTP-date、单并发 slot 释放、未消费流取消/超时、TLS 正/负证书；fmt/Clippy/workspace/schema/doctor 及既有凭据回归保持通过。
 - 本机 workspace/fmt/Clippy/真实 Runtime 20 项通过，单并发 slot/TLS 定向复验通过。首轮 Windows TLS 正例被拒绝，以明确 CA/leaf identity、用途/AKI/有效期的 fixture 修正后全部通过，未放宽生产 TLS。日志 `/tmp/caidex-ci-37552752561.log` 供本机复查，跨机器以 CI 链接为准。
-- 后续范围：Gemini请求编译/工具映射/六方法/实际Runtime、兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
+- 后续范围：Gemini请求编译/工具结果转换/六方法/实际Runtime、兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
 
 ## 下一步顺序
 

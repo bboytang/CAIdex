@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP已实现并三平台验收；最新传输源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项逐平台通过。v1原生历史与Responses输出投影已实现并三平台验收（源码421ead5/CI37672020384，Google37项各平台通过）；Responses请求编译/工具映射、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP、v1原生历史/输出投影、工具身份映射与显式v2声明绑定历史已实现并三平台验收；最新源码`d2a363d64c80b63049b7bffa0325224955657983`，[CI37675979615](https://github.com/bboytang/CAIdex/actions/runs/37675979615)三平台completed/success，Google44项逐平台通过。Responses请求编译/工具结果配对/图片/参数转换、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -134,7 +134,7 @@ usageMetadata.promptTokenCount已含cache，totalTokenCount含prompt+thoughts+ca
 本轮排除项裁定：自动请求编译/工具映射/六方法/Gateway/真实Runtime是下一里程碑，误用本轮输出证据会漏功能；缺省role的model归属及失败/过滤/MAX_TOKENS中未执行call的配对/拒绝策略须在编译器落实，误用replay_content会提交不合适历史，本轮它只是原始Content借用视图；取消/HTTP截断流不能构造NativeStreamResponse，当前不承诺中断历史恢复，误判会丢失中断恢复上下文，留Host/Chat历史阶段单独记录而不伪装生成完成；展示ID/status可变但原生内容及语义字段仍真源，误判会用展示状态篡改回放；同时伪造载体/投影/source及签名真实性不是结构校验认证，误判会认领未认证数据，生产H/I访问控制与live验证仍待验；完整ProtoJSON/schema与旧parser/HTTP Minor保持既定canonical范围，误判会兼容请求拒绝，不重做已验阶段；商业Full无live证据，误判会错误能力承诺，不授予；本轮Windows/macOS需精确源码新CI，误用旧证据会漏平台问题。本轮只读取完成的native响应，JSON/SSE原始生成终态与Responses状态保持各自语义，不改变既定架构。
 
 
-## 工具身份映射与v2原生历史（本地已实现，三平台待验收）
+## 工具身份映射与v2原生历史（三平台已验收）
 
 这是Responses请求编译器的前置依赖，沿既有core ToolCall/ToolKind/ToolInput边界和Anthropic工具映射模式实现，不更改V3架构。ToolMap把function/custom和一层namespace声明编译为原生FunctionDeclaration；alias由namespace/name/kind的SHA256生成，重排或修订schema不换身份，同名不同namespace不冲突。原始声明含未来字段完整保存，namespace说明与工具description进入原生说明；函数schema用parametersJsonSchema原样保留，不降为Google Schema子集，不冒称服务端接受任意JSON Schema。[原生FunctionDeclaration契约](https://ai.google.dev/api/generate-content.md#FunctionDeclaration)
 
@@ -144,7 +144,7 @@ native_call把已有canonical call编成FunctionCall数据，responses_call只�
 
 NativeHistory.with_tools为显式v2载体caidex.google.native-history.v2:，保存本次原始canonical tools，并用重建ToolMap逐值核对实际native request.tools；不是拿下一请求声明重新解释历史。完整JSON/SSE raw response/request/chunks及签名位置仍为真源；所选客户端调用按原映射投影function/custom/namespace，恢复验证call_id/name/namespace/arguments或custom原文及连续完整组。prefix与version须一致，改变schema或工具身份无法借旧request恢复。v1构造/投影不自动升级；携带tools的伪v1拒绝。载体仍是敏感JSON，无加密/签名认证承诺。
 
-6项工具/历史测试初始实际501 RED→GREEN；先工具4通过/历史2以缺映射501失败，再v2历史通过。namespace说明丢失也独立断言RED→GREEN。新HTTP1真实JSON/SSE POST→classic/Lite canonical序列化→恢复→下一POST，原生Content/签名/自定义原文完整；缺省原生call/result ID仍省略，未插入Runtime本地ID。Google共44项本地通过，全部为合成回复/Key；新增HTTP是扩大已测试编解码行为的集成验收，未声称HTTP测试有单独实现前RED。日志 /tmp/caidex-google-tools-{red,map-green-history-red,green,namespace-red,http-green}.log；完整workspace266passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过；唯一独立审查无Critical/Important，1项覆盖Minor暂缓：未对完整有效v1/v2组做prefix-only交叉替换，现有prefix/version校验正确但删除该校验可能逃过测试；测试注释中夸大prefix覆盖的文字已纠正。精确源码新三平台CI尚未提交启动。日志 /tmp/caidex-google-tools-{workspace,clippy}.log。
+6项工具/历史测试初始实际501 RED→GREEN；先工具4通过/历史2以缺映射501失败，再v2历史通过。namespace说明丢失也独立断言RED→GREEN。新HTTP1真实JSON/SSE POST→classic/Lite canonical序列化→恢复→下一POST，原生Content/签名/自定义原文完整；缺省原生call/result ID仍省略，未插入Runtime本地ID。Google共44项本地通过，全部为合成回复/Key；新增HTTP是扩大已测试编解码行为的集成验收，未声称HTTP测试有单独实现前RED。日志 /tmp/caidex-google-tools-{red,map-green-history-red,green,namespace-red,http-green}.log；完整workspace266passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过；唯一独立审查无Critical/Important，1项覆盖Minor暂缓：未对完整有效v1/v2组做prefix-only交叉替换，现有prefix/version校验正确但删除该校验可能逃过测试；测试注释中夸大prefix覆盖的文字已纠正。源码`d2a363d64c80b63049b7bffa0325224955657983`已提交/push，[CI37675979615](https://github.com/bboytang/CAIdex/actions/runs/37675979615)三平台completed/success，精确head及全部步骤已核对。逐平台Google catalog4/content3/history6/HTTP21/stream4/tools6共44个测试名各通过一次；workspace Linux266/Windows261/macOS265，0失败，ignored32/30/30；真实Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志 /tmp/caidex-ci-37675979615-status.json 与{,-linux,-windows,-macos}.log，跨机器以GitHub为准。日志 /tmp/caidex-google-tools-{workspace,clippy}.log。
 
 下一步仍是Responses请求编译器：system/messages/前缀归属、原始完整历史组恢复、function/custom结果配对、图片、推理/结构输出/Runtime参数与能力门控；随后六方法/Registry/Gateway/固定Runtime。不能把本轮工具codec当作完整Provider或Runtime接线证明。现有partial usage/text phase、满槽取消Drop等Minor保持原边界。
 
