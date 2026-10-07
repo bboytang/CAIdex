@@ -12,7 +12,10 @@ dbus-run-session -- bash -euo pipefail -c '
   trap cleanup EXIT
   CAIDEX_KEYRING_FIXTURE_READY=false
   for CAIDEX_KEYRING_FIXTURE_ATTEMPT in {1..50}; do
-    if gdbus call --session --dest org.freedesktop.secrets --object-path /org/freedesktop/secrets --method org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1; then
+    # Ping can activate a second, locked daemon before our unlocked fixture
+    # owns the name. Ask the bus first; this never activates Secret Service.
+    if [ "$(gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.NameHasOwner org.freedesktop.secrets)" = "(true,)" ] &&
+       [ "$(gdbus call --session --dest org.freedesktop.secrets --object-path /org/freedesktop/secrets/aliases/default --method org.freedesktop.DBus.Properties.Get org.freedesktop.Secret.Collection Locked 2>/dev/null)" = "(<false>,)" ]; then
       CAIDEX_KEYRING_FIXTURE_READY=true
       break
     fi

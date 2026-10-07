@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，CI 37577688434 排队中；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
+- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，首轮 CI 37577688434 的 Linux native keyring fixture 失败，已定位并修正脚本启动竞态，待新 CI；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -64,7 +64,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，原生回复投影/回放源码 `a0de05f` 已提交/push，工作区无未提交源码。[CI 37577688434](https://github.com/bboytang/CAIdex/actions/runs/37577688434) 对应完整 SHA `a0de05f063c128856a739c42cef92d9dceb3e4dc`，刚核验为 queued；恢复先核对该具体运行。本轮文件：Anthropic `src/projection.rs`、`tests/projection.rs`、Runtime dev-dependency/lock、Python wire fixture/real_runtime、Provider/HANDOFF 文档；生产 Runtime 未改。
+- branch `main` 跟踪 `origin/main`，原生回复投影/回放源码 `a0de05f` 已提交/push，工作区无未提交源码。[CI 37577688434](https://github.com/bboytang/CAIdex/actions/runs/37577688434) 对应完整 SHA `a0de05f063c128856a739c42cef92d9dceb3e4dc`，Linux native keyring fixture 因启动竞态失败，macOS 已 success，Windows 尚运行；恢复先核对该具体运行。本轮文件：Anthropic `src/projection.rs`、`tests/projection.rs`、Runtime dev-dependency/lock、Python wire fixture/real_runtime、Provider/HANDOFF 文档；生产 Runtime 未改。
 
 ## 测试结果
 
@@ -81,3 +81,5 @@
 
 - Anthropic 既有原生协议/HTTP/SSE：[CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343)，源码 `4b856b8`，三平台 fmt/Clippy/workspace、native keyring、schema/doctor 全部通过；协议 12/HTTP 13 项各平台通过，既有 Runtime Linux 23、Windows/macOS 各 22 项。日志 `/tmp/caidex-ci-37576472343.log`。本机文件凭据回归使用 TMPDIR=/var/tmp，保留 Git 存储拒绝检查。
 - 本轮投影/回放：新增 7 项验证完整原生字段、签名/opaque、模型/版本/大小、展示与工具一致性、stop reason 与缓存 usage；固定 Runtime 经典/Lite 两轮各一项通过，包含未来块/大整数。workspace Clippy 通过，完整 workspace/fmt/diff 已通过，本机真实 Runtime 全部 25 项通过，三平台 CI 待核验。未调用商业模型/用户 Key、未执行 Code Mode 工具；尚未接入 Anthropic Gateway/ModelProvider。
+
+- 首轮 CI 37577688434：Linux 新增投影/既有协议测试通过，但 native keyring fixture 的 Broker status 返回 StorageAccessDenied。日志显示 readiness Ping 自动启动另一个 Secret Service；修正 `scripts/test-linux-secret-service.sh`，先对总线 NameHasOwner 查询，再等待 default collection Locked=false，不自动激活、不重试凭据操作或削弱检查。本机无 gnome-keyring-daemon，仅 bash -n/diff 通过；新 CI 必须验证该修正及 Linux 真实 Runtime。失败日志 `/tmp/caidex-ci-37577688434-linux.log`。
