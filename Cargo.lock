@@ -415,6 +415,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-provider-google"
+version = "0.1.0"
+dependencies = [
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-provider-custom",
+ "rcgen",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "tokio-rustls",
+]
+
+[[package]]
 name = "caidex-provider-openai"
 version = "0.1.0"
 dependencies = [

@@ -1,8 +1,8 @@
 # CAIdex 模型核心与 Gateway：设计和验收
 
-阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。其他原生 Provider 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
+阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。后续 Provider 与实际商业模型兼容性仍需验收，不能将已有离线证据当作 F/G 全部验收。
 
-原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic/Gemini/兼容 API/Ollama 与真实模型兼容性仍待后续。
+原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic 原生适配及实际 Runtime 离线接线范围已三平台验收，见 [Anthropic 当前范围](CAIdex-Anthropic-Provider-设计与验收.md)；Gemini Models/HTTP 基础正在验收，见 [Gemini 当前范围](CAIdex-Gemini-Provider-设计与验收.md)。兼容 API/Ollama 与真实商业模型兼容性仍待后续。
 
 ## 固定协议依据
 
@@ -110,6 +110,6 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 
 非流式 CanonicalResponse、SSE output_item.done 和 completed/incomplete/failed/error 所有终态内已提供的 search items 校验已知结构；坏字段拒绝，流进入 Invalid，不交付合法完成事件。output_item.added 可以仍不完整。未知字段、namespace/defer_loading 声明、高精度数字和原始 wire 保留；核心不联网搜索、不执行工具、不改 Runtime 或已有 ToolMap。
 
-两项新增回归覆盖缺失客户端关联及已知字段、同步/流式完成边界、逐字节 SSE、服务端/未来 execution、原生 JSON 值和声明保留；缺少 call_id 被错误接受已先 RED 复现，再 GREEN。当前只完成共享协议契约，Anthropic 动态加载、原生 inline/deferred tools、历史前缀绑定及 provider web_search 仍待实现，不能据此标经典 Gateway 或 F/G 完成。尤其 external_web_access=false 不等于原生实时搜索，不能静默改写。
+两项新增回归覆盖缺失客户端关联及已知字段、同步/流式完成边界、逐字节 SSE、服务端/未来 execution、原生 JSON 值和声明保留；缺少 call_id 被错误接受已先 RED 复现，再 GREEN。本节记录共享协议阶段的证据；后续 Anthropic 动态加载、inline/deferred tools、v4 历史及显式禁用网页后的实际 Runtime 已验收，详见 Anthropic 文档。provider cached web_search 仍无等价映射，不能据此标完整经典 Gateway 或 F/G 完成。尤其 external_web_access=false 不等于原生实时搜索，不能静默改写。
 
-依据：[OpenAI Docs 客户端工具发现](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[固定上游 ToolSearchCall/Output](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/protocol/src/models.rs)。源码 d29234c90f512f1f839753612194783f4f8afe6e 的 [CI 37644294771](https://github.com/bboytang/CAIdex/actions/runs/37644294771) 三平台全部 completed/success，逐平台新增2项通过（核心22），workspace/fmt/Clippy/native credentials/schema/doctor 与既有真实 Runtime Linux25/WindowsmacOS24通过。本地真实 Lite 定向7项通过，独立审查发现失败终态遗漏后已补 RED→GREEN 并复核通过。详细恢复点见 HANDOFF.md；未提交的原生 Anthropic Runtime 接线、商业 API 与完整 F/G 仍未验收。
+依据：[OpenAI Docs 客户端工具发现](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[固定上游 ToolSearchCall/Output](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/protocol/src/models.rs)。源码 d29234c90f512f1f839753612194783f4f8afe6e 的 [CI 37644294771](https://github.com/bboytang/CAIdex/actions/runs/37644294771) 三平台全部 completed/success，逐平台新增2项通过（核心22），workspace/fmt/Clippy/native credentials/schema/doctor 与既有真实 Runtime Linux25/WindowsmacOS24通过。本地真实 Lite 定向7项通过，独立审查发现失败终态遗漏后已补 RED→GREEN 并复核通过。详细恢复点见 HANDOFF.md；后续原生 Anthropic Runtime 接线的已提交范围/三平台证据见 Anthropic 文档，商业 API 与完整 F/G 仍未验收。
