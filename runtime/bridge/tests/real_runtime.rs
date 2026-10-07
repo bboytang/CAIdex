@@ -57,14 +57,16 @@ struct Harness {
     provider: Child,
     directory: TestDirectory,
     gateway: Option<caidex_model_gateway::RunningGateway>,
+    credential_reads: Arc<AtomicU64>,
 }
 
-struct GatewayFixtureStore;
+struct GatewayFixtureStore(Arc<AtomicU64>);
 impl caidex_credentials::SecretStore for GatewayFixtureStore {
     fn get(
         &self,
         _: &caidex_credentials::CredentialRef,
     ) -> caidex_credentials::Result<Option<caidex_credentials::Secret>> {
+        self.0.fetch_add(1, Ordering::SeqCst);
         caidex_credentials::Secret::new("CAIDEX_GATEWAY_PROVIDER_TEST_KEY".into()).map(Some)
     }
     fn set(
@@ -83,6 +85,13 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-anthropic-classic" => "native-anthropic-classic",
+            "gateway-anthropic-discovery-classic" => "native-anthropic-discovery",
+            "gateway-anthropic-lite" => "native-anthropic-lite",
+            "gateway-anthropic-tools-lite" => "native-anthropic-tools-lite",
+            "gateway-anthropic-stall-classic" | "gateway-anthropic-stall-lite" => {
+                "native-anthropic-stall"
+            }
             "gateway-classic" | "gateway-openai-classic" => "wire-classic",
             "gateway-lite" | "gateway-openai-lite" => "wire-lite",
             "gateway-stall-classic"
@@ -136,25 +145,105 @@ impl Harness {
             .as_u64()
             .unwrap();
         let model = match (fixture_mode, mode) {
-            ("wire-lite" | "wire-anthropic-lite", _)
-            | (_, "gateway-stall-lite" | "gateway-openai-stall-lite") => "gpt-6.1-sol",
-            ("wire-classic" | "wire-stall" | "wire-anthropic-classic", _) => "gpt-5.5",
+            (
+                "wire-lite"
+                | "wire-anthropic-lite"
+                | "native-anthropic-lite"
+                | "native-anthropic-tools-lite",
+                _,
+            )
+            | (
+                _,
+                "gateway-stall-lite" | "gateway-openai-stall-lite" | "gateway-anthropic-stall-lite",
+            ) => "gpt-6.1-sol",
+            (
+                "wire-classic"
+                | "wire-stall"
+                | "wire-anthropic-classic"
+                | "native-anthropic-classic"
+                | "native-anthropic-discovery"
+                | "native-anthropic-stall",
+                _,
+            ) => "gpt-5.5",
             _ => "gpt-5.1-codex",
         };
+        let credential_reads = Arc::new(AtomicU64::new(0));
         let gateway = if through_gateway {
             use caidex_credentials::{Broker, CredentialRef, Id, SecretKind};
             use caidex_model_core::ResponsesDialect;
             use caidex_model_gateway::{CustomResponses, Limits, ModelRoute};
             let native_openai = mode.starts_with("gateway-openai-");
+            let native_anthropic = mode.starts_with("gateway-anthropic-");
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
-                provider: Id::new(if native_openai { "openai" } else { "custom" }).unwrap(),
+                provider: Id::new(if native_openai {
+                    "openai"
+                } else if native_anthropic {
+                    "anthropic"
+                } else {
+                    "custom"
+                })
+                .unwrap(),
                 profile: Id::new("fixture").unwrap(),
                 kind: SecretKind::ApiKey,
             };
-            let broker = Arc::new(Broker::new(owner, GatewayFixtureStore));
-            if native_openai {
+            let broker = Arc::new(Broker::new(
+                owner,
+                GatewayFixtureStore(credential_reads.clone()),
+            ));
+            if native_anthropic {
+                use caidex_provider_anthropic::{
+                    AnthropicClient, AnthropicConfig, AnthropicModel, AnthropicProvider,
+                    ReasoningMapping, SummaryMapping, ThinkingContext, VerbosityMapping,
+                };
+                let mut config = AnthropicConfig::new(credential)
+                    .unwrap()
+                    .with_base_url(&format!("http://127.0.0.1:{port}/v1"))
+                    .unwrap()
+                    .with_local_runtime_context()
+                    .with_thinking_binding_controls()
+                    .with_expected_organization("org-fixture")
+                    .unwrap();
+                if mode == "gateway-anthropic-discovery-classic" {
+                    config = config.with_inline_tools();
+                }
+                let client =
+                    AnthropicClient::new(config, broker.clone(), Limits::default()).unwrap();
+                let mut profile = AnthropicModel::new(
+                    caidex_model_core::ModelMetadata::configured(
+                        model.into(),
+                        "native-fixture".into(),
+                        vec![ResponsesDialect::Classic, ResponsesDialect::Lite],
+                    ),
+                    4096,
+                    100,
+                );
+                profile.retain_runtime_metadata = true;
+                profile.verbosity_mappings = vec![
+                    VerbosityMapping::new(
+                        "low".into(),
+                        "Keep user-facing answers concise while preserving required detail.".into(),
+                    )
+                    .unwrap(),
+                ];
+                profile.supports_system_messages = true;
+                profile.supports_tool_discovery = mode == "gateway-anthropic-discovery-classic";
+                profile.thinking_context = Some(ThinkingContext::AllTurns);
+                profile.summary_mappings =
+                    vec![SummaryMapping::new("auto".into(), "summarized".into()).unwrap()];
+                profile.reasoning_mappings = ["low","medium","high","xhigh"].into_iter().map(|effort|ReasoningMapping::new(effort.into(),Some(effort.into()),Some(json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}}))).unwrap()).collect();
+                let provider = Arc::new(AnthropicProvider::new(client, vec![profile], 10).unwrap());
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        provider,
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if native_openai {
                 use caidex_provider_openai::{OpenAiConfig, OpenAiProvider};
                 let config = OpenAiConfig::new(credential)
                     .unwrap()
@@ -219,8 +308,15 @@ impl Harness {
         } else {
             ""
         };
+        // Explicit fixture scope: native Anthropic has no verified equivalent
+        // for Codex cached web search. Never filter it inside the Gateway.
+        let web_search = if mode == "gateway-anthropic-discovery-classic" {
+            "web_search = \"disabled\"\n"
+        } else {
+            ""
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
+            "model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -231,7 +327,7 @@ impl Harness {
                 .write_all(b"\n[features]\ngoals = true\n")
                 .unwrap();
         }
-        if mode == "mcp" {
+        if matches!(mode, "mcp" | "gateway-anthropic-discovery-classic") {
             let fixture =
                 PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mcp_server.py");
             let trace = directory.0.join("mcp-trace.json");
@@ -273,6 +369,7 @@ impl Harness {
             provider,
             directory,
             gateway,
+            credential_reads,
         }
     }
 
@@ -1426,6 +1523,323 @@ async fn real_lite_runtime_preserves_native_anthropic_signed_history_carrier() {
     real_native_anthropic_history("wire-anthropic-lite").await;
 }
 
+async fn real_anthropic_adapter(mode: &str) {
+    let mut harness = Harness::start(mode).await;
+    let thread = harness.create_thread().await;
+    for text in [
+        "Offline native adapter fixture",
+        "Continue exact native history",
+    ] {
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":text})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            let RuntimeEvent::Notification(event) = harness.next().await else {
+                panic!("history fixture has no executable tools")
+            };
+            if event.method == "turn/completed" {
+                assert_eq!(
+                    event.raw["params"]["turn"]["status"], "completed",
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 2);
+    assert_eq!(trace["organizationLookups"], 2);
+    assert_eq!(trace["gatewayCredentialMatched"], true);
+    assert_eq!(trace["authorizationSeen"], false);
+    let requests = trace["nativeRequests"].as_array().unwrap();
+    let first = &requests[0];
+    let second = &requests[1];
+    assert_eq!(first["model"], "native-fixture");
+    assert_eq!(second["system"], first["system"]);
+    assert_eq!(second["tools"], first["tools"]);
+    let prefix = first["messages"].as_array().unwrap();
+    let messages = second["messages"].as_array().unwrap();
+    assert_eq!(&messages[..prefix.len()], prefix);
+    assert_eq!(messages[prefix.len()]["role"], "assistant");
+    assert_eq!(
+        messages[prefix.len()]["content"],
+        trace["nativeResponses"][0]["content"]
+    );
+    assert_eq!(
+        messages[prefix.len()]["content"][0]["signature"],
+        "signed+/==\n"
+    );
+    assert_eq!(messages[prefix.len()]["content"][1]["data"], "opaque+/==\n");
+    assert_eq!(
+        messages[prefix.len()]["content"][3]["number"].to_string(),
+        "18446744073709551616"
+    );
+    for request in requests {
+        for key in ["include", "client_metadata", "prompt_cache_key", "binding"] {
+            assert!(request.get(key).is_none());
+        }
+        assert_eq!(request["thinking"]["type"], "adaptive");
+    }
+    // The real Runtime persisted the v3 output it received from the Gateway.
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    assert!(read.to_string().contains("CAIdex local fixture complete"));
+    let path = PathBuf::from(
+        read["thread"]["path"]
+            .as_str()
+            .expect("persisted rollout path"),
+    );
+    assert!(path.starts_with(harness.directory.0.join("data")));
+    let rollout = std::fs::read_to_string(path).unwrap();
+    let histories: Vec<Value> = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            let item = &entry["payload"];
+            (entry["type"] == "response_item" && item["type"] == "reasoning").then(|| item.clone())
+        })
+        .collect();
+    assert_eq!(histories.len(), 2);
+    for item in histories {
+        let capsule = item["encrypted_content"].as_str().unwrap();
+        let envelope: Value = serde_json::from_str(
+            capsule
+                .strip_prefix("caidex.anthropic.native-message.v3:")
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(envelope["binding"]["organization"], "org-fixture");
+        assert_eq!(
+            envelope["message"]["content"][0]["signature"],
+            "signed+/==\n"
+        );
+        assert_eq!(
+            envelope["message"]["content"][3]["number"].to_string(),
+            "18446744073709551616"
+        );
+    }
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; unsupported cached web search must fail before native authentication"]
+async fn real_classic_native_anthropic_rejects_cached_web_search_before_authentication() {
+    let mut harness = Harness::start("gateway-anthropic-classic").await;
+    let thread = harness.create_thread().await;
+    harness
+        .runtime
+        .client()
+        .start_turn(
+            &thread,
+            vec![json!({"type":"text","text":"Offline native adapter fixture"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        match harness.next().await {
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                assert_eq!(event.raw["params"]["turn"]["status"], "failed");
+                assert!(
+                    event.raw["params"]["turn"]["error"]["message"]
+                        .as_str()
+                        .unwrap()
+                        .contains("unsupported_anthropic_web_search")
+                );
+                break;
+            }
+            RuntimeEvent::Interaction(request) => {
+                panic!("unsupported request executed a tool: {}", request.event.raw)
+            }
+            _ => (),
+        }
+    }
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 0);
+    assert_eq!(harness.trace()["requests"], 0);
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and local MCP; explicit web_search=disabled, not full classic compatibility"]
+async fn real_classic_native_anthropic_discovers_and_executes_mcp_tools() {
+    let mut harness = Harness::start("gateway-anthropic-discovery-classic").await;
+    let thread = harness.create_thread().await;
+    harness
+        .runtime
+        .client()
+        .start_turn(
+            &thread,
+            vec![json!({"type":"text","text":"Find the local fixture echo tool and invoke it"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        match harness.next().await {
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                assert_eq!(
+                    event.raw["params"]["turn"]["status"], "completed",
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+            RuntimeEvent::Interaction(request) => {
+                panic!("unexpected interaction: {}", request.event.raw)
+            }
+            _ => (),
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 3);
+    assert_eq!(trace["organizationLookups"], 3);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+    let requests = trace["nativeRequests"].as_array().unwrap();
+    for request in &requests[1..] {
+        assert_eq!(request["tools"], requests[0]["tools"]);
+        assert_eq!(request["system"], requests[0]["system"]);
+    }
+    let results: Vec<_> = requests[2]["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|message| message["content"].as_array().unwrap())
+        .filter(|block| block["type"] == "tool_result")
+        .collect();
+    assert_eq!(results.len(), 2);
+    let discovery: Value =
+        serde_json::from_str(results[0]["content"][0]["text"].as_str().unwrap()).unwrap();
+    assert_eq!(discovery["type"], "tool_search_output");
+    assert_eq!(discovery["execution"], "client");
+    assert!(discovery["tools"].to_string().contains("mcp__fixture"));
+    // Fixed Runtime formats structuredContent as model-facing JSON instead of
+    // the MCP display text; preserve the actual Runtime result verbatim.
+    let result_text = results[1]["content"][0]["text"].as_str().unwrap();
+    let structured: Value =
+        serde_json::from_str(result_text.split_once("\nOutput:\n").unwrap().1).unwrap();
+    assert_eq!(structured, json!({"fixture":true}));
+    let mcp: Value =
+        serde_json::from_slice(&std::fs::read(harness.directory.0.join("mcp-trace.json")).unwrap())
+            .unwrap();
+    assert_eq!(mcp["toolCalls"], json!(["echo"]));
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    let output = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            let item = &entry["payload"];
+            (entry["type"] == "response_item"
+                && item["type"] == "function_call_output"
+                && item["call_id"] == "native-discovery-echo")
+                .then(|| item["output"].clone())
+        })
+        .next()
+        .unwrap();
+    assert_eq!(output, result_text);
+    assert!(rollout.contains("caidex.anthropic.native-message.v4:"));
+    assert!(rollout.contains("tool_search_call"));
+    assert!(rollout.contains("tool_search_output"));
+    assert_eq!(trace["authorizationSeen"], false);
+    // Restart the actual app-server so resume must load persisted history,
+    // instead of reusing the first process's in-memory discovery state.
+    harness.runtime.shutdown().await.unwrap();
+    let binary = std::env::var_os("CAIDEX_CODEX_BIN").unwrap_or_else(|| "codex".into());
+    let mut command = isolated_command(&binary);
+    command
+        .env("CODEX_HOME", harness.directory.0.join("data"))
+        .env(
+            "CAIDEX_GATEWAY_TEST_TOKEN",
+            harness.gateway.as_ref().unwrap().token().expose(),
+        )
+        .current_dir(harness.directory.0.join("project"))
+        .args(["app-server", "--listen", "stdio://"]);
+    harness.runtime = Runtime::connect(
+        AppServer::spawn(command, 1024).unwrap(),
+        ClientOptions {
+            capabilities: json!({"experimentalApi":true}),
+            ..Default::default()
+        },
+        DEADLINE,
+        1024,
+    )
+    .await
+    .unwrap();
+    let resumed = harness
+        .runtime
+        .client()
+        .resume_thread(&thread, json!({}), DEADLINE)
+        .await
+        .unwrap();
+    assert_eq!(resumed["thread"]["id"], thread);
+    harness.runtime.client().start_turn(&thread,
+        vec![json!({"type":"text","text":"Continue exact discovered-tool history after restart"})],
+        json!({}),DEADLINE).await.unwrap();
+    loop {
+        match harness.next().await {
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                assert_eq!(
+                    event.raw["params"]["turn"]["status"], "completed",
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+            RuntimeEvent::Interaction(request) => {
+                panic!("resume repeated a tool: {}", request.event.raw)
+            }
+            _ => (),
+        }
+    }
+    let resumed_trace = harness.trace();
+    assert_eq!(resumed_trace["requests"], 4);
+    assert_eq!(resumed_trace["organizationLookups"], 4);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 4);
+    let fourth = &resumed_trace["nativeRequests"][3];
+    assert_eq!(fourth["tools"], requests[0]["tools"]);
+    assert_eq!(fourth["system"], requests[0]["system"]);
+    let third_prefix = requests[2]["messages"].as_array().unwrap();
+    assert_eq!(
+        &fourth["messages"].as_array().unwrap()[..third_prefix.len()],
+        third_prefix
+    );
+    let mcp: Value =
+        serde_json::from_slice(&std::fs::read(harness.directory.0.join("mcp-trace.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        mcp["toolCalls"],
+        json!([]),
+        "restarted MCP server must not repeat echo"
+    );
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; real Anthropic Gateway Lite two-turn, no commercial model"]
+async fn real_lite_runtime_via_native_anthropic_adapter() {
+    real_anthropic_adapter("gateway-anthropic-lite").await;
+}
+
 async fn real_model_wire(mode: &str, dialect: caidex_model_core::ResponsesDialect) {
     use caidex_model_core::{
         CanonicalRequest, ResponseItem, ResponsesDialect, ResponsesStream, StreamState,
@@ -1661,4 +2075,83 @@ async fn interrupt_gateway(modes: &[&str]) {
         assert_eq!(harness.trace()["requests"], 1);
         harness.shutdown().await;
     }
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; native Anthropic Lite Code Mode tool with approved temp marker"]
+async fn real_lite_native_anthropic_code_mode_executes_tool_and_replays_result() {
+    let mut harness = Harness::start("gateway-anthropic-tools-lite").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    client
+        .start_turn(
+            &thread,
+            vec![json!({"type":"text","text":"Offline native Code Mode tool fixture"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    let marker = harness.directory.0.join("project/caidex-native-marker.txt");
+    let mut approved = false;
+    loop {
+        match harness.next().await {
+            RuntimeEvent::Interaction(request) => {
+                assert_eq!(request.kind, InteractionKind::CommandApproval);
+                assert!(!marker.exists());
+                assert!(!approved);
+                client
+                    .decide_approval(&request.id, ApprovalDecision::Accept)
+                    .await
+                    .unwrap();
+                approved = true;
+            }
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                assert_eq!(
+                    event.raw["params"]["turn"]["status"], "completed",
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+            _ => (),
+        }
+    }
+    assert!(
+        approved,
+        "Code Mode must reach the real Runtime command approval"
+    );
+    assert_eq!(
+        std::fs::read_to_string(marker).unwrap().trim(),
+        "CAIDEX_NATIVE_CODE_MODE"
+    );
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 2);
+    assert_eq!(trace["organizationLookups"], 2);
+    let messages = trace["nativeRequests"][1]["messages"].as_array().unwrap();
+    let assistant = messages
+        .iter()
+        .find(|message| message["role"] == "assistant")
+        .unwrap();
+    assert_eq!(assistant["content"], trace["nativeResponses"][0]["content"]);
+    let results: Vec<_> = messages
+        .iter()
+        .flat_map(|message| message["content"].as_array().unwrap())
+        .filter(|block| block["type"] == "tool_result")
+        .collect();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["tool_use_id"], "native-code-mode-one");
+    assert!(
+        results[0]["content"]
+            .to_string()
+            .contains("CAIDEX_NATIVE_CODE_MODE")
+    );
+    assert_eq!(trace["authorizationSeen"], false);
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; native Anthropic Lite interrupt closes actual upstream socket"]
+async fn real_lite_native_anthropic_interrupt_closes_provider_socket() {
+    interrupt_gateway(&["gateway-anthropic-stall-lite"]).await;
 }

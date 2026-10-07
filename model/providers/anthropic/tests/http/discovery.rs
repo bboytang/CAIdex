@@ -145,6 +145,47 @@ async fn inline_and_thinking_betas_are_sent_together_for_json_and_sse() {
 }
 
 #[tokio::test]
+async fn web_search_is_explicitly_unsupported_before_key_reads_or_native_requests() {
+    let (base, mut requests, _, task) = fixture(vec![(200, reply().to_string())], false).await;
+    let (provider, reads) = provider(&base);
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for external in [false, true] {
+            let mut wire = canonical(&[], false).wire().clone();
+            wire["tools"].as_array_mut().unwrap().push(json!({"type":"web_search","external_web_access":external,"search_content_types":["text","image"]}));
+            if dialect == ResponsesDialect::Lite {
+                let tools = wire.as_object_mut().unwrap().remove("tools").unwrap();
+                wire["input"].as_array_mut().unwrap().insert(
+                    0,
+                    json!({"type":"additional_tools","role":"developer","tools":tools}),
+                );
+                wire.as_object_mut().unwrap().remove("instructions");
+            }
+            for stream in [false, true] {
+                wire["stream"] = stream.into();
+                let request = CanonicalRequest::new(wire.clone(), dialect).unwrap();
+                let error = if stream {
+                    provider
+                        .stream_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                } else {
+                    provider
+                        .create_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                };
+                assert_eq!(error.code, "unsupported_anthropic_web_search");
+                assert_eq!(reads.load(Ordering::SeqCst), 0);
+                assert!(requests.try_recv().is_err());
+            }
+        }
+    }
+    task.abort();
+}
+
+#[tokio::test]
 async fn discovery_requires_executor_beta_system_support_and_organization_before_key_reads() {
     for (inline, system, scoped) in [
         (false, true, true),
@@ -273,6 +314,18 @@ async fn client_discovery_keeps_signed_prefix_loads_inline_and_replays_loaded_ca
                     .unwrap();
                 while let Some(event) = stream.events.next().await {
                     if let caidex_model_core::ProviderStreamEvent::Model(event) = event.unwrap() {
+                        if event.response.wire()["item"]["type"] == "tool_search_call" {
+                            match event.response.kind() {
+                                "response.output_item.added" => assert_eq!(
+                                    event.response.wire()["item"]["status"],
+                                    "in_progress"
+                                ),
+                                "response.output_item.done" => {
+                                    assert_eq!(event.response.wire()["item"]["status"], "completed")
+                                }
+                                _ => (),
+                            }
+                        }
                         assert!(
                             !event
                                 .response

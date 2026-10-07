@@ -169,6 +169,9 @@ impl ToolMap {
         identities: &mut BTreeSet<(Option<String>, String)>,
     ) -> ProviderResult<()> {
         let kind = match tool["type"].as_str() {
+            Some("web_search") => {
+                return Err(ProviderError::new(400, "unsupported_anthropic_web_search"));
+            }
             Some("function") => CallKind::Callable(ToolKind::Function),
             Some("custom") => CallKind::Callable(ToolKind::Custom),
             Some("tool_search") if namespace.is_none() && tool["execution"] == "client" => {
@@ -320,7 +323,11 @@ impl ToolMap {
             CallKind::Callable(ToolKind::Function) | CallKind::ClientSearch => json!({}),
             CallKind::Callable(ToolKind::Custom) => json!({"input":""}),
         };
-        Ok(self.responses_call(&placeholder)?.wire().clone())
+        let mut item = self.responses_call(&placeholder)?.wire().clone();
+        if binding.kind == CallKind::ClientSearch {
+            item["status"] = "in_progress".into();
+        }
+        Ok(item)
     }
     /// Exact namespace and custom/function kind are recovered from the fixed
     /// map. A name from outside that map cannot select a Runtime tool.

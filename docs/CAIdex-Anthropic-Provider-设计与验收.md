@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；客户端动态工具发现及 v4 已接入，验收状态见下节与 HANDOFF.md。Gateway 的真实 Lite 接线正在本地验收，经典缓存网页搜索和完整 Runtime 互操作尚未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；客户端动态工具发现及 v4 已接入，验收状态见下节与 HANDOFF.md。Gateway 的真实 Lite 接线及经典显式禁用网页后的 MCP 发现/执行/重启恢复本地通过，正在三平台验收；经典缓存网页搜索和商业模型互操作未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -46,9 +46,22 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 SSE 搜索 JSON 分片内部累积，专用 call 不发送 function arguments 事件；只有原生 Completed、完整 v4/预算/历史门控成功后交付可执行 output_item.done。HTTP 合成 fixture 验证 JSON/SSE 三轮签名回放、工具加载及后续调用；没有在这个 fixture 中执行工具或调用商业 API。新增工具2、编译器4、HTTP4项，源码 `46d03d52806a20b2e0ca3db1d6ed5fbfd31de5ed` 的 [CI 37650049761](https://github.com/bboytang/CAIdex/actions/runs/37650049761) 三平台 completed/success；逐平台新增10项、发现编译器4/HTTP49/工具9通过，workspace/Clippy/fmt/native credentials/schema/doctor 与既有实际 Runtime Linux25/WindowsmacOS24通过；既有实际 Runtime Lite 接线仍是独立未提交验证，完整经典尚未通过。
 
-独立审查的用户追加文字问题已用 RED→GREEN 回归修复。保留一个 Minor：搜索的 output_item.added 暂用 completed 占位状态；执行仍只取完整验证后的 done，后续修正展示状态。经典 `web_search external_web_access=false / text+image` 仍无已验证的 Anthropic 缓存语义映射（复核 [Anthropic web search 文档](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) 描述为实时搜索，提示缓存不等于搜索数据缓存），不能删除该工具、改成实时搜索或据此标记 Full。
+独立审查的用户追加文字问题已用 RED→GREEN 回归修复。上轮搜索 added 状态 Minor 已在下一接线阶段修正为 in_progress，done 保持 completed；增强 HTTP 回归先 RED→GREEN，执行仍只取完整验证后的 done。经典 `web_search external_web_access=false / text+image` 仍无已验证的 Anthropic 缓存语义映射（复核 [Anthropic web search 文档](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) 描述为实时搜索，提示缓存不等于搜索数据缓存），不能删除该工具、改成实时搜索或据此标记 Full。
 
 契约依据：[OpenAI 客户端 tool search](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[Anthropic 原位置工具变更](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking#add-or-remove-tools-with-tool_addition-and-tool_removal)、[中途 system 消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)。模型配置和合成 fixture 不是商业模型能力证明。
+
+
+## 原生 Gateway / 实际 Runtime 接线
+
+固定真实 Runtime 与本地原生 Messages SSE 现已实际接线：Lite 两轮、v3 推理/未知块落盘；Code Mode 调用经真实命令审批后仅写临时 marker，结果回到原生下一请求；interrupt 实际关闭上游 socket。所有 Key、组织和回复均合成，不调用商业 API，不造另一个 Agent。
+
+经典默认 cached web_search 现在明确返回 `unsupported_anthropic_web_search`，经典/Lite、JSON/SSE 均在读取 Key/发原生请求前拒绝。实际默认经典负例确认 turn failed、Key读取0、POST0。它替代旧测试中无法满足的完整成功期待，证明拒绝边界而不是宣称实现缓存搜索。
+
+独立正例由 Runtime 配置显式 `web_search="disabled"`，Provider 固定 discovery/system 支持、inline beta 和预期组织。真实 Runtime 的注册表搜索返回本地 MCP namespace/deferred 声明；原生 inline 定义加载后实际执行 MCP echo，结果与 Runtime 落盘 function_call_output 的原文精确相等。固定上游将 MCP structuredContent 作为模型输出 JSON，不能拿 MCP 展示文本替代。前三次请求保持初始 tools/system；实际关闭并重启 app-server、同 CODEX_HOME 从磁盘 resume，第4次请求保持已验证前缀，没有重复执行 echo。
+
+本轮本地完整 workspace/Clippy/fmt/语法检查与全部实际 Runtime30通过，不再 skip 默认经典负例；新增5个实际 Runtime用例（Lite3、默认经典拒绝1、经典动态MCP/重启1），HTTP新增1及既有 SSE 状态增强通过。当前等待新的 Windows/Linux/macOS CI，Windows 默认 shell/marker 编码尚未本地证明。独立审查无重要缺陷，留下2项测试覆盖 Minor：重启后第三次回复本身的单独精确对比，Lite Code Mode 输出与落盘原文的完整对比。商业模型/原生签名真实性、完整 cached web 和生产 Host 持久化权限不在此 fixture 的验收范围。
+
+固定上游依据：[MCP 原生 handler](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/handlers/mcp.rs)、[模型工具结果/发现输出](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/context.rs)。缓存网页支持缺口仍保留，正例的明确 scope 不等于原生 Provider 的完整经典兼容性。
 
 ## 验证
 
