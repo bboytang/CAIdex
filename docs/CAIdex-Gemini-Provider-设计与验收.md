@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。本轮原生非流式 generateContent/NativeResponse 已本地实现并验证，提交/三平台新CI待完成；SSE、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
+阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。原生非流式 generateContent/NativeResponse 已实现并三平台验收，源码5c41ae2aaea2632b5c98689f7c14b26ba826d0ef已提交/push，CI37661724323 completed/success；SSE、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -34,7 +34,7 @@
 ## 下一步
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
-2. 原生 generateContent/streamGenerateContent 的请求、回复、SSE 与终态；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
+2. generateContent JSON 已验收；继续 streamGenerateContent 的原生分片、SSE 与终态；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
 3. 建立版本化原生历史、请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
 ## 独立审查记录
@@ -53,7 +53,7 @@
 - 本模块不是通用 ProtoJSON codec；未来字段原样保留，替代字段拼写等完整 codec 语义未承诺。成本是非 canonical 兼容服务可能被拒绝，具体整数边界见 Minor1。
 - Windows/macOS 不以旧 Anthropic CI 代验；本阶段新 CI 已核对精确源码并三平台通过。若误用旧证据，成本是未发现新增平台问题，后续阶段继续各自验收。
 
-## 原生 generateContent JSON（本轮待三平台验收）
+## 原生 generateContent JSON（三平台已验收）
 
 `GeminiClient::generate_content(model, native_json, context)` 使用安全 `models/<id>:generateContent` 路径，保留代理前缀；输入不能包含另一个 body model、改变 endpoint 或认证。非空 contents/parts及已知 role/Part/function call/result 形状校验；原生其余字段原样发送，实际模型对媒体/schema/参数的支持由原生服务判定，不冒称完整请求 schema 校验。[原生请求与 Part reference](https://ai.google.dev/api/generate-content)
 
@@ -63,11 +63,11 @@ NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未�
 
 原始usage保留，不相加cached/thought计数、不把未知补0；模型实际modelVersion/responseId缺失保持原义，不由请求名称伪造。后续Responses投影与版本化历史需要单独建立归属、展示一致性/完整回放及Runtime证据，当前仅native内容直接回传和下一请求原文回放。
 
-本地回复3与新增HTTP4（Google合计20）通过：原文/签名/function/tool/未来Part/大数字字面值、终态/阻断/坏结构；真实POST精确body、两轮内容/工具结果原文、输入/route/预算前置零Key/网络、静态错误/429/redirect/不完整body无重试，以及取消POST真实socket关闭/共享Models slot释放。RED→GREEN日志 `/tmp/caidex-google-content-{red,green}.log`、`/tmp/caidex-google-generate-{red,green}.log`；商业调用、SSE、六方法/Gateway/Runtime未验收。本轮完整workspace242passed/0failed、Clippy -D warnings、fmt/diff通过；唯一fresh-context只读审查无Critical/Important，三平台新CI待完成。/tmp/caidex-google-generate-{workspace,clippy}.log。
+本地回复3与新增HTTP4（Google合计20）通过：原文/签名/function/tool/未来Part/大数字字面值、终态/阻断/坏结构；真实POST精确body、两轮内容/工具结果原文、输入/route/预算前置零Key/网络、静态错误/429/redirect/不完整body无重试，以及取消POST真实socket关闭/共享Models slot释放。RED→GREEN日志 `/tmp/caidex-google-content-{red,green}.log`、`/tmp/caidex-google-generate-{red,green}.log`；商业调用、SSE、六方法/Gateway/Runtime未验收。本轮完整workspace242passed/0failed、Clippy -D warnings、fmt/diff通过；唯一fresh-context只读审查无Critical/Important，精确源码 `5c41ae2aaea2632b5c98689f7c14b26ba826d0ef` 的 [CI37661724323](https://github.com/bboytang/CAIdex/actions/runs/37661724323) 三平台 completed/success。逐平台核对Google catalog4/回复3/HTTP13共20个测试名各通过一次；workspace Linux242/Windows237/macOS241（0失败），真实Runtime Linux30/WindowsmacOS29，fmt/Clippy/native credentials/schema/doctor通过。恢复时本地Google20项再次通过，日志 `/tmp/caidex-google-json-resume.log`；CI日志 `/tmp/caidex-ci-37661724323-status.json` 与{,-linux,-macos,-windows}.log，跨机器以GitHub为准。/tmp/caidex-google-generate-{workspace,clippy}.log。
 
 本轮JSON审查Minor2暂缓：
 
 - 可选 functionCall.id/functionResponse.id 显式空字符串目前按非法身份拒绝；默认字段序列化兼容端点可能因此拒绝整个有效回复/回放输入。当前 canonical 服务通常省略缺省ID，不冒称支持完整ProtoJSON默认表示。
 - distinct多候选正例/第二候选未停止的专门测试缺失；当前代码逐候选校验，已有重复index负例，不冒称覆盖上述两项。
 
-本轮审查排除项裁定：SSE/投影/历史/六方法/Registry/Gateway/Runtime仍需后续实现，误判会漏功能，保持未完成；商业/签名真实性/Full无真实证据，误判会错误授权能力，不授予；生产历史访问控制留H/I，误判会泄漏敏感历史，raw不作为公共日志；完整schema/媒体/参数由原生服务判定，误判成本是原生请求拒绝，不把结构检查当完整能力验收；非通用ProtoJSON（替代字段/数值/枚举）保持canonical范围，成本是兼容端点被拒绝；同步存储读不可强停，成本是后台资源占用，只保证取消后无迟到POST；Windows/macOS须本轮精确源码新CI，旧目录CI不能代验，成本是漏新增平台问题。以上均沿现有阶段边界，未改架构。
+本轮审查排除项裁定：SSE/投影/历史/六方法/Registry/Gateway/Runtime仍需后续实现，误判会漏功能，保持未完成；商业/签名真实性/Full无真实证据，误判会错误授权能力，不授予；生产历史访问控制留H/I，误判会泄漏敏感历史，raw不作为公共日志；完整schema/媒体/参数由原生服务判定，误判成本是原生请求拒绝，不把结构检查当完整能力验收；非通用ProtoJSON（替代字段/数值/枚举）保持canonical范围，成本是兼容端点被拒绝；同步存储读不可强停，成本是后台资源占用，只保证取消后无迟到POST；Windows/macOS已核对本轮精确源码新CI，后续SSE阶段仍须独立新CI，旧JSON/目录CI不能代验，误用成本是漏新增平台问题。以上均沿现有阶段边界，未改架构。
