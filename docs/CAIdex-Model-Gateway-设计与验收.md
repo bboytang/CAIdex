@@ -95,7 +95,7 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 - 本机 workspace/fmt/Clippy、Gateway 16 项、真实 Runtime Linux 20 项通过；最终大整数/高精度小数 wire 和 EOF/reset 判据分别定向复验通过。全部使用本地合成推理数据，不代表真实商业模型兼容性。
 - F 第三步 [三平台 CI 37552752561](https://github.com/bboytang/CAIdex/actions/runs/37552752561) 全部 success，源码 `42fdaa3`（接口源码 e834549 + 证书 fixture 修正）：核心 20、独立 provider 7、Gateway 18 项各平台通过，真实 Runtime Linux 20、Windows/macOS 各 19 项通过。新增验证包含独立 client 六方法/经典与 Lite、配置能力与未验证标记、完整同步 response、header 双向筛选、HTTP-date、单并发 slot 释放、未消费流取消/超时、TLS 正/负证书；fmt/Clippy/workspace/schema/doctor 及既有凭据回归保持通过。
 - 本机 workspace/fmt/Clippy/真实 Runtime 20 项通过，单并发 slot/TLS 定向复验通过。首轮 Windows TLS 正例被拒绝，以明确 CA/leaf identity、用途/AKI/有效期的 fixture 修正后全部通过，未放宽生产 TLS。日志 `/tmp/caidex-ci-37552752561.log` 供本机复查，跨机器以 CI 链接为准。
-- 后续范围：Gemini请求编译/工具结果转换/六方法/实际Runtime、兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
+- 后续范围：Gemini图片/参数转换/六方法/实际Runtime、兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
 
 ## 下一步顺序
 
@@ -113,3 +113,5 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 两项新增回归覆盖缺失客户端关联及已知字段、同步/流式完成边界、逐字节 SSE、服务端/未来 execution、原生 JSON 值和声明保留；缺少 call_id 被错误接受已先 RED 复现，再 GREEN。本节记录共享协议阶段的证据；后续 Anthropic 动态加载、inline/deferred tools、v4 历史及显式禁用网页后的实际 Runtime 已验收，详见 Anthropic 文档。provider cached web_search 仍无等价映射，不能据此标完整经典 Gateway 或 F/G 完成。尤其 external_web_access=false 不等于原生实时搜索，不能静默改写。
 
 依据：[OpenAI Docs 客户端工具发现](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[固定上游 ToolSearchCall/Output](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/protocol/src/models.rs)。源码 d29234c90f512f1f839753612194783f4f8afe6e 的 [CI 37644294771](https://github.com/bboytang/CAIdex/actions/runs/37644294771) 三平台全部 completed/success，逐平台新增2项通过（核心22），workspace/fmt/Clippy/native credentials/schema/doctor 与既有真实 Runtime Linux25/WindowsmacOS24通过。本地真实 Lite 定向7项通过，独立审查发现失败终态遗漏后已补 RED→GREEN 并复核通过。详细恢复点见 HANDOFF.md；后续原生 Anthropic Runtime 接线的已提交范围/三平台证据见 Anthropic 文档，商业 API 与完整 F/G 仍未验收。
+
+Gemini编译基础最新恢复点：GenerateContentRequest经典/Lite、完整native历史组/实际前缀、function/custom结果配对及原调用序已三平台验收；源码08402e6caccba2b0ff7cc98dc09f60ea4ea16078，[CI37679653990](https://github.com/bboytang/CAIdex/actions/runs/37679653990)completed/success，Google53项逐平台通过。独立审查发现同alias缺原生ID逆序结果错配，已RED→GREEN修复，未补写签名ID。图片/高级参数及Gemini六方法/Registry/Gateway/固定Runtime仍未接；parallel_tool_calls=false且启用工具明确unsupported，不能据此宣称Lite实际执行或Full。详情见Gemini验收文档。
