@@ -1,6 +1,8 @@
 use super::*;
 use caidex_model_core::{CanonicalRequest, ResponseItem, ResponsesDialect};
-use caidex_provider_anthropic::{MessagesRequest, ReasoningMapping, RequestOptions, ToolMap};
+use caidex_provider_anthropic::{
+    MessagesRequest, ReasoningMapping, RequestOptions, SummaryMapping, ThinkingContext, ToolMap,
+};
 
 #[tokio::test]
 async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_real_http() {
@@ -26,7 +28,8 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
             json!({"model":"alias","input":[prompt],"tools":declarations,"parallel_tool_calls":false})
         };
         wire["text"] = json!({"format":{"type":"json_schema","name":"result","strict":true,"schema":{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"],"additionalProperties":false}}});
-        wire["reasoning"] = json!({"effort":"high"});
+        wire["reasoning"] = json!({"effort":"high","summary":"auto","context":"all_turns"});
+        let summaries = [SummaryMapping::new("auto".into(), "summarized".into()).unwrap()];
         let mappings = [ReasoningMapping::new(
             "high".into(),
             Some("medium".into()),
@@ -42,6 +45,8 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
             &RequestOptions {
                 supports_structured_outputs: true,
                 reasoning_mappings: &mappings,
+                summary_mappings: &summaries,
+                thinking_context: Some(ThinkingContext::AllTurns),
                 ..Default::default()
             },
         )
@@ -77,6 +82,8 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
                 supports_system_messages: true,
                 supports_structured_outputs: true,
                 reasoning_mappings: &mappings,
+                summary_mappings: &summaries,
+                thinking_context: Some(ThinkingContext::AllTurns),
             },
         )
         .unwrap();

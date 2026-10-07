@@ -32,6 +32,8 @@ pub struct MessagesRequest {
 pub struct RequestOptions<'a> {
     pub supports_system_messages: bool,
     pub supports_structured_outputs: bool,
+    pub summary_mappings: &'a [crate::SummaryMapping],
+    pub thinking_context: Option<crate::ThinkingContext>,
     pub reasoning_mappings: &'a [ReasoningMapping],
 }
 impl MessagesRequest {
@@ -324,7 +326,7 @@ impl MessagesRequest {
         } else if choice == "required" {
             return Err(invalid());
         }
-        crate::reasoning::apply(&mut wire, source, options.reasoning_mappings, max_tokens)?;
+        crate::reasoning::apply(&mut wire, source, options, max_tokens)?;
         crate::structured::apply(&mut wire, source, options.supports_structured_outputs)?;
         if wire.to_string().len() > max_bytes {
             return Err(invalid());

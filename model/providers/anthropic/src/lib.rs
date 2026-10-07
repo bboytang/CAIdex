@@ -15,7 +15,7 @@ pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::{ModelCatalog, ModelsPage, NativeModel};
 pub use client::{AnthropicClient, AnthropicConfig};
 pub use message::{MessageOutcome, NativeMessage};
-pub use reasoning::ReasoningMapping;
+pub use reasoning::{ReasoningMapping, SummaryMapping, ThinkingContext};
 pub use request::{MessagesRequest, RequestOptions};
 pub use stream::{MessageEvent, MessageStream, NativeStreamState};
 pub use tools::ToolMap;

@@ -105,6 +105,7 @@ fn manual_budget_is_explicit_bounded_and_cannot_be_taken_from_client_json() {
         json!({"type":"enabled","budget_tokens":-1}),
         json!({"type":"adaptive","budget_tokens":1024}),
         json!({"type":"disabled","display":"summarized"}),
+        json!({"type":"between_tools","display":"summarized"}),
         json!({"type":"adaptive","future":true}),
         json!({"type":"other"}),
     ] {
@@ -176,6 +177,166 @@ fn active_thinking_rejects_forced_tools_and_unsigned_manual_history() {
             20,
             false,
             &[mapping]
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn summary_mapping_overrides_only_display_and_context_requires_exact_profile_policy() {
+    use caidex_provider_anthropic::{RequestOptions, SummaryMapping, ThinkingContext};
+    let mappings = [ReasoningMapping::new(
+        "high".into(),
+        Some("medium".into()),
+        Some(json!({"type":"adaptive","display":"omitted"})),
+    )
+    .unwrap()];
+    let summaries = [SummaryMapping::new("auto".into(), "summarized".into()).unwrap()];
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let source = json!({"model":"alias","input":[{"role":"user","content":"question"}],"reasoning":{"effort":"high","summary":"auto","context":"all_turns"}});
+        let request = CanonicalRequest::new(source.clone(), dialect).unwrap();
+        let options = RequestOptions {
+            reasoning_mappings: &mappings,
+            summary_mappings: &summaries,
+            thinking_context: Some(ThinkingContext::AllTurns),
+            ..Default::default()
+        };
+        let compiled = MessagesRequest::from_responses_with_options(
+            &request,
+            "native",
+            4096,
+            128 * 1024,
+            10,
+            &options,
+        )
+        .unwrap();
+        assert_eq!(compiled.source(), &source);
+        assert_eq!(
+            compiled.wire()["thinking"],
+            json!({"type":"adaptive","display":"summarized"})
+        );
+        assert_eq!(compiled.wire()["output_config"]["effort"], "medium");
+        assert!(compiled.wire().get("reasoning").is_none());
+        assert!(compiled.wire().get("context_management").is_none());
+        for policy in [None, Some(ThinkingContext::CurrentTurn)] {
+            let options = RequestOptions {
+                thinking_context: policy,
+                ..options
+            };
+            assert!(
+                MessagesRequest::from_responses_with_options(
+                    &request,
+                    "native",
+                    4096,
+                    128 * 1024,
+                    10,
+                    &options
+                )
+                .is_err()
+            );
+        }
+    }
+}
+#[test]
+fn summary_settings_cannot_enable_thinking_and_bad_profiles_are_rejected() {
+    use caidex_provider_anthropic::{RequestOptions, SummaryMapping};
+    for (source, display) in [
+        ("auto", "full"),
+        ("auto", "omitted"),
+        ("none", "omitted"),
+        ("detailed", "updates"),
+    ] {
+        assert!(SummaryMapping::new(source.into(), display.into()).is_err());
+    }
+    let make = || SummaryMapping::new("auto".into(), "summarized".into()).unwrap();
+    let summaries = [make()];
+    for thinking in [
+        None,
+        Some(json!({"type":"disabled"})),
+        Some(json!({"type":"between_tools"})),
+    ] {
+        let mappings =
+            [ReasoningMapping::new("high".into(), Some("medium".into()), thinking).unwrap()];
+        let options = RequestOptions {
+            reasoning_mappings: &mappings,
+            summary_mappings: &summaries,
+            ..Default::default()
+        };
+        for reasoning in [
+            json!({"summary":"auto"}),
+            json!({"effort":"high","summary":"auto"}),
+            json!({"effort":"high","summary":1}),
+            json!({"effort":"high","context":1}),
+        ] {
+            let request = CanonicalRequest::new(
+                json!({"model":"alias","input":"q","reasoning":reasoning}),
+                ResponsesDialect::Classic,
+            )
+            .unwrap();
+            assert!(
+                MessagesRequest::from_responses_with_options(
+                    &request,
+                    "native",
+                    4096,
+                    128 * 1024,
+                    10,
+                    &options
+                )
+                .is_err()
+            );
+        }
+    }
+    let duplicates = [make(), make()];
+    let options = RequestOptions {
+        summary_mappings: &duplicates,
+        ..Default::default()
+    };
+    let request = CanonicalRequest::new(
+        json!({"model":"alias","input":"q"}),
+        ResponsesDialect::Classic,
+    )
+    .unwrap();
+    assert!(
+        MessagesRequest::from_responses_with_options(
+            &request,
+            "native",
+            4096,
+            128 * 1024,
+            10,
+            &options
+        )
+        .is_err()
+    );
+}
+#[test]
+fn current_turn_policy_accepts_only_its_declared_context_without_stripping_history() {
+    use caidex_provider_anthropic::{RequestOptions, ThinkingContext};
+    let options = RequestOptions {
+        thinking_context: Some(ThinkingContext::CurrentTurn),
+        ..Default::default()
+    };
+    let wire = json!({"model":"alias","input":[{"role":"user","content":"first"},{"role":"assistant","content":"reply"},{"role":"user","content":"next"}],"reasoning":{"context":"current_turn"}});
+    let request = CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap();
+    let result = MessagesRequest::from_responses_with_options(
+        &request,
+        "native",
+        4096,
+        128 * 1024,
+        10,
+        &options,
+    )
+    .unwrap();
+    assert_eq!(result.source(), &wire);
+    assert_eq!(result.wire()["messages"].as_array().unwrap().len(), 3);
+    let options = RequestOptions::default();
+    assert!(
+        MessagesRequest::from_responses_with_options(
+            &request,
+            "native",
+            4096,
+            128 * 1024,
+            10,
+            &options
         )
         .is_err()
     );

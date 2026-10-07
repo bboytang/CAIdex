@@ -4,11 +4,10 @@
 
 ## 当前任务
 
-- Anthropic strict:true 结构化输出请求转换已实现并三平台验收：源码 9796682，新 src/structured.rs、RequestOptions、tests/structured.rs（4 项），经典/Lite 实际 HTTP 两轮 schema+effort 合并检查通过。workspace/Clippy/fmt/diff 通过；CI 37583615309 全部 success。非 strict、JSON mode、wrapper description/verbosity 语义与完整 Provider/Gateway 仍未完成。
-
-- 当前新增 Anthropic ReasoningMapping：执行端显式 effort→原生 effort/thinking（adaptive/disabled/between_tools/manual）映射、预算及冲突门控已实现；5 项新推理测试和既有 12 项请求测试通过。经典/Lite 实际 HTTP 两轮扩展推理参数检查，workspace/Clippy/fmt/diff 已通过。源码 25081d8 已提交/push，CI 37582398993 三平台全部 success。summary/context、其余结构化输出语义及完整 Provider/Gateway 仍未完成。
-- A–E、F 第一至第三步当前范围和 OpenAI 离线 Adapter 已验收。Anthropic 原生 HTTP/SSE、回复/工具载体及基础请求/中途指令已三平台验收，完整 ModelProvider/Gateway 未完成；F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
-- 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
+- 正在实现 Anthropic summary/context：新增 SummaryMapping、ThinkingContext 执行端声明，summary 只改变已启用 thinking 的 display；context 只接受与原生保留策略完全相符的值，不删历史。新增 3 项推理测试（累计 8 项）、经典/Lite 两轮 HTTP fixture 扩展；修正 between_tools 不得带 display。
+- 上一步因自动审批审核额度用尽中断；此次已修正摘要不能映射 omitted、补齐交接，8 项专项测试通过；最终完整 workspace、Clippy/fmt/diff 已通过；日志 /tmp/caidex-summary-context-workspace.log。main 基于已推送 87541b5，有 5 个 Anthropic 源码/测试文件未提交。此次差异审查和本地验证已完成，准备提交/push/CI。
+- strict:true 结构化输出（9796682）及 effort/thinking（25081d8）已三平台验收；完整 Anthropic ModelProvider/Gateway、F/G 整体和 H–R 尚未完成。继续 V3 离线 fixture 授权，不读取/创建真实模型 Key。
+- 用户已允许完整项目及文档公开至 bboytang/CAIdex，提交/push/CI 沿用授权。
 
 ## 已完成
 
@@ -33,7 +32,7 @@
 
 ## 下一步顺序
 
-1. effort/thinking 已三平台验收；下一步接 summary/context、结构化输出及实际 Runtime 请求其他参数，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
+1. effort/thinking 已三平台验收；下一步完成 summary/context 本轮验收，再接实际 Runtime 请求其他参数，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
 2. 完成 Anthropic ModelProvider 六方法、原生认证需求、Responses SSE 事件转换、Gateway 注入及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。配置/HTTP fixture 通过不等于完整 Adapter 或商业模型支持，不重做已验传输。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
@@ -67,7 +66,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，中断恢复核查：本地及远端 HEAD 均为 04f0d17，源码 25081d8、checkpoint 7efceff 与验收文档均已提交/push，核查前工作区干净。本次仅更新核查记录，未修改源码或重跑测试，提交后以实际 HEAD 续接。[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993) 对应 SHA 25081d8dfb9923e8d98f8bed5b7220570ac324fa，三平台 completed/success。恢复文件 src/reasoning.rs、src/request.rs、tests/reasoning.rs、tests/http/compiled.rs；完整 Provider/Gateway 尚未完成。
+- branch `main` 跟踪 `origin/main`，恢复 HEAD 87541b5；当前未提交修改：model/providers/anthropic/src/{lib,reasoning,request}.rs 与 tests/{reasoning.rs,http/compiled.rs}，以及本次交接更新。尚未提交或推送 summary/context，上一阶段 CI 37583615309 已 success。
 
 ## 测试结果
 
@@ -82,8 +81,9 @@
 
 - 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；已实现 strict:true 的请求转换，完整验证与其余语义待继续。
 
-- 2026-10-07 中断核查：重新查询上述 CI，三平台仍为 completed/success；断开时处于结构化输出资料核对阶段，未开始实现，没有遗留源码修改或上一阶段待完成 CI。恢复先确认 Responses text.format/strict 契约，再实现能力门控、schema 保留及 effort 合并回归；summary/context 等随后逐项处理。
 
-- 本次恢复点：strict:true 请求转换已验收，继续 summary/context、其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
+- 本次恢复点：strict:true 已验；summary/context 已实现未提交，先完成本轮测试/提交/CI，再继续其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
 
-- 结构化转换 [CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)，源码 SHA 9796682e13cb50e7bf52f3581b543b240eacdbd0：Windows/Linux/macOS 全部 completed/success，逐平台日志核对新增 4 项通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-structured-workspace.log、/tmp/caidex-ci-37583615309.log。main 源码已提交/push，当前仅本次验收文档待提交，提交后以实际 HEAD 续接；没有源码遗留修改。
+- 结构化转换 [CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)，源码 SHA 9796682e13cb50e7bf52f3581b543b240eacdbd0：Windows/Linux/macOS 全部 completed/success，逐平台日志核对新增 4 项通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-structured-workspace.log、/tmp/caidex-ci-37583615309.log。strict:true 阶段源码与验收文档均已提交/push。
+
+- 新发现：较新 Anthropic 模型的签名可绑定 system/tools/历史消息前缀及账户，当前载体仅验证 native 回复和投影，不证明请求前缀或账户相同。完整 Adapter 必须保留请求前缀契约并补 mode/tool/trim/resume 回归，不得自动 drop_block/retry 掩盖不匹配。资料 https://platform.claude.com/docs/en/build-with-claude/preserved-thinking 。

@@ -105,3 +105,13 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 新增 4 项结构化转换回归，覆盖经典/Lite、effort/thinking 合并、source/schema 精确保留、能力门控、不支持语义、坏输入、数值精度及最终 body 字节上限；既有真实 HTTP 两轮 fixture 同时核验 format 和 effort。完整 workspace/Clippy/fmt/diff 通过；[CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)（源码 9796682）三平台全部 success，新增 4 项逐平台通过。
 
 依据：[OpenAI Structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[Anthropic Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)。未调用商业 API。
+
+## Summary / reasoning context 执行端契约
+
+`SummaryMapping` 显式声明 OpenAI summary auto/concise/detailed 到原生 summarized 的映射；不宣称各档位等价，不猜默认，不自动启用 thinking。摘要请求不能映射 omitted（否则隐藏所请求摘要），也不能给 disabled/between_tools 添加 display。只有已配置 adaptive/enabled 的 effort 映射可承接摘要，已配置 display 被本次显式 summary 设置覆盖。
+
+`ThinkingContext` 声明实际原生模型保留策略 CurrentTurn/AllTurns；只有请求 context 与配置完全一致才通过。不会靠模型名字推断、编造原生字段、裁掉旧签名或把 all_turns 降为 current_turn。声明和离线 fixture 不是模型实际保留推理的证明；原生 API 的模型/账户/前缀绑定仍需后续验收。
+
+新增 3 项推理测试（累计 8 项），覆盖经典/Lite、配置缺失/不匹配、display 覆盖、禁用思考/无 effort 不被隐式启用、坏 summary/context、重复配置及当前轮策略不删历史；实际 HTTP 两轮 fixture 包含 summary/context 和既有结构化输出、签名工具历史。修正 between_tools 禁止 display。完整测试状态见 HANDOFF.md。
+
+依据：[OpenAI reasoning summaries](https://developers.openai.com/api/docs/guides/reasoning)、[Anthropic thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)。较新原生模型还检查签名的模型、账户和 system/tools/messages 前缀；现有载体不证明这些匹配，完整 Adapter 需请求前缀契约与 mode/tools/trim/resume 回归，不能自动 drop_block 或 retry 掩盖失败。参见 [Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)。

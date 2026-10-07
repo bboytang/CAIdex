@@ -5,6 +5,36 @@ use std::collections::BTreeSet;
 fn invalid() -> ProviderError {
     ProviderError::new(400, "invalid_anthropic_reasoning")
 }
+/// Native model's documented prior-turn thinking retention policy.
+/// A profile declaration is not proof of actual model compatibility.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ThinkingContext {
+    CurrentTurn,
+    AllTurns,
+}
+impl ThinkingContext {
+    fn wire_value(self) -> &'static str {
+        match self {
+            Self::CurrentTurn => "current_turn",
+            Self::AllTurns => "all_turns",
+        }
+    }
+}
+/// Explicit summary intent to native display mapping. Summary scales are not
+/// equivalent across providers; no setting changes the native reasoning mode.
+#[derive(Debug)]
+pub struct SummaryMapping {
+    source: String,
+    display: String,
+}
+impl SummaryMapping {
+    pub fn new(source: String, display: String) -> ProviderResult<Self> {
+        if !matches!(source.as_str(), "auto" | "concise" | "detailed") || display != "summarized" {
+            return Err(invalid());
+        }
+        Ok(Self { source, display })
+    }
+}
 /// Execution-side mapping, not a claim that providers' effort scales are equal.
 /// Unknown model capabilities never create an implicit default mapping.
 #[derive(Debug)]
@@ -50,8 +80,10 @@ impl ReasoningMapping {
                 _ => return Err(invalid()),
             }
             if let Some(display) = object.get("display")
-                && (thinking["type"] == "disabled"
-                    || !matches!(display.as_str(), Some("summarized" | "omitted")))
+                && (matches!(
+                    thinking["type"].as_str(),
+                    Some("disabled" | "between_tools")
+                ) || !matches!(display.as_str(), Some("summarized" | "omitted")))
             {
                 return Err(invalid());
             }
@@ -83,9 +115,18 @@ impl ReasoningMapping {
 pub(crate) fn apply(
     wire: &mut Value,
     source: &Value,
-    mappings: &[ReasoningMapping],
+    options: &crate::RequestOptions<'_>,
     max_tokens: u64,
 ) -> ProviderResult<()> {
+    let mappings = options.reasoning_mappings;
+    let mut summaries = BTreeSet::new();
+    if options
+        .summary_mappings
+        .iter()
+        .any(|mapping| !summaries.insert(mapping.source.as_str()))
+    {
+        return Err(invalid());
+    }
     let mut identities = BTreeSet::new();
     if mappings
         .iter()
@@ -99,13 +140,26 @@ pub(crate) fn apply(
     let object = reasoning.as_object().ok_or_else(invalid)?;
     // Summary verbosity and provider retention are independent semantics. Null
     // known optional fields mean absent; unsupported semantics cannot disappear.
-    if object.iter().any(|(key, value)| {
-        key != "effort" && !(matches!(key.as_str(), "summary" | "context") && value.is_null())
-    }) {
+    if object
+        .keys()
+        .any(|key| !matches!(key.as_str(), "effort" | "summary" | "context"))
+    {
         return Err(ProviderError::new(400, "unsupported_anthropic_reasoning"));
     }
+    if let Some(context) = object.get("context").filter(|v| !v.is_null()) {
+        let context = context.as_str().ok_or_else(invalid)?;
+        if options
+            .thinking_context
+            .is_none_or(|policy| policy.wire_value() != context)
+        {
+            return Err(ProviderError::new(
+                400,
+                "unsupported_anthropic_reasoning_context",
+            ));
+        }
+    }
     let Some(effort) = object.get("effort").filter(|v| !v.is_null()) else {
-        return Ok(());
+        return apply_summary(wire, object.get("summary"), options.summary_mappings);
     };
     let effort = effort.as_str().ok_or_else(invalid)?;
     let mapping = mappings
@@ -141,5 +195,29 @@ pub(crate) fn apply(
     for (key, value) in native.as_object().unwrap() {
         wire[key] = value.clone();
     }
+    apply_summary(wire, object.get("summary"), options.summary_mappings)
+}
+fn apply_summary(
+    wire: &mut Value,
+    summary: Option<&Value>,
+    mappings: &[SummaryMapping],
+) -> ProviderResult<()> {
+    let Some(summary) = summary.filter(|value| !value.is_null()) else {
+        return Ok(());
+    };
+    let summary = summary.as_str().ok_or_else(invalid)?;
+    let mapping = mappings
+        .iter()
+        .find(|mapping| mapping.source == summary)
+        .ok_or_else(|| ProviderError::new(400, "unsupported_anthropic_reasoning_summary"))?;
+    // A summary request must retain readable summaries. Never fabricate
+    // thinking enablement or map it to omitted display.
+    if !matches!(
+        wire["thinking"]["type"].as_str(),
+        Some("adaptive" | "enabled")
+    ) {
+        return Err(invalid());
+    }
+    wire["thinking"]["display"] = mapping.display.clone().into();
     Ok(())
 }
