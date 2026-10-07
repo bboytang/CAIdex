@@ -10,7 +10,8 @@ use caidex_provider_custom::{
 };
 use futures_util::StreamExt;
 use rcgen::{
-    BasicConstraints, CertificateParams, CertifiedIssuer, ExtendedKeyUsagePurpose, IsCa, KeyPair,
+    BasicConstraints, CertificateParams, CertifiedIssuer, DnType, ExtendedKeyUsagePurpose, IsCa,
+    KeyPair, KeyUsagePurpose,
 };
 use rustls::{ServerConfig, pki_types::PrivatePkcs8KeyDer};
 use serde_json::{Value, json};
@@ -574,11 +575,22 @@ async fn stream_drop_cancel_and_unpolled_deadline_close_the_socket() {
 }
 
 fn certificates(host: &str, expired: bool) -> (Arc<ServerConfig>, reqwest::Certificate) {
+    let now = time::OffsetDateTime::now_utc();
     let mut params = CertificateParams::new(Vec::<String>::new()).unwrap();
     params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+    params
+        .distinguished_name
+        .push(DnType::CommonName, "CAIdex fixture CA");
+    params.key_usages = vec![KeyUsagePurpose::KeyCertSign, KeyUsagePurpose::CrlSign];
+    params.not_before = now - time::Duration::days(3);
+    params.not_after = now + time::Duration::days(3);
     let issuer = CertifiedIssuer::self_signed(params, KeyPair::generate().unwrap()).unwrap();
     let mut leaf = CertificateParams::new(vec![host.into()]).unwrap();
-    let now = time::OffsetDateTime::now_utc();
+    // Distinct issuer/subject and AKI make this an issued leaf on native chain
+    // engines too; rcgen's identical default CNs resemble a self-issued leaf.
+    leaf.distinguished_name.push(DnType::CommonName, host);
+    leaf.use_authority_key_identifier_extension = true;
+    leaf.key_usages = vec![KeyUsagePurpose::DigitalSignature];
     leaf.not_before = now - time::Duration::days(2);
     leaf.not_after = now + time::Duration::days(if expired { -1 } else { 1 });
     leaf.extended_key_usages = vec![ExtendedKeyUsagePurpose::ServerAuth];
@@ -608,6 +620,7 @@ async fn tls_validates_trust_hostname_and_expiry_with_explicit_client_roots() {
         ("127.0.0.1", true, true, false),
     ] {
         let (server, root) = certificates(host, expired);
+        let diagnostic_root = root.clone();
         let mut fixture = Fixture::start(json_reply(), Some(server)).await;
         let options = ClientOptions {
             root_certificates: if trust { vec![root] } else { vec![] },
@@ -620,6 +633,23 @@ async fn tls_validates_trust_hostname_and_expiry_with_explicit_client_roots() {
             )
             .await;
         if success {
+            if response.is_err() {
+                // Diagnose this synthetic TLS fixture only, with no auth or model content.
+                // Production errors remain safe static classifications.
+                let diagnostic = reqwest::Client::builder()
+                    .no_proxy()
+                    .redirect(reqwest::redirect::Policy::none())
+                    .retry(reqwest::retry::never())
+                    .timeout(WAIT)
+                    .add_root_certificate(diagnostic_root)
+                    .build()
+                    .unwrap()
+                    .post(&fixture.endpoint)
+                    .body("{}")
+                    .send()
+                    .await;
+                panic!("synthetic TLS positive fixture failed: {diagnostic:?}");
+            }
             assert_eq!(response.unwrap().response.state(), StreamState::Completed);
             assert!(
                 fixture

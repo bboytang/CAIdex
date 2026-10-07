@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C 已完成，D/E 与 F 第一/二步当前范围已验收。F 第三步已实现 core ModelProvider/CanonicalResponse/Registry、独立 model/providers/custom HTTP client；Gateway 消费同一接口。本机核心 20/provider 7/Gateway 18、workspace/Clippy/fmt 与真实 Runtime 20 项通过；待提交/push/三平台 CI。未来 UI/Host/同步/iOS 仍按后续阶段验收。
+- A/B/C 已完成，D/E 与 F 第一/二步当前范围已验收。F 第三步 core ModelProvider/CanonicalResponse/Registry、独立 Custom Responses client/Gateway 共用接口已实现；e834549 CI 37552218330 Linux/macOS 通过，Windows 仅 TLS 正例失败。已修正合成证书的 CA/leaf 名称、用途、AKI/有效期，待定向复验/提交与新 CI；未来 UI/Host/同步/iOS 仍按后续阶段验收。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -29,7 +29,7 @@
 
 ## 下一步顺序
 
-1. F 第三步：检查最终差异、提交/push 本轮源码，等待本次三平台 CI 实际通过并记录结果；旧 ea7d902 CI 不能代表新源码。若失败按具体失败修复，不重复从头设计。
+1. TLS fixture 修正已通过本机定向测试/Clippy；提交/push 后查询新的三平台 CI，Windows 正/负证书与后续真实 Runtime 均需通过，再记录/提交验收文档。不要重跑旧失败 run 替代修复。
 2. 随各原生 Provider Adapter 实现原生请求/响应/工具/usage/reasoning/images/结构化输出/context/prompt compatibility 与兼容性报告；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权，当前离线工作可继续；不重做 A–E 或重复请求公开授权。
 3. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
 
@@ -60,11 +60,11 @@
 - `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD b875fbc；未提交：core Response/Provider/Registry 与依赖、新 model/providers/custom、Gateway HTTP client 抽离/接口/header 接入、新真实 socket/TLS 测试、workspace/README/设计/交接。本机通过，三平台 CI 待执行；无其他已知用户修改。
+- branch `main` 跟踪 `origin/main`，HEAD e834549 已推送；未提交为 provider TLS fixture 修正/无认证合成诊断与本交接。生产 TLS 策略未修改，无其他已知用户修改。
 
 ## 测试结果
 
-- F 第三步本机：核心 20 项、独立 provider 7 项（含四种 TLS 证书场景）、Gateway 18 项、workspace、fmt、Clippy -D warnings、真实 Runtime 20 项通过。单并发取消/背压 slot 释放定向复验也通过。Cargo.lock 保留全部已有 package 版本，新增 23 个 package（含独立 crate/证书测试依赖）；本轮 CI 待实际执行。
+- F 第三步本机：核心 20/provider 7/Gateway 18、workspace/fmt/Clippy/真实 Runtime 20 与单并发 slot 定向复验通过。CI 37552218330：Linux/macOS 全通过；Windows core 20/Gateway 18/provider 6 通过，但可信 TLS 正例失败，后续 Runtime 未执行。证书生成修正待新 CI 验证，不降低验证或跳过 Windows；Cargo.lock 保留全部旧版本，新增 23 package（含独立 crate/证书测试依赖）。
 
 - [CI 37550000148](https://github.com/bboytang/CAIdex/actions/runs/37550000148)，源码 `ea7d902`：ubuntu-24.04、windows-2022、macos-15 全部 success；fmt/Clippy/workspace、HTTP/TLS 依赖编译、固定 schema 重新生成与 SHA/offline doctor 均通过。
 - F 模型核心 15 项、Gateway 16 项真实 socket 回归三平台通过；真实 Runtime 集成 Linux 20 项、Windows/macOS 各 19 项通过。Gateway 经典/Lite 两轮/Broker 认证、两条路径 interrupt 的实际 EOF/reset 验证通过；均为合成回复，不代表商业模型或 Code Mode 工具执行已验收。
