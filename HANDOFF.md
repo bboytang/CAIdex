@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- Anthropic 上下文头已实现，本地验证完成，准备提交并启动三平台 CI：Config.with_local_runtime_context 显式接受三项本地 metadata，不外发；turn-state/错误方向头拒绝。原生 request-id 校验后映射 x-request-id，JSON/SSE 接至 Provider；缺省不猜、重复/空/坏 ASCII/超长拒绝。新增 4 项 HTTP 回归及扩展流式/配置测试，HTTP 26、完整 workspace/Clippy/fmt/diff 通过，日志 /tmp/caidex-anthropic-context-workspace.log。
+- Anthropic 上下文头源码 f35d2a7 已提交/push，CI 37616230221（SHA f35d2a7ba6f53794d20b9c8cf9d07b918231a98d）in_progress，需核对同一运行及新增/扩展测试逐平台日志。Config.with_local_runtime_context 显式接受三项本地 metadata，不外发；turn-state/错误方向头拒绝。原生 request-id 映射 x-request-id，JSON/SSE 接至 Provider；坏值拒绝。新增 4 项 HTTP 回归及扩展流式/配置测试，HTTP 26、workspace/Clippy/fmt/diff 本地通过，日志 /tmp/caidex-anthropic-context-workspace.log。
 - 本轮发现并修正上一步遗漏：Provider profile 字符串 input 导致 Lite-only / Lite-first 初始化失败，现用合法消息数组，回归已通过且不读 Key。请求前缀/账户契约及 Gateway/实际 Runtime 尚未接入。
 - ModelProvider 六方法此前已三平台验收：源码 6ae83b9，CI 37614432384 success（HTTP 22），其余能力及限制详见设计文档。本轮基于该实现继续，不重新实现传输。
 - Responses SSE 已三平台验收：源码 6a3986a，CI 37613084679 completed/success，新增 4 项投影及 2 项 HTTP 逐平台日志通过；本地 workspace/Clippy/fmt/diff 通过。custom 输入块结束后完整解包；完整原生回复验证后才发载体及 done；不宣称逐字符 custom 流。
@@ -73,7 +73,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD ab3fd16 已提交/push；本轮未提交：Anthropic client/provider/transfer、tests/http/context.rs 与 HTTP fixture/streaming/provider 回归、HANDOFF.md。恢复先完成本地/三平台验证，提交后继续请求前缀/账户历史契约；已验传输和基础映射不重做。
+- branch `main` 跟踪 `origin/main`，源码 f35d2a7 已提交/push；本次仅交接 checkpoint 待提交，无未完成源码改动。恢复先确认 CI 37616230221，再继续请求前缀/账户历史契约；已验传输和基础映射不重做。
 
 ## 测试结果
 
