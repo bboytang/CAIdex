@@ -3,6 +3,7 @@
 mod catalog;
 mod client;
 mod message;
+mod projection;
 mod stream;
 mod transfer;
 

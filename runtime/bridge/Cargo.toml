@@ -15,4 +15,5 @@ base64 = "=0.22.1"
 caidex-model-core = { path = "../../model/core" }
 caidex-model-gateway = { path = "../../model/gateway" }
 caidex-provider-openai = { path = "../../model/providers/openai" }
+caidex-provider-anthropic = { path = "../../model/providers/anthropic" }
 caidex-credentials = { path = "../../credentials/core", default-features = false }

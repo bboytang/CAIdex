@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C、D/E 与 F 第一至第三步当前范围已验收。F/G 原生 OpenAI 离线 Adapter 源码 e7253c8 已推送，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部 success。当前正在实现 Anthropic 原生适配：本机已有 Messages/Models/SSE 协议基础与原生认证 HTTP、分页发现/非流式两轮消息，12 项协议及 7 项 HTTP 测试与本机 workspace/Clippy 通过；源码 `95df007` 已提交/push，[CI 37575612338](https://github.com/bboytang/CAIdex/actions/runs/37575612338) 三平台全部 success，当前新增流式 HTTP/单槽背压/取消与 Drop，6 项新增 socket 测试本机通过，完整 workspace/Clippy 已通过，源码 `4b856b8` 已提交/push，[CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343) 三平台全部 success；ModelProvider/Gateway 接入未完成；F/G 整体与 H–R 尚未完成。按 V3 既有授权使用本地协议服务，不读/创建真实模型 Key。
+- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，正在保存本阶段；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -30,7 +30,7 @@
 
 ## 下一步顺序
 
-1. 续接 `model/providers/anthropic/`：官方 Messages/Models/streaming 契约已核实，原生消息、签名/opaque 回放、Models 分页与能力映射、SSE 重建已有代码及 12 项通过测试。原生 HTTP SSE/单槽背压/静态错误分类/取消与 Drop 已实现，本机新增 6 项测试通过；本轮 workspace 与三平台 CI 已全部通过，下一步完成 ModelProvider 六方法、Responses 经典/Lite 转换、原生多轮 history、Gateway 及真实 Runtime 离线验收。新增原生 HTTP 已验证认证/分页、非流式两轮签名回放、取消/timeout 的 socket EOF 与许可释放；流式 HTTP 已三平台验收；不把协议基础标为完整 Adapter。
+1. Anthropic：本轮原生回复投影/回放已实现，先完成检查、提交和三平台 CI；随后实现 Responses 请求→Messages、工具 namespace/custom 与结果、图片/结构化输出/context/模型别名版本契约，经典/Lite 分别验收，再完成 ModelProvider 六方法、原生认证需求、Gateway 注入及真实 Runtime 多轮/工具/interrupt。载体回放通过不代表完整 Adapter 可用，不重做已有传输。
 2. 随后 Gemini→兼容 API/Ollama。Models 清单不提供 Codex 兼容性，不由可用模型名称猜 Full 或 capabilities。OpenAI 官方依据与验收限制在独立 Provider 文档。
 3. 各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/prompt compatibility 与兼容性报告逐项落实；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权；不重做 A–E 或重复请求公开授权。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。离线开发已授权，真实 Key/付费调用仍须另行授权。
@@ -41,6 +41,7 @@
 - 使用真实固定 Runtime，不造第二套 Agent；上游 commit `d27764b82f7118f674371e6d6e76271d9d606edb`，CLI `0.160.1`/tag `rust-v0.160.1`。协议实验 opt-in；常规 104 客户端/10 服务端/83 通知，实验 167/11/83。
 - Lite 使用 /responses 与内部 header，指令/工具在 input 中，稳定前缀；core 仅保留收到的 wire。non-OpenAI 上游会清除 encrypted_function_args，未知签名也可能被 Runtime 丢弃；F/G Adapter 需验证原生 opaque history，必要时最小补丁，不宣称被删除的数据已保留。
 - Gateway 为 Rust 嵌入库，可注入独立 ModelProvider，已有 Custom/原生 OpenAI；其他原生 Adapter 待接入。Runtime profile 同时禁用 request/stream 重试，token 只在隔离子进程环境。HTTPS 默认验证，TLS 本地正/负 fixture 已验；未验真实 Provider。已开始的同步 SecretStore 读取不能强行中止，取消后不 POST；HTTP-date 转安全秒数元数据、不重试。仅固定上游四项请求/两项响应 context headers；OpenAI org/project 单独来自固定执行端配置，不向客户端开放任意原生认证头。
+- Anthropic 原生回复用版本化 CAIdex 载体放入 Runtime 已保留的 reasoning.encrypted_content，JSON 不代表加密；只有同 provider/准确 native model 及完整匹配投影组才能恢复。完整 native wire 是回放权威，不能从展示文字重建 signature。未知块/服务端工具不投影为 Runtime 客户端执行。跨 provider 不得原样转发，密文签名真实性仍由提供商校验；生产历史访问控制/同步按 H/I 落实。
 - 普通 Chat 独立于 Codex Host，无 Shell/Git/项目写权限；按提供商实际能力展示工具。Remote 用执行 Host Key，手机不读已保存 Host Key；历史同步不含凭据。
 - Gateway 面向 Responses HTTP/SSE，保留不透明签名/推理数据，不执行工具。经典 gpt-5.5 与 Lite/code_mode_only gpt-6.1-sol 路径不同，旧未知模型 fallback fixture 不能代表全部兼容性；F/G 分别验收。
 - 模型切换在轮次边界生效；跨提供商关联分支/新线程承接适配历史。Host 独立运行、SQLite 事件持久化后广播、快照补缺口、请求幂等、审批首次有效处理；不承诺外部工具恰好执行一次。
@@ -63,7 +64,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，原生 SSE 源码 `4b856b8` 和交接 checkpoint `ff8136f` 已提交/push，工作区无未提交源码。[CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343) 与完整 SHA `4b856b8212fe86f0455011c36861591e285fb77e` 匹配，三平台全部 success。本轮文件：Anthropic `src/client.rs`、`src/transfer.rs`、`tests/http/streaming.rs`、crate/lock 及 Provider 文档；本次仅补最终验收记录，提交后以实际 Git 状态续接。
+- branch `main` 跟踪 `origin/main`，HEAD `b74cdf2`；本轮未提交：Anthropic `src/projection.rs`、`tests/projection.rs` 和 lib 模块入口，Runtime dev-dependency/Cargo.lock、Python wire fixture、real_runtime 两项测试及 Provider/HANDOFF 文档。生产 Runtime 未改，第三方版本未变。本机新增 7 项投影与经典/Lite 载体各一项已通过；完整 workspace 已通过，日志 `/tmp/caidex-anthropic-projection-workspace.log`；新增断言后的完整真实 Runtime 25 项通过，日志 `/tmp/caidex-anthropic-projection-runtime.log`。
 
 ## 测试结果
 
@@ -78,11 +79,5 @@
 - 中断后重新查询 GitHub：上述 CI completed/success，三个 job 均 success，提交 SHA 与 e7253c8 一致；验收文档 fdc7254 已在远端。未修改源码，本次不重复运行已有通过的代码测试。
 - iOS、商业模型/其他 Provider、Windows Shell 批准后实际执行、真机/UAC/签名尚未执行；macOS Rust 验证不代表 iOS 构建。
 
-- Anthropic 当前阶段：[CI 37575612338](https://github.com/bboytang/CAIdex/actions/runs/37575612338)，源码 `95df007`，三平台 fmt/Clippy/workspace、native keyring、schema/doctor 全部通过。每个平台 Anthropic 协议 12/HTTP 7 项通过；既有真实 Runtime Linux 23、Windows/macOS 各 22 项通过，尚未涉及 Anthropic Runtime 互操作。本机完整 workspace locked/offline 回归、all-targets Clippy（-D warnings）、fmt/diff 通过。日志 `/tmp/caidex-anthropic-workspace.log`、`/tmp/caidex-ci-37575612338.log`；跨机器以 CI 链接为准。
-- Anthropic HTTP 已验证 Models 认证/工作区/分页与累计预算、非流式两轮签名回放、socket EOF/timeout/许可释放；流式 HTTP 已在本轮完成；Responses 转换、ModelProvider 六方法、Gateway/Runtime 接入仍未完成。未使用真实 Key 或商业模型。Cargo.lock 仅新增该 workspace package，旧依赖版本未改。
-
-- 本轮原生 HTTP 流式：本机协议 12/HTTP 13（新增 6）项通过，crate Clippy 通过；完整 workspace/Clippy/fmt/diff 与三平台 CI 已通过。原生错误事件不透传 body/frame，只返回静态分类；单槽背压错误独立保存，worker 持有许可，未消费队列取消/总 deadline 也释放 I/O/许可。完成消息由独立 Completed 数据项提供，message_stop 事件本身不代表上层任务成功。
-
-- 本轮首个 workspace 执行的 CLI 文件凭据测试因 /tmp Git 标记隔离条件失败；未改安全检查，使用 TMPDIR=/var/tmp 后相同全 workspace 通过。正常执行环境的目录标记与沙箱视图不同，未来本机凭据回归沿用隔离 temp 目录。
-
-- 原生 SSE [CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343)，源码 `4b856b8`：Linux/Windows/macOS 全部 success。逐平台日志确认 Anthropic 协议 12/HTTP 13（含新增流式 6）项通过，既有真实 Runtime Linux 23、Windows/macOS 22 项通过；fmt/Clippy/workspace、native keyring、schema/doctor 均通过。日志 `/tmp/caidex-ci-37576472343.log`。仍不证明 Anthropic Responses/Gateway/Runtime 互操作或商业模型兼容性。
+- Anthropic 既有原生协议/HTTP/SSE：[CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343)，源码 `4b856b8`，三平台 fmt/Clippy/workspace、native keyring、schema/doctor 全部通过；协议 12/HTTP 13 项各平台通过，既有 Runtime Linux 23、Windows/macOS 各 22 项。日志 `/tmp/caidex-ci-37576472343.log`。本机文件凭据回归使用 TMPDIR=/var/tmp，保留 Git 存储拒绝检查。
+- 本轮投影/回放：新增 7 项验证完整原生字段、签名/opaque、模型/版本/大小、展示与工具一致性、stop reason 与缓存 usage；固定 Runtime 经典/Lite 两轮各一项通过，包含未来块/大整数。workspace Clippy 通过，完整 workspace/fmt/diff 已通过，本机真实 Runtime 全部 25 项通过，三平台 CI 待核验。未调用商业模型/用户 Key、未执行 Code Mode 工具；尚未接入 Anthropic Gateway/ModelProvider。

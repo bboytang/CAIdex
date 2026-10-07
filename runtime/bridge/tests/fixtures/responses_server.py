@@ -60,7 +60,17 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
             return
         if mode.startswith("wire-"):
-            events.append(event("response.output_item.done", item={"type": "reasoning", "id": f"rs_{identity}", "summary": [], "encrypted_content": "CAIDEX_OPAQUE_REASONING+/==", "provider_signature": "CAIDEX_FUTURE_SIGNATURE=="}))
+            reasoning = {"type": "reasoning", "id": f"rs_{identity}", "summary": [], "encrypted_content": "CAIDEX_OPAQUE_REASONING+/==", "provider_signature": "CAIDEX_FUTURE_SIGNATURE=="}
+            if mode.startswith("wire-anthropic-"):
+                native = {"type": "message", "id": identity, "model": "native-fixture", "role": "assistant", "content": [
+                    {"type": "thinking", "thinking": "Native fixture thinking", "signature": "signed+/==\n", "future": "retain"},
+                    {"type": "redacted_thinking", "data": "opaque+/==\n"},
+                    {"type": "text", "text": "CAIdex local fixture complete", "citations": [{"type": "future_citation", "opaque": "retain"}]},
+                    {"type": "future_block", "number": 18446744073709551616}],
+                    "stop_reason": "end_turn", "usage": {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0}}
+                reasoning["summary"] = [{"type": "summary_text", "text": "Native fixture thinking"}]
+                reasoning["encrypted_content"] = "caidex.anthropic.native-message.v1:" + json.dumps({"provider": "anthropic", "version": 1, "message": native})
+            events.append(event("response.output_item.done", item=reasoning))
         if mode == "patch" and trace["requests"] == 1:
             trace["offeredTools"] = [{"name": tool.get("name"), "type": tool.get("type"), "nestedNames": [nested.get("name") for nested in tool.get("tools", [])]} for tool in body.get("tools", [])]
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")

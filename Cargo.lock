@@ -435,6 +435,7 @@ dependencies = [
  "caidex-credentials",
  "caidex-model-core",
  "caidex-model-gateway",
+ "caidex-provider-anthropic",
  "caidex-provider-openai",
  "serde",
  "serde_json",

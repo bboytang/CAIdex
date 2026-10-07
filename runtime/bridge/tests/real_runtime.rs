@@ -136,10 +136,9 @@ impl Harness {
             .as_u64()
             .unwrap();
         let model = match (fixture_mode, mode) {
-            ("wire-lite", _) | (_, "gateway-stall-lite" | "gateway-openai-stall-lite") => {
-                "gpt-6.1-sol"
-            }
-            ("wire-classic" | "wire-stall", _) => "gpt-5.5",
+            ("wire-lite" | "wire-anthropic-lite", _)
+            | (_, "gateway-stall-lite" | "gateway-openai-stall-lite") => "gpt-6.1-sol",
+            ("wire-classic" | "wire-stall" | "wire-anthropic-classic", _) => "gpt-5.5",
             _ => "gpt-5.1-codex",
         };
         let gateway = if through_gateway {
@@ -1328,6 +1327,103 @@ async fn real_idle_queue_add_starts_a_turn_and_preserves_client_identity() {
     assert_eq!(queue["data"], json!([]));
     assert_eq!(harness.trace()["requests"], 1);
     harness.shutdown().await;
+}
+
+async fn real_native_anthropic_history(mode: &str) {
+    use caidex_provider_anthropic::NativeMessage;
+    let mut harness = Harness::start(mode).await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    for text in [
+        "Offline native history fixture",
+        "Continue exact signed native history",
+    ] {
+        client
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":text})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            let RuntimeEvent::Notification(event) = harness.next().await else {
+                panic!("native history fixture does not execute tools")
+            };
+            if event.method == "turn/completed" {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 2);
+    for request in trace["wireRequests"].as_array().unwrap() {
+        if mode == "wire-anthropic-lite" {
+            assert_eq!(request["body"]["model"], "gpt-6.1-sol");
+            assert_eq!(request["liteHeader"], "true");
+            assert!(request["body"].get("instructions").is_none());
+            assert!(request["body"].get("tools").is_none());
+        } else {
+            assert_eq!(request["body"]["model"], "gpt-5.5");
+            assert_eq!(request["liteHeader"], Value::Null);
+        }
+    }
+    let original: Vec<_> = trace["wireResponses"][0]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|event| event["type"] == "response.output_item.done")
+        .map(|event| event["item"].clone())
+        .collect();
+    let native =
+        NativeMessage::from_responses_output(&original, "native-fixture", 128 * 1024).unwrap();
+    let followup = trace["wireRequests"][1]["body"]["input"]
+        .as_array()
+        .unwrap();
+    let index = followup
+        .iter()
+        .position(|item| {
+            item["type"] == "reasoning"
+                && item["encrypted_content"] == original[0]["encrypted_content"]
+        })
+        .unwrap();
+    let replay = NativeMessage::from_responses_output(
+        &followup[index..index + original.len()],
+        "native-fixture",
+        128 * 1024,
+    )
+    .unwrap();
+    assert_eq!(replay.wire(), native.wire());
+    assert_eq!(replay.content()[0]["signature"], "signed+/==\n");
+    assert_eq!(replay.content()[1]["data"], "opaque+/==\n");
+    assert_eq!(
+        replay.content()[3]["number"].to_string(),
+        "18446744073709551616"
+    );
+    // Validate the Python fixture against the actual Rust projection contract.
+    assert!(
+        NativeMessage::from_responses_output(
+            native.to_responses(128 * 1024).unwrap().output(),
+            "native-fixture",
+            128 * 1024
+        )
+        .is_ok()
+    );
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; native carrier replay, not Anthropic Gateway integration"]
+async fn real_classic_runtime_preserves_native_anthropic_signed_history_carrier() {
+    real_native_anthropic_history("wire-anthropic-classic").await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Lite native carrier replay, not Code Mode tool execution"]
+async fn real_lite_runtime_preserves_native_anthropic_signed_history_carrier() {
+    real_native_anthropic_history("wire-anthropic-lite").await;
 }
 
 async fn real_model_wire(mode: &str, dialect: caidex_model_core::ResponsesDialect) {
