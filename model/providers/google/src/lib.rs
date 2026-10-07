@@ -7,6 +7,7 @@ mod media;
 mod reasoning;
 mod request;
 mod stream;
+mod structured;
 mod tools;
 mod transfer;
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};

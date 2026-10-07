@@ -38,6 +38,10 @@ pub struct RequestOptions<'a> {
     pub reasoning_mappings: &'a [crate::ReasoningMapping],
     pub summary_mappings: &'a [crate::SummaryMapping],
     pub thinking_context: Option<crate::ThinkingContext>,
+    /// Executor-declared native JSON/schema support, not live compatibility.
+    pub supports_structured_outputs: bool,
+    /// Separate declaration: native output-schema/tool combinations vary.
+    pub supports_structured_outputs_with_tools: bool,
 }
 impl GenerateContentRequest {
     pub fn from_responses(
@@ -86,6 +90,7 @@ impl GenerateContentRequest {
                     | "tool_choice"
                     | "include"
                     | "reasoning"
+                    | "text"
             ) {
                 return Err(unsupported());
             }
@@ -155,6 +160,7 @@ impl GenerateContentRequest {
         let mut wire = json!({"generationConfig":{"maxOutputTokens":max_tokens},"contents":[]});
         // The actual thinking settings are part of every replay prefix.
         crate::reasoning::apply(&mut wire, source, options)?;
+        crate::structured::apply(&mut wire, source, options, !tools.native_tools().is_empty())?;
         if !tools.native_tools().is_empty() {
             wire["tools"] = json!([{"functionDeclarations":tools.native_tools()}]);
             if source.get("tool_choice").is_some() {

@@ -2008,6 +2008,7 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
     };
     const MODEL: &str = "models/fixture-media";
     const LIMIT: usize = 256 * 1024;
+    let output_schema = json!({"type":"object","properties":{"status":{"type":"string"}},"required":["status"],"additionalProperties":false});
     let declarations = json!([
         {"type":"function","name":"inspect","parameters":{"type":"object"}},
         {"type":"custom","name":"raw","format":{"type":"text"}}
@@ -2018,11 +2019,14 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
         image_mime_types: &["image/png"],
         tool_result_image_mime_types: &["image/png", "image/jpeg"],
         image_detail_mappings: &details,
+        supports_structured_outputs: true,
+        supports_structured_outputs_with_tools: true,
         ..Default::default()
     };
     let make_request = |dialect: ResponsesDialect, mut input: Vec<Value>| {
         let mut source = json!({"model":"alias","stream":true,"store":false,"parallel_tool_calls":true,
-                "reasoning":{"effort":"high","summary":"auto","context":"all_turns"}});
+                "reasoning":{"effort":"high","summary":"auto","context":"all_turns"},
+                "text":{"format":{"type":"json_schema","name":"media_result","strict":true,"schema":output_schema}}});
         if dialect == ResponsesDialect::Lite {
             input.insert(
                 0,
@@ -2072,11 +2076,13 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
         let first_reply = json!({"candidates":[{"finishReason":"STOP","content":signed}]});
         let second_reply = json!({"candidates":[{"finishReason":"STOP","content":{"parts":[
             {"thought":true,"text":"streamed summary","thoughtSignature":"streamed-thought"},
-            {"text":"media inspected","thoughtSignature":"media-final"}]}}]});
+            {"text":"{\"status\":\"media inspected\"}","thoughtSignature":"media-final"}]}}]});
+        let mut final_reply = native_reply("STOP");
+        final_reply["candidates"][0]["content"]["parts"][0]["text"] = r#"{"status":"done"}"#.into();
         let mut fixture = Fixture::start(vec![
             Reply::json(first_reply),
             Reply::sse(std::slice::from_ref(&second_reply)),
-            Reply::json(native_reply("STOP")),
+            Reply::json(final_reply.clone()),
         ])
         .await;
         let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
@@ -2106,7 +2112,7 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
         let body = request_body(&sent);
         assert_eq!(
             body["generationConfig"],
-            json!({"maxOutputTokens":128,"thinkingConfig":expected})
+            json!({"maxOutputTokens":128,"thinkingConfig":expected,"responseFormat":{"text":{"mimeType":"APPLICATION_JSON","schema":output_schema}}})
         );
         assert_eq!(
             body["contents"][0],
@@ -2198,6 +2204,37 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
             .code,
             "google_history_request_mismatch"
         );
+        let mut changed = restored.wire().clone();
+        changed["text"]["format"]["schema"]["properties"]["status"]["description"] =
+            "different".into();
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &CanonicalRequest::new(changed, dialect).unwrap(),
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &options,
+            )
+            .unwrap_err()
+            .code,
+            "google_history_request_mismatch"
+        );
+        let mut ignored = restored.wire().clone();
+        ignored["text"]["format"]["schema"]["properties"]["status"]["pattern"] = "^ok".into();
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &CanonicalRequest::new(ignored, dialect).unwrap(),
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &options,
+            )
+            .unwrap_err()
+            .code,
+            "unsupported_google_output_schema"
+        );
         assert_eq!(reads.load(Ordering::SeqCst), 1);
         let mut stream = client
             .stream_content(MODEL, second.wire().clone(), RequestContext::default())
@@ -2216,7 +2253,7 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
         let body = request_body(&sent);
         assert_eq!(
             body["generationConfig"],
-            json!({"maxOutputTokens":128,"thinkingConfig":expected})
+            json!({"maxOutputTokens":128,"thinkingConfig":expected,"responseFormat":{"text":{"mimeType":"APPLICATION_JSON","schema":output_schema}}})
         );
         assert_eq!(body["contents"][1], signed);
         let results = json!({"role":"user","parts":[
@@ -2254,21 +2291,22 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
             &restored, MODEL, 128, LIMIT, 8, &options,
         )
         .unwrap();
-        client
+        let final_native = client
             .generate_content(MODEL, third.wire().clone(), RequestContext::default())
             .await
             .unwrap();
+        assert_eq!(final_native.wire(), &final_reply);
         let sent = fixture.request().await;
         let body = request_body(&sent);
         assert_eq!(
             body["generationConfig"],
-            json!({"maxOutputTokens":128,"thinkingConfig":expected})
+            json!({"maxOutputTokens":128,"thinkingConfig":expected,"responseFormat":{"text":{"mimeType":"APPLICATION_JSON","schema":output_schema}}})
         );
         assert_eq!(body["contents"][1], signed);
         assert_eq!(body["contents"][2], results);
         assert_eq!(
             body["contents"][3],
-            json!({"role":"model","parts":[{"thought":true,"text":"streamed summary","thoughtSignature":"streamed-thought"},{"text":"media inspected","thoughtSignature":"media-final"}]})
+            json!({"role":"model","parts":[{"thought":true,"text":"streamed summary","thoughtSignature":"streamed-thought"},{"text":"{\"status\":\"media inspected\"}","thoughtSignature":"media-final"}]})
         );
         assert_eq!(reads.load(Ordering::SeqCst), 3);
     }

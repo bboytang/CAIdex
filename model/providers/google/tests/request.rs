@@ -459,7 +459,7 @@ fn unsupported_parameters_and_invalid_input_fail_before_transport() {
         (
             "text",
             json!({"format":{"type":"json_object"}}),
-            "unsupported_google_request",
+            "unsupported_google_output_format",
         ),
         ("store", json!(true), "unsupported_google_request"),
         (
