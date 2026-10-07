@@ -1,6 +1,6 @@
 use caidex_model_core::{
-    CanonicalRequest, Error, ResponseEvent, ResponseItem, ResponsesDialect, StreamState, ToolInput,
-    ToolKind, Usage,
+    CanonicalRequest, CanonicalResponse, Error, ResponseEvent, ResponseItem, ResponsesDialect,
+    ResponsesStream, StreamState, ToolInput, ToolKind, Usage,
 };
 use serde_json::json;
 
@@ -129,6 +129,142 @@ fn tool_results_keep_text_multimodal_content_and_legacy_namespace_identity() {
     )
     .unwrap();
     assert!(matches!(invalid.tool_result(), Err(Error::InvalidItem)));
+}
+
+#[test]
+fn completed_tool_search_requires_client_correlation_and_wire_fields() {
+    let call = json!({"type":"tool_search_call","execution":"client","call_id":"search-1","arguments":{"query":"calendar","limit":1}});
+    let output = json!({"type":"tool_search_output","execution":"client","call_id":"search-1","status":"completed","tools":[]});
+    for (original, key, replacement) in [
+        (&call, "call_id", json!(null)),
+        (&call, "call_id", json!("")),
+        (&call, "call_id", json!(12)),
+        (&call, "execution", json!(null)),
+        (&call, "status", json!(12)),
+        (&output, "call_id", json!(null)),
+        (&output, "status", json!(null)),
+        (&output, "tools", json!({})),
+    ] {
+        let mut malformed = original.clone();
+        malformed[key] = replacement;
+        assert!(
+            CanonicalResponse::new(
+                json!({"id":"fixture","status":"completed","output":[malformed]})
+            )
+            .is_err(),
+            "accepted invalid {key}"
+        );
+        let event = json!({"type":"response.output_item.done","output_index":0,"item":malformed});
+        let mut stream = ResponsesStream::new(4096).unwrap();
+        assert!(
+            stream
+                .push(format!("data: {event}\n\n").as_bytes())
+                .is_err()
+        );
+        assert_eq!(stream.state(), StreamState::Invalid);
+        for (kind, status) in [
+            ("response.completed", "completed"),
+            ("response.incomplete", "incomplete"),
+            ("response.failed", "failed"),
+            ("error", "failed"),
+        ] {
+            let event = json!({"type":kind,"response":{"id":"fixture","status":status,"output":[malformed]}});
+            assert!(
+                ResponseEvent::new(event.clone()).is_err(),
+                "accepted invalid search in {status}"
+            );
+            let mut stream = ResponsesStream::new(4096).unwrap();
+            assert!(
+                stream
+                    .push(format!("data: {event}\n\n").as_bytes())
+                    .is_err()
+            );
+            assert_eq!(stream.state(), StreamState::Invalid);
+        }
+    }
+    for (original, key) in [
+        (&call, "arguments"),
+        (&output, "tools"),
+        (&output, "status"),
+    ] {
+        let mut malformed = original.clone();
+        malformed.as_object_mut().unwrap().remove(key);
+        assert!(
+            CanonicalResponse::new(
+                json!({"id":"fixture","status":"completed","output":[malformed]})
+            )
+            .is_err()
+        );
+    }
+}
+
+#[test]
+fn tool_search_views_preserve_json_declarations_and_execution_without_function_coercion() {
+    let arguments: serde_json::Value = serde_json::from_str(r#"{"query":"日历🙂","limit":1,"future":{"integer":18446744073709551616,"decimal":0.12345678901234567890123456789}}"#).unwrap();
+    let tools = json!([{"type":"namespace","name":"calendar","future":"retain","tools":[{"type":"function","name":"create","defer_loading":true,"parameters":{"type":"object","properties":{"title":{"type":"string"}}}}]}]);
+    for (execution, call_id) in [
+        ("client", json!("search-1")),
+        ("server", json!(null)),
+        ("future_executor", json!(null)),
+    ] {
+        let call = json!({"type":"tool_search_call","execution":execution,"call_id":call_id,"arguments":arguments,"future":"opaque+/=="});
+        let output = json!({"type":"tool_search_output","execution":execution,"call_id":call_id,"status":"completed","tools":tools,"future":"opaque+/=="});
+        let item = ResponseItem::new(call.clone()).unwrap();
+        let view = item.tool_search_call().unwrap().unwrap();
+        assert_eq!(view.execution, execution);
+        assert_eq!(view.call_id, call_id.as_str());
+        assert_eq!(view.status, None);
+        assert_eq!(view.arguments, &arguments);
+        assert!(item.tool_call().unwrap().is_none());
+        assert!(item.tool_search_output().unwrap().is_none());
+        let item = ResponseItem::new(output.clone()).unwrap();
+        let view = item.tool_search_output().unwrap().unwrap();
+        assert_eq!(view.execution, execution);
+        assert_eq!(view.call_id, call_id.as_str());
+        assert_eq!(view.status, "completed");
+        assert_eq!(view.tools, tools.as_array().unwrap());
+        assert!(item.tool_result().unwrap().is_none());
+        assert!(item.tool_search_call().unwrap().is_none());
+        let wire = json!({"id":"fixture","status":"completed","output":[call,output]});
+        assert_eq!(
+            serde_json::to_value(CanonicalResponse::new(wire.clone()).unwrap()).unwrap(),
+            wire
+        );
+        for (kind, status, state) in [
+            ("response.completed", "completed", StreamState::Completed),
+            ("response.incomplete", "incomplete", StreamState::Incomplete),
+            ("response.failed", "failed", StreamState::Failed),
+            ("error", "failed", StreamState::Failed),
+        ] {
+            let mut response = wire.clone();
+            response["status"] = status.into();
+            let event = json!({"type":kind,"response":response});
+            let parsed = ResponseEvent::new(event.clone()).unwrap();
+            assert_eq!(parsed.terminal(), Some(state));
+            assert_eq!(parsed.wire(), &event);
+        }
+        for raw in wire["output"].as_array().unwrap() {
+            let event = json!({"type":"response.output_item.done","output_index":0,"item":raw});
+            let mut stream = ResponsesStream::new(4096).unwrap();
+            let frame = format!("data: {event}\n\n");
+            let mut received = Vec::new();
+            for byte in frame.bytes() {
+                received.extend(stream.push(&[byte]).unwrap());
+            }
+            assert_eq!(received.len(), 1);
+            assert_eq!(received[0].response.item().unwrap().unwrap().wire(), raw);
+        }
+    }
+    // The pinned wire contract uses Value, not a function JSON string parser.
+    // Argument/schema and discovered-tool authority checks belong to the adapter.
+    let item = ResponseItem::new(json!({"type":"tool_search_call","execution":"client","call_id":"search-2","arguments":"opaque JSON value"})).unwrap();
+    assert_eq!(
+        item.tool_search_call().unwrap().unwrap().arguments,
+        "opaque JSON value"
+    );
+    // Providers can emit an incomplete added item; completion enforces its fields.
+    let added = json!({"type":"response.output_item.added","output_index":0,"item":{"type":"tool_search_call"}});
+    assert!(ResponseEvent::new(added).is_ok());
 }
 
 #[test]

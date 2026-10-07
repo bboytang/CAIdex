@@ -88,6 +88,8 @@ impl CanonicalResponse {
             let item = ResponseItem::new(item.clone()).map_err(|_| Error::InvalidResponse)?;
             item.tool_call().map_err(|_| Error::InvalidResponse)?;
             item.tool_result().map_err(|_| Error::InvalidResponse)?;
+            item.validate_tool_search()
+                .map_err(|_| Error::InvalidResponse)?;
         }
         if let Some(usage) = wire.get("usage").filter(|value| !value.is_null()) {
             Usage::new(usage).map_err(|_| Error::InvalidResponse)?;
@@ -162,6 +164,21 @@ pub struct ToolResult<'a> {
     pub output: &'a Value,
 }
 
+/// Dedicated search items have JSON arguments and declarations, not function
+/// argument strings. Only execution="client" asks the caller to run discovery.
+pub struct ToolSearchCall<'a> {
+    pub execution: &'a str,
+    pub call_id: Option<&'a str>,
+    pub status: Option<&'a str>,
+    pub arguments: &'a Value,
+}
+pub struct ToolSearchOutput<'a> {
+    pub execution: &'a str,
+    pub call_id: Option<&'a str>,
+    pub status: &'a str,
+    pub tools: &'a [Value],
+}
+
 #[derive(Clone, Serialize)]
 #[serde(transparent)]
 pub struct ResponseItem(Value);
@@ -220,6 +237,43 @@ impl ResponseItem {
             namespace: optional_string(&self.0, "namespace").ok_or(Error::InvalidItem)?,
         }))
     }
+    pub fn tool_search_call(&self) -> Result<Option<ToolSearchCall<'_>>> {
+        if self.kind() != "tool_search_call" {
+            return Ok(None);
+        }
+        let (execution, call_id) = self.search_identity()?;
+        Ok(Some(ToolSearchCall {
+            execution,
+            call_id,
+            status: optional_string(&self.0, "status").ok_or(Error::InvalidItem)?,
+            arguments: self.0.get("arguments").ok_or(Error::InvalidItem)?,
+        }))
+    }
+    pub fn tool_search_output(&self) -> Result<Option<ToolSearchOutput<'_>>> {
+        if self.kind() != "tool_search_output" {
+            return Ok(None);
+        }
+        let (execution, call_id) = self.search_identity()?;
+        Ok(Some(ToolSearchOutput {
+            execution,
+            call_id,
+            status: string(&self.0, "status").ok_or(Error::InvalidItem)?,
+            tools: self.0["tools"].as_array().ok_or(Error::InvalidItem)?,
+        }))
+    }
+    fn search_identity(&self) -> Result<(&str, Option<&str>)> {
+        let execution = string(&self.0, "execution").ok_or(Error::InvalidItem)?;
+        let call_id = optional_string(&self.0, "call_id").ok_or(Error::InvalidItem)?;
+        if execution == "client" && call_id.is_none() {
+            return Err(Error::InvalidItem);
+        }
+        Ok((execution, call_id))
+    }
+    fn validate_tool_search(&self) -> Result<()> {
+        self.tool_search_call()?;
+        self.tool_search_output()?;
+        Ok(())
+    }
 }
 impl fmt::Debug for ResponseItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -267,7 +321,12 @@ impl ResponseEvent {
             "response.output_item.added" | "response.output_item.done"
         ) {
             let item = event.0.get("item").ok_or(Error::InvalidEvent)?;
-            ResponseItem::new(item.clone()).map_err(|_| Error::InvalidEvent)?;
+            let item = ResponseItem::new(item.clone()).map_err(|_| Error::InvalidEvent)?;
+            // Added items may still be incomplete. Done must be usable as history.
+            if event.kind() == "response.output_item.done" {
+                item.validate_tool_search()
+                    .map_err(|_| Error::InvalidEvent)?;
+            }
         }
         if matches!(
             event.kind(),
@@ -295,6 +354,20 @@ impl ResponseEvent {
                 return Err(Error::InvalidEvent);
             }
             event.usage()?;
+        }
+        if event.terminal().is_some()
+            && let Some(output) = event.0["response"].get("output").and_then(Value::as_array)
+        {
+            for item in output.iter().filter(|item| {
+                matches!(
+                    item["type"].as_str(),
+                    Some("tool_search_call" | "tool_search_output")
+                )
+            }) {
+                ResponseItem::new(item.clone())
+                    .and_then(|item| item.validate_tool_search())
+                    .map_err(|_| Error::InvalidEvent)?;
+            }
         }
         Ok(event)
     }

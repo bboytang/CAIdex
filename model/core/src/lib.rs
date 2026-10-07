@@ -19,7 +19,7 @@ pub use registry::{
 };
 pub use responses::{
     CanonicalRequest, CanonicalResponse, ResponseEvent, ResponseItem, ResponsesDialect, ToolCall,
-    ToolInput, ToolKind, ToolResult, Usage,
+    ToolInput, ToolKind, ToolResult, ToolSearchCall, ToolSearchOutput, Usage,
 };
 pub use sse::{SseDecoder, SseEvent};
 pub use stream::{ResponsesStream, StreamEvent, StreamState};

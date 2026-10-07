@@ -102,3 +102,14 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 1. OpenAI 当前离线适配范围已通过三平台验收，按 V3/原 V2 第 14–22 节继续 Anthropic→Gemini→兼容 API/Ollama，使用已验六方法接口与 Registry，先以本地合成 fixture 验证原生 Adapter/模型清单；OpenAI 真实模型兼容性与原生历史限制继续保留验收项。
 2. 补各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility；不要把 Responses pass-through 当作最终跨提供商 Gateway。
 3. 原生 opaque history、经典/Code Mode、多轮签名/模型切换分别验收并生成实际证据报告。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。
+
+
+## 专用 tool_search wire 契约（2026-10-07）
+
+核心新增 `ToolSearchCall` / `ToolSearchOutput` 借用视图，独立于 Function/Custom，保留 execution、可选 call_id/status、原 JSON arguments 和完整 tools 数组；不把搜索参数改成函数参数字符串，不编造 name/namespace。客户端 execution=client 必须有非空字符串 call_id；服务端和未来 execution 原值保留，不授予 Runtime 客户端执行权。arguments 按固定上游 Value 契约保留，声明 schema、已发现工具权限与调用/结果配对由 Adapter 校验，不能靠核心读取视图获得执行授权。
+
+非流式 CanonicalResponse、SSE output_item.done 和 completed/incomplete/failed/error 所有终态内已提供的 search items 校验已知结构；坏字段拒绝，流进入 Invalid，不交付合法完成事件。output_item.added 可以仍不完整。未知字段、namespace/defer_loading 声明、高精度数字和原始 wire 保留；核心不联网搜索、不执行工具、不改 Runtime 或已有 ToolMap。
+
+两项新增回归覆盖缺失客户端关联及已知字段、同步/流式完成边界、逐字节 SSE、服务端/未来 execution、原生 JSON 值和声明保留；缺少 call_id 被错误接受已先 RED 复现，再 GREEN。当前只完成共享协议契约，Anthropic 动态加载、原生 inline/deferred tools、历史前缀绑定及 provider web_search 仍待实现，不能据此标经典 Gateway 或 F/G 完成。尤其 external_web_access=false 不等于原生实时搜索，不能静默改写。
+
+依据：[OpenAI Docs 客户端工具发现](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[固定上游 ToolSearchCall/Output](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/protocol/src/models.rs)。本轮测试与未同步状态见 HANDOFF.md；真实 API/商业模型及三平台新增契约尚未验收。
