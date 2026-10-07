@@ -4,7 +4,7 @@
 
 ## 当前任务与恢复点
 
-F/G：Gemini工具身份映射与显式v2原生历史已提交/push并三平台验收，源码`d2a363d64c80b63049b7bffa0325224955657983`，[CI37675979615](https://github.com/bboytang/CAIdex/actions/runs/37675979615)completed/success，Google44项各平台通过。恢复点：继续Responses请求编译器、工具结果配对/图片/参数转换，再六方法/Registry/Gateway/固定真实Runtime。不要重复已验Models/JSON/SSE/HTTP/历史/工具codec或Anthropic阶段。完整F/G未验收，H–R尚未实施。
+F/G：Gemini请求编译基础已实现，本地8项编译器与1项实际HTTP三轮回放通过，workspace274/0fail/32ignored、Clippy/fmt/diff通过；唯一独立审查发现的1项Important已RED→GREEN修复，无Critical/新增Minor；尚待提交/push及本轮精确源码三平台CI。上轮工具映射d2a363d/CI37675979615已验Google44，不能代验本轮。恢复点：完成本轮提交/CI，再图片、推理/结构输出/Runtime参数及六方法/Registry/Gateway/固定Runtime。完整F/G未验收，H–R尚未实施。
 
 完整项目/文档公开、提交/push/CI及离线合成fixture已获授权，不重复询问。不读取用户模型Key，不调用商业API；合成fixture不授予商业Full。
 
@@ -18,8 +18,8 @@ F/G：Gemini工具身份映射与显式v2原生历史已提交/push并三平台�
 
 ## 未完成与下一步顺序
 
-1. Gemini Responses请求编译：复用现有CanonicalRequest/经典/Lite输入边界；核对固定Runtime实际wire及原生generateContent，不混用Interactions签名/事件。实现system/messages、完整历史组恢复与前缀绑定；缺省native Content.role归属model。失败/过滤/MAX_TOKENS里未执行call须明确配对/拒绝，replay_content仅是原始视图，不代表可自动提交。
-2. 复用已验ToolMap/v2历史实现function/custom call/result配对、图片、推理/结构输出/Runtime参数；不执行工具、不隐式降级。strict=true/defer_loading=true/tool_search/web_search当前明确unsupported，grammar只是指导不代表硬约束；缺省native ID保持省略，Runtime本地关联ID不插入signed Content/result。
+1. 完成本轮编译基础提交/push及精确三平台CI：GenerateContentRequest已接经典/Lite、初始system/messages、完整历史组/实际compiled前缀与model绑定、function/custom结果关联、缺省role归属model；非STOP或thought调用拒绝自动回放。完整native request绑定暂含maxOutputTokens/toolConfig，参数改变会明确拒绝旧签名历史，不自动松绑。
+2. 接图片、推理/结构输出/Runtime参数；本轮function/custom call/result已配对，数组原序/空结果和原生ID省略保留。不执行工具、不隐式降级。parallel_tool_calls=false且启用工具当前明确unsupported，原生配置无单调用限制；固定Lite实际默认false，本轮不能宣称Runtime已支持。后续须找到等价保证或保持明确不支持，不把提示词当硬约束。strict=true/defer_loading=true/tool_search/web_search仍unsupported，grammar仅指导。
 3. 接六方法/Registry/Gateway和固定Runtime，经典/Lite、审批/工具/取消/持久恢复分别离线验证；每阶段新源码三平台CI，不用旧证据代验。
 4. Gemini → 兼容API/Ollama → V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验收。
 
@@ -45,12 +45,16 @@ F/G：Gemini工具身份映射与显式v2原生历史已提交/push并三平台�
 
 ## 文件与 Git 状态
 
-- branch main跟踪origin/main，起点99be6c8；本轮工具codec/v2历史源码d2a363d已提交/push并精确三平台验收，无未提交源码。此交接与Gemini/Model-Gateway验收文档更新单独提交/push；提交后核对工作区干净、HEAD=origin/main。文档commit不触发路径限定CI，验收锚定上述源码SHA。sha2沿既有锁定0.10.9只增加Google直接依赖。
+- branch main跟踪origin/main，本轮起点5861e95。未提交Google src/request.rs、tests/request.rs、history.rs共享恢复helper、lib.rs导出及HTTP三轮集成回归，另更新HANDOFF/Gemini文档。审查修复已完成，本轮CI未完成；无既有用户修改。上轮d2a363d已提交/push并三平台验收。
 - 执行基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅背景，冲突以V3为准。详细历史证据留Runtime-能力对照及各Provider/Credentials/Model-Gateway验收文档。
-- 当前相关：model/providers/google/src/{client,content,stream,transfer,history,tools}.rs、tests/{catalog,content,stream,http,history,tools}.rs；下一步参考Anthropic request/tools/projection/binding及model/core，不复制HTTP栈。
+- 当前相关：model/providers/google/src/{request,history,tools,client,content,stream,transfer}.rs、tests/{request,http,history,tools}.rs；下一步参考Anthropic request/reasoning/structured/runtime_parameters及model/core，不复制HTTP栈。
 - 代码边界：credentials/core、apps/cli、model/core/providers/gateway、runtime/bridge、upstream/codex、.github/workflows/ci.yml、scripts；assets/brand四份原件未改。
 
 ## 最近验证
+
+- 唯一审查1项Important已修复：同alias缺原生ID的并行逆序结果曾丢失关联；独立用例RED→GREEN，完整结果组按native调用顺序输出，不补签名ID，内部数组原序不变，部分结果不能接新call。Google53，本地workspace274/0fail/32ignored、Clippy/fmt/diff复验通过；无Critical/新增Minor，不派第二次审查。日志 /tmp/caidex-google-request-order-{red,green}.log；裁定详见Gemini文档。
+
+- 本轮编译基础8项通过：6项初始501 RED→GREEN，空结果拒绝与非字符串message.type错误接受分别RED→GREEN。实际HTTP1扩大已测编译器集成范围，无独立实现前RED；经典/Lite各三POST，JSON/SSE完整原文回放、缺ID/result ID省略、前缀编辑拒绝时无额外Key读取。workspace274passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过；唯一审查Important已RED→GREEN修复，无Critical/新增Minor；本轮CI待做。日志 /tmp/caidex-google-request-{red,empty-red,type-red,green,http,workspace,clippy}.log。
 
 - 本轮tools6初始501 RED→GREEN，namespace说明丢失独立RED→GREEN；实际HTTP1扩大已测codec集成范围（无单独实现前RED），Google44、本地workspace266/0fail/32ignored与Clippy/fmt/diff通过。日志 /tmp/caidex-google-tools-{red,map-green-history-red,green,namespace-red,http-green,workspace,clippy}.log；唯一审查无Critical/Important，prefix-only v1/v2交换覆盖Minor暂缓；源码d2a363d已提交push，精确CI37675979615三平台completed/success；所有44个Google测试名逐平台各通过一次，workspace Linux266/Windows261/macOS265（0失败，ignored32/30/30），真实Runtime Linux30/WindowsmacOS29（0失败/0ignored），fmt/Clippy/native credentials/schema/doctor通过。CI日志 /tmp/caidex-ci-37675979615-status.json与{,-linux,-windows,-macos}.log，跨机器以GitHub为准。
 - 上轮history6/实际HTTP1有效RED→GREEN；本地Google37、workspace259passed/0failed/32ignored，Clippy -D warnings/fmt/diff通过。唯一独立审查无Critical/Important，代码Minor和排除项裁定留Gemini文档。

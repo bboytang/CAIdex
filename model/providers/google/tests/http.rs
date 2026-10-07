@@ -1815,3 +1815,184 @@ async fn mapped_json_and_stream_calls_keep_namespace_custom_input_and_native_rep
         assert_eq!(reads.load(Ordering::SeqCst), 2);
     }
 }
+
+#[tokio::test]
+async fn responses_compiler_replays_json_and_sse_signed_history_over_three_native_posts() {
+    use caidex_model_core::{CanonicalRequest, ResponsesDialect};
+    use caidex_provider_google::{GenerateContentRequest, NativeHistory, ToolMap};
+    const MODEL: &str = "models/fixture-001";
+    const LIMIT: usize = 256 * 1024;
+    let declarations = json!([{"type":"namespace","name":"local","tools":[
+        {"type":"function","name":"echo","parameters":{"type":"object"}},
+        {"type":"custom","name":"raw","format":{"type":"text"}}]}]);
+    let map = ToolMap::new(declarations.as_array().unwrap(), 8).unwrap();
+    let make_request = |dialect: ResponsesDialect, mut input: Vec<Value>| {
+        let mut source =
+            json!({"model":"alias","stream":true,"store":false,"parallel_tool_calls":true});
+        if dialect == ResponsesDialect::Lite {
+            input.insert(
+                0,
+                json!({"type":"additional_tools","role":"developer","tools":declarations}),
+            );
+        } else {
+            source["tools"] = declarations.clone();
+        }
+        source["input"] = json!(input);
+        CanonicalRequest::new(source, dialect).unwrap()
+    };
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let mut first_reply = native_reply("STOP");
+        first_reply["candidates"][0]["content"] = json!({"role":null,"parts":[
+            {"thought":true,"text":"private","thoughtSignature":"first-thought"},
+            {"functionCall":{"name":map.native_tools()[0]["name"],"args":{}},"thoughtSignature":"first-function"},
+            {"functionCall":{"name":map.native_tools()[1]["name"],"id":"native-raw","args":{"input":"\n中文🙂 "}},"thoughtSignature":"first-custom"},
+            {"futurePart":{"keep":true}}]});
+        let second_reply = json!({"candidates":[{"finishReason":"STOP","content":{"parts":[
+            {"text":"after tools","thoughtSignature":"second-text"}]}}]});
+        let mut fixture = Fixture::start(vec![
+            Reply::json(first_reply.clone()),
+            Reply::sse(std::slice::from_ref(&second_reply)),
+            Reply::json(native_reply("STOP")),
+        ])
+        .await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let mut input = vec![
+            json!({"role":"developer","content":"fixed"}),
+            json!({"role":"user","content":"start"}),
+        ];
+        let compiled = GenerateContentRequest::from_responses(
+            &make_request(dialect, input.clone()),
+            MODEL,
+            128,
+            LIMIT,
+            8,
+        )
+        .unwrap();
+        let first_native = client
+            .generate_content(MODEL, compiled.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let sent = fixture.request().await;
+        assert!(
+            sent.starts_with("POST /proxy/v1beta/models/fixture-001:generateContent HTTP/1.1\r\n")
+        );
+        let body = request_body(&sent);
+        assert_eq!(
+            body["contents"],
+            json!([{"role":"user","parts":[{"text":"start"}]}])
+        );
+        assert_eq!(
+            body["systemInstruction"],
+            json!({"parts":[{"text":"fixed"}]})
+        );
+        assert_eq!(body["generationConfig"], json!({"maxOutputTokens":128}));
+        assert!(body.get("model").is_none());
+        let first = NativeHistory::from_response(
+            &first_native,
+            MODEL,
+            compiled.wire(),
+            Some(0),
+            "compiled-first",
+            LIMIT,
+        )
+        .unwrap()
+        .with_tools(compiled.tools(), LIMIT)
+        .unwrap()
+        .to_responses(LIMIT)
+        .unwrap();
+        input.extend(first.output().to_vec());
+        input.extend([
+            json!({"type":"custom_tool_call_output","call_id":"native-raw","output":"\nexact raw result🙂 "}),
+            json!({"type":"function_call_output","call_id":"call_compiled-first_0_1","output":"echo result"}),
+        ]);
+        let stored = serde_json::to_vec(&make_request(dialect, input.clone())).unwrap();
+        let restored: Value = serde_json::from_slice(&stored).unwrap();
+        let restored = CanonicalRequest::new(restored, dialect).unwrap();
+        let second =
+            GenerateContentRequest::from_responses(&restored, MODEL, 128, LIMIT, 8).unwrap();
+        // Prefix edit refuses compilation and cannot cause another Key read/POST.
+        let mut changed = restored.wire().clone();
+        let user_index = usize::from(dialect == ResponsesDialect::Lite) + 1;
+        changed["input"][user_index]["content"] = "edited".into();
+        let changed = CanonicalRequest::new(changed, dialect).unwrap();
+        assert!(GenerateContentRequest::from_responses(&changed, MODEL, 128, LIMIT, 8).is_err());
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        let mut stream = client
+            .stream_content(MODEL, second.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let streamed = loop {
+            if let NativeStreamEvent::Completed(reply) = stream.next().await.unwrap().unwrap() {
+                break reply;
+            }
+        };
+        assert!(stream.next().await.is_none());
+        let sent = fixture.request().await;
+        assert!(sent.starts_with(
+            "POST /proxy/v1beta/models/fixture-001:streamGenerateContent?alt=sse HTTP/1.1\r\n"
+        ));
+        let body = request_body(&sent);
+        let mut replay = first_reply["candidates"][0]["content"].clone();
+        replay["role"] = "model".into();
+        assert_eq!(body["contents"][1], replay);
+        assert_eq!(
+            body["contents"][2],
+            json!({"role":"user","parts":[
+            {"functionResponse":{"name":map.native_tools()[0]["name"],"response":{"output":"echo result"}}},
+            {"functionResponse":{"name":map.native_tools()[1]["name"],"id":"native-raw","response":{"output":"\nexact raw result🙂 "}}}]})
+        );
+        assert!(
+            body["contents"][1]["parts"][1]["functionCall"]
+                .get("id")
+                .is_none()
+        );
+        assert!(
+            body["contents"][2]["parts"][0]["functionResponse"]
+                .get("id")
+                .is_none()
+        );
+        let projected = NativeHistory::from_stream(
+            &streamed,
+            MODEL,
+            second.wire(),
+            Some(0),
+            "compiled-second",
+            LIMIT,
+        )
+        .unwrap()
+        .with_tools(second.tools(), LIMIT)
+        .unwrap()
+        .to_responses(LIMIT)
+        .unwrap();
+        input.extend(projected.output().to_vec());
+        input.push(json!({"role":"user","content":"third"}));
+        let third = GenerateContentRequest::from_responses(
+            &make_request(dialect, input),
+            MODEL,
+            128,
+            LIMIT,
+            8,
+        )
+        .unwrap();
+        client
+            .generate_content(MODEL, third.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let sent = fixture.request().await;
+        assert!(
+            sent.to_ascii_lowercase()
+                .contains("x-goog-api-key: caidex_synthetic_google_key\r\n")
+        );
+        let body = request_body(&sent);
+        assert_eq!(body["contents"][1], replay);
+        assert_eq!(
+            body["contents"][3],
+            json!({"role":"model","parts":[{"text":"after tools","thoughtSignature":"second-text"}]})
+        );
+        assert_eq!(
+            body["contents"][4],
+            json!({"role":"user","parts":[{"text":"third"}]})
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 3);
+    }
+}

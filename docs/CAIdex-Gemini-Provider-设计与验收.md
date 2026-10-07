@@ -149,3 +149,21 @@ NativeHistory.with_tools为显式v2载体caidex.google.native-history.v2:，保�
 下一步仍是Responses请求编译器：system/messages/前缀归属、原始完整历史组恢复、function/custom结果配对、图片、推理/结构输出/Runtime参数与能力门控；随后六方法/Registry/Gateway/固定Runtime。不能把本轮工具codec当作完整Provider或Runtime接线证明。现有partial usage/text phase、满槽取消Drop等Minor保持原边界。
 
 本轮审查排除项裁定：自动请求编译/结果关联/图片/Runtime仍是下一里程碑，误用手工HTTP证据会漏功能；native_call只编译新的独立canonical调用，签名回放必须用原始Content，误用会丢签名或写入本地ID；失败/MAX_TOKENS的自动回放策略由下一编译器落实，误用会发送未执行call，当前投影不交付可执行调用；商业schema接受/grammar硬约束/签名真实性无合成fixture之外证据，误判会提交被拒或授予错误能力，不宣称支持；整组伪造及生产授权留H/I，误判会认领未认证敏感历史；旧parser/HTTP/usage/text phase Minor未改，误判会夸大覆盖；Windows/macOS须本轮精确源码新CI，旧history CI不能代验，误用会漏平台新增问题。以上保持原架构和scope；Minor不进入修复轮次，未标已修复。
+
+## Responses请求编译基础（本地验证，本轮CI待做）
+
+GenerateContentRequest复用CanonicalRequest/ToolMap/NativeHistory及原生HTTP。经典instructions和初始system/developer文本成为systemInstruction；Lite仅首项developer additional_tools提供声明。普通user/assistant文本成为user/model Content，后置system/developer明确unsupported，避免重排签名前缀。source完整保留，Debug不输出wire；路由模型、maxOutputTokens、字节/工具预算由执行端给定，不从请求另选endpoint。
+
+恢复时在当前位置编译实际前缀，再核对载体model和完整原native request，并校验完整carrier/display组；不把载体请求当它自己的期望值。签名Part/未知Content原样回放；role缺失/null/空只在新请求Content补model。STOP里的function/custom按固定ToolMap还原身份并登记，nonSTOP或thought functionCall明确拒绝自动回放。结果按call_id或唯一legacy kind/name/namespace配对，拒绝孤儿/重复/歧义/身份错误/未完成结果；原生缺省ID保持省略，本地关联ID不插入签名Part或functionResponse。结果字符串（包括JSON文本）和已支持文本数组保留原值/顺序，空数组合法，包装在原生对象response.output中。
+
+Ruling: 维持现有v1/v2完整native request绑定，暂含generationConfig/toolConfig，不自动放宽成仅system/tools/contents；因此改变maxOutputTokens或tool_choice会拒绝旧历史，后续有明确原生兼容依据再版本化调整，误判成本是拒绝原本可安全更改的参数。
+
+Ruling: 本阶段先交付编译/回放/结果基础，图片和高级参数保持明确unsupported并沿既定下一步接入；当前仅auto/required/none映射AUTO/ANY/NONE，include仅本地reasoning.encrypted_content。parallel_tool_calls=false且工具启用/choice非none时明确unsupported，FunctionCallingConfig没有等价单调用限制；固定Lite默认false仍是Runtime接线前的兼容边界，不静默丢弃、不用提示词冒充硬约束。[原生FunctionCallingConfig](https://ai.google.dev/api/caching#FunctionCallingConfig)；错误成本是请求拒绝/Runtime不能接通，需要后续等价契约或继续明确不支持。
+
+本地编译器8项有效RED→GREEN（含空结果和畸形message.type两次独立RED），HTTP1在真实JSON/SSE/三POST上扩大集成验证（无独立实现前RED）；Google53/workspace274/0failed/32ignored、Clippy/fmt/diff通过。新源码唯一审查的1项Important已RED→GREEN修复，无Critical/新增Minor；提交/push及本轮精确三平台CI待做。日志 /tmp/caidex-google-request-{red,empty-red,type-red,green,http,workspace,clippy}.log。没有真实Gemini调用或六方法/Gateway/Runtime证据，不授予Full；旧usage/text phase等Minor未改。
+
+唯一独立审查发现1项Important：相同alias的并行native call都缺ID时，canonical逆序结果会在native wire丢失关联。新idless_parallel_results_keep_original_native_call_order用例先RED（SECOND先于FIRST），再以完整结果组按原native调用顺序输出修复；包括混合ID、签名原值、不补ID及部分结果不准接新调用。原source结果到达顺序、单个结果内数组顺序不变。完整workspace/Clippy/fmt/diff复验通过；不派第二次审查。日志 /tmp/caidex-google-request-order-{red,green}.log。
+
+Ruling: 结果组统一等全部配对后按原native call顺序发出，含本可用ID逆序的组，减少不必要的两套顺序策略；这是请求编译，不执行或等待工具运行，source仍保存到达顺序。[原生并行调用关联](https://ai.google.dev/gemini-api/docs/generate-content/function-calling?hl=en#parallel_function_calling)。若误判，成本是未支持非阻塞/分批native结果时序；本阶段没有承诺NON_BLOCKING/willContinue。
+
+本轮审查排除项裁定：商业服务接受/签名真实性/schema/grammar硬约束无live证据，不授予Full（误判成本为错误能力承诺或提交被拒）；六方法/Registry/Gateway/固定Gemini Runtime仍下一阶段，Lite false并行约束门控未解决（误判成本为漏接功能）；媒体/推理/结构输出/高级参数及放宽完整request历史绑定沿已记录后续范围（误判成本为请求拒绝或错用签名）；Windows/macOS须本轮精确源码CI，旧证据不能代验（误判成本为漏平台问题，待本轮实测）；旧usage/text phase/HTTP/codec Minor未改，生产历史授权留H/I（误判成本为夸大覆盖/未授权历史访问）。

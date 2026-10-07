@@ -264,7 +264,26 @@ impl NativeHistory {
         expected_request: &Value,
         max_bytes: usize,
     ) -> ProviderResult<Self> {
-        let carrier = output.first().ok_or_else(replay_error)?;
+        let history = Self::decode_carrier(output.first().ok_or_else(replay_error)?, max_bytes)?;
+        history.check_binding(expected_model, expected_request)?;
+        history.check_output(output, max_bytes)?;
+        Ok(history)
+    }
+    /// Consume one complete projected generation at the current compiled
+    /// prefix. Never use the capsule's request as its own expected binding.
+    pub(crate) fn from_responses_prefix(
+        input: &[Value],
+        expected_model: &str,
+        expected_request: &Value,
+        max_bytes: usize,
+    ) -> ProviderResult<(Self, usize)> {
+        let history = Self::decode_carrier(input.first().ok_or_else(replay_error)?, max_bytes)?;
+        history.check_binding(expected_model, expected_request)?;
+        let count = history.to_responses(max_bytes)?.output().len();
+        history.check_output(input.get(..count).ok_or_else(replay_error)?, max_bytes)?;
+        Ok((history, count))
+    }
+    fn decode_carrier(carrier: &Value, max_bytes: usize) -> ProviderResult<Self> {
         let capsule = carrier["encrypted_content"]
             .as_str()
             .ok_or_else(replay_error)?;
@@ -282,16 +301,20 @@ impl NativeHistory {
         if envelope["version"] != version {
             return Err(replay_error());
         }
-        let history = Self::new(envelope, max_bytes).map_err(|_| replay_error())?;
-        if history.0["model"] != expected_model {
+        Self::new(envelope, max_bytes).map_err(|_| replay_error())
+    }
+    fn check_binding(&self, expected_model: &str, expected_request: &Value) -> ProviderResult<()> {
+        if self.0["model"] != expected_model {
             return Err(ProviderError::new(400, "google_history_model_mismatch"));
         }
-        if history.request() != expected_request {
+        if self.request() != expected_request {
             return Err(ProviderError::new(400, "google_history_request_mismatch"));
         }
-        let projected = history
-            .to_responses(max_bytes)
-            .map_err(|_| replay_error())?;
+        Ok(())
+    }
+    fn check_output(&self, output: &[Value], max_bytes: usize) -> ProviderResult<()> {
+        let carrier = output.first().ok_or_else(replay_error)?;
+        let projected = self.to_responses(max_bytes).map_err(|_| replay_error())?;
         if carrier["summary"] != projected.output()[0]["summary"]
             || output.len() != projected.output().len()
         {
@@ -332,7 +355,7 @@ impl NativeHistory {
                 _ => return Err(replay_error()),
             }
         }
-        Ok(history)
+        Ok(())
     }
 }
 impl fmt::Debug for NativeHistory {
