@@ -1,4 +1,4 @@
-use crate::{NativeMessage, ToolMap};
+use crate::{NativeMessage, ReasoningMapping, ToolMap};
 use base64::Engine;
 use caidex_model_core::{
     CanonicalRequest, ProviderError, ProviderResult, ResponseItem, ResponsesDialect, ToolKind,
@@ -54,6 +54,27 @@ impl MessagesRequest {
         max_tools: usize,
         supports_system_messages: bool,
     ) -> ProviderResult<Self> {
+        Self::from_responses_with_reasoning(
+            request,
+            native_model,
+            max_tokens,
+            max_bytes,
+            max_tools,
+            supports_system_messages,
+            &[],
+        )
+    }
+    /// All mappings come from fixed execution-side configuration; request JSON
+    /// cannot provide a native thinking mode or budget itself.
+    pub fn from_responses_with_reasoning(
+        request: &CanonicalRequest,
+        native_model: &str,
+        max_tokens: u64,
+        max_bytes: usize,
+        max_tools: usize,
+        supports_system_messages: bool,
+        reasoning_mappings: &[ReasoningMapping],
+    ) -> ProviderResult<Self> {
         let source = request.wire();
         if native_model.trim().is_empty()
             || max_tokens == 0
@@ -75,6 +96,7 @@ impl MessagesRequest {
                     | "store"
                     | "parallel_tool_calls"
                     | "tool_choice"
+                    | "reasoning"
             ) {
                 return Err(unsupported());
             }
@@ -273,6 +295,7 @@ impl MessagesRequest {
         } else if choice == "required" {
             return Err(invalid());
         }
+        crate::reasoning::apply(&mut wire, source, reasoning_mappings, max_tokens)?;
         if wire.to_string().len() > max_bytes {
             return Err(invalid());
         }

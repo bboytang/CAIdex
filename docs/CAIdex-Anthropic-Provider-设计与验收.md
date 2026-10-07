@@ -54,11 +54,21 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 用户与工具结果图片按原顺序转换：HTTPS URL 引用、JPEG/PNG/GIF/WebP base64 data URL；不抓取网络图片或本地文件，base64 格式校验后保留原数据。OpenAI file_id 不可用于另一提供商；非 auto detail 尚未建立等价语义，明确拒绝。图片实际格式/尺寸/模型限制仍由提供商验证。
 
-原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。当前只支持基础请求字段；reasoning、text/structured output、context、cache/service/metadata 等尚未映射的字段明确报 unsupported，完整 source 保留不等于原生语义支持。完整 Adapter、Responses SSE 转换和真实 Runtime 工具执行尚未完成。
+原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。当前只支持基础请求字段；reasoning 的 summary/context、text/structured output、cache/service/metadata 等尚未映射的字段明确报 unsupported；effort 仅按执行端明确映射转换，完整 source 保留不等于原生语义支持。完整 Adapter、Responses SSE 转换和真实 Runtime 工具执行尚未完成。
 
 基础请求转换源码 `d774ff5` 的 [CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092) 三平台全部 success：各平台请求 8/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过。真实 Runtime 既有 Linux 25、Windows/macOS 24 项通过。新增 HTTP 两轮验证编译结果通过原生传输回放签名和 custom 结果，不代表完整 Gateway 或 Runtime Anthropic 工具执行已验收。
 
 中途指令新增执行端显式开关及原生位置门控：连续 system 内容保持顺序；前面必须是 user（包括完整工具结果）或以已识别 server result 结尾的 native assistant，后面必须是 assistant 或请求结束。不会在客户端工具调用与未完成结果之间插入指令，不把图片或工具输出提升为系统指令。clear_at/per-message output_config 仍明确拒绝，相关 beta 语义待专门映射。开关只是配置契约，不代表发现或实际模型验收。新增 4 项请求测试及 HTTP 经典/Lite 两轮位置检查本机通过，[CI 37581359918](https://github.com/bboytang/CAIdex/actions/runs/37581359918)（源码 2ccbe38）三平台全部 success：各平台请求 12/HTTP 14/协议 12/投影 7/工具 7、workspace/fmt/Clippy/native keyring/schema/doctor 通过；既有真实 Runtime Linux 25、Windows/macOS 24 项通过。尚未验证完整 Anthropic Runtime 工具执行或商业 API。
+
+## 推理参数映射
+
+`ReasoningMapping` 由执行端声明 Responses effort 与原生 output_config.effort/thinking 的对应关系；没有按名称猜测或全模型默认映射。不同提供商 effort 不是等价标尺，配置声明不等于兼容性验收。支持原生 adaptive、disabled、between_tools，以及无 interleaved beta 的 enabled 手动预算；display 可固定 summarized/omitted，字段形状校验不代表任意模型都支持该模式。
+
+手动预算至少 1024 且小于执行端 max_tokens；不从请求 JSON 接受预算。最终 assistant 历史须以原生 thinking/redacted_thinking 开头；不插入合成签名。不支持大于 max_tokens 的 interleaved beta 预算，后续必须单独映射认证/能力契约。显式 active thinking 拒绝 required/any 强制工具；between_tools 与 xhigh/max 组合拒绝，其他模型特有组合仍需配置与提供商验收。
+
+默认转换仅允许空/未设置的 reasoning；实际 effort 必须找到唯一映射。非空 summary/context、未知字段、坏类型明确拒绝，不能静默丢弃；null 已知可选字段视为未指定。原始请求 source 保留。更改 effort/模式可能影响缓存和签名上下文；当前尚未实现持久化配置版本/换模型承接，不宣称变化后的原生签名兼容已验证。
+
+新增 5 项推理回归及经典/Lite HTTP 两轮参数检查，完整 workspace/Clippy/fmt/diff 已通过；尚未完成完整 Provider/Gateway 或真实 Runtime Anthropic 工具执行。
 
 ## 后续顺序
 
@@ -81,3 +91,5 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 - [Mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)：部分模型支持且限制放置位置；已实现显式能力开关及位置验证，默认基础转换仍拒绝。
 - [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)：output_config.effort 与 thinking 模式不同，后续逐项映射，不猜模型能力。
+
+- [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)：手动预算下限与 max_tokens 关系，interleaved beta 的例外需独立接入。

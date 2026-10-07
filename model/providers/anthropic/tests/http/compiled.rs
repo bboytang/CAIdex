@@ -1,6 +1,6 @@
 use super::*;
 use caidex_model_core::{CanonicalRequest, ResponseItem, ResponsesDialect};
-use caidex_provider_anthropic::{MessagesRequest, ToolMap};
+use caidex_provider_anthropic::{MessagesRequest, ReasoningMapping, ToolMap};
 
 #[tokio::test]
 async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_real_http() {
@@ -20,17 +20,26 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         .await;
         let (client, reads) = client(&base, Some(KEY), Limits::default());
         let prompt = json!({"type":"message","role":"user","content":"start"});
-        let wire = if dialect == ResponsesDialect::Lite {
+        let mut wire = if dialect == ResponsesDialect::Lite {
             json!({"model":"alias","input":[{"type":"additional_tools","role":"developer","tools":declarations},prompt],"parallel_tool_calls":false})
         } else {
             json!({"model":"alias","input":[prompt],"tools":declarations,"parallel_tool_calls":false})
         };
-        let first = MessagesRequest::from_responses(
+        wire["reasoning"] = json!({"effort":"high"});
+        let mappings = [ReasoningMapping::new(
+            "high".into(),
+            Some("medium".into()),
+            Some(json!({"type":"adaptive","display":"summarized"})),
+        )
+        .unwrap()];
+        let first = MessagesRequest::from_responses_with_reasoning(
             &CanonicalRequest::new(wire.clone(), dialect).unwrap(),
             "native",
             100,
             128 * 1024,
             10,
+            false,
+            &mappings,
         )
         .unwrap();
         let native = client
@@ -54,13 +63,14 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         );
         let mut second_wire = wire.clone();
         second_wire["input"] = input.into();
-        let second = MessagesRequest::from_responses_with_system_messages(
+        let second = MessagesRequest::from_responses_with_reasoning(
             &CanonicalRequest::new(second_wire, dialect).unwrap(),
             "native",
             100,
             128 * 1024,
             10,
             true,
+            &mappings,
         )
         .unwrap();
         let result = client
@@ -79,6 +89,11 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
                 .contains("x-api-key: synthetic_anthropic_key")
         );
         let sent: Value = serde_json::from_slice(&second_body).unwrap();
+        assert_eq!(sent["output_config"]["effort"], "medium");
+        assert_eq!(
+            sent["thinking"],
+            json!({"type":"adaptive","display":"summarized"})
+        );
         assert_eq!(sent["messages"][1], native.replay_message());
         assert_eq!(sent["messages"][2]["content"][0]["tool_use_id"], "tool-one");
         assert_eq!(
