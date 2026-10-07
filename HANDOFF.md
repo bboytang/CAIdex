@@ -32,7 +32,7 @@
 
 ## 下一步顺序
 
-1. 从第 2 项经典 builtin 工具接线继续；aa5d3bf 参数/usage 修复已三平台验收，不重复此阶段。保留尚未完成的 Runtime 两文件；生产提示映射是显式软指导，不宣称原生参数等价，切换指导触发已有 v3 prefix_mismatch。
+1. 重试同步本地后续交接文档提交：远端 main 仍 aa5d3bf，文档 push 三次 GitHub 500，Git Data API 上传也失败；正常非强制 push 即可，若服务仍失败则继续第 2 项，不重复参数/usage 已通过的三平台验收。保留尚未完成的 Runtime 两文件；生产提示映射是显式软指导，不宣称原生参数等价，切换指导触发已有 v3 prefix_mismatch。
 2. 接着落实经典 builtin client tool_search / provider web_search 的真实契约与能力门控。固定请求含 tool_search execution=client（专用 call/output、动态工具发现）和 web_search external_web_access=false / text+image；不能当普通 function、静默删工具或把离线缓存语义换成实时联网。官方 client search 文档与固定 handler已读取，原生 deferred/inline tool 例外仍待实现；ToolMap 当前仍仅 function/custom/namespace。诊断 wire 在 /var/tmp/caidex-anthropic-gateway-{classic,lite}-wire.json（合成）。恢复失败：TMPDIR=/var/tmp cargo test -p caidex-runtime --test real_runtime real_classic_runtime_via_native_anthropic_adapter --locked -- --ignored。
 3. 将已本地通过的 Lite Gateway fixture 与经典完整接线一并验收：经典/Lite 多轮、实际工具/结果、interrupt、持久化 signed history；本轮 Lite3已通过，不重做已验 v3 模块。现有 Python fixture 已支持认证组织 GET/native SSE/Code Mode/阻塞 socket；无商业调用。完整实际 Runtime 命令当前须 --skip real_classic_runtime_via_native_anthropic_adapter，28通过不等于全通过。经典成功后再完整三平台检查并提交接线。
 4. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性。
@@ -54,6 +54,7 @@
 
 ## 问题 / 阻塞
 
+- 本轮最终文档同步被 GitHub 写入故障阻塞：Git push 连续 3 次远端 Internal Server Error（含 HTTP/1.1/无 delta 重试）；只读 API 正常，Git Data API 上传也失败，未更新远端 ref。生产修复已发布并通过 CI，本地完整 HANDOFF/文档和 Runtime 未提交文件保留；恢复网络写入后非强制 push 文档，无需重做开发。
 - 原自动审批额度问题已恢复，依赖下载/编译成功。正常沙箱注入 `/tmp/.git` 导致文件保护测试被拒绝；相同代码在获授权的正常执行环境通过，未削弱保护。
 - `.git` 普通执行只读，提交/push 用 require_escalated。GitHub CLI 2.45.0 已核验登录 `bboytang`、scope repo/workflow；普通沙箱网络受限时 auth status 的 invalid 提示不能作为凭据失效证据。
 - 旧 Git helper 缺 workflow scope。发布使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不输出凭据或修改用户全局配置。
@@ -69,7 +70,7 @@
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `model/providers/anthropic/src/client.rs`、`model/providers/anthropic/tests/http/organization.rs`、`docs/CAIdex-Anthropic-Provider-设计与验收.md`：已验组织来源/guard；`binding.rs`、`request.rs`、`provider.rs`、`projection.rs`、`response_stream.rs` 与 `tests/http/binding.rs` 为已验 v3 实现/回归；`runtime/bridge/tests/real_runtime.rs` 和 `tests/fixtures/responses_server.py` 是下一步实际 Adapter 恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；已发布生产源码 aa5d3bfeeeafbe8e1465daca22cecc60f501bf45，三平台 CI 37641597463 已完成通过，后续文档提交以 git log 为准。关键未提交仅 runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的 Anthropic 接线（Lite3本地通过，经典 builtin 用例仍失败）。生产 Runtime、依赖和品牌未改。不要丢弃未完成 fixture或直接 push 触发已知失败 CI。
+- branch `main` 跟踪 `origin/main`；远端/已发布生产源码 aa5d3bfeeeafbe8e1465daca22cecc60f501bf45，三平台 CI 37641597463 已完成通过。后续本地文档提交（d455455、8b03bba 及本故障 checkpoint，以 git log 为准）尚未同步，main ahead；不要 reset。关键未提交仅 runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的 Anthropic 接线（Lite3本地通过，经典 builtin 用例仍失败）。生产 Runtime、依赖和品牌未改。不要丢弃未完成 fixture或直接 push 触发已知失败 CI。
 
 ## 测试结果
 
