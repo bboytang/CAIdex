@@ -182,6 +182,6 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 
 固定 ModelProvider 的准确模型配置边界不被悄悄改写：非流式沿用 model mismatch 检查，流式遇实际 to.model 不符时在交接处返回静态 502 anthropic_response_model_mismatch，不交付工具 done、完成或新载体；沿用既有 worker 的 Drop/socket/slot 释放。原生 API 本身仍返回真实模型数据。显式 server-side fallback 请求/beta、获验证的跨模型组合及模型切换策略尚未接入，不自动增加重试或推理请求。
 
-新增 6 项回归：输出前/中途/多跳/sticky 身份、逐字节 SSE、错误 shape/chain/最终身份/非法 delta/开放工具、不同 attempt 计数下降/缺失/同模型仍单调、完整 raw 历史与合法 echo、已退出调用不可执行、经典/Lite 请求编译及 JSON/SSE socket/permit/no retry。协议 15/投影 9/增量投影 6/HTTP 30 本地通过；最终 workspace/Clippy/fmt/diff 与三平台状态见 HANDOFF.md。所有 Key/数据为合成 fixture，未调用商业 API。
+新增 6 项回归：输出前/中途/多跳/sticky 身份、逐字节 SSE、错误 shape/chain/最终身份/非法 delta/开放工具、不同 attempt 计数下降/缺失/同模型仍单调、完整 raw 历史与合法 echo、已退出调用不可执行、经典/Lite 请求编译及 JSON/SSE socket/permit/no retry。源码 1f5e022（完整 SHA 1f5e022942f1eab8153d4410dfb18ba6fb580533）的 [CI 37621255255](https://github.com/bboytang/CAIdex/actions/runs/37621255255) 三平台 completed/success，新增 6 项逐平台日志核对通过（协议 15/投影 9/增量投影 6/HTTP 30）。本地完整 workspace/Clippy/fmt/diff 通过；CI workspace/fmt/Clippy/native keyring/schema/doctor 与既有真实 Runtime Linux 25、Windows/macOS 24 项通过。所有 Key/数据为合成 fixture，未调用商业 API。
 
 依据：[Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback)、[官方 SDK fallback block](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/types/beta/beta_fallback_block.py)、[官方 SDK 累积逻辑](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/streaming/_beta_messages.py)。
