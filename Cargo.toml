@@ -1,5 +1,5 @@
 [workspace]
-members = ["runtime/bridge", "apps/cli", "credentials/core", "model/core", "model/gateway"]
+members = ["runtime/bridge", "apps/cli", "credentials/core", "model/core", "model/gateway", "model/providers/custom"]
 resolver = "3"
 
 [workspace.package]

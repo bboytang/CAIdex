@@ -518,6 +518,103 @@ async fn rate_limit_http_errors_and_redirects_are_safe_and_never_replayed() {
 }
 
 #[tokio::test]
+async fn explicit_context_headers_round_trip_without_forwarding_auth_or_cookies() {
+    let mut fixture = Fixture::start(Scenario::Reply {
+        status: 200,
+        content_type: "text/event-stream",
+        extra: "X-Codex-Turn-State: provider-state+/==\r\nX-Request-Id: provider-request\r\nSet-Cookie: forbidden\r\nX-Arbitrary: forbidden\r\n".into(),
+        body: DONE.as_bytes().to_vec(),
+        fragmented: false,
+    }).await;
+    let (gateway, reads) = gateway(&fixture, Limits::default(), "executor", Some(KEY)).await;
+    let response = request(&client(), &gateway, classic())
+        .header("session_id", "session")
+        .header("x-client-request-id", "client-request")
+        .header("x-codex-turn-state", "client-state+/==")
+        .header("x-codex-turn-metadata", "metadata")
+        .header("cookie", "must-not-forward")
+        .header("x-arbitrary", "must-not-forward")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(
+        response.headers()["x-codex-turn-state"],
+        "provider-state+/=="
+    );
+    assert_eq!(response.headers()["x-request-id"], "provider-request");
+    assert!(response.headers().get("set-cookie").is_none());
+    assert!(response.headers().get("x-arbitrary").is_none());
+    assert_eq!(wire(response).await.0, StreamState::Completed);
+    let captured = fixture.request().await;
+    for line in [
+        "session_id: session",
+        "x-client-request-id: client-request",
+        "x-codex-turn-state: client-state+/==",
+        "x-codex-turn-metadata: metadata",
+    ] {
+        assert!(captured.headers.contains(line));
+    }
+    assert!(
+        captured
+            .headers
+            .contains(&format!("authorization: Bearer {KEY}"))
+    );
+    assert!(!captured.headers.contains(gateway.token().expose()));
+    assert!(!captured.headers.contains("must-not-forward"));
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    error(
+        request(&client(), &gateway, classic())
+            .header("x-codex-turn-state", "first")
+            .header("x-codex-turn-state", "second")
+            .send()
+            .await
+            .unwrap(),
+        StatusCode::BAD_REQUEST,
+        "duplicate_context_header",
+    )
+    .await;
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
+    gateway.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn http_date_retry_after_is_bounded_numeric_metadata_without_retry() {
+    let mut fixture = Fixture::start(Scenario::Reply {
+        status: 429,
+        content_type: "application/json",
+        extra: format!(
+            "Retry-After: {}\r\n",
+            httpdate::fmt_http_date(std::time::SystemTime::now() + Duration::from_secs(60))
+        ),
+        body: format!("{{\"error\":\"{KEY}\"}}").into_bytes(),
+        fragmented: false,
+    })
+    .await;
+    let (gateway, _) = gateway(&fixture, Limits::default(), "executor", Some(KEY)).await;
+    let response = request(&client(), &gateway, classic())
+        .send()
+        .await
+        .unwrap();
+    let hint = response.headers()[header::RETRY_AFTER]
+        .to_str()
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+    assert!((1..=60).contains(&hint));
+    error(
+        response,
+        StatusCode::TOO_MANY_REQUESTS,
+        "provider_rate_limited",
+    )
+    .await;
+    fixture.request().await;
+    fixture.disconnected().await;
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
+    gateway.shutdown().await.unwrap();
+}
+
+#[tokio::test]
 async fn malformed_truncated_oversized_and_mixed_streams_fail_without_success() {
     let cases = [
         (CREATED.as_bytes().to_vec(), "provider_stream_truncated"),

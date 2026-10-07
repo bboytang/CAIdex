@@ -1,6 +1,6 @@
 # CAIdex 模型核心与 Gateway：设计和验收
 
-阶段 F/G，依 V3 顺序推进。F 第一/二步 `model/core` 协议核心和 `model/gateway` 本地 HTTP/SSE/Custom Responses 当前范围已通过三平台 CI。其他 Provider、模型 Registry 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
+阶段 F/G，依 V3 顺序推进。F 第一/二步已有三平台验收；第三步已实现 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client，本机通过，正在三平台验收。其他原生 Provider 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
 
 ## 固定协议依据
 
@@ -42,17 +42,41 @@ SSE framing 依据 [WHATWG 标准](https://html.spec.whatwg.org/multipage/server
 - 每次启动生成 256-bit 本机 bearer token，常数时间比较；无凭据、重复 Authorization、Origin、query、非 JSON/压缩输入拒绝。token 加入 Broker 的诊断 Redactor，只给隔离 Runtime 的子进程环境，不写入 config/历史。它不是提供商 API Key，也不替代后续 Host 身份授权。
 - ModelRoute 明确公开 model → upstream model/endpoint/profile 和允许的经典/Lite dialect；未知模型、重复路由或不支持 dialect 拒绝，无默认提供商/环境 Key 回退。只改 model 名，其余未知请求字段、input 前缀、图片及工具字符串保留。
 - CustomResponses 使用准确 Responses endpoint，支持显式无认证或 Broker 的 bearer credential；Broker 在执行端解析 reference、校验 owner，阻塞 native backend 放在 blocking pool。已发起的同步存储读取不能强制中止，超时/取消后不会继续向提供商发请求。
-- URL 拒绝 userinfo/query/fragment；明文 HTTP 只允许 literal loopback，其他地址需 HTTPS。reqwest 的 rustls 默认验证配置保持启用，关闭环境 proxy、redirect、POST 重试和空闲连接池；当前回归使用 HTTP loopback，尚未做真实提供商 TLS/证书链兼容性验证。
-- 不转发客户端 Authorization、cookies/任意头；提供商 Key 仅构造上游 Authorization 并标记 sensitive，Lite header 由已验证 dialect 生成。不向 Runtime 暴露保存的 Key。以后需要 provider-specific header/turn-state 语义时由对应 Adapter 明确接入，不通过全量头转发解决。
+- URL 拒绝 userinfo/query/fragment；明文 HTTP 只允许 literal loopback，其他地址需 HTTPS。reqwest 的 rustls 默认验证配置保持启用，关闭环境 proxy、redirect、POST 重试和空闲连接池；已验证本地 TLS 正/负证书 fixture，尚未做真实提供商证书链/推理兼容性验证。
+- 不转发客户端 Authorization、cookies/任意头；提供商 Key 仅构造上游 Authorization 并标记 sensitive，Lite header 由已验证 dialect 生成。不向 Runtime 暴露保存的 Key。明确允许的 context headers 见下；其他提供商头需对应 Adapter 验证后接入。
 - SSE 使用核心逐帧验证，派发完整事件；保留原 data 字符串和 id/retry 语义，不承诺原始注释/换行逐字节一致。上游字节持续活动而没有模型事件时，最多每秒发送规范化注释 heartbeat；不把部分 JSON 或 heartbeat 当作成功事件。合法终态后立即结束此次上游传输。
 - 单槽有界发送队列、分片解析和 in-flight permit 提供背压；不积攒整个流。客户端丢弃 HTTP Body 会 abort producer、释放 permit 并关闭上游 socket；响应头返回前断开也取消请求。显式 shutdown/handle Drop 终止监听及活动生成。
 - connect/header/idle/absolute deadline 与 request/frame/nonstream response 大小有明确可配置上限。absolute deadline 在下游不读时仍生效；坏 UTF-8/JSON/序号/response ID、超限、EOF 缺终态关闭流，能投递时提供安全 error 事件；背压超过 deadline 时直接关闭，不无限等待错误通知。
-- HTTP 401/403/429/5xx/redirect 分类为静态错误，丢弃第三方 body/cookie/Location。429 仅转发合法且不超过一天的数字 Retry-After 秒数提示，不自动等待/重发；HTTP-date 提示待后续兼容性补齐。SSE error（含顶层 message）/response.failed 与非流式 response.error 只在诊断部分使用 Redactor；opaque item/history 不按日志脱敏。
+- HTTP 401/403/429/5xx/redirect 分类为静态错误，丢弃第三方 body/cookie/Location。429 接受数字或 HTTP-date Retry-After，转为不超过一天的秒数提示，日期向上取整、过去日期为 0；坏值/超限丢弃，不自动等待/重发。SSE error（含顶层 message）/response.failed 与非流式 response.error 只在诊断部分使用 Redactor；opaque item/history 不按日志脱敏。
 - 默认上限：请求 8 MiB、SSE 帧 2 MiB、非流式回复 16 MiB、同时 16 个请求；connect 10s、header 30s、idle 90s、total 600s。这些是传输边界，不冒充具体模型 context/output 能力。
 
 固定 Runtime 接入：base_url=`http://127.0.0.1:<port>/v1`，wire_api=`responses`，env_key 指向仅该子进程注入的 Gateway token，requires_openai_auth=false。必须设置 request_max_retries=0 和 stream_max_retries=0；Gateway 禁重试不能替调用方关闭 Runtime 自身重试。生产 Host/CLI 接入待 H/P，当前真实验证在隔离测试 harness 内完成。
 
 HTTP 库依据：[reqwest 0.13.5 禁重试](https://docs.rs/reqwest/0.13.5/reqwest/retry/fn.never.html)、[ClientBuilder](https://docs.rs/reqwest/0.13.5/reqwest/struct.ClientBuilder.html)、[axum 0.8.9 HTTP body](https://docs.rs/axum/0.8.9/axum/body/struct.Body.html)。依赖锁文件新增传输/TLS 包，未升级已有包版本；TLS 编译需要 C 工具链，三平台实际构建由 CI 验证。
+
+## 共用 ModelProvider 与模型 Registry
+
+- `model/core::ModelProvider` 是 object-safe 的六方法接口：list_models、create_response、stream_response、capabilities、metadata、credential_requirements。异步方法返回 Send boxed future/stream；RequestContext 提供取消 token、调用方 absolute deadline 和明确的非认证 context headers。
+- `model/providers/custom` 实现全部六方法，不依赖 axum/Gateway/工具执行器。Gateway 调用同一 ModelProvider；普通 Chat 可独立调用 create_response/stream_response。当前 list_models 是经验证配置的确定性模型清单，source=Configured，不伪装成向未知 Custom endpoint 自动发现模型。
+- CanonicalResponse 验证 id、终态、output item/工具字段和 usage，保留未知字段/opaque/数字精度；提供文本、输出、usage、Completed/Incomplete/Interrupted/Failed 视图。HTTP 200 的 failed/incomplete 仍保持原状态。
+- Registry 区分 Unknown/Supported/Unsupported 的声明能力，包含 V2 所列 text/vision/reasoning/tools/parallel/structured output/streaming/web search/image generation/context/output limit/prompt profile。未知能力/上限不编造；显式 Unsupported streaming 在读取凭据或网络前拒绝。其他能力的原生转换与约束随 Adapter 实现验收，当前不自行改写工具或降级模型。
+- 模型 metadata 与路由绑定，不允许通过 metadata 更改 model ID、native model 或 dialect。CredentialRequirement 仅公开 owner/provider/profile/kind reference，不返回 Secret；配置清单和 metadata 查询不读取凭据。
+- Codex compatibility 没有默认 Full；缺报告为未验证。版本化 CompatibilityReport 有 level、source、测试版本、证据引用和 limitations；Configured 不是报告，协议 fixture 不能标 Full/Compatible，这两级至少需要 LiveRuntime（实际模型 + 固定 Runtime）来源。Registry 验证报告结构/来源门槛，不代替执行端审核报告真实性，也不把真实 Runtime 配合合成 fixture 当作 LiveRuntime 证据。
+- 提供商流只有一个有界事件槽，Drop abort producer 并关闭 socket；取消或 absolute deadline 在消费者不读取/队列已满时仍关闭 I/O。安全失败另行保存，消费者恢复读取后先排出排队事件、再得到一次明确错误，不无限等待错误入队。Gateway 再编码 SSE，EOF 没有模型终态不能成功。
+- 已取消/已过期请求在凭据访问前拒绝；同步 backend 已开始的读取不能强行中止，但取消后不会 POST。调用方整体 deadline 同时约束认证读取、HTTP headers 和流。
+
+## Context headers 与 TLS 验收
+
+| 方向 | 明确允许的 headers |
+| --- | --- |
+| 调用方 → provider | session_id、x-client-request-id、x-codex-turn-state、x-codex-turn-metadata |
+| provider → 调用方 | x-request-id、x-codex-turn-state |
+
+这些是固定 [client.rs](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs) 和 [Responses SSE](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/codex-api/src/sse/responses.rs) 中核对的当前契约，未宣称覆盖所有上游 header。重复、非可见 ASCII 或超过 8192 bytes 的 context 值拒绝；opaque turn-state 的 Debug 省略值，不实现 Serialize/Display。其他头不透传；上游非法 context 返回安全 502，客户端重复 context 为 400。认证头始终由 Broker 构造。
+
+ClientOptions 允许为该独立 client 显式添加公共信任根，不提供跳过 TLS 验证选项。fixture 在内存生成 CA/叶证书/私钥：可信有效证书成功，未信任 CA、主机名不符、过期证书均失败；负例服务器未收到 HTTP 请求，证明 Bearer 不穿过失败握手。私钥不落盘/入日志。额外公共根接入最终设置及真实服务链兼容性仍待相应阶段。
+
+实现依据：[add_root_certificate](https://docs.rs/reqwest/0.13.5/reqwest/struct.ClientBuilder.html#method.add_root_certificate)、[HTTP-date parser](https://docs.rs/httpdate/1.0.3/httpdate/fn.parse_http_date.html)、[rcgen 0.14.10](https://docs.rs/rcgen/0.14.10/rcgen/)。
 
 ## 不透明数据的边界限制
 
@@ -67,10 +91,11 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 - 本地 fmt、Clippy -D warnings、workspace tests 通过；新增核心回归 15 项，包含每个字节分割点/逐字节、多种换行、未知数据/工具/用量、取消/EOF/乱序/身份混合/终态冲突。
 - [三平台 CI 37550000148](https://github.com/bboytang/CAIdex/actions/runs/37550000148) 全部通过，源码 `ea7d902`：核心 15 项和 Gateway 16 项在 Linux/Windows/macOS 通过；真实 Runtime Linux 20 项、Windows/macOS 各 19 项通过，含新增 Gateway 经典/Lite 两轮/Broker 认证和两条路径 interrupt 后实际 EOF/reset、无重放。既有协议/凭据/schema/doctor 继续通过，HTTP/TLS 依赖三平台构建通过。
 - 本机 workspace/fmt/Clippy、Gateway 16 项、真实 Runtime Linux 20 项通过；最终大整数/高精度小数 wire 和 EOF/reset 判据分别定向复验通过。全部使用本地合成推理数据，不代表真实商业模型兼容性。
-- 未实现/未验证：其他 Provider/统一完整 ModelProvider 接口与 Registry、原生 opaque history 重建、真实 TLS/Provider/商业推理、Lite Code Mode 工具执行、远端 opaque compaction；HTTP-date 限流提示和 provider-specific header 待对应兼容性实现。E 原生 keyring 回归继续由 CI 保持。
+- F 第三步本机 fmt、Clippy -D warnings、workspace tests 和真实 Runtime 20 项通过；核心 20 项、独立 provider 7 项、Gateway 18 项。新增验证包含独立 client 六方法/经典与 Lite、配置能力与未验证标记、完整同步 response、header 双向筛选、HTTP-date、单并发 slot 释放、未消费流取消/超时、TLS 正/负证书。三平台本轮源码验收待 GitHub CI 结果。
+- 未实现/未验证：其他原生 Provider、原生 opaque history 重建、真实 Provider TLS/商业推理、Lite Code Mode 工具执行、远端 opaque compaction、其他 provider-specific headers。E 原生 keyring 回归继续由 CI 保持。
 
 ## 下一步顺序
 
-1. F 第三步：按原 V2 第 14–22 节及 V3 实现实际可用的完整 ModelProvider/CanonicalResponse 接口与 Custom Responses 模型 Registry/metadata/capabilities/credential_requirements；补 HTTP-date Retry-After、TLS 正/负证书 fixture、明确的 provider header 契约。不用占位方法或未验证 Full 标签替代实现/报告。
-2. 完整 Provider 接口/模型 Registry 随 Adapter 实现落地，依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，补请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility。不要把 Responses pass-through 当作最终跨提供商 Gateway。
-3. 按每个模型的真实能力验收经典与 Code Mode、多轮历史/签名/切换。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。
+1. F 第三步源码推送/三平台 CI，结果记录 HANDOFF；未通过时按具体失败修复，不以旧 CI 代替新验收。
+2. 按 V3/原 V2 第 14–22 节依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，使用六方法接口与 Registry，补原生请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility。不要把 Responses pass-through 当作最终跨提供商 Gateway。
+3. 原生 opaque history、经典/Code Mode、多轮签名/模型切换分别验收并生成实际证据报告。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。

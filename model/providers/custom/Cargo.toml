@@ -1,0 +1,21 @@
+[package]
+name = "caidex-provider-custom"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+caidex-credentials = { path = "../../../credentials/core", default-features = false }
+caidex-model-core = { path = "../../core" }
+futures-util = "=0.3.34"
+httpdate = "=1.0.3"
+reqwest = { version = "=0.13.5", default-features = false, features = ["rustls", "stream"] }
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["net"] }
+
+[dev-dependencies]
+rcgen = { version = "=0.14.10", default-features = false, features = ["aws_lc_rs"] }
+rustls = { version = "=0.23.45", default-features = false, features = ["aws_lc_rs"] }
+time = "=0.3.47"
+tokio-rustls = "=0.26.6"

@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C 已完成，D Runtime 边界、E 凭据核心及 CLI 当前模块范围已验收。F 第一/二步协议核心与本地 Gateway/Custom Responses 当前范围已验收，三平台 CI 全通过（ea7d902 / 37550000148）；下一步完整模型接口/Registry/Provider 适配；未来 UI/Host/同步/iOS 仍按后续阶段验收。
+- A/B/C 已完成，D/E 与 F 第一/二步当前范围已验收。F 第三步已实现 core ModelProvider/CanonicalResponse/Registry、独立 model/providers/custom HTTP client；Gateway 消费同一接口。本机核心 20/provider 7/Gateway 18、workspace/Clippy/fmt 与真实 Runtime 20 项通过；待提交/push/三平台 CI。未来 UI/Host/同步/iOS 仍按后续阶段验收。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -19,16 +19,17 @@
 
 - F 第一步：新增 model/core，保留经典/Lite wire/未知 item/event/opaque 与工具字符串；增量 SSE/UTF-8/换行/帧上限/终态/序号/响应身份验证。真实固定 Runtime 经典和 Lite 两轮请求/推理回放通过，仅合成回复。
 - F 第二步（三平台已验）：model/gateway 只监听 loopback、随机独立访问 token、固定模型/endpoint/dialect、执行端 Broker 认证；SSE/非流式 JSON、单槽背压、真实断开/取消、超时、429/HTTP 错误分类和诊断脱敏。真实 Runtime 经典/Lite 各两轮通过，interrupt 在两条路径均实际关闭上游 socket；没有调用商业模型或执行 Code Mode 工具。
+- F 第三步（本机已验）：ModelProvider 六方法实际实现、CanonicalResponse/能力 Registry/版本化兼容性报告、独立 Custom Responses client。配置清单无自动发现/Full 标签，未知能力/上限不编造；Broker reference metadata 无秘密。HTTP-date、四项请求/两项响应 context header、单槽失败保存、取消/Drop/单并发 slot 释放、TLS 可信/未知 CA/错 hostname/过期 fixture 通过。
 
 ## 未完成
 
 - iOS 已定义 SecretStore 接入契约，Swift Keychain/UniFFI 原生实现待 M。Gateway 已接入 Broker/诊断脱敏；UI/Host/同步尚未接入，不宣称未来全部输出通道已验证。
-- F/G 其余能力及 H–R：其他 Provider/完整模型接口/Registry、原生 opaque history 重建、生产持久化 Host、独立 Chat/同步、Windows/iOS UI、SSH、完整英文 CLI/attach、生产 Relay、签名/打包/UAT 未完成；未配置真实模型 Key 或调用商业模型。
+- F/G 其余能力及 H–R：其他原生 Provider/模型自动发现与实际兼容性报告、原生 opaque history 重建、生产持久化 Host、独立 Chat/同步、Windows/iOS UI、SSH、完整英文 CLI/attach、生产 Relay、签名/打包/UAT 未完成；未配置真实模型 Key 或调用商业模型。
 - macOS Rust CI 不等于 iOS 应用构建；尚无 iOS 工程。其他原生工具/模型能力按后续相关阶段逐项补验收。
 
 ## 下一步顺序
 
-1. F 第三步：读取模型设计与 V2 第 14–22 节需求，实现实际可用的完整 ModelProvider/CanonicalResponse 接口、Custom Responses 模型 Registry/metadata/capabilities/credential_requirements；补 HTTP-date Retry-After、TLS 证书正/负 fixture 及明确的 provider header 契约。不用占位接口/未验证 Full 标签替代兼容性。
+1. F 第三步：检查最终差异、提交/push 本轮源码，等待本次三平台 CI 实际通过并记录结果；旧 ea7d902 CI 不能代表新源码。若失败按具体失败修复，不重复从头设计。
 2. 随各原生 Provider Adapter 实现原生请求/响应/工具/usage/reasoning/images/结构化输出/context/prompt compatibility 与兼容性报告；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权，当前离线工作可继续；不重做 A–E 或重复请求公开授权。
 3. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
 
@@ -37,7 +38,7 @@
 - Windows Tauri 2 + React/TypeScript/Rust；iOS SwiftUI（初期 Swift 5/iOS 17+）+ UniFFI 共享 Rust；CLI 继承上游英文体验；首批 Windows 11 x64、Linux x86_64 Host/CLI。
 - 使用真实固定 Runtime，不造第二套 Agent；上游 commit `d27764b82f7118f674371e6d6e76271d9d606edb`，CLI `0.160.1`/tag `rust-v0.160.1`。协议实验 opt-in；常规 104 客户端/10 服务端/83 通知，实验 167/11/83。
 - Lite 使用 /responses 与内部 header，指令/工具在 input 中，稳定前缀；core 仅保留收到的 wire。non-OpenAI 上游会清除 encrypted_function_args，未知签名也可能被 Runtime 丢弃；F/G Adapter 需验证原生 opaque history，必要时最小补丁，不宣称被删除的数据已保留。
-- Gateway 当前为 Rust 嵌入库/Custom Responses pass-through；不等于最终跨 Provider 模型层。Runtime Gateway profile 必须同时禁用 request/stream 重试，token 只在隔离子进程环境。HTTPS 使用 rustls 默认验证；未验真实 TLS/Provider。同步 SecretStore 读取不能强行中止，取消后不发提供商请求；HTTP-date Retry-After/provider-specific headers 待兼容性实现。
+- Gateway 为 Rust 嵌入库，当前 Custom Responses pass-through 经独立 ModelProvider 调用；不等于最终跨 Provider 原生适配。Runtime profile 同时禁用 request/stream 重试，token 只在隔离子进程环境。HTTPS 默认验证，TLS 本地正/负 fixture 已验；未验真实 Provider。已开始的同步 SecretStore 读取不能强行中止，取消后不 POST；HTTP-date 转安全秒数元数据、不重试。当前只允许固定上游四项请求/两项响应 context headers，其他原生头待对应 Adapter。
 - 普通 Chat 独立于 Codex Host，无 Shell/Git/项目写权限；按提供商实际能力展示工具。Remote 用执行 Host Key，手机不读已保存 Host Key；历史同步不含凭据。
 - Gateway 面向 Responses HTTP/SSE，保留不透明签名/推理数据，不执行工具。经典 gpt-5.5 与 Lite/code_mode_only gpt-6.1-sol 路径不同，旧未知模型 fallback fixture 不能代表全部兼容性；F/G 分别验收。
 - 模型切换在轮次边界生效；跨提供商关联分支/新线程承接适配历史。Host 独立运行、SQLite 事件持久化后广播、快照补缺口、请求幂等、审批首次有效处理；不承诺外部工具恰好执行一次。
@@ -57,11 +58,13 @@
 - `docs/CAIdex-实施计划-V3.md`、`docs/CAIdex-UI-规范-V1.md`、`docs/CAIdex-Runtime-能力对照.md`：执行与验收基准；原 V2 在 docs 归档。
 - `credentials/core/`、`apps/cli/src/credentials.rs`、`apps/cli/tests/credentials.rs`、`docs/CAIdex-Credentials-设计与验收.md`：E 实现/回归/限制。
 - `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
-- `model/core/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/HTTP 核心及下一步；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
+- `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码验收基准 `ea7d902` 已 push；随后仅提交交接/模型验收文档的 CI 结果更新，源码无未提交修改，无其他已知用户修改。下次先核验实际 HEAD/工作区。
+- branch `main` 跟踪 `origin/main`，HEAD b875fbc；未提交：core Response/Provider/Registry 与依赖、新 model/providers/custom、Gateway HTTP client 抽离/接口/header 接入、新真实 socket/TLS 测试、workspace/README/设计/交接。本机通过，三平台 CI 待执行；无其他已知用户修改。
 
 ## 测试结果
+
+- F 第三步本机：核心 20 项、独立 provider 7 项（含四种 TLS 证书场景）、Gateway 18 项、workspace、fmt、Clippy -D warnings、真实 Runtime 20 项通过。单并发取消/背压 slot 释放定向复验也通过。Cargo.lock 保留全部已有 package 版本，新增 23 个 package（含独立 crate/证书测试依赖）；本轮 CI 待实际执行。
 
 - [CI 37550000148](https://github.com/bboytang/CAIdex/actions/runs/37550000148)，源码 `ea7d902`：ubuntu-24.04、windows-2022、macos-15 全部 success；fmt/Clippy/workspace、HTTP/TLS 依赖编译、固定 schema 重新生成与 SHA/offline doctor 均通过。
 - F 模型核心 15 项、Gateway 16 项真实 socket 回归三平台通过；真实 Runtime 集成 Linux 20 项、Windows/macOS 各 19 项通过。Gateway 经典/Lite 两轮/Broker 认证、两条路径 interrupt 的实际 EOF/reset 验证通过；均为合成回复，不代表商业模型或 Code Mode 工具执行已验收。

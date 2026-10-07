@@ -1,6 +1,6 @@
 use crate::{Error, Result};
 use caidex_credentials::CredentialRef;
-use caidex_model_core::ResponsesDialect;
+use caidex_model_core::{ModelMetadata, ResponsesDialect};
 use reqwest::Url;
 use std::{fmt, net::IpAddr};
 
@@ -38,34 +38,40 @@ impl fmt::Debug for CustomResponses {
     }
 }
 
-pub struct ModelRoute {
-    pub(crate) model: String,
-    pub(crate) upstream_model: String,
-    pub(crate) dialects: Vec<ResponsesDialect>,
+pub struct ConfiguredModel {
+    pub(crate) metadata: ModelMetadata,
     pub(crate) adapter: CustomResponses,
 }
-impl ModelRoute {
+impl ConfiguredModel {
     pub fn new(
         model: String,
         upstream_model: String,
         dialects: Vec<ResponsesDialect>,
         adapter: CustomResponses,
     ) -> Result<Self> {
-        if model.trim().is_empty() || upstream_model.trim().is_empty() || dialects.is_empty() {
+        let metadata = ModelMetadata::configured(model, upstream_model, dialects);
+        metadata.validate().map_err(|_| Error::InvalidRoute)?;
+        Ok(Self { metadata, adapter })
+    }
+    pub fn with_metadata(mut self, metadata: ModelMetadata) -> Result<Self> {
+        metadata.validate().map_err(|_| Error::InvalidRoute)?;
+        if metadata.id != self.metadata.id
+            || metadata.native_model != self.metadata.native_model
+            || metadata.dialects != self.metadata.dialects
+        {
             return Err(Error::InvalidRoute);
         }
-        Ok(Self {
-            model,
-            upstream_model,
-            dialects,
-            adapter,
-        })
+        self.metadata = metadata;
+        Ok(self)
+    }
+    pub fn metadata(&self) -> &ModelMetadata {
+        &self.metadata
     }
 }
-impl fmt::Debug for ModelRoute {
+impl fmt::Debug for ConfiguredModel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ModelRoute")
-            .field("dialects", &self.dialects)
+        f.debug_struct("ConfiguredModel")
+            .field("metadata", &self.metadata)
             .finish_non_exhaustive()
     }
 }

@@ -1,9 +1,10 @@
 use crate::{Error, Result, StreamState};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResponsesDialect {
     Classic,
     Lite,
@@ -64,6 +65,73 @@ impl fmt::Debug for CanonicalRequest {
         f.debug_struct("CanonicalRequest")
             .field("dialect", &self.dialect)
             .finish_non_exhaustive()
+    }
+}
+
+/// Complete non-streaming Responses value; unknown output items and opaque data
+/// are retained. An HTTP 200 alone is not a successful generation.
+#[derive(Clone, Serialize)]
+#[serde(transparent)]
+pub struct CanonicalResponse(Value);
+impl CanonicalResponse {
+    pub fn new(wire: Value) -> Result<Self> {
+        if !wire.is_object()
+            || string(&wire, "id").is_none()
+            || !matches!(
+                wire["status"].as_str(),
+                Some("completed" | "incomplete" | "failed")
+            )
+        {
+            return Err(Error::InvalidResponse);
+        }
+        for item in wire["output"].as_array().ok_or(Error::InvalidResponse)? {
+            let item = ResponseItem::new(item.clone()).map_err(|_| Error::InvalidResponse)?;
+            item.tool_call().map_err(|_| Error::InvalidResponse)?;
+            item.tool_result().map_err(|_| Error::InvalidResponse)?;
+        }
+        if let Some(usage) = wire.get("usage").filter(|value| !value.is_null()) {
+            Usage::new(usage).map_err(|_| Error::InvalidResponse)?;
+        }
+        Ok(Self(wire))
+    }
+    pub fn wire(&self) -> &Value {
+        &self.0
+    }
+    pub fn id(&self) -> &str {
+        self.0["id"].as_str().expect("validated id")
+    }
+    pub fn output(&self) -> &[Value] {
+        self.0["output"].as_array().expect("validated output")
+    }
+    pub fn state(&self) -> StreamState {
+        match self.0["status"].as_str() {
+            Some("completed") => StreamState::Completed,
+            Some("incomplete") if self.0["incomplete_details"]["reason"] == "interrupted" => {
+                StreamState::Interrupted
+            }
+            Some("incomplete") => StreamState::Incomplete,
+            _ => StreamState::Failed,
+        }
+    }
+    pub fn usage(&self) -> Result<Option<Usage<'_>>> {
+        match self.0.get("usage") {
+            None | Some(Value::Null) => Ok(None),
+            Some(value) => Usage::new(value).map(Some),
+        }
+    }
+    pub fn output_text(&self) -> impl Iterator<Item = &str> {
+        self.output()
+            .iter()
+            .filter(|item| item["type"] == "message")
+            .filter_map(|item| item["content"].as_array())
+            .flatten()
+            .filter(|content| content["type"] == "output_text")
+            .filter_map(|content| content["text"].as_str())
+    }
+}
+impl fmt::Debug for CanonicalResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("CanonicalResponse([WIRE OMITTED])")
     }
 }
 

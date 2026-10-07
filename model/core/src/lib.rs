@@ -2,13 +2,24 @@
 //! adapters interpret fields without discarding unknown items or opaque data.
 //! HTTP, provider authentication and tool execution are not owned by this crate.
 
+mod provider;
+mod registry;
 mod responses;
 mod sse;
 mod stream;
 
+pub use provider::{
+    CancellationToken, ContextHeaders, CredentialRequirement, ModelProvider, ProviderError,
+    ProviderFuture, ProviderResponse, ProviderResult, ProviderStream, ProviderStreamEvent,
+    REQUEST_HEADERS, RESPONSE_HEADERS, RequestContext, StreamingResponse,
+};
+pub use registry::{
+    CapabilitySupport, CompatibilityLevel, CompatibilityReport, EvidenceSource, ModelCapabilities,
+    ModelMetadata, ModelRegistry,
+};
 pub use responses::{
-    CanonicalRequest, ResponseEvent, ResponseItem, ResponsesDialect, ToolCall, ToolInput, ToolKind,
-    ToolResult, Usage,
+    CanonicalRequest, CanonicalResponse, ResponseEvent, ResponseItem, ResponsesDialect, ToolCall,
+    ToolInput, ToolKind, ToolResult, Usage,
 };
 pub use sse::{SseDecoder, SseEvent};
 pub use stream::{ResponsesStream, StreamEvent, StreamState};
@@ -17,6 +28,10 @@ pub use stream::{ResponsesStream, StreamEvent, StreamState};
 pub enum Error {
     #[error("invalid model request")]
     InvalidRequest,
+    #[error("invalid model response")]
+    InvalidResponse,
+    #[error("invalid or duplicate model metadata")]
+    InvalidMetadata,
     #[error("invalid Responses item")]
     InvalidItem,
     #[error("invalid Responses event")]
