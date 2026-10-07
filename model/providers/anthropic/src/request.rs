@@ -35,6 +35,25 @@ impl MessagesRequest {
         max_bytes: usize,
         max_tools: usize,
     ) -> ProviderResult<Self> {
+        Self::from_responses_with_system_messages(
+            request,
+            native_model,
+            max_tokens,
+            max_bytes,
+            max_tools,
+            false,
+        )
+    }
+    /// Enable only from an explicit execution-side capability declaration.
+    /// This flag is not inferred from a model name or provided by request JSON.
+    pub fn from_responses_with_system_messages(
+        request: &CanonicalRequest,
+        native_model: &str,
+        max_tokens: u64,
+        max_bytes: usize,
+        max_tools: usize,
+        supports_system_messages: bool,
+    ) -> ProviderResult<Self> {
         let source = request.wire();
         if native_model.trim().is_empty()
             || max_tokens == 0
@@ -110,6 +129,9 @@ impl MessagesRequest {
         let mut index = 0;
         while index < input.len() {
             let item = &input[index];
+            if item.get("clear_at").is_some() || item.get("output_config").is_some() {
+                return Err(unsupported());
+            }
             if item["type"] == "additional_tools" {
                 index += 1;
                 continue;
@@ -202,6 +224,12 @@ impl MessagesRequest {
                         }
                         system.extend(blocks)
                     }
+                    "developer" | "system" if supports_system_messages => {
+                        if blocks.iter().any(|b| b["type"] != "text") {
+                            return Err(unsupported());
+                        }
+                        append(&mut messages, "system", blocks);
+                    }
                     "developer" | "system" => return Err(unsupported()),
                     "user" | "assistant" => append(&mut messages, role, blocks),
                     _ => return Err(invalid()),
@@ -214,6 +242,7 @@ impl MessagesRequest {
         if !pending.is_empty() || messages.is_empty() {
             return Err(invalid());
         }
+        validate_system_positions(&messages)?;
         let mut wire = json!({"model":native_model,"max_tokens":max_tokens,"messages":messages,"stream":request.is_streaming()});
         if !system.is_empty() {
             wire["system"] = system.into();
@@ -354,4 +383,43 @@ fn image(block: &Value) -> ProviderResult<Value> {
         json!({"type":"url","url":url})
     };
     Ok(json!({"type":"image","source":source}))
+}
+
+fn validate_system_positions(messages: &[Value]) -> ProviderResult<()> {
+    for (index, message) in messages.iter().enumerate() {
+        if message["role"] != "system" {
+            continue;
+        }
+        let previous = index
+            .checked_sub(1)
+            .and_then(|i| messages.get(i))
+            .ok_or_else(invalid)?;
+        let server_result = previous["role"] == "assistant"
+            && previous["content"]
+                .as_array()
+                .and_then(|v| v.last())
+                .is_some_and(|block| {
+                    matches!(
+                        block["type"].as_str(),
+                        Some(
+                            "web_search_tool_result"
+                                | "web_fetch_tool_result"
+                                | "code_execution_tool_result"
+                                | "bash_code_execution_tool_result"
+                                | "text_editor_code_execution_tool_result"
+                                | "tool_search_tool_result"
+                        )
+                    )
+                });
+        if previous["role"] != "user" && !server_result {
+            return Err(invalid());
+        }
+        if messages
+            .get(index + 1)
+            .is_some_and(|next| next["role"] != "assistant")
+        {
+            return Err(invalid());
+        }
+    }
+    Ok(())
 }

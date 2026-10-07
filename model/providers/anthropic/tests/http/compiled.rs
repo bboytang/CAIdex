@@ -49,14 +49,18 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         input.push(
             json!({"type":"custom_tool_call_output","call_id":"tool-one","output":"\nresult🙂\n "}),
         );
+        input.push(
+            json!({"role":"developer","content":"new instructions after complete tool results"}),
+        );
         let mut second_wire = wire.clone();
         second_wire["input"] = input.into();
-        let second = MessagesRequest::from_responses(
+        let second = MessagesRequest::from_responses_with_system_messages(
             &CanonicalRequest::new(second_wire, dialect).unwrap(),
             "native",
             100,
             128 * 1024,
             10,
+            true,
         )
         .unwrap();
         let result = client
@@ -80,6 +84,11 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         assert_eq!(
             sent["messages"][2]["content"][0]["content"][0]["text"],
             "\nresult🙂\n "
+        );
+        assert_eq!(sent["messages"][3]["role"], "system");
+        assert_eq!(
+            sent["messages"][3]["content"][0]["text"],
+            "new instructions after complete tool results"
         );
         assert_eq!(reads.load(Ordering::SeqCst), 2);
         fixture_task.await.unwrap();

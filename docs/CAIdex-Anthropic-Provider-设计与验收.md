@@ -48,7 +48,7 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 ## Responses 请求基础转换
 
-`MessagesRequest::from_responses` 编译原生请求并保留完整收到的 Responses source。native model 与正数 max_tokens 由执行端显式提供，不按别名猜 token 上限；输入和原生输出 JSON 均检查字节预算。经典读取顶层 tools/instructions，Lite 仅读取首项 developer additional_tools；初始 system/developer 文本进入 native system，保留顺序。中途 system/developer 目前明确拒绝，后续按提供商实际能力接入，不能把它们静默提升到所有历史之前。
+`MessagesRequest::from_responses` 编译原生请求并保留完整收到的 Responses source。native model 与正数 max_tokens 由执行端显式提供，不按别名猜 token 上限；输入和原生输出 JSON 均检查字节预算。经典读取顶层 tools/instructions，Lite 仅读取首项 developer additional_tools；初始 system/developer 文本进入 native system，保留顺序。中途 system/developer 通过 from_responses_with_system_messages 的执行端显式能力开关接入；默认方法仍拒绝，不从名称或请求 JSON 判断支持。保持原位置，不能静默提升到所有历史之前。
 
 v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改动。function/custom 调用与结果通过 call_id/kind 关联；旧式只有 name/namespace 的 function 结果仅在待完成集合内唯一匹配时接受。未知/重复/错误身份、未齐的并行结果、结果与下一批调用交错明确拒绝。结果先放入紧接 assistant 的 user 内容，再允许普通 user 文本；此层不执行工具。
 
@@ -57,6 +57,8 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。当前只支持基础请求字段；reasoning、text/structured output、context、cache/service/metadata 等尚未映射的字段明确报 unsupported，完整 source 保留不等于原生语义支持。完整 Adapter、Responses SSE 转换和真实 Runtime 工具执行尚未完成。
 
 基础请求转换源码 `d774ff5` 的 [CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092) 三平台全部 success：各平台请求 8/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过。真实 Runtime 既有 Linux 25、Windows/macOS 24 项通过。新增 HTTP 两轮验证编译结果通过原生传输回放签名和 custom 结果，不代表完整 Gateway 或 Runtime Anthropic 工具执行已验收。
+
+中途指令新增执行端显式开关及原生位置门控：连续 system 内容保持顺序；前面必须是 user（包括完整工具结果）或以已识别 server result 结尾的 native assistant，后面必须是 assistant 或请求结束。不会在客户端工具调用与未完成结果之间插入指令，不把图片或工具输出提升为系统指令。clear_at/per-message output_config 仍明确拒绝，相关 beta 语义待专门映射。开关只是配置契约，不代表发现或实际模型验收。新增 4 项请求测试及 HTTP 经典/Lite 两轮位置检查本机通过，三平台结果待验收。
 
 ## 后续顺序
 
@@ -77,5 +79,5 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 - [Images and vision](https://platform.claude.com/docs/en/build-with-claude/vision)：原生 URL/base64 图片内容形状与格式支持；CAIdex 不代替模型的图片尺寸/格式验收。
 
-- [Mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)：部分模型支持且限制放置位置；后续以显式能力配置接入，当前基础转换拒绝。
+- [Mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)：部分模型支持且限制放置位置；已实现显式能力开关及位置验证，默认基础转换仍拒绝。
 - [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)：output_config.effort 与 thinking 模式不同，后续逐项映射，不猜模型能力。

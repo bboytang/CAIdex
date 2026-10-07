@@ -204,3 +204,131 @@ fn partially_delivered_parallel_results_cannot_be_interleaved_with_new_calls() {
         .is_err()
     );
 }
+
+fn compile_system(
+    input: Vec<Value>,
+    supported: bool,
+) -> caidex_model_core::ProviderResult<MessagesRequest> {
+    let request = CanonicalRequest::new(
+        json!({"model":"arbitrary-alias","input":input}),
+        ResponsesDialect::Classic,
+    )
+    .unwrap();
+    MessagesRequest::from_responses_with_system_messages(
+        &request,
+        "arbitrary-native",
+        4096,
+        LIMIT,
+        20,
+        supported,
+    )
+}
+#[test]
+fn mid_conversation_system_capability_keeps_instruction_position_and_consecutive_order() {
+    let input = vec![
+        json!({"role":"developer","content":"initial"}),
+        json!({"role":"user","content":"question"}),
+        json!({"role":"developer","content":"new instruction"}),
+        json!({"role":"system","content":"second instruction"}),
+        json!({"role":"assistant","content":"answer"}),
+        json!({"role":"user","content":"followup"}),
+    ];
+    assert!(compile_system(input.clone(), false).is_err());
+    let compiled = compile_system(input.clone(), true).unwrap();
+    assert_eq!(compiled.wire()["system"][0]["text"], "initial");
+    let messages = compiled.wire()["messages"].as_array().unwrap();
+    assert_eq!(
+        messages
+            .iter()
+            .map(|v| v["role"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["user", "system", "assistant", "user"]
+    );
+    assert_eq!(
+        messages[1]["content"],
+        json!([{"type":"text","text":"new instruction"},{"type":"text","text":"second instruction"}])
+    );
+    assert_eq!(compiled.source()["input"], json!(input));
+}
+#[test]
+fn system_messages_reject_wrong_positions_images_turn_scopes_and_partial_tool_results() {
+    let user = json!({"role":"user","content":"question"});
+    let assistant = json!({"role":"assistant","content":"answer"});
+    let system = json!({"role":"developer","content":"new"});
+    for input in [
+        vec![user.clone(), system.clone(), user.clone()],
+        vec![user.clone(), assistant.clone(), system.clone()],
+        vec![
+            user.clone(),
+            json!({"role":"developer","content":[{"type":"input_image","image_url":"data:image/png;base64,aW1hZ2U="}]}),
+        ],
+        vec![
+            user.clone(),
+            json!({"role":"system","content":"temporary","clear_at":"next_user_message"}),
+        ],
+        vec![
+            user.clone(),
+            json!({"role":"system","content":"effort","output_config":{"effort":"low"}}),
+        ],
+    ] {
+        assert!(compile_system(input, true).is_err());
+    }
+    assert!(compile_system(vec![user, system], true).is_ok());
+    let (_, mut input) = history();
+    input.push(json!({"type":"custom_tool_call_output","call_id":"patch-1","output":"done"}));
+    input.push(json!({"role":"developer","content":"too early"}));
+    let request = CanonicalRequest::new(
+        json!({"model":"alias","input":input}),
+        ResponsesDialect::Classic,
+    )
+    .unwrap();
+    assert!(
+        MessagesRequest::from_responses_with_system_messages(
+            &request, "native", 4096, LIMIT, 20, true
+        )
+        .is_err()
+    );
+}
+#[test]
+fn system_messages_after_complete_tool_results_preserve_signed_history() {
+    let (native, mut input) = history();
+    input.extend([
+        json!({"type":"custom_tool_call_output","call_id":"patch-1","output":"done"}),
+        json!({"type":"function_call_output","call_id":"exec-1","output":"done"}),
+        json!({"role":"developer","content":"continue under new instructions"}),
+    ]);
+    let request = CanonicalRequest::new(
+        json!({"model":"alias","input":input}),
+        ResponsesDialect::Classic,
+    )
+    .unwrap();
+    let compiled = MessagesRequest::from_responses_with_system_messages(
+        &request, "native", 4096, LIMIT, 20, true,
+    )
+    .unwrap();
+    assert_eq!(compiled.wire()["messages"][0], native.replay_message());
+    assert_eq!(compiled.wire()["messages"][2]["role"], "system");
+    assert_eq!(
+        compiled.wire()["messages"][2]["content"][0]["text"],
+        "continue under new instructions"
+    );
+}
+#[test]
+fn system_after_native_server_result_preserves_paused_content_without_client_execution() {
+    let native = NativeMessage::parse(json!({"type":"message","role":"assistant","model":"native","id":"paused","content":[{"type":"thinking","thinking":"private","signature":"signed+/=="},{"type":"server_tool_use","id":"srv-one","name":"web_fetch","input":{}},{"type":"web_fetch_tool_result","tool_use_id":"srv-one","content":{"type":"future_result","data":"opaque"}}],"stop_reason":"pause_turn","usage":{"input_tokens":1,"output_tokens":2}})).unwrap();
+    let mut input = native.to_responses(LIMIT).unwrap().output().to_vec();
+    assert_eq!(input.len(), 1);
+    input.push(json!({"role":"developer","content":"new instruction"}));
+    let request = CanonicalRequest::new(
+        json!({"model":"alias","input":input}),
+        ResponsesDialect::Classic,
+    )
+    .unwrap();
+    let compiled = MessagesRequest::from_responses_with_system_messages(
+        &request, "native", 4096, LIMIT, 20, true,
+    )
+    .unwrap();
+    assert_eq!(compiled.wire()["messages"][0], native.replay_message());
+    assert_eq!(compiled.wire()["messages"][1]["role"], "system");
+    assert!(compiled.wire().get("tools").is_none());
+}
