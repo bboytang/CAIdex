@@ -1,7 +1,8 @@
 use super::*;
 use caidex_model_core::{CanonicalRequest, ResponseItem, ResponsesDialect};
 use caidex_provider_anthropic::{
-    MessagesRequest, ReasoningMapping, RequestOptions, SummaryMapping, ThinkingContext, ToolMap,
+    MessagesRequest, ReasoningMapping, RequestOptions, ServiceTierMapping, SummaryMapping,
+    ThinkingContext, ToolMap,
 };
 
 #[tokio::test]
@@ -27,6 +28,12 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         } else {
             json!({"model":"alias","input":[prompt],"tools":declarations,"parallel_tool_calls":false})
         };
+        wire["include"] = json!(["reasoning.encrypted_content"]);
+        wire["prompt_cache_key"] = json!("fixture-cache-key");
+        wire["client_metadata"] =
+            json!({"session_id":"fixture-session","future":"fixture-preserved"});
+        wire["service_tier"] = json!("default");
+        let tiers = [ServiceTierMapping::new("default".into(), "standard_only".into()).unwrap()];
         wire["text"] = json!({"format":{"type":"json_schema","name":"result","strict":true,"schema":{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"],"additionalProperties":false}}});
         wire["reasoning"] = json!({"effort":"high","summary":"auto","context":"all_turns"});
         let summaries = [SummaryMapping::new("auto".into(), "summarized".into()).unwrap()];
@@ -44,6 +51,8 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
             10,
             &RequestOptions {
                 supports_structured_outputs: true,
+                retain_runtime_metadata: true,
+                service_tier_mappings: &tiers,
                 reasoning_mappings: &mappings,
                 summary_mappings: &summaries,
                 thinking_context: Some(ThinkingContext::AllTurns),
@@ -81,6 +90,8 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
             &RequestOptions {
                 supports_system_messages: true,
                 supports_structured_outputs: true,
+                retain_runtime_metadata: true,
+                service_tier_mappings: &tiers,
                 reasoning_mappings: &mappings,
                 summary_mappings: &summaries,
                 thinking_context: Some(ThinkingContext::AllTurns),
@@ -103,6 +114,11 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
                 .contains("x-api-key: synthetic_anthropic_key")
         );
         let sent: Value = serde_json::from_slice(&second_body).unwrap();
+        assert_eq!(sent["service_tier"], "standard_only");
+        for key in ["include", "prompt_cache_key", "client_metadata"] {
+            assert!(sent.get(key).is_none());
+            assert_eq!(second.source()[key], wire[key]);
+        }
         assert_eq!(sent["output_config"]["effort"], "medium");
         assert_eq!(
             sent["output_config"]["format"]["schema"],

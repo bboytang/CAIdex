@@ -30,6 +30,8 @@ pub struct MessagesRequest {
 /// Capabilities and mappings fixed by the execution-side model profile.
 #[derive(Default)]
 pub struct RequestOptions<'a> {
+    pub retain_runtime_metadata: bool,
+    pub service_tier_mappings: &'a [crate::ServiceTierMapping],
     pub supports_system_messages: bool,
     pub supports_structured_outputs: bool,
     pub summary_mappings: &'a [crate::SummaryMapping],
@@ -128,6 +130,12 @@ impl MessagesRequest {
                     | "tool_choice"
                     | "reasoning"
                     | "text"
+                    | "include"
+                    | "prompt_cache_key"
+                    | "client_metadata"
+                    | "service_tier"
+                    | "stream_options"
+                    | "access_programs"
             ) {
                 return Err(unsupported());
             }
@@ -328,6 +336,7 @@ impl MessagesRequest {
         }
         crate::reasoning::apply(&mut wire, source, options, max_tokens)?;
         crate::structured::apply(&mut wire, source, options.supports_structured_outputs)?;
+        crate::runtime_parameters::apply(&mut wire, source, options)?;
         if wire.to_string().len() > max_bytes {
             return Err(invalid());
         }

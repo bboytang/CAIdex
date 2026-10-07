@@ -115,3 +115,13 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 新增 3 项推理测试（累计 8 项），覆盖经典/Lite、配置缺失/不匹配、display 覆盖、禁用思考/无 effort 不被隐式启用、坏 summary/context、重复配置及当前轮策略不删历史；实际 HTTP 两轮 fixture 包含 summary/context 和既有结构化输出、签名工具历史。修正 between_tools 禁止 display。完整 workspace/Clippy/fmt/diff 已通过；[CI 37610039312](https://github.com/bboytang/CAIdex/actions/runs/37610039312)（源码 024b211）三平台全部 success，新增 3 项和扩展 HTTP 两轮逐平台通过。
 
 依据：[OpenAI reasoning summaries](https://developers.openai.com/api/docs/guides/reasoning)、[Anthropic thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)。较新原生模型还检查签名的模型、账户和 system/tools/messages 前缀；现有载体不证明这些匹配，完整 Adapter 需请求前缀契约与 mode/tools/trim/resume 回归，不能自动 drop_block 或 retry 掩盖失败。参见 [Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)。
+
+## 固定 Runtime 请求字段
+
+`include` 仅接受 reasoning.encrypted_content；原生回复经现有投影产生 CAIdex 版本化载体，不代表 OpenAI 密文，也不将 include 发给原生 API。未知输出扩展和重复项拒绝。
+
+`retain_runtime_metadata` 是执行端显式契约：client_metadata 字符串映射、非空字符串 prompt_cache_key 原样保留于 source，仅用于 CAIdex 本地归属/历史；不提升为 Anthropic metadata.user_id，不发送任意认证头，不据此创建 cache_control。这个契约不承诺 OpenAI 缓存隔离、计费或路由等价，原生缓存策略仍待独立实现和验收。未知元数据字符串字段保留，坏形状拒绝，Debug 不暴露 wire。
+
+ServiceTierMapping 由执行端固定：source default/auto 到 native standard_only/auto；不按同名推断 SLA/计费等价。无映射、重复配置、priority/flex 都拒绝，避免伪装能力。stream_options 缺省/null/空对象为无额外投递要求，sequential_cutoff 等非空值尚未等价实现，明确拒绝；access_programs 非空亦拒绝。
+
+新增 3 项回归，经典/Lite 实际 HTTP 两轮扩展检查原生档位及本地字段未外发、原始 source 保留。验证结果见 HANDOFF.md。依据：[OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)、[Anthropic Messages](https://platform.claude.com/docs/en/api/messages/create)、固定上游 d27764b 的 codex-api/src/common.rs 与 core/src/client.rs。完整 Adapter / Runtime 工具执行 / 商业 API 仍未验收。

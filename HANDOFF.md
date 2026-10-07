@@ -4,6 +4,8 @@
 
 ## 当前任务
 
+- 正在补固定 Runtime 字段：新增 runtime_parameters.rs / ServiceTierMapping、RequestOptions 本地元数据开关，接受 include 的推理载体请求、保留原始元数据，显式转换 default/auto 档位；非空 stream_options/access_programs 与 priority/flex 仍明确拒绝。新增 3 项测试通过，实际 HTTP 两轮扩展；完整 workspace、Clippy/fmt/diff 已通过，样式告警已修正；日志 /tmp/caidex-runtime-parameters-workspace.log。main 有上述源码/测试和文档准备提交，CI 尚未触发。
+
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。
 - 下一步处理固定 Runtime 的 include、prompt_cache_key、client_metadata、service_tier/stream_options 等参数；再完成完整 Anthropic ModelProvider/Gateway。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体和 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
