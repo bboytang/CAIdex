@@ -247,3 +247,28 @@ Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG�
 源码05f6f9182c101c16fd67565b9c4fa7136c4c294e已公开提交/push；[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)三平台completed/success，head、三job及全部步骤结论已核对。Google原72+runtime_parameters6共78个名字逐平台各通过一次；workspace Linux300/Windows295/macOS299，0失败、ignored32/30/30；既有实际Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。watch退出0，最终status及三job日志/tmp/caidex-ci-37693355853-{status.json,watch.log,linux.log,windows.log,macos.log}。
 
 下一步：六方法/Profile/JSON与SSE投影→Registry/Gateway→固定实际Runtime；沿Anthropic已有边界和本次已验映射，不重复参数阶段。非空context headers、Lite parallelfalse工具、发现/网页等尚未有新等价支持；既有Runtime绿结果不证明Gemini已接线，Rust macOS也不证明iOS交付。
+
+
+## 六方法与增量投影（三平台已验收）
+
+基线dffc2d0，沿既有ModelProvider/Anthropic模式，不重规划架构。执行端GeminiModel/Profile绑定native route、预算、显式映射/能力；Provider复用同一客户端认证/TLS/slot/取消/no retry，六方法及JSON/SSE再接Registry/Gateway。
+
+投影先送文本/摘要增量，不把签名写进delta；原生没有message_stop，只有正常EOF完成完整NativeHistory校验后才能发output_item.done/terminal和工具调用。functionCall的STOP/非STOP决定它是否可执行，第一次非thought调用后出现的文本暂缓至EOF，确保最终output_index与既有native投影顺序一致；这仅延迟调用后的混合文本，不缓冲全部正常文本。完整chunk/Part索引及v2原声明保持，metadata后缀/非STOP/blocked/error仍如实收尾。
+
+裁定：固定编译器只请求一条candidate，投影选择index0；blocked选None；不把native modelVersion当执行路由名字，原始版本作为native metadata保留。生成ID需在首帧之前唯一固定，不能依赖可能晚到/缺省/复用的Google responseId；复用已安装getrandom（同Gateway版本）而非时钟/计数器。成本是本地response ID与原生ID不同，后者单独保留，不承诺真实版本/商业Full。
+
+裁定：不支持的parallelfalse/Lite工具/发现/网页等仍明确拒绝；metadata为空的原生有效帧可以作为本地进度heartbeat，纯SSE comment当前native parser不生成事件，不能夸大跨Gateway keepalive支持；实际Registry/Gateway阶段需验证该边界。当前Gateway transfer仅用绝对deadline，native读取每个网络chunk重设idle计时；成本是unsupported请求及comment没有向下游转发，固定Runtime下游idle行为仍需下一阶段验证。
+
+验证顺序：投影与Provider有意义RED→GREEN；真实loopback JSON/SSE/三轮持久恢复、取消/Drop/错误/边界；完整workspace/fmt/Clippy；唯一审查及必要一次修复；精确源码新三平台CI。既有Runtime测试不是新增Gemini接线证据。
+
+本地阶段证据（尚未全阶段验收）：投影4、Provider六方法HTTP3均有效RED→GREEN；新增真实Gateway经典/Lite、token隔离、JSON/SSE/原生历史验证及wrapper取消/Drop/截断2项集成通过，没有额外独立RED。响应头负例1项发现空x-request-id被接受：有效RED→GREEN修复共享native headers路径，JSON/SSE均覆盖空/重复/过长/非ASCII，仍不转发x-codex-turn-state。Provider/HTTP新6共通过；源码未提交，尚待完整回归/唯一审查/新精确CI。首次边界编译磁盘满不是有效RED，清理本项目可再生成incremental缓存后重跑。
+
+唯一独立审查：无Critical/Important，报告/tmp/caidex-google-provider-review.md；投影4由审查者独立复验。新增1覆盖Minor暂缓：wrapper取消用例在text delta后才取消，pending投影队列已空；已证明原生连接/slot释放及无terminal/history，未专项证明队列非空取消/Drop。成本是不得声称立即丢弃所有已缓冲进度，后续真实Runtime取消可补该路径；旧Minor不变，不派复审。
+
+审查10项排除裁定及成本（非隐含支持）：1固定Gemini Runtime执行/审批/持久恢复/下游idle仍下一阶段，现有Gateway不代验（成本是尚非用户可用完整Codex）；2商业账号/模型/签名有效性/tier/cache/质量及Full无live证据，配置和fixture仅声明/协议（成本是实际服务拒绝或错误承诺）；3Lite工具parallelfalse明确拒绝，true fixture不证明固定Runtime路径（成本是Lite接入范围受限）；4发现/网页/strict/deferred/后置system/grammar硬约束仍unsupported或仅指导（成本是功能缺失）；5metadata/cache hints仅保留source，下游消费者未实现（成本是无遥测/缓存承诺）；6JSON载体结构绑定不是认证，H/I生产权限及签名真实性后续验收（成本是不能认领伪造整组/未授权历史）；7既有Google/Anthropic Minor未重做（成本是旧边界仍在）；8未穷举fuzz/极端压力/形式证明，焦点测试和byte guard只支持已测路径（成本是不能承诺任意压力行为）；9新精确源码三平台CI仍必须，旧CI不代验（成本是漏平台问题）；10H–R Host/UI/SSH/iOS/Relay/设备签名仍后续（成本是整个产品未交付）。本轮Gateway idle文档按实码纠正：只有绝对deadline，native收到comment chunk会重设idle，但comment不向下游转发，固定Runtime下游仍待验。
+
+最终本地：完整workspace310passed/0failed/32ignored，Google88个名字各通过一次；Clippy -D warnings、fmt、diff通过。Clippy初次发现投影测试不必要clone，改为slice::from_ref后Clippy及投影4复验通过，生产行为未改。全部Key/回复为合成，源码待以下提交/CI记录后才认领三平台。
+
+源码530ead5535b6bc6cd8896317b7360c7872a98571已提交/push；[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台completed/success，精确head、三job及所有步骤结论已核对，watch终态0、三job完整日志下载0。Google原78+投影4+HTTP/Provider6共88个名字逐平台各通过一次（嵌套http/provider.rs使用provider::前缀，核验脚本已递归）；workspace Linux310/Windows305/macOS309，0失败、ignored32/30/30；既有实际Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志/tmp/caidex-ci-37696809902-{status.json,watch.log,linux.log,windows.log,macos.log}。无新增商业或实际Gemini Runtime证据，Rust macOS不等于iOS应用构建。
+
+本阶段六方法/投影/Registry/Gateway离线范围已验收；下一步固定Runtime的实际请求、显式本地context归属、已知unsupported前Key拒绝、支持范围内审批/工具/取消/落盘重启。保持Lite parallelfalse、发现/网页/strict/deferred/后置system门控和完整native request绑定，不改架构，不重做本阶段。

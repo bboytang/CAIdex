@@ -4,7 +4,7 @@
 
 ## 当前任务与恢复点
 
-F/G：Gemini其余Runtime参数转换已完成本地、唯一独立审查及精确源码三平台验收（源码05f6f9182c101c16fd67565b9c4fa7136c4c294e，CI37693355853）。下一步接Google ModelProvider六方法/Registry/Gateway，再固定实际Runtime；不重复已验阶段，不改V3。完整F/G未验收，H–R未实施。
+F/G：Gemini六方法/Profile与增量JSON/SSE投影、Registry/Gateway本阶段已验收。源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台通过；Google88逐名通过，唯一审查无Critical/Important、1覆盖Minor暂缓。下一步固定实际Gemini Runtime接线；不重做已验参数/投影，不改V3。完整F/G及H–R仍未完成。
 
 完整项目/文档公开、提交/push/CI及离线合成fixture已获授权，不重复询问。不读取用户模型Key，不调用商业API；合成fixture不授予商业Full。
 
@@ -18,9 +18,9 @@ F/G：Gemini其余Runtime参数转换已完成本地、唯一独立审查及精�
 
 ## 未完成与下一步顺序
 
-1. Gemini六方法与投影接线：沿Anthropic provider.rs已有模式建立执行端GoogleModel/Profile与GoogleProvider；复用编译器验证映射/能力/完整native route及预算，拒绝未知别名/错误dialect/streaming；接list_models/create_response/stream_response/capabilities/metadata/credential_requirements及NativeHistory/ToolMap JSON/SSE投影。取消/Drop/slot/headers/响应与投影字节限制保持实际客户端边界，不造第二HTTP栈；先RED→GREEN，再HTTP与Registry/Gateway。
-2. Runtime接线门控：完整v1/v2原native request绑定含maxOutputTokens/toolConfig/thinkingConfig/responseFormat/serviceTier/systemInstruction，参数改变会拒绝旧历史，不自动松绑；本地metadata可变不冒充native控制/认证。parallel_tool_calls=false且启用工具当前unsupported，固定Lite默认false须找到等价保证或保持拒绝，不能提示词冒充硬约束；后置system/developer、strict/defer_loading/tool_search/web_search仍unsupported，grammar仅指导。context headers当前全部非空拒绝在Key前；实际Runtime接入按显式本地归属映射逐项验证，不直接发OpenAI专有头给Google。
-3. Registry/Gateway后接固定实际Runtime，经典/Lite、审批/工具/取消/持久恢复分别离线验证；每阶段唯一审查/新精确源码三平台CI。目录/声明/合成fixture不授予LiveRuntime/Full；暂未接Google，不能用既有实际Runtime绿结果冒充新增Gemini成功。
+1. 固定Gemini Runtime接线：先检查runtime/bridge/tests/real_runtime.rs与fixtures/responses_server.py的Anthropic/Gateway既有模式；扩展合成原生Google fixture及执行端Gemini Profile，不造第二Runtime/HTTP栈。先实际RED确定请求字段与失败点，再做最小接线/正例。
+2. 运行门控：context headers当前全部非空在Key前拒绝；实际Runtime接入按执行端显式本地归属验证逐项允许，不能直接转发OpenAI专有头/捏造native cache或sticky routing。完整v1/v2原请求绑定含budget/toolConfig/thinkingConfig/responseFormat/serviceTier/systemInstruction，参数改变拒绝旧历史，不自动松绑。纯SSE comment不向下游转发；Gateway仅绝对deadline，native每个网络chunk重设idle，固定Runtime下游idle待实际验证。
+3. 已知unsupported：parallel_tool_calls=false且启用工具（固定Lite默认false）、发现/tool_search/web_search/strict/defer_loading/后置system；grammar仅指导。保持明确拒绝，不能删工具、提示词冒充硬约束或把true fixture当Lite真实通过。经典/Lite分别验证实际请求的支持范围、Key/POST前拒绝、审批/工具/取消/落盘重启；每阶段唯一审查与新精确源码三平台CI。其他Provider Runtime绿结果不证明Gemini成功，fixture/目录/profile不授予LiveRuntime/Full。
 4. Gemini → 兼容API/Ollama → V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验收。
 
 ## 重要架构决定
@@ -37,6 +37,7 @@ F/G：Gemini其余Runtime参数转换已完成本地、唯一独立审查及精�
 ## 问题 / 环境 / 暂缓项
 
 - Gemini工具映射审查无Critical/Important，1项覆盖Minor暂缓：完整有效v1/v2组的prefix-only互换尚无专项回归，现有显式版本核对正确，不能夸大覆盖。上轮history2项代码Minor暂缓：缺prompt的部分usage已知下界与total矛盾仍返回usage=null；只有thought函数调用的STOP可能令可见text phase为commentary。旧满槽取消/Drop直接专项覆盖、ProtoJSON替代整数表示等Minor详见Gemini文档；重复/部分usage更新专项已由新history回归补齐，不重复列为未补。
+- 本轮新增覆盖Minor：wrapper取消回归在text delta后队列已空，非空投影pending队列取消/Drop尚无专项；原生连接/slot释放与无terminal/history已验，不夸大立即丢弃已缓冲进度。
 - Anthropic cached网页/grammar硬约束仍无等价证据；重启第三轮回复精确比较、Lite落盘custom result完整比较两项覆盖Minor暂缓，详见Anthropic文档。
 - 未配置真实模型Key；商业推理/签名真实性/Full、生产Host权限、客户端UI/iOS/真机/签名未验。macOS Rust CI不是iOS应用构建。
 - .git普通沙箱只读，提交/push用require_escalated。gh为bboytang；旧helper缺workflow scope，发布用git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main，不改全局或输出凭据。
@@ -45,16 +46,15 @@ F/G：Gemini其余Runtime参数转换已完成本地、唯一独立审查及精�
 
 ## 文件与 Git 状态
 
-- branch main跟踪origin/main，已验源码05f6f9182c101c16fd67565b9c4fa7136c4c294e已公开提交/push，CI通过；收尾HANDOFF/Gemini/Model-Gateway三份文档随本记录独立提交并同步（当前HEAD见git log），无遗留未完成源码。收尾时用git status确认工作区干净，后续恢复以实际Git为准。
+- branch main跟踪origin/main，源码530ead5535b6bc6cd8896317b7360c7872a98571已提交/push及CI通过，无遗留未完成源码。收尾仅HANDOFF/Gemini/Model-Gateway三份文档；恢复时若仍有未提交文档，先完成文档收尾commit/push再按上面顺序继续；最终HEAD与同步/干净状态以Git核对。
 - 执行基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅背景，冲突以V3为准。详细历史证据留Runtime-能力对照及各Provider/Credentials/Model-Gateway验收文档。
-- 本轮日志：/tmp/caidex-google-parameters-{red,green,mappings-red,mappings-green,http,workspace,clippy}.log；唯一审查/tmp/caidex-google-parameters-review.md及review-package.md。20项排除裁定/成本及store:false文档更正见Gemini文档。跨机器以提交文档/GitHub为准。
-- 当前相关：model/providers/google/src/{runtime_parameters,structured,reasoning,media,request,history,tools,client,content,stream,transfer}.rs、tests/{runtime_parameters,structured,reasoning,media,request,http,history,tools}.rs；下一步参考Anthropic provider/projection/response_stream、model/core/provider.rs及registry、model/gateway，不复制传输栈。
+- 本轮日志/tmp/caidex-google-projection-{red,green}.log、/tmp/caidex-google-provider-{red,green,boundaries-red,boundaries-green,workspace,clippy,projection-final}.log；唯一审查/tmp/caidex-google-provider-review.md。CI status/watch/linux/windows/macos日志/tmp/caidex-ci-37696809902-*，逐名脚本/tmp/caidex-google-request-ci-check.py已递归识别http/provider.rs前缀。跨机器以提交文档/GitHub为准。
+- 首次边界编译因磁盘满失败，不是有效RED；仅清理本项目target/debug/incremental约6.3G后重跑复现。未删源码/用户文件、未改保护。当前本机codex-cli0.160.1可用；实际Gemini Runtime仍未跑。
+- 当前相关：model/providers/google/src/{provider,response_stream,runtime_parameters,structured,reasoning,media,request,history,tools,client,content,stream,transfer}.rs、tests/{http/provider.rs,response_stream,runtime_parameters,structured,reasoning,media,request,http,history,tools}.rs；下一步参考Anthropic provider/projection/response_stream、model/core/provider.rs及registry、model/gateway，不复制传输栈。
 - 代码边界：credentials/core、apps/cli、model/core/providers/gateway、runtime/bridge、upstream/codex、.github/workflows/ci.yml、scripts；assets/brand四份原件未改。
 
 ## 最近验证
 
-- 本地参数3有效RED0/3→GREEN3/3，新增映射/历史3在仅API声明/构造壳时有效RED3/6→GREEN6/6；Lite fixture纠正为固定Runtime developer前缀而非非法top-level instructions，core未改。参数6/request8/structured7通过。
-- 既有HTTP1扩大至budget/level、经典/Lite各三POST：JSON/SSE、tier/style、本地metadata变化、schema/推理/摘要/签名/媒体/工具及落盘保持；delivery与tier/style变更在新增Key读取前编译拒绝。HTTP无独立实现前RED。完整workspace300passed/0failed/32ignored、Google78个名字各通过一次、Clippy -D warnings/fmt/diff通过。
-- 唯一独立审查无代码Critical/Important；报告的store:false文档Minor由执行者重定级为Important隐私预期歧义，一次更正文档：不关闭本地历史，也不保证Google日志政策；源码未改、不增人类文档镜像测试、不复审。20项排除裁定/成本见Gemini文档；无新增暂缓Minor，旧Minor未改。
-- 精确源码05f6f9182c101c16fd67565b9c4fa7136c4c294e的[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)三平台completed/success，head及全部步骤核对。Google catalog4/content3/history6/HTTP23/request8/runtime_parameters6/media6/reasoning5/stream4/structured7/tools6共78个名字逐平台各通过一次；workspace Linux300/Windows295/macOS299，0失败，ignored32/30/30；既有真实Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。Rust macOS CI不是iOS应用验收。
-- /tmp/caidex-ci-37693355853-status.json及{-watch,-linux,-windows,-macos}.log，逐项核验沿/tmp/caidex-google-request-ci-check.py。所有回复/Key/字节合成，没有商业tier/SLA/价格/cache/verbosity质量/Full、新增实际Gemini Runtime接线或生成值/业务内容求值证据。
+- 本轮投影4及Provider3均有效RED→GREEN；响应头负例1有效RED→GREEN修复空ID接受，Gateway经典/Lite及wrapper取消/Drop/截断2为集成验收（无独立RED）。完整workspace310passed/0failed/32ignored，Google88名字各通过一次；Clippy -D warnings/fmt/diff通过，lint修正后投影4复验通过。
+- 唯一独立审查无Critical/Important，1覆盖Minor见上；10项排除裁定/成本在Gemini文档。不派复审，不调用商业API。源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台completed/success，精确head、三job、所有步骤均核对；watch终态0、三日志下载0。Google88名字逐平台各一次；workspace Linux310/Windows305/macOS309，0失败，ignored32/30/30；既有实际Runtime Linux30/其他29，0失败/ignored；fmt/Clippy/native credentials/schema/doctor通过。Rust macOS不是iOS应用验收，新Google Runtime没有证据。
+- 前轮参数源码05f6f9182c101c16fd67565b9c4fa7136c4c294e/[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)三平台通过：Google78，workspace Linux300/Windows295/macOS299，既有Runtime Linux30/其他29。具体逐项证据及更早阶段见各Provider文档；这些不是新增Gemini Runtime/商业Full或iOS证据。
