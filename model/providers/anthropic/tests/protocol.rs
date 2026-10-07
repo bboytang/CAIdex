@@ -320,15 +320,13 @@ fn fallback_stream_records_serving_model_and_attempt_usage_at_every_byte_boundar
             let native = parser.completed_message().unwrap();
             assert!(native.wire()["usage"].get("input_tokens").is_none());
             assert_eq!(native.wire()["usage"]["future"], "retain");
-            assert_eq!(
+            assert!(
                 native
                     .to_responses(128 * 1024)
                     .unwrap()
                     .usage()
                     .unwrap()
-                    .unwrap()
-                    .input_tokens,
-                None
+                    .is_none()
             );
             // Once serving-model usage is established, its counters remain monotonic.
             values.insert(delta + 1, json!({"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}));

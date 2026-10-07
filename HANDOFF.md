@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前：Anthropic v3 组织/compiled 前缀历史绑定已三平台验收：源码 305cf34aa5045d4de9c6877d6fade3805753e802，[CI 37637494900](https://github.com/bboytang/CAIdex/actions/runs/37637494900) completed/success，新增 6 项逐平台日志通过（HTTP 44）；本地 workspace/Clippy/fmt/diff 和经典/Lite 旧载体实际 Runtime 两项通过。独立审查工具声明/native 快照一致性问题已以 RED→GREEN 修复。下一恢复点：接 Anthropic Provider 到 Gateway/固定 Runtime，验经典/Lite 多轮、工具与 interrupt；尚未实现该完整链路。
+- 当前：Anthropic v3 组织/compiled 前缀已三平台验收（305cf34，CI 37637494900）。本轮修复实际 Lite 缺口：执行端显式 verbosity 提示映射（默认仍拒绝），指导进入 v3 前缀；缺失原生计数时 Responses usage=null，raw usage 保留，避免固定 Runtime null-counter 断流。生产改动/Provider 回归本地 workspace/Clippy/fmt/diff 通过，独立审查无重要问题并复跑 Provider 测试通过，准备提交/CI。真实 Lite 两轮+落盘 v3、Code Mode 审批执行/原生结果回放、interrupt socket 三项本地通过；Runtime fixture 接线未提交。经典单独仍 RED invalid_anthropic_tools（builtin tool_search/web_search），没有删除工具或改未知模型绕过；完整 F/G 未验收。
 - Fallback 身份/回放已三平台验收：源码 1f5e022，CI 37621255255 completed/success，新增 6 项逐平台日志通过。原生 SSE 更新实际 serving model、校验交接链和无 delta，换模型后已知 token 计数重新归属，iterations/raw wire 保留；echo 按末次交接过滤，投影只执行最终模型客户端调用。固定 Provider 对未配置实际模型报错并关闭，无 done/重试。
 - Anthropic input_transformations、上下文头、六方法/SSE、请求参数、summary/context、strict:true 结构化输出已三平台验收；源码/CI/范围见测试结果及 Anthropic 设计文档。上轮 Lite-only/Lite-first 初始化错误已修正，恢复不再重做；v3 当前绑定范围已验，Gateway/实际 Runtime 工具执行仍待验。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体及 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
@@ -32,10 +32,11 @@
 
 ## 下一步顺序
 
-1. 接 Anthropic Provider 到 Gateway/固定 Runtime，经典/Lite 分别验多轮、工具、interrupt。先复用 `runtime/bridge/tests/real_runtime.rs` Harness 的 start_with_provider 分支，新增显式 Anthropic 模式；现有 Python fixture 只处理 Responses，须补实际认证组织 GET/原生 Messages SSE（可复用现有脚本）。执行端 profile 明确 Runtime metadata/tier/reasoning/context 能力，不按模型名猜。认证 org 与 compiled 快照沿已验 v3，不重做已验模块；真实 fixture 仍用合成 Key，无商业调用。
-2. 验证完整 canonical→Gateway→原生请求→JSON/SSE 载体→真实 Runtime 回放及工具结果，确认 v3/raw signature/未知块、实际工具执行、上下文变化门控与取消/socket；必要 Runtime 修改仅按真实失败最小修复。HTTP fixture 通过不等于完整 Adapter/商业模型支持，custom grammar 仅提示，未建立硬约束等价，不能猜 Full。
-3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性。
-4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
+1. 完成当前 verbosity/partial-usage 生产补丁审查与三平台 CI；Runtime fixture 未完成部分单独保留，不发布已知失败测试。生产提示映射是显式软指导，不宣称原生参数等价；切换指导触发已有 v3 prefix_mismatch。
+2. 接着落实经典 builtin client tool_search / provider web_search 的真实契约与能力门控。固定请求含 tool_search execution=client（专用 call/output、动态工具发现）和 web_search external_web_access=false / text+image；不能当普通 function、静默删工具或把离线缓存语义换成实时联网。官方 client search 文档与固定 handler已读取，原生 deferred/inline tool 例外仍待实现；ToolMap 当前仍仅 function/custom/namespace。诊断 wire 在 /var/tmp/caidex-anthropic-gateway-{classic,lite}-wire.json（合成）。恢复失败：TMPDIR=/var/tmp cargo test -p caidex-runtime --test real_runtime real_classic_runtime_via_native_anthropic_adapter --locked -- --ignored。
+3. 将已本地通过的 Lite Gateway fixture 与经典完整接线一并验收：经典/Lite 多轮、实际工具/结果、interrupt、持久化 signed history；本轮 Lite3已通过，不重做已验 v3 模块。现有 Python fixture 已支持认证组织 GET/native SSE/Code Mode/阻塞 socket；无商业调用。完整实际 Runtime 命令当前须 --skip real_classic_runtime_via_native_anthropic_adapter，28通过不等于全通过。经典成功后再完整三平台检查并提交接线。
+4. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性。
+5. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
 
 ## 重要架构决定
 
@@ -68,7 +69,7 @@
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `model/providers/anthropic/src/client.rs`、`model/providers/anthropic/tests/http/organization.rs`、`docs/CAIdex-Anthropic-Provider-设计与验收.md`：已验组织来源/guard；`binding.rs`、`request.rs`、`provider.rs`、`projection.rs`、`response_stream.rs` 与 `tests/http/binding.rs` 为已验 v3 实现/回归；`runtime/bridge/tests/real_runtime.rs` 和 `tests/fixtures/responses_server.py` 是下一步实际 Adapter 恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；源码 305cf34aa5045d4de9c6877d6fade3805753e802 及 CI checkpoint 33fc089 已提交/push，本次为最终验收文档。没有未完成源码修改；验收记录提交/push 后核对工作区干净。未改依赖、Runtime 生产代码或品牌。
+- branch `main` 跟踪 `origin/main`，HEAD 1f092b7。未提交：model/providers/anthropic 下 verbosity 与 partial usage 生产/回归，设计文档、HANDOFF，以及 runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的 Anthropic 接线。生产 Runtime、依赖和品牌未改。Lite3本地通过，经典 builtin 用例仍失败，不能丢弃未完成 fixture；尚未发布本轮代码。
 
 ## 测试结果
 
@@ -99,3 +100,8 @@
 - 组织身份来源/发送前校验：新增 HTTP 4 项（累计 38）及原配置负例通过，含 Key 同一引用更换、同一次 GET/POST 只读一次 Key、缺省/重复/非 ASCII/超长/不匹配组织头、JSON/SSE 无交付、Models 两页预检、公开只读 lookup、取消/socket/slot、header/total deadline、字节预算和原生 HTTP 分类无重试。本地 workspace/Clippy/fmt/diff 通过，最后增强 Models 用例后定向测试/Clippy/fmt/diff 复验通过；日志 /tmp/caidex-anthropic-organization-workspace.log。源码 SHA 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d、[CI 37632569624](https://github.com/bboytang/CAIdex/actions/runs/37632569624) 三平台 completed/success，新增 4 项逐平台日志通过；workspace/fmt/Clippy/native keyring/schema/doctor 与既有真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-ci-37632569624.log。未调用商业 API；历史载体组织/前缀绑定未完成。
 
 - v3 历史绑定：HTTP 新增 6 项（累计 44）、完整 workspace/Clippy/fmt/diff 最终通过；只读审查发现旧工具声明可与 native 快照不一致，已在共享读取路径修复，用例已观测 RED→GREEN，修复后完整回归通过。源码 305cf34aa5045d4de9c6877d6fade3805753e802，[CI 37637494900](https://github.com/bboytang/CAIdex/actions/runs/37637494900) 三平台 completed/success；新增 6 项逐平台日志、HTTP 44 与真实 Runtime Linux 25/Windows/macOS 24 均核对通过。CI workspace/fmt/Clippy/native credentials/schema/doctor 全过。本机补验经典/Lite 旧载体两项 Runtime 通过。日志 /tmp/caidex-anthropic-bound-workspace.log、/tmp/caidex-bound-runtime-regression.log、/tmp/caidex-ci-37637494900.log。首次 JSON v3 用例已观测旧实现 RED（原载体 v2），新实现 GREEN。验证范围含 JSON/SSE、模式参数/追加指令、工具集/旧结果、旧历史裁剪、恢复、chain gap/reinsert、legacy/降级、未知块/大整数和快照预算无 done；所有 Key/账户/回复为合成 fixture。真实 Gateway/Anthropic Runtime 工具执行留下一步。
+
+- Gateway/真实 Anthropic Runtime 当前未验：新增经典/Lite 两轮用例先观测未接线的组织计数 RED，真实接线后 Classic invalid_anthropic_tools / Lite unsupported_anthropic_output_format RED。独立 Custom Gateway 捕获实际 canonical 合成请求：Classic builtin tool_search（execution=client、带 parameters 无 name）及 web_search（external_web_access=false、search_content_types=[text,image]）；Classic/Lite text.verbosity=low，reasoning 分别 medium 与 low/all_turns。尚未改生产映射或缩减 Runtime 能力，未执行本阶段完整回归/Clippy/CI；之前 305cf34 三平台通过证据仍有效。原生 fixture stall 分支/工具执行仍待实现。
+
+
+- 本轮本地：/tmp/caidex-anthropic-lite-workspace.log 完整 workspace exit0；/tmp/caidex-anthropic-lite-clippy.log exit0；fmt/diff/Python AST 通过。结构化6/HTTP45/投影9/协议15通过；/tmp/caidex-anthropic-lite-runtime.log 实际 Runtime28通过，仅排除已知 classic；/tmp/caidex-anthropic-classic-pending.log 单独证实经典 RED。Lite新增3通过含真实执行和落盘，不是商业推理验收；本轮三平台未执行。

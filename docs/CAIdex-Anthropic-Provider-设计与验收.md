@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。Gateway、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；Gateway 的真实 Lite 接线正在本地验收，经典 builtin 工具和完整 Runtime 互操作尚未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -100,7 +100,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 执行端 `RequestOptions.supports_structured_outputs` 显式启用后，将 Responses `text.format` 的 `json_schema` / `strict:true` 转为 `output_config.format`。name 是原始格式身份，保留于 source；schema 原样发送，包括引用、注释、未知关键词和任意精度数值，不执行 SDK 的约束删减。先应用 reasoning，再添加 format，保留同一 output_config 中的 effort。旧构造入口默认关闭此能力。
 
-本次支持空/普通 text 配置。strict:false、strict 缺省/null、json_object、非空 wrapper description、非空 verbosity 和未知配置字段明确报不支持，仍需后续语义映射。执行端开关及 HTTP fixture 只证明请求转换，不证明模型实际支持，也不证明输出符合任意 schema；原生拒绝/max_tokens 仍按已有 outcome 区分。schema 全量透传可能由原生 API 拒绝，不能把透传误标成全约束验收。
+本次支持空/普通 text 配置。strict:false、strict 缺省/null、json_object、非空 wrapper description、未配置映射的 verbosity 和未知配置字段明确报不支持。verbosity 的执行端提示映射见末节。执行端开关及 HTTP fixture 只证明请求转换，不证明模型实际支持，也不证明输出符合任意 schema；原生拒绝/max_tokens 仍按已有 outcome 区分。schema 全量透传可能由原生 API 拒绝，不能把透传误标成全约束验收。
 
 新增 4 项结构化转换回归，覆盖经典/Lite、effort/thinking 合并、source/schema 精确保留、能力门控、不支持语义、坏输入、数值精度及最终 body 字节上限；既有真实 HTTP 两轮 fixture 同时核验 format 和 effort。完整 workspace/Clippy/fmt/diff 通过；[CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)（源码 9796682）三平台全部 success，新增 4 项逐平台通过。
 
@@ -232,3 +232,16 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 新增 6 项离线回归：真实 JSON/SSE 两轮、前置零额外 Key 读取拒绝、legacy/版本降级、工具重排/改动、追加模式与重建 Provider、思考链 trim/gap/reinsert、未知块/大整数及前缀外模式参数、快照预算无 done/新历史。定向 6 项、完整 workspace/Clippy/fmt/diff 最终复验通过；独立审查发现原声明与 native 工具快照可不一致，已补共享回放校验并以用例 RED→GREEN 验证，最终完整回归通过。源码 305cf34aa5045d4de9c6877d6fade3805753e802 的 [CI 37637494900](https://github.com/bboytang/CAIdex/actions/runs/37637494900) 三平台 completed/success，新增 6 项逐平台日志通过（HTTP 44），workspace/fmt/Clippy/native credentials/schema/doctor 和既有真实 Runtime Linux 25/Windows/macOS 24 通过。本机经典/Lite 旧载体 Runtime 两项也通过。日志 /tmp/caidex-anthropic-bound-workspace.log、/tmp/caidex-ci-37637494900.log。未调用商业 API，Gateway/固定 Runtime Anthropic 工具执行留在下一步。
 
 依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)，实际组织来源及传输边界沿上一节已验实现。
+
+
+## Verbosity 提示映射与不完整 usage
+
+`VerbosityMapping` 由执行端配置 Responses low/medium/high 到明确的系统提示；默认无映射，请求不能提供原生提示或开关。映射仅是回答风格指导，不是 Anthropic 原生 verbosity 参数、硬性长度约束或跨提供商效果等价。空指导、未知级别、重复映射均拒绝；缺省/null 不添加提示。既有 instructions 保留在前，映射追加为单独 text block，不改 effort/thinking/schema。完整 source 与最终 native 字节预算继续保留和校验。
+
+实际发送的指导进入既有 v3 compiled system 快照；回放时改变/移除 verbosity 或修改配置中的指导均在 Broker/网络之前报 prefix_mismatch，不能悄悄丢掉签名。是否在轮次边界通过其他承接方式更改风格仍属后续历史策略，当前不会绕过前缀门控。
+
+真实固定 Runtime 不接受 usage 对象内的 null token 计数。原生输入三计数或 output 不完整时，Responses usage 返回 null；完整时仍按缓存读/写加非缓存输入归一化。原始计数/未来字段始终在顶层 `caidex_native_usage` 和原生历史载体保存，完整 usage 内既有原生视图也保留。缺失不能补造零值，此路径 Runtime 不产生完整计数，费用展示须明确未知。
+
+本地验证：结构化 6、HTTP 45、投影 9、协议 15 项通过；完整 workspace/Clippy/fmt/diff 通过。新增提示映射缺失的 RED、usage null-counter 断流的真实 RED 均已复现并修复。真实 Lite 3 项通过：两轮与落盘 v3 签名/大整数、Code Mode 命令审批后实际临时 marker/原生工具结果回放、interrupt 关闭实际上游 socket。完整实际 Runtime 回归排除尚未实现的经典 builtin 用例后 28 项通过；经典单独仍因 invalid_anthropic_tools 失败。Runtime fixture 接线尚未提交，以上是本地证据，未验三平台或商业模型；不授予 Full。
+
+依据：[OpenAI text.verbosity](https://developers.openai.com/api/docs/guides/deployment-checklist#set-up-textverbosity)、[Anthropic response length guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5#response-length-and-verbosity)。该原生指导说明 effort 与可见回复长度不同；CAIdex 不把 verbosity 偷换为 effort。

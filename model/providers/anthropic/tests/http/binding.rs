@@ -744,3 +744,113 @@ async fn provider_bound_json_records_actual_compiled_prefix_and_replays_without_
         task.await.unwrap();
     }
 }
+
+#[tokio::test]
+async fn verbosity_style_is_bound_to_actual_native_prefix_before_credential_reads() {
+    use caidex_provider_anthropic::VerbosityMapping;
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let mut replies = native_replies(vec![reply(), reply()]);
+        replies[3].1 = signed_stream();
+        replies[3].2 = "text/event-stream".into();
+        let (base, mut requests, _, task) = fixture_with_responses(replies, false).await;
+        let (client, reads) = scoped_client(&base, Limits::default());
+        let mut profile = super::provider::profile();
+        profile.verbosity_mappings = vec![
+            VerbosityMapping::new("low".into(), "Keep answers concise.".into()).unwrap(),
+            VerbosityMapping::new("high".into(), "Explain with necessary detail.".into()).unwrap(),
+        ];
+        let provider = AnthropicProvider::new(client, vec![profile], 10).unwrap();
+        let mut wire = canonical(dialect, &[], false).wire().clone();
+        wire["text"] = json!({"verbosity":"low"});
+        let first = provider
+            .create_response(
+                CanonicalRequest::new(wire, dialect).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap()
+            .response;
+        let expected_system = json!([
+            {"type":"text","text":"fixed instructions"},
+            {"type":"text","text":"Keep answers concise."}
+        ]);
+        assert_eq!(
+            envelope(first.output())["binding"]["prefix"]["system"],
+            expected_system
+        );
+        let mut resumed = canonical(dialect, first.output(), true).wire().clone();
+        resumed["text"] = json!({"verbosity":"low"});
+        let mut stream = provider
+            .stream_response(
+                CanonicalRequest::new(resumed.clone(), dialect).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap()
+            .events;
+        let mut completed = false;
+        while let Some(event) = tokio::time::timeout(Duration::from_secs(5), stream.next())
+            .await
+            .unwrap()
+        {
+            if let caidex_model_core::ProviderStreamEvent::Model(event) = event.unwrap()
+                && event.response.kind() == "response.completed"
+            {
+                completed = true;
+            }
+        }
+        assert!(completed);
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+        for level in ["high", "low"] {
+            for streaming in [false, true] {
+                let mut changed = resumed.clone();
+                changed["stream"] = streaming.into();
+                if level == "high" {
+                    changed["text"]["verbosity"] = level.into();
+                } else {
+                    changed.as_object_mut().unwrap().remove("text");
+                }
+                let request = CanonicalRequest::new(changed, dialect).unwrap();
+                let error = if streaming {
+                    provider
+                        .stream_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                } else {
+                    provider
+                        .create_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                };
+                assert_eq!(error.code, "anthropic_replay_prefix_mismatch");
+                assert_eq!(reads.load(Ordering::SeqCst), 2);
+            }
+        }
+        // Updating execution-side guidance must also fail old signed-prefix replay.
+        let (client, updated_reads) = scoped_client(&base, Limits::default());
+        let mut profile = super::provider::profile();
+        profile.verbosity_mappings =
+            vec![VerbosityMapping::new("low".into(), "Changed style instruction.".into()).unwrap()];
+        let provider = AnthropicProvider::new(client, vec![profile], 10).unwrap();
+        let error = provider
+            .stream_response(
+                CanonicalRequest::new(resumed, dialect).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "anthropic_replay_prefix_mismatch");
+        assert_eq!(updated_reads.load(Ordering::SeqCst), 0);
+        for _ in 0..2 {
+            received(&mut requests).await;
+            let (_, body) = received(&mut requests).await;
+            let body: Value = serde_json::from_slice(&body).unwrap();
+            assert_eq!(body["system"], expected_system);
+            assert!(body.get("text").is_none());
+        }
+        task.await.unwrap();
+    }
+}

@@ -25,6 +25,7 @@ pub use request::{MessagesRequest, RequestOptions};
 pub use response_stream::{ProjectedStreamingResponse, ResponsesProjection};
 pub use runtime_parameters::ServiceTierMapping;
 pub use stream::{MessageEvent, MessageStream, NativeStreamState};
+pub use structured::VerbosityMapping;
 pub use tools::ToolMap;
 pub use transfer::{NativeStreamEvent, NativeStreamingResponse};
 

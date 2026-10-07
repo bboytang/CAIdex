@@ -135,3 +135,111 @@ fn schema_precision_and_final_native_byte_limit_are_preserved() {
             .is_err()
     );
 }
+
+#[test]
+fn verbosity_uses_explicit_style_mapping_and_preserves_native_controls() {
+    use caidex_provider_anthropic::VerbosityMapping;
+    let mappings: Vec<_> = ["low", "medium", "high"]
+        .into_iter()
+        .map(|level| {
+            VerbosityMapping::new(level.into(), format!("Style instruction for {level}.")).unwrap()
+        })
+        .collect();
+    let reasoning = [ReasoningMapping::new(
+        "high".into(),
+        Some("medium".into()),
+        Some(json!({"type":"adaptive"})),
+    )
+    .unwrap()];
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for level in ["low", "medium", "high"] {
+            let mut text = format();
+            text["verbosity"] = level.into();
+            let mut source = json!({"model":"alias","instructions":"Existing system instruction.","input":[{"role":"user","content":"question"}],"reasoning":{"effort":"high"},"text":text});
+            if dialect == ResponsesDialect::Lite {
+                source.as_object_mut().unwrap().remove("instructions");
+                source["input"].as_array_mut().unwrap().insert(
+                    0,
+                    json!({"role":"developer","content":"Existing system instruction."}),
+                );
+            }
+            let request = CanonicalRequest::new(source.clone(), dialect).unwrap();
+            let compiled = MessagesRequest::from_responses_with_options(
+                &request,
+                "native",
+                4096,
+                128 * 1024,
+                10,
+                &RequestOptions {
+                    verbosity_mappings: &mappings,
+                    supports_structured_outputs: true,
+                    reasoning_mappings: &reasoning,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert_eq!(compiled.source(), &source);
+            assert_eq!(
+                compiled.wire()["system"],
+                json!([
+                    {"type":"text","text":"Existing system instruction."},
+                    {"type":"text","text":format!("Style instruction for {level}.")}
+                ])
+            );
+            assert_eq!(compiled.wire()["output_config"]["effort"], "medium");
+            assert_eq!(
+                compiled.wire()["output_config"]["format"]["schema"],
+                source["text"]["format"]["schema"]
+            );
+            assert!(compiled.wire().get("text").is_none());
+            assert_eq!(compiled.wire()["thinking"], json!({"type":"adaptive"}));
+        }
+    }
+}
+
+#[test]
+fn verbosity_policy_is_validated_even_without_a_requested_level() {
+    use caidex_provider_anthropic::VerbosityMapping;
+    for (level, instruction) in [("unknown", "style"), ("low", ""), ("medium", "  ")] {
+        assert!(VerbosityMapping::new(level.into(), instruction.into()).is_err());
+    }
+    let mappings = [VerbosityMapping::new("low".into(), "Brief answers.".into()).unwrap()];
+    let duplicate = [
+        VerbosityMapping::new("low".into(), "A".into()).unwrap(),
+        VerbosityMapping::new("low".into(), "B".into()).unwrap(),
+    ];
+    let compile = |text: Value, mappings: &[VerbosityMapping], limit| {
+        let request = CanonicalRequest::new(
+            json!({"model":"alias","input":"question","text":text}),
+            ResponsesDialect::Classic,
+        )
+        .unwrap();
+        MessagesRequest::from_responses_with_options(
+            &request,
+            "native",
+            4096,
+            limit,
+            10,
+            &RequestOptions {
+                verbosity_mappings: mappings,
+                ..Default::default()
+            },
+        )
+    };
+    assert!(compile(Value::Null, &duplicate, 128 * 1024).is_err());
+    for level in [json!("high"), json!("unknown"), json!(1), json!({})] {
+        assert!(compile(json!({"verbosity":level}), &mappings, 128 * 1024).is_err());
+    }
+    for text in [Value::Null, json!({}), json!({"verbosity":null})] {
+        assert!(
+            compile(text, &mappings, 128 * 1024)
+                .unwrap()
+                .wire()
+                .get("system")
+                .is_none()
+        );
+    }
+    assert!(compile(json!({"verbosity":"low"}), &[], 128 * 1024).is_err());
+    let huge = [VerbosityMapping::new("low".into(), "x".repeat(1024)).unwrap()];
+    assert!(compile(json!({"verbosity":"low"}), &huge, 512).is_err());
+}

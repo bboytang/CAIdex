@@ -77,7 +77,7 @@ impl NativeMessage {
             MessageOutcome::Unknown => ("incomplete", Some("unknown_provider_stop_reason")),
         };
         let mut wire = json!({"id":self.id(),"object":"response","model":self.model(),"status":status,
-            "output":output,"usage":self.normalized_usage()?,"caidex_native_stop_reason":self.wire()["stop_reason"],
+            "output":output,"usage":self.normalized_usage()?,"caidex_native_usage":self.wire()["usage"],"caidex_native_stop_reason":self.wire()["stop_reason"],
             "caidex_native_outcome":format!("{:?}",self.outcome())});
         if let Some(reason) = reason {
             wire["incomplete_details"] = json!({"reason":reason});
@@ -243,6 +243,12 @@ impl NativeMessage {
             (Some(a), Some(b)) => Some(checked(a, b)?),
             _ => None,
         };
+        // Fixed Runtime accepts either complete numeric usage or no usage;
+        // null counters inside an object fail its ResponseCompleted parser.
+        // Partial native counters remain in the carrier and native usage view.
+        if total.is_none() {
+            return Ok(Value::Null);
+        }
         Ok(
             json!({"input_tokens":input,"output_tokens":output,"total_tokens":total,
             "input_tokens_details":{"cached_tokens":count("cache_read_input_tokens")},

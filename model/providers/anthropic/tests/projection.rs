@@ -197,13 +197,16 @@ fn cached_input_is_counted_once_and_native_usage_remains_exact() {
     ] {
         let mut wire = message("end_turn");
         wire["usage"].as_object_mut().unwrap().remove(key);
-        let response = NativeMessage::parse(wire)
+        let response = NativeMessage::parse(wire.clone())
             .unwrap()
             .to_responses(LIMIT)
             .unwrap();
-        let usage = response.usage().unwrap().unwrap();
-        assert_eq!(usage.input_tokens, None);
-        assert_eq!(usage.total_tokens, None);
+        assert!(response.usage().unwrap().is_none());
+        assert_eq!(response.wire()["caidex_native_usage"], wire["usage"]);
+        let restored =
+            NativeMessage::from_responses_output(response.output(), "native-fixture", LIMIT)
+                .unwrap();
+        assert_eq!(restored.wire()["usage"], wire["usage"]);
     }
     let mut wire = message("end_turn");
     wire["usage"]["input_tokens"] = u64::MAX.into();

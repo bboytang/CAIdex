@@ -1,5 +1,25 @@
 use caidex_model_core::{ProviderError, ProviderResult};
 use serde_json::{Value, json};
+use std::collections::BTreeSet;
+
+/// Executor-owned style guidance. This is a prompt mapping, not a native
+/// verbosity parameter or a guarantee of equivalent model output.
+#[derive(Debug)]
+pub struct VerbosityMapping {
+    source: String,
+    instruction: String,
+}
+impl VerbosityMapping {
+    pub fn new(source: String, instruction: String) -> ProviderResult<Self> {
+        if !matches!(source.as_str(), "low" | "medium" | "high") || instruction.trim().is_empty() {
+            return Err(invalid());
+        }
+        Ok(Self {
+            source,
+            instruction,
+        })
+    }
+}
 
 fn invalid() -> ProviderError {
     ProviderError::new(400, "invalid_anthropic_output_format")
@@ -7,16 +27,46 @@ fn invalid() -> ProviderError {
 fn unsupported() -> ProviderError {
     ProviderError::new(400, "unsupported_anthropic_output_format")
 }
-pub(crate) fn apply(wire: &mut Value, source: &Value, supported: bool) -> ProviderResult<()> {
+pub(crate) fn apply(
+    wire: &mut Value,
+    source: &Value,
+    options: &crate::RequestOptions<'_>,
+) -> ProviderResult<()> {
+    let mut levels = BTreeSet::new();
+    if options
+        .verbosity_mappings
+        .iter()
+        .any(|mapping| !levels.insert(mapping.source.as_str()))
+    {
+        return Err(invalid());
+    }
     let Some(text) = source.get("text").filter(|value| !value.is_null()) else {
         return Ok(());
     };
     let text = text.as_object().ok_or_else(invalid)?;
     if text
         .iter()
-        .any(|(key, value)| key != "format" && !(key == "verbosity" && value.is_null()))
+        .any(|(key, _)| !matches!(key.as_str(), "format" | "verbosity"))
     {
         return Err(unsupported());
+    }
+    if let Some(level) = text.get("verbosity").filter(|value| !value.is_null()) {
+        let level = level.as_str().ok_or_else(invalid)?;
+        if !matches!(level, "low" | "medium" | "high") {
+            return Err(invalid());
+        }
+        let mapping = options
+            .verbosity_mappings
+            .iter()
+            .find(|mapping| mapping.source == level)
+            .ok_or_else(unsupported)?;
+        if wire.get("system").is_none() {
+            wire["system"] = json!([]);
+        }
+        wire["system"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"type":"text","text":mapping.instruction}));
     }
     let Some(format) = text.get("format").filter(|value| !value.is_null()) else {
         return Ok(());
@@ -29,7 +79,7 @@ pub(crate) fn apply(wire: &mut Value, source: &Value, supported: bool) -> Provid
             Err(unsupported())
         };
     }
-    if format["type"] != "json_schema" || !supported {
+    if format["type"] != "json_schema" || !options.supports_structured_outputs {
         return Err(unsupported());
     }
     if object.keys().any(|key| {
