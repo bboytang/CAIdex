@@ -58,7 +58,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 基础请求转换源码 `d774ff5` 的 [CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092) 三平台全部 success：各平台请求 8/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过。真实 Runtime 既有 Linux 25、Windows/macOS 24 项通过。新增 HTTP 两轮验证编译结果通过原生传输回放签名和 custom 结果，不代表完整 Gateway 或 Runtime Anthropic 工具执行已验收。
 
-中途指令新增执行端显式开关及原生位置门控：连续 system 内容保持顺序；前面必须是 user（包括完整工具结果）或以已识别 server result 结尾的 native assistant，后面必须是 assistant 或请求结束。不会在客户端工具调用与未完成结果之间插入指令，不把图片或工具输出提升为系统指令。clear_at/per-message output_config 仍明确拒绝，相关 beta 语义待专门映射。开关只是配置契约，不代表发现或实际模型验收。新增 4 项请求测试及 HTTP 经典/Lite 两轮位置检查本机通过，三平台结果待验收。
+中途指令新增执行端显式开关及原生位置门控：连续 system 内容保持顺序；前面必须是 user（包括完整工具结果）或以已识别 server result 结尾的 native assistant，后面必须是 assistant 或请求结束。不会在客户端工具调用与未完成结果之间插入指令，不把图片或工具输出提升为系统指令。clear_at/per-message output_config 仍明确拒绝，相关 beta 语义待专门映射。开关只是配置契约，不代表发现或实际模型验收。新增 4 项请求测试及 HTTP 经典/Lite 两轮位置检查本机通过，[CI 37581359918](https://github.com/bboytang/CAIdex/actions/runs/37581359918)（源码 2ccbe38）三平台全部 success：各平台请求 12/HTTP 14/协议 12/投影 7/工具 7、workspace/fmt/Clippy/native keyring/schema/doctor 通过；既有真实 Runtime Linux 25、Windows/macOS 24 项通过。尚未验证完整 Anthropic Runtime 工具执行或商业 API。
 
 ## 后续顺序
 
