@@ -61,6 +61,10 @@ impl SseDecoder {
     pub(crate) fn is_closed(&self) -> bool {
         self.closed
     }
+    /// A protocol requiring a complete tail can check before finish discards it.
+    pub fn has_pending_frame(&self) -> bool {
+        !self.line.is_empty() || !self.data.is_empty() || !self.event.is_empty()
+    }
     fn push_inner(&mut self, bytes: &[u8]) -> Result<Vec<SseEvent>> {
         let mut events = Vec::new();
         for &byte in bytes {

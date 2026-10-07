@@ -19,64 +19,7 @@ pub enum CandidateOutcome {
 pub struct NativeResponse(Value);
 impl NativeResponse {
     pub fn parse(wire: Value) -> ProviderResult<Self> {
-        let invalid = || ProviderError::new(502, "google_invalid_response");
-        if !wire.is_object() || wire.get("error").is_some() {
-            return Err(invalid());
-        }
-        for field in ["responseId", "modelVersion"] {
-            if present(&wire, field).is_some_and(|v| nonempty(v).is_none()) {
-                return Err(invalid());
-            }
-        }
-        if let Some(usage) = present(&wire, "usageMetadata")
-            && (!usage.is_object()
-                || [
-                    "promptTokenCount",
-                    "cachedContentTokenCount",
-                    "candidatesTokenCount",
-                    "toolUsePromptTokenCount",
-                    "thoughtsTokenCount",
-                    "totalTokenCount",
-                ]
-                .iter()
-                .any(|key| present(usage, key).is_some_and(|v| v.as_u64().is_none())))
-        {
-            return Err(invalid());
-        }
-        let feedback = present(&wire, "promptFeedback");
-        if feedback.is_some_and(|v| {
-            !v.is_object() || present(v, "blockReason").is_some_and(|v| nonempty(v).is_none())
-        }) {
-            return Err(invalid());
-        }
-        let blocked = feedback
-            .and_then(|v| nonempty(&v["blockReason"]))
-            .filter(|v| *v != "BLOCK_REASON_UNSPECIFIED");
-        let candidates = match present(&wire, "candidates") {
-            None => &[][..],
-            Some(Value::Array(values)) => values.as_slice(),
-            _ => return Err(invalid()),
-        };
-        if candidates.is_empty() != blocked.is_some() {
-            return Err(invalid());
-        }
-        let mut indices = HashSet::new();
-        for candidate in candidates {
-            let reason = nonempty(&candidate["finishReason"]).ok_or_else(invalid)?;
-            if !candidate.is_object() || reason == "FINISH_REASON_UNSPECIFIED" {
-                return Err(invalid());
-            }
-            let index = match present(candidate, "index") {
-                None => 0,
-                Some(value) => value.as_u64().ok_or_else(invalid)?,
-            };
-            if !indices.insert(index) {
-                return Err(invalid());
-            }
-            if let Some(content) = present(candidate, "content") {
-                validate_content(content, true).map_err(|_| invalid())?;
-            }
-        }
+        validate_response(&wire, true)?;
         Ok(Self(wire))
     }
     pub fn wire(&self) -> &Value {
@@ -123,15 +66,87 @@ impl NativeResponse {
         })
     }
 }
+pub(crate) fn validate_response(wire: &Value, complete: bool) -> ProviderResult<()> {
+    let invalid = || ProviderError::new(502, "google_invalid_response");
+    if !wire.is_object() || wire.get("error").is_some() {
+        return Err(invalid());
+    }
+    for field in ["responseId", "modelVersion"] {
+        if present(wire, field).is_some_and(|v| nonempty(v).is_none()) {
+            return Err(invalid());
+        }
+    }
+    if let Some(usage) = present(wire, "usageMetadata")
+        && (!usage.is_object()
+            || [
+                "promptTokenCount",
+                "cachedContentTokenCount",
+                "candidatesTokenCount",
+                "toolUsePromptTokenCount",
+                "thoughtsTokenCount",
+                "totalTokenCount",
+            ]
+            .iter()
+            .any(|key| present(usage, key).is_some_and(|v| v.as_u64().is_none())))
+    {
+        return Err(invalid());
+    }
+    let feedback = present(wire, "promptFeedback");
+    if feedback.is_some_and(|v| {
+        !v.is_object() || present(v, "blockReason").is_some_and(|v| nonempty(v).is_none())
+    }) {
+        return Err(invalid());
+    }
+    let blocked = feedback
+        .and_then(|v| nonempty(&v["blockReason"]))
+        .filter(|v| *v != "BLOCK_REASON_UNSPECIFIED");
+    let candidates = match present(wire, "candidates") {
+        None => &[][..],
+        Some(Value::Array(values)) => values.as_slice(),
+        _ => return Err(invalid()),
+    };
+    if (complete && candidates.is_empty() != blocked.is_some())
+        || (blocked.is_some() && !candidates.is_empty())
+    {
+        return Err(invalid());
+    }
+    let mut indices = HashSet::new();
+    for candidate in candidates {
+        if !candidate.is_object() {
+            return Err(invalid());
+        }
+        if complete {
+            let reason = nonempty(&candidate["finishReason"]).ok_or_else(invalid)?;
+            if reason == "FINISH_REASON_UNSPECIFIED" {
+                return Err(invalid());
+            }
+        } else if present(candidate, "finishReason")
+            .is_some_and(|v| v.as_str().is_none() || (v != "" && nonempty(v).is_none()))
+        {
+            return Err(invalid());
+        }
+        let index = match present(candidate, "index") {
+            None => 0,
+            Some(value) => value.as_u64().ok_or_else(invalid)?,
+        };
+        if !indices.insert(index) {
+            return Err(invalid());
+        }
+        if let Some(content) = present(candidate, "content") {
+            validate_content(content, true).map_err(|_| invalid())?;
+        }
+    }
+    Ok(())
+}
 impl fmt::Debug for NativeResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("NativeResponse([WIRE OMITTED])")
     }
 }
-fn present<'a>(wire: &'a Value, field: &str) -> Option<&'a Value> {
+pub(crate) fn present<'a>(wire: &'a Value, field: &str) -> Option<&'a Value> {
     wire.get(field).filter(|v| !v.is_null())
 }
-fn nonempty(value: &Value) -> Option<&str> {
+pub(crate) fn nonempty(value: &Value) -> Option<&str> {
     value
         .as_str()
         .filter(|v| !v.trim().is_empty() && !v.chars().any(char::is_control))

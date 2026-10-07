@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。原生非流式 generateContent/NativeResponse 已实现并三平台验收，源码5c41ae2aaea2632b5c98689f7c14b26ba826d0ef已提交/push，CI37661724323 completed/success；SSE、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
+阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。原生非流式 generateContent/NativeResponse 已实现并三平台验收，源码5c41ae2aaea2632b5c98689f7c14b26ba826d0ef已提交/push，CI37661724323 completed/success；SSE解析本轮已本地实现并待新CI；原生流式HTTP、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -71,3 +71,21 @@ NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未�
 - distinct多候选正例/第二候选未停止的专门测试缺失；当前代码逐候选校验，已有重复index负例，不冒称覆盖上述两项。
 
 本轮审查排除项裁定：SSE/投影/历史/六方法/Registry/Gateway/Runtime仍需后续实现，误判会漏功能，保持未完成；商业/签名真实性/Full无真实证据，误判会错误授权能力，不授予；生产历史访问控制留H/I，误判会泄漏敏感历史，raw不作为公共日志；完整schema/媒体/参数由原生服务判定，误判成本是原生请求拒绝，不把结构检查当完整能力验收；非通用ProtoJSON（替代字段/数值/枚举）保持canonical范围，成本是兼容端点被拒绝；同步存储读不可强停，成本是后台资源占用，只保证取消后无迟到POST；Windows/macOS已核对本轮精确源码新CI，后续SSE阶段仍须独立新CI，旧JSON/目录CI不能代验，误用成本是漏新增平台问题。以上均沿现有阶段边界，未改架构。
+
+
+## 原生 SSE 解析（本轮待三平台验收）
+
+`ContentStream` 复用 core `SseDecoder`，显式 frame/stream 字节上限和本次请求的 expected_candidates（HTTP 接线时取 generationConfig.candidateCount，缺省1）。共享既有 NativeResponse 的已知字段/Part校验，增量候选允许尚无 finishReason；JSON完整回复规则保持原样。默认/null index 为0，同帧重复、范围外index、responseId/modelVersion改变、停止后新Part或不同停止原因拒绝。prompt阻断原因独立锁定，后续空/null feedback不解除，其他明确原因或候选拒绝，派生回复仍保留最初阻断原因。
+
+没有伪造 Responses/Interactions 终态。调用方只有在原生HTTP正常EOF后调用 finish：所有请求候选均有明确finishReason（或明确prompt阻断）、无未完成尾帧才产生 NativeStreamResponse；候选已停但流未结束时仍允许末尾usage/metadata。EOF缺候选/未停/残data、取消、坏UTF8/JSON/event、[DONE]、超限或原生error都不能产生完成历史。core只新增has_pending_frame查询，不改变其他Provider的既有分帧行为。[原生API与候选停止契约](https://ai.google.dev/api/generate-content)
+
+完成结果分别提供完整原生chunks与派生NativeResponse：原始chunks保留每次未知字段/空值/数值精度及签名位置；派生候选按index排序，Part按候选内到达顺序原样追加，不合并不同text/thought/signature Part。派生普通metadata采用末次非null值，usage按已提供字段覆盖而非相加；重复/替换的完整metadata仍留raw chunks，不能把派生视图当无损原生历史。此阶段不证明重组后的签名回放真实性，版本化历史/模型归属/Runtime回放仍需后续验证；服务端工具与预测调用只是数据，解析器不执行或抓取。
+
+4项解析回归先RED后GREEN，涵盖所有字节切分/逐字节、BOM/CRLF、原始chunks/签名/未来Part/独立大数字面值、末尾usage、多候选不同停止原因/缺候选或第二候选未停、prompt阻断、身份与生命周期冲突、静态原生错误、残帧/取消及预算。日志 `/tmp/caidex-google-stream-{red,green}.log`；修复后完整workspace246passed/0failed、Clippy -D warnings、fmt/diff通过；独立审查结果及修复见下，提交/新三平台CI待完成。真实流式HTTP/socket/背压尚未实现，不能用已有JSON的CI代验。
+
+
+本轮唯一独立只读审查：无Critical，1项Important（空feedback覆盖阻断状态后可接受候选）已复现RED，并在同一修复pass独立锁定阻断原因后GREEN。已有两项回归增强覆盖空/null feedback后候选、显式恢复UNSPECIFIED，以及阻断后只追加metadata仍保留原因/完整chunks；未增加其他审查或重做旧阶段。日志 `/tmp/caidex-google-stream-block-{red,green}.log`。
+
+审查Minor1暂缓：重复/部分usage更新的专项覆盖未补（当前只检查末尾usage）；现实现按提供字段覆盖，不相加，原始每个chunk均保留，不冒称此分支已专项验收。
+
+本轮排除项裁定：原生HTTP/cleanEOF检测/背压/socket/slot是下一接线阶段（误用解析证据会漏传输问题）；Responses投影/版本历史/六方法/Gateway/实际Gemini Runtime未接（误判漏功能）；签名真实性/重组Part的提供商回放未验（误判签名请求被拒）；商业/Full无live证据（误判错误能力承诺）；全ProtoJSON/完整媒体函数schema沿已知形状canonical边界（误判兼容端点拒绝）；字节/JSON空白不承诺，只保留native JSON语义（误判失去逐字节一致性）；停止后无新Part的metadata与未知停止原因保留，不授予任务成功（误判未知语义被误当成功）；comment/control-only尾不作为生成数据，残data/event不完成（误判会把截断当完成，当前严格尾查询亦拒绝残未结束comment行）；生产历史访问控制留H/I（误判历史泄漏，raw不作为公共日志）。以上均保留既定阶段边界，后续接线继续逐项验证。
