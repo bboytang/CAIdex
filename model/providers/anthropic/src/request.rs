@@ -27,6 +27,13 @@ pub struct MessagesRequest {
     source: Value,
     tools: ToolMap,
 }
+/// Capabilities and mappings fixed by the execution-side model profile.
+#[derive(Default)]
+pub struct RequestOptions<'a> {
+    pub supports_system_messages: bool,
+    pub supports_structured_outputs: bool,
+    pub reasoning_mappings: &'a [ReasoningMapping],
+}
 impl MessagesRequest {
     pub fn from_responses(
         request: &CanonicalRequest,
@@ -75,6 +82,27 @@ impl MessagesRequest {
         supports_system_messages: bool,
         reasoning_mappings: &[ReasoningMapping],
     ) -> ProviderResult<Self> {
+        Self::from_responses_with_options(
+            request,
+            native_model,
+            max_tokens,
+            max_bytes,
+            max_tools,
+            &RequestOptions {
+                supports_system_messages,
+                reasoning_mappings,
+                ..Default::default()
+            },
+        )
+    }
+    pub fn from_responses_with_options(
+        request: &CanonicalRequest,
+        native_model: &str,
+        max_tokens: u64,
+        max_bytes: usize,
+        max_tools: usize,
+        options: &RequestOptions<'_>,
+    ) -> ProviderResult<Self> {
         let source = request.wire();
         if native_model.trim().is_empty()
             || max_tokens == 0
@@ -97,6 +125,7 @@ impl MessagesRequest {
                     | "parallel_tool_calls"
                     | "tool_choice"
                     | "reasoning"
+                    | "text"
             ) {
                 return Err(unsupported());
             }
@@ -246,7 +275,7 @@ impl MessagesRequest {
                         }
                         system.extend(blocks)
                     }
-                    "developer" | "system" if supports_system_messages => {
+                    "developer" | "system" if options.supports_system_messages => {
                         if blocks.iter().any(|b| b["type"] != "text") {
                             return Err(unsupported());
                         }
@@ -295,7 +324,8 @@ impl MessagesRequest {
         } else if choice == "required" {
             return Err(invalid());
         }
-        crate::reasoning::apply(&mut wire, source, reasoning_mappings, max_tokens)?;
+        crate::reasoning::apply(&mut wire, source, options.reasoning_mappings, max_tokens)?;
+        crate::structured::apply(&mut wire, source, options.supports_structured_outputs)?;
         if wire.to_string().len() > max_bytes {
             return Err(invalid());
         }

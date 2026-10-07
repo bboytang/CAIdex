@@ -95,3 +95,13 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 - [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)：手动预算下限与 max_tokens 关系，interleaved beta 的例外需独立接入。
 
 - [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)：下一步接入 output_config.format 时与 effort 合并，保留 schema 约束，不能静默缩减。
+
+## 结构化输出请求转换
+
+执行端 `RequestOptions.supports_structured_outputs` 显式启用后，将 Responses `text.format` 的 `json_schema` / `strict:true` 转为 `output_config.format`。name 是原始格式身份，保留于 source；schema 原样发送，包括引用、注释、未知关键词和任意精度数值，不执行 SDK 的约束删减。先应用 reasoning，再添加 format，保留同一 output_config 中的 effort。旧构造入口默认关闭此能力。
+
+本次支持空/普通 text 配置。strict:false、strict 缺省/null、json_object、非空 wrapper description、非空 verbosity 和未知配置字段明确报不支持，仍需后续语义映射。执行端开关及 HTTP fixture 只证明请求转换，不证明模型实际支持，也不证明输出符合任意 schema；原生拒绝/max_tokens 仍按已有 outcome 区分。schema 全量透传可能由原生 API 拒绝，不能把透传误标成全约束验收。
+
+新增 4 项结构化转换回归，覆盖经典/Lite、effort/thinking 合并、source/schema 精确保留、能力门控、不支持语义、坏输入、数值精度及最终 body 字节上限；既有真实 HTTP 两轮 fixture 同时核验 format 和 effort。验证状态见 HANDOFF.md。
+
+依据：[OpenAI Structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[Anthropic Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)。未调用商业 API。

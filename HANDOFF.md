@@ -4,6 +4,8 @@
 
 ## 当前任务
 
+- 正在完成 Anthropic 结构化输出请求转换：新增 src/structured.rs、RequestOptions、tests/structured.rs（4 项），扩展经典/Lite 实际 HTTP 两轮 schema+effort 合并检查。新增 4 项及完整 workspace 均通过，Clippy/fmt/diff 通过；日志 /tmp/caidex-structured-workspace.log。当前 main 的上述源码/测试和文档准备提交/push，三平台 CI 尚待验收。
+
 - 当前新增 Anthropic ReasoningMapping：执行端显式 effort→原生 effort/thinking（adaptive/disabled/between_tools/manual）映射、预算及冲突门控已实现；5 项新推理测试和既有 12 项请求测试通过。经典/Lite 实际 HTTP 两轮扩展推理参数检查，workspace/Clippy/fmt/diff 已通过。源码 25081d8 已提交/push，CI 37582398993 三平台全部 success。summary/context/结构化输出/完整 Provider/Gateway 仍未完成。
 - A–E、F 第一至第三步当前范围和 OpenAI 离线 Adapter 已验收。Anthropic 原生 HTTP/SSE、回复/工具载体及基础请求/中途指令已三平台验收，完整 ModelProvider/Gateway 未完成；F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
@@ -78,6 +80,8 @@
 - 本机文件保护回归使用 TMPDIR=/var/tmp；保留 Git 存储拒绝。所有秘密/推理为合成 fixture，不读用户模型 Key。跨机器以 GitHub 链接为准，本地 /tmp 日志可丢失。
 - iOS/商业 API/客户端逐状态 UI/真机/UAC/签名未验；macOS Rust CI 不等于 iOS 构建。完整客户端和 H–R 尚未完成。
 
-- 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；此项尚未实现。
+- 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；已实现 strict:true 的请求转换，完整验证与其余语义待继续。
 
 - 2026-10-07 中断核查：重新查询上述 CI，三平台仍为 completed/success；断开时处于结构化输出资料核对阶段，未开始实现，没有遗留源码修改或上一阶段待完成 CI。恢复先确认 Responses text.format/strict 契约，再实现能力门控、schema 保留及 effort 合并回归；summary/context 等随后逐项处理。
+
+- 本次恢复点：完成完整 workspace 重跑并确认新增 4 项通过，检查 diff/fmt，提交/push 源码及文档，验收三平台 CI；随后继续 summary/context、其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。

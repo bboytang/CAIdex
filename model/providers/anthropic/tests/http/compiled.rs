@@ -1,6 +1,6 @@
 use super::*;
 use caidex_model_core::{CanonicalRequest, ResponseItem, ResponsesDialect};
-use caidex_provider_anthropic::{MessagesRequest, ReasoningMapping, ToolMap};
+use caidex_provider_anthropic::{MessagesRequest, ReasoningMapping, RequestOptions, ToolMap};
 
 #[tokio::test]
 async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_real_http() {
@@ -25,6 +25,7 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         } else {
             json!({"model":"alias","input":[prompt],"tools":declarations,"parallel_tool_calls":false})
         };
+        wire["text"] = json!({"format":{"type":"json_schema","name":"result","strict":true,"schema":{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"],"additionalProperties":false}}});
         wire["reasoning"] = json!({"effort":"high"});
         let mappings = [ReasoningMapping::new(
             "high".into(),
@@ -32,14 +33,17 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
             Some(json!({"type":"adaptive","display":"summarized"})),
         )
         .unwrap()];
-        let first = MessagesRequest::from_responses_with_reasoning(
+        let first = MessagesRequest::from_responses_with_options(
             &CanonicalRequest::new(wire.clone(), dialect).unwrap(),
             "native",
             100,
             128 * 1024,
             10,
-            false,
-            &mappings,
+            &RequestOptions {
+                supports_structured_outputs: true,
+                reasoning_mappings: &mappings,
+                ..Default::default()
+            },
         )
         .unwrap();
         let native = client
@@ -63,14 +67,17 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         );
         let mut second_wire = wire.clone();
         second_wire["input"] = input.into();
-        let second = MessagesRequest::from_responses_with_reasoning(
+        let second = MessagesRequest::from_responses_with_options(
             &CanonicalRequest::new(second_wire, dialect).unwrap(),
             "native",
             100,
             128 * 1024,
             10,
-            true,
-            &mappings,
+            &RequestOptions {
+                supports_system_messages: true,
+                supports_structured_outputs: true,
+                reasoning_mappings: &mappings,
+            },
         )
         .unwrap();
         let result = client
@@ -90,6 +97,10 @@ async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_re
         );
         let sent: Value = serde_json::from_slice(&second_body).unwrap();
         assert_eq!(sent["output_config"]["effort"], "medium");
+        assert_eq!(
+            sent["output_config"]["format"]["schema"],
+            wire["text"]["format"]["schema"]
+        );
         assert_eq!(
             sent["thinking"],
             json!({"type":"adaptive","display":"summarized"})
