@@ -28,13 +28,23 @@ impl NativeMessage {
             return Err(invalid_message());
         }
         let mut ids = HashSet::new();
+        let mut fallback_model = None;
         for block in wire["content"].as_array().unwrap() {
             validate_block(block, true)?;
+            if block["type"] == "fallback" {
+                if fallback_model.is_some_and(|model| block["from"]["model"] != model) {
+                    return Err(invalid_message());
+                }
+                fallback_model = block["to"]["model"].as_str();
+            }
             if matches!(block["type"].as_str(), Some("tool_use" | "server_tool_use"))
                 && !ids.insert(block["id"].as_str().unwrap())
             {
                 return Err(invalid_message());
             }
+        }
+        if fallback_model.is_some_and(|model| wire["model"] != model) {
+            return Err(invalid_message());
         }
         Ok(Self(wire))
     }
@@ -72,10 +82,47 @@ impl NativeMessage {
             _ => MessageOutcome::Unknown,
         }
     }
-    /// Native Messages input shape, not a Responses item. All original content
-    /// blocks stay in order, including opaque server-tool and thinking blocks.
+    pub(crate) fn last_fallback_index(&self) -> Option<usize> {
+        self.content()
+            .iter()
+            .rposition(|block| block["type"] == "fallback")
+    }
+    /// Native Messages input shape. Preserve full wire separately; the native
+    /// fallback echo contract excludes the declining hops' thinking/client calls
+    /// and unpaired server calls. Boundaries and all serving-hop blocks stay put.
     pub fn replay_message(&self) -> Value {
-        json!({"role":"assistant", "content":self.content()})
+        let Some(boundary) = self.last_fallback_index() else {
+            return json!({"role":"assistant", "content":self.content()});
+        };
+        let server_results: HashSet<_> = self
+            .content()
+            .iter()
+            .filter(|block| {
+                block["type"]
+                    .as_str()
+                    .is_some_and(|kind| kind.ends_with("_tool_result"))
+            })
+            .filter_map(|block| block["tool_use_id"].as_str())
+            .collect();
+        let content: Vec<_> = self
+            .content()
+            .iter()
+            .enumerate()
+            .filter_map(|(index, block)| {
+                let keep = index >= boundary
+                    || match block["type"].as_str() {
+                        Some("thinking" | "redacted_thinking" | "connector_text" | "tool_use") => {
+                            false
+                        }
+                        Some("server_tool_use") => {
+                            server_results.contains(block["id"].as_str().unwrap())
+                        }
+                        _ => true,
+                    };
+                keep.then_some(block)
+            })
+            .collect();
+        json!({"role":"assistant", "content":content})
     }
 }
 impl fmt::Debug for NativeMessage {

@@ -93,6 +93,42 @@ async fn provider_json_binding_reports_reject_lossy_history_without_retry_for_bo
 }
 
 #[tokio::test]
+async fn native_json_keeps_actual_fallback_identity_and_fixed_provider_never_relabels_it() {
+    let mut wire = reply();
+    wire["model"] = "serving".into();
+    wire["content"].as_array_mut().unwrap().insert(0, json!({"type":"fallback","from":{"model":"native"},"to":{"model":"serving"},"future":"retain"}));
+    wire["usage"]["iterations"] = json!([{"type":"message","model":"native","input_tokens":90},{"type":"fallback_message","model":"serving","input_tokens":2}]);
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let (base, mut requests, _, task) = fixture(
+            vec![(200, wire.to_string()), (200, wire.to_string())],
+            false,
+        )
+        .await;
+        let (client, reads) = client(&base, Some(KEY), Limits::default());
+        let native = client
+            .create_message("native", request(), RequestContext::default())
+            .await
+            .unwrap();
+        assert_eq!(native.wire(), &wire);
+        assert_eq!(native.model(), "serving");
+        assert_eq!(native.replay_message()["content"], wire["content"]);
+        let provider = AnthropicProvider::new(client, vec![profile()], 10).unwrap();
+        let error = provider
+            .create_response(canonical(dialect, &[], false), RequestContext::default())
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "anthropic_response_model_mismatch");
+        assert_eq!(error.http_status, 502);
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+        received(&mut requests).await;
+        received(&mut requests).await;
+        task.await.unwrap();
+        assert!(requests.try_recv().is_err());
+    }
+}
+
+#[tokio::test]
 async fn provider_catalog_filters_profiles_and_api_key_requirement_is_safe_metadata() {
     let (base, mut requests, _, task) =
         fixture(vec![(200, page("native", false).to_string())], false).await;

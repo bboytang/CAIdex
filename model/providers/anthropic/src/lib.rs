@@ -56,6 +56,13 @@ pub(crate) fn validate_block(block: &Value, complete: bool) -> ProviderResult<()
                 && string(block, "name").is_some()
                 && block["input"].is_object()
         }
+        "fallback" => {
+            string(&block["from"], "model").is_some()
+                && string(&block["to"], "model").is_some()
+                && block
+                    .get("trigger")
+                    .is_none_or(|trigger| trigger.is_object() && string(trigger, "type").is_some())
+        }
         // New native blocks remain opaque. Their eventual Codex conversion must
         // explicitly support them or fail; parsing is not permission to execute.
         _ => block.is_object(),

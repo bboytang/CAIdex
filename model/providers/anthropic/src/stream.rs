@@ -141,6 +141,36 @@ impl MessageStream {
                         return Err(invalid());
                     }
                     validate_block(&wire["content_block"], false).map_err(|_| invalid())?;
+                    let block = &wire["content_block"];
+                    if block["type"] == "fallback" {
+                        if self.blocks.iter().any(|block| !block.stopped)
+                            || self
+                                .blocks
+                                .iter()
+                                .rev()
+                                .find(|block| block.wire["type"] == "fallback")
+                                .is_some_and(|previous| {
+                                    previous.wire["to"]["model"] != block["from"]["model"]
+                                })
+                        {
+                            return Err(invalid());
+                        }
+                        let message = self.message.as_mut().unwrap();
+                        if message["model"] != block["to"]["model"] {
+                            // Counters now belong to a different serving attempt.
+                            // Missing final counters stay unknown, never inherit
+                            // another model's counts or sum billable iterations.
+                            for name in [
+                                "input_tokens",
+                                "output_tokens",
+                                "cache_creation_input_tokens",
+                                "cache_read_input_tokens",
+                            ] {
+                                message["usage"].as_object_mut().unwrap().remove(name);
+                            }
+                        }
+                        message["model"] = block["to"]["model"].clone();
+                    }
                     self.blocks.push(Block {
                         wire: wire["content_block"].clone(),
                         partial_json: String::new(),
@@ -263,6 +293,9 @@ fn index(wire: &Value) -> ProviderResult<usize> {
 fn update_block(block: &mut Block, delta: &Value) -> ProviderResult<()> {
     let kind = string(delta, "type").ok_or_else(invalid)?;
     let block_type = block.wire["type"].as_str().unwrap();
+    if block_type == "fallback" {
+        return Err(invalid()); // Native handoff blocks carry no deltas.
+    }
     let (field, value) = match kind {
         "text_delta" if block_type == "text" => ("text", delta["text"].as_str()),
         "thinking_delta" if block_type == "thinking" => ("thinking", delta["thinking"].as_str()),

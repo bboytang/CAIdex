@@ -271,6 +271,141 @@ async fn provider_start_and_fallback_binding_failures_close_socket_without_tool_
 }
 
 #[tokio::test]
+async fn fallback_http_preserves_native_serving_identity_and_fixed_provider_closes_before_tool_done()
+ {
+    use caidex_model_core::{
+        CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,
+    };
+    use caidex_provider_anthropic::{AnthropicProvider, NativeMessage, ToolMap};
+    let tools = [json!({"type":"function","name":"data_only","parameters":{"type":"object"}})];
+    let map = ToolMap::new(&tools, 10).unwrap();
+    let mut frames: Vec<Value> = complete()
+        .split("\n\n")
+        .filter_map(|frame| frame.lines().find_map(|line| line.strip_prefix("data: ")))
+        .map(|data| serde_json::from_str(data).unwrap())
+        .collect();
+    let tool = frames
+        .iter()
+        .position(|v| v["type"] == "content_block_start" && v["index"] == 1)
+        .unwrap();
+    for frame in &mut frames[tool..] {
+        if let Some(index) = frame["index"].as_u64() {
+            frame["index"] = (index + 1).into();
+        }
+    }
+    frames.splice(tool..tool, [
+        json!({"type":"content_block_start","index":1,"content_block":{"type":"fallback","from":{"model":"native"},"to":{"model":"serving"},"trigger":{"type":"refusal","explanation":"PRIVATE_TRIGGER"}}}),
+        json!({"type":"content_block_stop","index":1}),
+    ]);
+    frames
+        .iter_mut()
+        .find(|v| v["type"] == "message_delta")
+        .unwrap()["usage"] = json!({"input_tokens":3,"output_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"iterations":[{"type":"message","model":"native","input_tokens":7},{"type":"fallback_message","model":"serving","input_tokens":3}]});
+    let body = frames
+        .into_iter()
+        .map(event)
+        .collect::<String>()
+        .replace("\"data_only\"", &map.native_tools()[0]["name"].to_string());
+
+    let mut fixture = Fixture::start(body.clone(), false, "text/event-stream").await;
+    let (client, reads) = client(
+        &fixture.base,
+        Some(KEY),
+        Limits {
+            in_flight: 1,
+            ..Default::default()
+        },
+    );
+    let mut stream = client
+        .stream_message("native", request(), RequestContext::default())
+        .await
+        .unwrap();
+    let mut completed = None;
+    while let Some(event) = next(&mut stream).await {
+        if let NativeStreamEvent::Completed(native) = event.unwrap() {
+            completed = Some(native);
+        }
+    }
+    let native = completed.unwrap();
+    assert_eq!(native.model(), "serving");
+    assert_eq!(native.wire()["usage"]["input_tokens"], 3);
+    assert_eq!(native.content()[0]["signature"], "signed+/==\n");
+    assert_eq!(
+        native.replay_message()["content"].as_array().unwrap().len(),
+        2
+    );
+    assert_eq!(native.replay_message()["content"][0], native.content()[1]);
+    let response = native.to_responses_with_tools(&map, 128 * 1024).unwrap();
+    let restored =
+        NativeMessage::from_responses_output(response.output(), "serving", 128 * 1024).unwrap();
+    assert_eq!(restored.wire(), native.wire());
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    received(&mut fixture.requests).await;
+    received(&mut fixture.closed).await;
+    released(&client).await;
+
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let mut fixture = Fixture::start(body.clone(), false, "text/event-stream").await;
+        let (client, reads) = super::client(
+            &fixture.base,
+            Some(KEY),
+            Limits {
+                in_flight: 1,
+                ..Default::default()
+            },
+        );
+        let provider =
+            AnthropicProvider::new(client, vec![super::provider::profile()], 10).unwrap();
+        let input = json!([{"role":"user","content":"hello"}]);
+        let wire = if dialect == ResponsesDialect::Classic {
+            json!({"model":"alias","input":input,"tools":tools,"stream":true})
+        } else {
+            json!({"model":"alias","input":[{"type":"additional_tools","role":"developer","tools":tools},{"role":"user","content":"hello"}],"stream":true})
+        };
+        let mut stream = provider
+            .stream_response(
+                CanonicalRequest::new(wire, dialect).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap()
+            .events;
+        loop {
+            match tokio::time::timeout(Duration::from_secs(5), stream.next())
+                .await
+                .unwrap()
+                .unwrap()
+            {
+                Ok(ProviderStreamEvent::Model(event)) => {
+                    assert!(event.response.terminal().is_none());
+                    assert_ne!(event.response.kind(), "response.output_item.done");
+                    assert!(!event.frame.data.contains("PRIVATE_TRIGGER"));
+                }
+                Ok(ProviderStreamEvent::Heartbeat) => (),
+                Err(error) => {
+                    assert_eq!(error.code, "anthropic_response_model_mismatch");
+                    assert_eq!(error.http_status, 502);
+                    assert!(!format!("{error:?}").contains("PRIVATE_TRIGGER"));
+                    break;
+                }
+            }
+        }
+        assert!(stream.next().await.is_none());
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        received(&mut fixture.requests).await;
+        received(&mut fixture.closed).await;
+        assert_ne!(
+            provider
+                .discover_models(RequestContext::default())
+                .await
+                .unwrap_err()
+                .code,
+            "provider_busy"
+        );
+    }
+}
+
+#[tokio::test]
 async fn model_provider_streams_signed_function_history_for_classic_and_lite() {
     use caidex_model_core::{
         CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,

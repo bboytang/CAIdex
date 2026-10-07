@@ -289,6 +289,83 @@ fn start_and_fallback_binding_reports_never_release_executable_done_or_history()
 }
 
 #[test]
+fn unexpected_serving_model_fails_at_handoff_before_tools_or_history_can_complete() {
+    let mut values = events("tool_use", &tools());
+    let tool = values
+        .iter()
+        .position(|v| v["type"] == "content_block_start" && v["index"] == 2)
+        .unwrap();
+    for value in &mut values[tool..] {
+        if let Some(index) = value["index"].as_u64() {
+            value["index"] = (index + 1).into();
+        }
+    }
+    values.splice(tool..tool, [
+        json!({"type":"content_block_start","index":2,"content_block":{"type":"fallback","from":{"model":"native"},"to":{"model":"serving"}}}),
+        json!({"type":"content_block_stop","index":2}),
+    ]);
+    let mut parser = MessageStream::new(LIMIT, LIMIT).unwrap();
+    let parsed = parser
+        .push(values.iter().map(frame).collect::<String>().as_bytes())
+        .unwrap();
+    assert_eq!(parser.completed_message().unwrap().model(), "serving");
+    let mut projection = ResponsesProjection::new("native".into(), tools(), LIMIT).unwrap();
+    let mut failure = None;
+    for event in parsed {
+        match projection.push(NativeStreamEvent::Event(event)) {
+            Ok(events) => assert!(events.iter().all(|e| e.response.terminal().is_none()
+                && e.response.kind() != "response.output_item.done")),
+            Err(error) => {
+                failure = Some(error);
+                break;
+            }
+        }
+    }
+    assert_eq!(failure.unwrap().code, "anthropic_response_model_mismatch");
+    assert!(
+        projection
+            .push(NativeStreamEvent::Completed(
+                parser.completed_message().unwrap().clone()
+            ))
+            .is_err()
+    );
+    // A pre-output handoff already naming the configured serving model remains
+    // native data, with no client-side inference or invented model alias change.
+    let mut values = events("tool_use", &tools());
+    for value in &mut values[1..] {
+        if let Some(index) = value["index"].as_u64() {
+            value["index"] = (index + 1).into();
+        }
+    }
+    values.splice(1..1, [
+        json!({"type":"content_block_start","index":0,"content_block":{"type":"fallback","from":{"model":"primary"},"to":{"model":"native"}}}),
+        json!({"type":"content_block_stop","index":0}),
+    ]);
+    let mut parser = MessageStream::new(LIMIT, LIMIT).unwrap();
+    let mut projection = ResponsesProjection::new("native".into(), tools(), LIMIT).unwrap();
+    for event in parser
+        .push(values.iter().map(frame).collect::<String>().as_bytes())
+        .unwrap()
+    {
+        projection.push(NativeStreamEvent::Event(event)).unwrap();
+    }
+    let emitted = projection
+        .push(NativeStreamEvent::Completed(
+            parser.completed_message().unwrap().clone(),
+        ))
+        .unwrap();
+    let response = &emitted.last().unwrap().response.wire()["response"];
+    let restored = NativeMessage::from_responses_output(
+        response["output"].as_array().unwrap(),
+        "native",
+        LIMIT,
+    )
+    .unwrap();
+    assert_eq!(restored.content()[0]["type"], "fallback");
+    assert_eq!(response["model"], "native");
+}
+
+#[test]
 fn projection_budgets_and_post_terminal_events_never_emit_false_completion() {
     assert!(ResponsesProjection::new("native".into(), tools(), 0).is_err());
     assert!(ResponsesProjection::new("native".repeat(100), tools(), 100).is_err());

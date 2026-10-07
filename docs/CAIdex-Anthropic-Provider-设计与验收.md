@@ -12,13 +12,13 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 `create_message(model, native_json, context)` 发送非流式原生 Messages JSON：明确 max_tokens，固定 model 参数覆盖 body model，stream=false；保留原生消息内容及未知字段，限制请求/响应大小。它不是 Responses 请求转换，未全面验证提供商的所有输入 schema，其他参数是否合法仍由原生服务判定。context headers 默认拒绝；执行端显式启用本地 Runtime 策略时仅允许下文三项本地字段，不外发。并发、认证/header timeout、响应 idle timeout、总 deadline、取消和 drop 不触发重试；已开始的同步 SecretStore 读取不能强制中止，取消后不发送请求。
 
-原生回复按 content 原顺序保留，包括 thinking/signature、redacted_thinking、工具及未来块；回放直接使用原内容。签名不做密码学验证，缺少完整签名的 thinking 当前拒绝回放。SSE 增量重建文本、签名、工具 JSON 和 citations，严格校验 lifecycle/index/usage；usage 累计值替换而非相加。未知事件/块保留；无法重建的未知 delta 在 block stop 报错，避免伪造无损 history。`Completed` 只表示收到完整 message_stop，具体 end_turn/tool_use/max_tokens/pause/refusal 等由 MessageOutcome 区分。
+原生回复按 content 原顺序保留，包括 thinking/signature、redacted_thinking、工具及未来块；普通回放直接使用原内容，原生 fallback 的 echo 过滤见下节，完整 wire 始终保留。签名不做密码学验证，缺少完整签名的 thinking 当前拒绝回放。SSE 增量重建文本、签名、工具 JSON 和 citations，严格校验 lifecycle/index/usage；usage 累计值替换而非相加，换模型时已知计数重新归属。未知事件/块保留；无法重建的未知 delta 在 block stop 报错，避免伪造无损 history。`Completed` 只表示收到完整 message_stop，具体 end_turn/tool_use/max_tokens/pause/refusal 等由 MessageOutcome 区分。
 
 `stream_message` 与非流式共用认证、HTTP 状态和 media-type 检查，使用 stream=true 和 text/event-stream。返回原生事件流，只有解析器完成 message_stop 后才提供独立 Completed(NativeMessage) 数据项；保留原生签名、工具内容和累计 usage，不执行工具。原生 error 事件被替换为静态 ProviderError，不输出第三方诊断文本、URL 或原始 frame。
 
 事件队列容量为 1，读取和发送均受取消/总 deadline 约束。I/O worker 持有并发许可；流无人读取时也会因超时/取消关闭 socket、释放许可，并独立保存错误，待已有队列项排空后交付。Drop 终止 worker。正常完成主动关闭上游连接，不等待 HTTP EOF；截断、非法 SSE、超限和错误不生成完整回复。
 
-`NativeMessage::to_responses` 保留完整原生回复作为带 provider/version/model 的回放数据，并投影文本与原生客户端 function tool_use。载体使用 Runtime 已保留的 reasoning.encrypted_content 字段，带 CAIdex 专用前缀；其中 JSON **不是加密密文**，也不是可提交到 OpenAI 的 reasoning。它只用于 CAIdex Anthropic 边界，不宣称签名密码学校验、访问控制或历史 E2EE。调用者须按敏感原生历史存储，跨提供商切换不得原样转发该载体。
+`NativeMessage::to_responses` 保留完整原生回复作为带 provider/version/model 的回放数据，并投影文本与可执行的原生客户端 function tool_use；fallback 仅投影最终交接后的客户端调用。载体使用 Runtime 已保留的 reasoning.encrypted_content 字段，带 CAIdex 专用前缀；其中 JSON **不是加密密文**，也不是可提交到 OpenAI 的 reasoning。它只用于 CAIdex Anthropic 边界，不宣称签名密码学校验、访问控制或历史 E2EE。调用者须按敏感原生历史存储，跨提供商切换不得原样转发该载体。
 
 `from_responses_output` 仅恢复完整回复组：检查前缀/provider/version、大小、原生 schema、准确模型版本，以及展示文本/工具/推理与载体的一致性，拒绝丢失、修改或错误作用域的投影。允许 Runtime 展示 ID/status 变化和等价工具 JSON 格式；结构一致性校验不防止同时伪造载体和展示内容，提供商仍负责验证 thinking 签名。原生字段、内容顺序、signature/redacted data、citations/未来块/usage 保留在载体，不能从展示文本重建。
 
@@ -168,6 +168,20 @@ Responses 投影及历史恢复共用检查：已知 thinking_dropped 的 prefix
 
 新增 5 项回归覆盖报告形状、逐字节 SSE、缺省/null/空与最终数组替换、未知字段/大整数、两种已知 type 与四种 drop reason、旧载体防绕过、经典/Lite 实际 JSON/SSE、首帧/末帧失败后的无工具 done/完成/socket 关闭/slot 释放与单次 Key 读取。源码 b4d05fd（完整 SHA b4d05fdfc623343992fdb5592456b03718dd247d）的 [CI 37618365350](https://github.com/bboytang/CAIdex/actions/runs/37618365350) 三平台 completed/success，新增 5 项逐平台日志核对通过，协议 13/投影 8/增量投影 5/HTTP 28 及 workspace/fmt/Clippy/native keyring/schema/doctor、既有真实 Runtime Linux 25/Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过。
 
-尚未接入 thinking-binding-controls-2026-08-01 执行端 beta opt-in、前缀快照和真实组织作用域；缺省报告无法发现静默 drop，不宣称完整历史绑定或商业模型验收。官方 SDK 会根据 fallback 块更新 serving model，当前原生流仍须补对应身份核对，不能据此宣称跨模型 fallback 兼容。上述工作完成后再接 Gateway/实际 Runtime。
+尚未接入 thinking-binding-controls-2026-08-01 执行端 beta opt-in、前缀快照和真实组织作用域；缺省报告无法发现静默 drop，不宣称完整历史绑定或商业模型验收。fallback 身份/echo 修正见下节，仍不能据此宣称已验证跨模型兼容。上述工作完成后再接 Gateway/实际 Runtime。
 
 依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)、[Beta Messages API](https://platform.claude.com/docs/en/api/typescript/beta/messages/create)、[官方 SDK message_delta 定义](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/types/beta/beta_raw_message_delta_event.py)、[官方 SDK 累积逻辑](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/streaming/_beta_messages.py)。未调用商业 API。
+
+## 原生 fallback 身份、usage 与 echo
+
+原生交接块验证 from/to.model 非空、可选 trigger 形状、连续交接链及最终 top-level model 与末次 to.model 一致；保留未知扩展，不按模型名猜许可。SSE 在 content_block_start 更新实际 serving model，交接前块必须停止，fallback 不接受 delta。首帧已是接替模型（输出前交接）及没有边界的 sticky 路由仍使用提供商报告的身份，不能把没有 fallback 块当成没有接替模型。
+
+换模型后，已知四项 token 计数不再属于同一 attempt：清除旧计数，最终提供的计数替换，缺失保持未知，不继承另一模型的数字；同模型累计值仍拒绝下降。unknown usage 和 iterations 原样保存，不能把多模型尝试加成一个模型的计费值。JSON 原始身份/usage 不被改成请求模型；NativeMessage 保存完整原生回复，SSE 完成消息保存末次 serving model。
+
+replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依据最后一个 fallback 边界，echo 排除边界前的 thinking/redacted_thinking/connector_text/client tool_use，以及没有匹配 *_tool_result 的 server_tool_use；保留文本、交接块相对顺序、已完成服务端工具/结果、未知块及最后交接后的全部内容。原生规则要求这项过滤，不能将其用于掩盖前缀/账户不匹配，不能触发 drop_block 或 retry。投影与 replay_group_len 共用可投影块计算，已退出模型的客户端工具不生成可执行调用；调用端也不能提交这些旧调用的结果来绕过 pending 校验。
+
+固定 ModelProvider 的准确模型配置边界不被悄悄改写：非流式沿用 model mismatch 检查，流式遇实际 to.model 不符时在交接处返回静态 502 anthropic_response_model_mismatch，不交付工具 done、完成或新载体；沿用既有 worker 的 Drop/socket/slot 释放。原生 API 本身仍返回真实模型数据。显式 server-side fallback 请求/beta、获验证的跨模型组合及模型切换策略尚未接入，不自动增加重试或推理请求。
+
+新增 6 项回归：输出前/中途/多跳/sticky 身份、逐字节 SSE、错误 shape/chain/最终身份/非法 delta/开放工具、不同 attempt 计数下降/缺失/同模型仍单调、完整 raw 历史与合法 echo、已退出调用不可执行、经典/Lite 请求编译及 JSON/SSE socket/permit/no retry。协议 15/投影 9/增量投影 6/HTTP 30 本地通过；最终 workspace/Clippy/fmt/diff 与三平台状态见 HANDOFF.md。所有 Key/数据为合成 fixture，未调用商业 API。
+
+依据：[Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback)、[官方 SDK fallback block](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/types/beta/beta_fallback_block.py)、[官方 SDK 累积逻辑](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/streaming/_beta_messages.py)。

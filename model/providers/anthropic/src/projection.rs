@@ -187,7 +187,7 @@ impl NativeMessage {
         } else {
             "commentary"
         };
-        for (index, block) in self.content().iter().enumerate() {
+        for (index, block) in self.projected_blocks() {
             match block["type"].as_str().unwrap() {
                 "text" => output.push(json!({"type":"message","id":format!("msg_{}_{index}",self.id()),
                     "role":"assistant","phase":phase,"content":[{"type":"output_text","text":block["text"]}]})),
@@ -204,6 +204,17 @@ impl NativeMessage {
             }
         }
         Ok(output)
+    }
+    fn projected_blocks(&self) -> impl Iterator<Item = (usize, &Value)> {
+        let boundary = self.last_fallback_index();
+        self.content()
+            .iter()
+            .enumerate()
+            .filter(move |(index, block)| {
+                block["type"] == "text"
+                    || (block["type"] == "tool_use"
+                        && boundary.is_none_or(|boundary| *index > boundary))
+            })
     }
     fn normalized_usage(&self) -> ProviderResult<Value> {
         let raw = &self.wire()["usage"];
@@ -247,9 +258,5 @@ pub(crate) fn replay_group_len(item: &Value, max_bytes: usize) -> ProviderResult
         .ok_or_else(invalid)?;
     let envelope: Value = serde_json::from_str(text).map_err(|_| invalid())?;
     let native = NativeMessage::parse(envelope["message"].clone()).map_err(|_| invalid())?;
-    Ok(1 + native
-        .content()
-        .iter()
-        .filter(|block| matches!(block["type"].as_str(), Some("text" | "tool_use")))
-        .count())
+    Ok(1 + native.projected_blocks().count())
 }

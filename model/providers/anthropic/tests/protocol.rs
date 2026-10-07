@@ -250,6 +250,152 @@ fn cumulative_stream_usage_replaces_counters_and_keeps_cache_and_future_fields()
 }
 
 #[test]
+fn fallback_stream_records_serving_model_and_attempt_usage_at_every_byte_boundary() {
+    for (initial, hops) in [
+        ("primary", vec![("primary", "serving")]),
+        (
+            "primary",
+            vec![("primary", "middle"), ("middle", "serving")],
+        ),
+        ("serving", vec![("primary", "serving")]),
+        ("serving", vec![]), // Sticky routing can have no handoff block.
+    ] {
+        let mut start = message(json!([]), "end_turn");
+        start["model"] = initial.into();
+        start["stop_reason"] = Value::Null;
+        start["usage"] = if initial == "primary" {
+            json!({"input_tokens":90,"output_tokens":10,"cache_creation_input_tokens":20,"cache_read_input_tokens":30,"future":"retain"})
+        } else {
+            json!({"input_tokens":7,"output_tokens":0,"cache_creation_input_tokens":3,"cache_read_input_tokens":4,"future":"retain"})
+        };
+        let mut values = vec![json!({"type":"message_start","message":start})];
+        let mut blocks = Vec::new();
+        if initial == "primary" {
+            blocks.push(json!({"type":"text","text":"partial primary"}));
+        }
+        for (from, to) in hops {
+            blocks.push(json!({"type":"fallback","from":{"model":from},"to":{"model":to},"trigger":{"type":"refusal","future":"retain"},"future":18446744073709551616_u128}));
+        }
+        blocks.push(json!({"type":"text","text":"serving🙂"}));
+        for (index, block) in blocks.iter().enumerate() {
+            values.push(json!({"type":"content_block_start","index":index,"content_block":block}));
+            values.push(json!({"type":"content_block_stop","index":index}));
+        }
+        let usage = json!({"input_tokens":7,"output_tokens":2,"cache_creation_input_tokens":3,"cache_read_input_tokens":4,
+            "iterations":[{"type":"message","model":"primary","input_tokens":90},{"type":"fallback_message","model":"serving","input_tokens":7}],"future":"retain"});
+        values
+            .push(json!({"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":usage}));
+        values.push(json!({"type":"message_stop"}));
+        let bytes = stream(&values);
+        for chunk in [1, 17, bytes.len()] {
+            let mut parser = parser();
+            for bytes in bytes.chunks(chunk) {
+                parser.push(bytes).unwrap();
+            }
+            let native = parser.completed_message().unwrap();
+            assert_eq!(native.model(), "serving");
+            assert_eq!(native.content(), blocks);
+            assert_eq!(native.wire()["usage"], usage);
+            assert_eq!(
+                native
+                    .to_responses(128 * 1024)
+                    .unwrap()
+                    .usage()
+                    .unwrap()
+                    .unwrap()
+                    .total_tokens,
+                Some(16)
+            );
+            assert_eq!(
+                NativeMessage::parse(native.wire().clone()).unwrap().wire(),
+                native.wire()
+            );
+        }
+        if initial == "primary" {
+            let delta = values.len() - 2;
+            let mut omitted = values.clone();
+            omitted[delta]["usage"] = json!({"output_tokens":2});
+            let mut parser = parser();
+            parser.push(&stream(&omitted)).unwrap();
+            let native = parser.completed_message().unwrap();
+            assert!(native.wire()["usage"].get("input_tokens").is_none());
+            assert_eq!(native.wire()["usage"]["future"], "retain");
+            assert_eq!(
+                native
+                    .to_responses(128 * 1024)
+                    .unwrap()
+                    .usage()
+                    .unwrap()
+                    .unwrap()
+                    .input_tokens,
+                None
+            );
+            // Once serving-model usage is established, its counters remain monotonic.
+            values.insert(delta + 1, json!({"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}));
+            assert!(self::parser().push(&stream(&values)).is_err());
+        }
+    }
+}
+
+#[test]
+fn malformed_fallback_shapes_chains_identity_and_deltas_cannot_complete() {
+    let fallback = json!({"type":"fallback","from":{"model":"primary"},"to":{"model":"serving"}});
+    for bad in [
+        json!({"type":"fallback","to":{"model":"serving"}}),
+        json!({"type":"fallback","from":{"model":"primary"},"to":{"model":""}}),
+        json!({"type":"fallback","from":{"model":"primary"},"to":{"model":42}}),
+        json!({"type":"fallback","from":{"model":"primary"},"to":{"model":"serving"},"trigger":"PRIVATE_TRIGGER"}),
+    ] {
+        let mut wire = message(json!([bad]), "end_turn");
+        wire["model"] = "serving".into();
+        let error = NativeMessage::parse(wire.clone()).unwrap_err();
+        assert_eq!(error.code, "anthropic_invalid_message");
+        assert!(!format!("{error:?}").contains("PRIVATE_TRIGGER"));
+        wire["content"] = json!([]);
+        wire["stop_reason"] = Value::Null;
+        let values = [
+            json!({"type":"message_start","message":wire}),
+            json!({"type":"content_block_start","index":0,"content_block":bad}),
+        ];
+        assert!(parser().push(&stream(&values)).is_err());
+    }
+    let mut wrong_identity = message(json!([fallback]), "end_turn");
+    wrong_identity["model"] = "primary".into();
+    assert!(NativeMessage::parse(wrong_identity).is_err());
+    let broken =
+        json!([fallback,{"type":"fallback","from":{"model":"unrelated"},"to":{"model":"last"}}]);
+    let mut wire = message(broken.clone(), "end_turn");
+    wire["model"] = "last".into();
+    assert!(NativeMessage::parse(wire).is_err());
+    let mut start = message(json!([]), "end_turn");
+    start["stop_reason"] = Value::Null;
+    let prefix = [
+        json!({"type":"message_start","message":start}),
+        json!({"type":"content_block_start","index":0,"content_block":fallback}),
+    ];
+    let mut parser = parser();
+    parser.push(&stream(&prefix)).unwrap();
+    assert!(
+        parser
+            .push(&frame(
+                &json!({"type":"content_block_delta","index":0,"delta":{"type":"future_delta"}})
+            ))
+            .is_err()
+    );
+    assert!(parser.completed_message().is_none());
+    let mut values = prefix.to_vec();
+    values.push(json!({"type":"content_block_stop","index":0}));
+    values.push(json!({"type":"content_block_start","index":1,"content_block":broken[1]}));
+    assert!(self::parser().push(&stream(&values)).is_err());
+    // A server handoff cannot interrupt an open client/server tool block.
+    values[1]["content_block"] =
+        json!({"type":"tool_use","id":"open","name":"data_only","input":{}});
+    values.remove(2);
+    values[2]["content_block"] = fallback;
+    assert!(self::parser().push(&stream(&values)).is_err());
+}
+
+#[test]
 fn stream_invalid_lifecycle_identity_indexes_tools_and_missing_signature_never_complete() {
     let base = events();
     let mut duplicate_start = base.clone();

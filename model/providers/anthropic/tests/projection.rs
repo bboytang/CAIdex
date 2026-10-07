@@ -308,3 +308,66 @@ fn server_and_unknown_blocks_stay_opaque_and_never_become_runtime_client_tools()
         &wire
     );
 }
+
+#[test]
+fn fallback_history_keeps_raw_wire_but_echoes_only_valid_hops_and_projects_serving_calls() {
+    use caidex_provider_anthropic::MessagesRequest;
+    let content = json!([
+        {"type":"thinking","thinking":"primary","signature":"primary-signature"},
+        {"type":"redacted_thinking","data":"primary-redaction"},
+        {"type":"connector_text","text":"primary narration"},
+        {"type":"text","text":"partial primary"},
+        {"type":"tool_use","id":"declined-call","name":"data_only","input":{}},
+        {"type":"server_tool_use","id":"server-kept","name":"web_search","input":{}},
+        {"type":"web_search_tool_result","tool_use_id":"server-kept","content":[]},
+        {"type":"server_tool_use","id":"server-orphan","name":"web_search","input":{}},
+        {"type":"future_block","opaque":18446744073709551616_u128},
+        {"type":"fallback","from":{"model":"primary"},"to":{"model":"middle"}},
+        {"type":"thinking","thinking":"middle","signature":"middle-signature"},
+        {"type":"tool_use","id":"middle-call","name":"data_only","input":{}},
+        {"type":"fallback","from":{"model":"middle"},"to":{"model":"native-fixture"}},
+        {"type":"thinking","thinking":"serving","signature":"serving-signature"},
+        {"type":"text","text":"serving answer"},
+        {"type":"tool_use","id":"serving-call","name":"data_only","input":{"n":18446744073709551616_u128}},
+        {"type":"server_tool_use","id":"serving-server","name":"web_search","input":{}}
+    ]);
+    let mut wire = message("tool_use");
+    wire["content"] = content.clone();
+    let native = NativeMessage::parse(wire.clone()).unwrap();
+    let response = native.to_responses(LIMIT).unwrap();
+    assert_eq!(response.output().len(), 4); // carrier, two texts, serving call
+    assert_eq!(response.output()[3]["call_id"], "serving-call");
+    let expected = json!({"role":"assistant","content":[content[3],content[5],content[6],content[8],content[9],content[12],content[13],content[14],content[15],content[16]]});
+    assert_eq!(native.replay_message(), expected);
+    assert_eq!(native.wire(), &wire); // Echo filtering never deletes stored history.
+    let restored =
+        NativeMessage::from_responses_output(response.output(), "native-fixture", LIMIT).unwrap();
+    assert_eq!(restored.wire(), &wire);
+    assert_eq!(restored.replay_message(), expected);
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let mut input = vec![json!({"role":"user","content":"start"})];
+        input.extend_from_slice(response.output());
+        input.push(json!({"type":"function_call_output","call_id":"serving-call","output":"done"}));
+        let canonical =
+            CanonicalRequest::new(json!({"model":"alias","input":input}), dialect).unwrap();
+        let compiled =
+            MessagesRequest::from_responses(&canonical, "native-fixture", 100, LIMIT, 10).unwrap();
+        assert_eq!(compiled.wire()["messages"][1], expected);
+        assert_eq!(
+            compiled.wire()["messages"][2]["content"][0]["tool_use_id"],
+            "serving-call"
+        );
+        let mut bad = canonical.wire().clone();
+        bad["input"].as_array_mut().unwrap().push(json!({"type":"function_call_output","call_id":"declined-call","output":"must not run"}));
+        assert!(
+            MessagesRequest::from_responses(
+                &CanonicalRequest::new(bad, dialect).unwrap(),
+                "native-fixture",
+                100,
+                LIMIT,
+                10
+            )
+            .is_err()
+        );
+    }
+}

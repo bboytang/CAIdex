@@ -109,6 +109,12 @@ impl ResponsesProjection {
                             return Err(invalid());
                         }
                         let native = &wire["content_block"];
+                        if native["type"] == "fallback" && native["to"]["model"] != self.model {
+                            return Err(ProviderError::new(
+                                502,
+                                "anthropic_response_model_mismatch",
+                            ));
+                        }
                         let mut block = Block {
                             item: None,
                             output_index: self.output_count,
