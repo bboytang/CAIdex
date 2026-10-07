@@ -28,13 +28,16 @@ pub struct GenerateContentRequest {
     source: Value,
     tools: ToolMap,
 }
-/// Fixed execution-side image capabilities. Empty lists mean unsupported,
+/// Fixed execution-side capabilities. Empty mappings mean unsupported,
 /// not model-name inference or proof of live service compatibility.
 #[derive(Default)]
 pub struct RequestOptions<'a> {
     pub image_mime_types: &'a [&'a str],
     pub tool_result_image_mime_types: &'a [&'a str],
     pub image_detail_mappings: &'a [crate::ImageDetailMapping],
+    pub reasoning_mappings: &'a [crate::ReasoningMapping],
+    pub summary_mappings: &'a [crate::SummaryMapping],
+    pub thinking_context: Option<crate::ThinkingContext>,
 }
 impl GenerateContentRequest {
     pub fn from_responses(
@@ -82,6 +85,7 @@ impl GenerateContentRequest {
                     | "parallel_tool_calls"
                     | "tool_choice"
                     | "include"
+                    | "reasoning"
             ) {
                 return Err(unsupported());
             }
@@ -149,6 +153,8 @@ impl GenerateContentRequest {
             ));
         }
         let mut wire = json!({"generationConfig":{"maxOutputTokens":max_tokens},"contents":[]});
+        // The actual thinking settings are part of every replay prefix.
+        crate::reasoning::apply(&mut wire, source, options)?;
         if !tools.native_tools().is_empty() {
             wire["tools"] = json!([{"functionDeclarations":tools.native_tools()}]);
             if source.get("tool_choice").is_some() {

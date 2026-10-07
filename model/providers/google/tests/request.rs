@@ -454,7 +454,7 @@ fn unsupported_parameters_and_invalid_input_fail_before_transport() {
         (
             "reasoning",
             json!({"effort":"high"}),
-            "unsupported_google_request",
+            "unsupported_google_reasoning",
         ),
         (
             "text",
