@@ -21,7 +21,7 @@
 
 - F/G 后续验收：[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266)，源码 e7253c8，三平台通过；累计真实 Runtime Linux 23、Windows/macOS 各 22 项。新增原生 OpenAI Adapter 经典/Lite 两轮、两路径 interrupt 关闭上游 socket，与此前直接/Custom Gateway wire 验证均保持通过；仍使用合成回复，不代表商业推理或 Code Mode 工具执行。详见 [原生 Provider 验收](CAIdex-OpenAI-Provider-设计与验收.md)。
 
-- Anthropic 接线当前本地通过：Lite两轮v3/落盘、Code Mode真实审批后临时执行/结果回放、interrupt socket；经典显式禁用网页后真实注册表发现→原生 inline→MCP执行、实际app-server重启/disk resume。默认经典cached网页明确失败且不读Key/不POST；不是网页支持正例。本地完整 Runtime30通过，无 skip；源码b403b0d的CI37653194672 Linux30通过，Windows/macOS各28通过1失败，仅Lite两轮rollout路径词法断言失败；目录别名复现RED→GREEN后以canonicalize两方检查隔离，修复后三平台重验待运行，商业模型/生产Host未验。详见 [Anthropic 作用域与验收](CAIdex-Anthropic-Provider-设计与验收.md)。
+- Anthropic 接线当前离线范围三平台通过：Lite两轮v3/落盘、Code Mode真实审批后临时执行/结果回放、interrupt socket；经典显式禁用网页后真实注册表发现→原生 inline→MCP执行、实际app-server重启/disk resume。默认经典cached网页明确失败且不读Key/不POST；不是网页支持正例。本地完整 Runtime30通过，无 skip；源码b403b0d的CI37653194672仅Lite两轮路径词法断言失败，目录别名复现RED→GREEN后以canonicalize两方检查隔离；修复源码e27e9035eb41fec89eeda5dab43b1fd10640ed38的[CI37654366666](https://github.com/bboytang/CAIdex/actions/runs/37654366666)三平台completed/success，实际Runtime Linux30/WindowsmacOS29、HTTP50及workspace/fmt/Clippy/native credentials/schema/doctor通过，商业模型/生产Host未验。详见 [Anthropic 作用域与验收](CAIdex-Anthropic-Provider-设计与验收.md)。
 
 ## D 边界验收
 

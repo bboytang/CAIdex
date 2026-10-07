@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；客户端动态工具发现及 v4 已接入，验收状态见下节与 HANDOFF.md。Gateway 的真实 Lite 接线及经典显式禁用网页后的 MCP 发现/执行/重启恢复本地通过，正在三平台验收；经典缓存网页搜索和商业模型互操作未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。请求前缀/组织 v3 已三平台验收；客户端动态工具发现及 v4 已接入，验收状态见下节与 HANDOFF.md。Gateway 的真实 Lite 接线及经典显式禁用网页后的 MCP 发现/执行/重启恢复已按下节离线范围三平台验收；经典缓存网页搜索和商业模型互操作未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -59,7 +59,7 @@ SSE 搜索 JSON 分片内部累积，专用 call 不发送 function arguments �
 
 独立正例由 Runtime 配置显式 `web_search="disabled"`，Provider 固定 discovery/system 支持、inline beta 和预期组织。真实 Runtime 的注册表搜索返回本地 MCP namespace/deferred 声明；原生 inline 定义加载后实际执行 MCP echo，结果与 Runtime 落盘 function_call_output 的原文精确相等。固定上游将 MCP structuredContent 作为模型输出 JSON，不能拿 MCP 展示文本替代。前三次请求保持初始 tools/system；实际关闭并重启 app-server、同 CODEX_HOME 从磁盘 resume，第4次请求保持已验证前缀，没有重复执行 echo。
 
-本轮本地完整 workspace/Clippy/fmt/语法检查与全部实际 Runtime30通过，不再 skip 默认经典负例；新增5个实际 Runtime用例（Lite3、默认经典拒绝1、经典动态MCP/重启1），HTTP新增1及既有 SSE 状态增强通过。源码 b403b0d 的 [CI 37653194672](https://github.com/bboytang/CAIdex/actions/runs/37653194672) 已完成：Linux30通过，Windows/macOS各28通过1失败，仅 Lite两轮用例的 rollout 路径词法前缀检查失败；新增MCP重启、审批执行/marker及interrupt各平台通过，HTTP50通过。临时目录别名可在本机复现相同失败，现仅对 rollout 和隔离 CODEX_HOME 双方 canonicalize 后比较，仍检查真实落盘位置在隔离目录内；该用例 RED→GREEN、完整 workspace/Runtime30/Clippy/fmt通过，修复后三平台重验待运行。独立审查无重要缺陷，留下2项测试覆盖 Minor：重启后第三次回复本身的单独精确对比，Lite Code Mode 输出与落盘原文的完整对比。商业模型/原生签名真实性、完整 cached web 和生产 Host 持久化权限不在此 fixture 的验收范围。
+本轮本地完整 workspace/Clippy/fmt/语法检查与全部实际 Runtime30通过，不再 skip 默认经典负例；新增5个实际 Runtime用例（Lite3、默认经典拒绝1、经典动态MCP/重启1），HTTP新增1及既有 SSE 状态增强通过。源码 b403b0d 的 [CI 37653194672](https://github.com/bboytang/CAIdex/actions/runs/37653194672) 已完成：Linux30通过，Windows/macOS各28通过1失败，仅 Lite两轮用例的 rollout 路径词法前缀检查失败；新增MCP重启、审批执行/marker及interrupt各平台通过，HTTP50通过。临时目录别名可在本机复现相同失败，现仅对 rollout 和隔离 CODEX_HOME 双方 canonicalize 后比较，仍检查真实落盘位置在隔离目录内；该用例 RED→GREEN、完整 workspace/Runtime30/Clippy/fmt通过，修复源码 `e27e9035eb41fec89eeda5dab43b1fd10640ed38` 的 [CI 37654366666](https://github.com/bboytang/CAIdex/actions/runs/37654366666) 三平台 completed/success；逐平台上述5个Runtime与2项HTTP门控/状态回归通过，HTTP50、Runtime Linux30/WindowsmacOS29，workspace/fmt/Clippy/native credentials/schema/doctor全过。独立审查无重要缺陷，留下2项测试覆盖 Minor：重启后第三次回复本身的单独精确对比，Lite Code Mode 输出与落盘原文的完整对比。商业模型/原生签名真实性、完整 cached web 和生产 Host 持久化权限不在此 fixture 的验收范围。
 
 固定上游依据：[MCP 原生 handler](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/handlers/mcp.rs)、[模型工具结果/发现输出](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/context.rs)。缓存网页支持缺口仍保留，正例的明确 scope 不等于原生 Provider 的完整经典兼容性。
 
@@ -101,10 +101,9 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ## 后续顺序
 
-1. 请求前缀/组织 v3 当前范围已三平台验收（见末节）；按第 2 项接 Gateway，不重做已验模块。
-2. 接 Gateway，经典/Lite 分别验证；不静默丢弃未映射语义。
-3. 固定 Runtime 经典/Lite 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
-4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
+1. 本轮 Anthropic 离线接线范围已三平台验收，下一步按 V3 接 Gemini，再兼容 API/Ollama，不重做已验模块。
+2. 缓存网页、grammar硬约束、其他尚未等价映射的原生语义仍明确不支持；生产 Host 历史权限与真实提供商/模型兼容性留在对应阶段。
+3. 两项测试覆盖 Minor 见实际 Runtime 接线节；离线成功不授予 Full，真实凭据/付费调用须另行明确授权。
 
 ## 官方契约依据
 
