@@ -65,7 +65,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 25081d8、交接 checkpoint 7efceff 已提交/push，源码工作区干净；本次仅补验收文档，提交后以实际 HEAD 续接。[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993) 对应 SHA 25081d8dfb9923e8d98f8bed5b7220570ac324fa，三平台 completed/success。恢复文件 src/reasoning.rs、src/request.rs、tests/reasoning.rs、tests/http/compiled.rs；完整 Provider/Gateway 尚未完成。
+- branch `main` 跟踪 `origin/main`，中断恢复核查：本地及远端 HEAD 均为 04f0d17，源码 25081d8、checkpoint 7efceff 与验收文档均已提交/push，核查前工作区干净。本次仅更新核查记录，未修改源码或重跑测试，提交后以实际 HEAD 续接。[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993) 对应 SHA 25081d8dfb9923e8d98f8bed5b7220570ac324fa，三平台 completed/success。恢复文件 src/reasoning.rs、src/request.rs、tests/reasoning.rs、tests/http/compiled.rs；完整 Provider/Gateway 尚未完成。
 
 ## 测试结果
 
@@ -79,3 +79,5 @@
 - iOS/商业 API/客户端逐状态 UI/真机/UAC/签名未验；macOS Rust CI 不等于 iOS 构建。完整客户端和 H–R 尚未完成。
 
 - 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；此项尚未实现。
+
+- 2026-10-07 中断核查：重新查询上述 CI，三平台仍为 completed/success；断开时处于结构化输出资料核对阶段，未开始实现，没有遗留源码修改或上一阶段待完成 CI。恢复先确认 Responses text.format/strict 契约，再实现能力门控、schema 保留及 effort 合并回归；summary/context 等随后逐项处理。
