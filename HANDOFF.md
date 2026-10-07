@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C、D/E 与 F 第一至第三步当前范围已验收。F/G 原生 OpenAI 离线 Adapter 源码 e7253c8 已推送，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部 success。当前正在实现 Anthropic 原生适配：本机已有 Messages/Models/SSE 协议基础与原生认证 HTTP、分页发现/非流式两轮消息，12 项协议及 7 项 HTTP 测试与本机 workspace/Clippy 通过；正保存本阶段，流式 HTTP/ModelProvider/Gateway 接入未完成；F/G 整体与 H–R 尚未完成。按 V3 既有授权使用本地协议服务，不读/创建真实模型 Key。
+- A/B/C、D/E 与 F 第一至第三步当前范围已验收。F/G 原生 OpenAI 离线 Adapter 源码 e7253c8 已推送，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部 success。当前正在实现 Anthropic 原生适配：本机已有 Messages/Models/SSE 协议基础与原生认证 HTTP、分页发现/非流式两轮消息，12 项协议及 7 项 HTTP 测试与本机 workspace/Clippy 通过；源码 `95df007` 已提交/push，CI 37575612338 正在运行，流式 HTTP/ModelProvider/Gateway 接入未完成；F/G 整体与 H–R 尚未完成。按 V3 既有授权使用本地协议服务，不读/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -63,7 +63,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，两者 HEAD 均为 `ba2609b`；OpenAI 功能源码 e7253c8 已提交/push/三平台验收。最新中断检查发现本机尚有未提交 `Cargo.toml`、`Cargo.lock` 和未跟踪 `model/providers/anthropic/`（Cargo.toml、src/lib.rs/message.rs/catalog.rs/stream.rs/client.rs、tests/protocol.rs/http.rs）；代码已在磁盘，但尚未上传 GitHub。新增 Provider 设计/验收文档与 README 索引，本次更新 HANDOFF，保留这些未完成修改，不标为已提交或三平台通过。
+- branch `main` 跟踪 `origin/main`，Anthropic 原生协议/HTTP 阶段已在 `95df007` 提交并 push；`model/providers/anthropic/`、workspace 清单、README、Provider 文档均已保存。三平台 [CI 37575612338](https://github.com/bboytang/CAIdex/actions/runs/37575612338) 与完整 SHA `95df0074015154f241ee9d2d4f7190ad0ae213dc` 匹配，目前 in_progress；尚不能宣称三平台通过。本次仅补充交接记录，源码工作区已干净，续接先确认实际 Git 和该 CI 状态。
 
 ## 测试结果
 
