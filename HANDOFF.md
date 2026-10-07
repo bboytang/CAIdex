@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-F/G：Anthropic 客户端动态工具发现与 v4 历史载体当前范围已三平台验收，源码 46d03d52806a20b2e0ca3db1d6ed5fbfd31de5ed 已 push；[CI 37650049761](https://github.com/bboytang/CAIdex/actions/runs/37650049761) 三平台 completed/success，新增10项逐平台通过。本轮网页搜索明确拒绝与 SSE 占位状态修正、经典真实 MCP 发现/执行/结果精确回放、app-server 实际重启/落盘 v4 恢复，以及原生 Lite 两轮/Code Mode 审批执行/interrupt 已本地通过；完整 Runtime30、workspace/Clippy/fmt/语法检查通过，独立审查无重要问题。源码与验收文档待聚焦提交/push、新三平台 CI。完整 F/G 未验收，H–R 尚未实施。沿 V3 离线 fixture 授权；完整项目/文档公开、提交/push/CI 已获授权，不重复询问。不读取用户模型 Key，不调用商业 API。
+F/G：Anthropic 客户端动态工具发现与 v4 历史载体当前范围已三平台验收，源码 46d03d52806a20b2e0ca3db1d6ed5fbfd31de5ed 已 push；[CI 37650049761](https://github.com/bboytang/CAIdex/actions/runs/37650049761) 三平台 completed/success，新增10项逐平台通过。本轮网页搜索明确拒绝与 SSE 占位状态修正、经典真实 MCP 发现/执行/结果精确回放、app-server 实际重启/落盘 v4 恢复，以及原生 Lite 两轮/Code Mode 审批执行/interrupt 已本地通过；完整 Runtime30、workspace/Clippy/fmt/语法检查通过，独立审查无重要问题。源码与验收文档 b403b0d745ce2506b8d3c2c7c24d896c8f1b25e2 已 push，[CI 37653194672](https://github.com/bboytang/CAIdex/actions/runs/37653194672) completed/failure：Linux全过，Windows/macOS均仅 Lite两轮 rollout 原始路径前缀断言失败，其余新增执行/重启/取消通过。本轮只规范化双方路径后比较，目录别名复现已 RED→GREEN，完整 workspace/Runtime30/Clippy/fmt 通过；待提交修复并重跑三平台，不授予已验收状态。完整 F/G 未验收，H–R 尚未实施。沿 V3 离线 fixture 授权；完整项目/文档公开、提交/push/CI 已获授权，不重复询问。不读取用户模型 Key，不调用商业 API。
 
 ## 已完成
 
@@ -16,7 +16,7 @@ F/G：Anthropic 客户端动态工具发现与 v4 历史载体当前范围已三
 
 ## 未完成与下一步顺序
 
-1. 当前恢复点：聚焦提交本轮 Provider/Runtime fixture 和文档，push 后逐平台核对新增 HTTP1/增强状态回归、Runtime5 与整套 Linux30/WindowsmacOS29、原生凭据/schema/doctor；通过后更新 checkpoint。无需再跳过旧经典用例。
+1. 当前恢复点：提交 rollout 路径比较修复并重跑三平台 CI；逐平台确认新增 HTTP1/增强状态回归、Runtime5 与整套 Linux30/WindowsmacOS29、原生凭据/schema/doctor，通过后更新 checkpoint。旧 CI 37653194672 失败，不当作三平台通过；不 skip 用例。
 2. 留下审查 Minor：重启用例进一步精确比较第三轮回复本身；Lite Code Mode 结果进一步与落盘 custom_tool_call_output 完整对比。现有断言已证明实际执行/审批及 MCP 结果原文相等，但不扩大声明这些未覆盖项。
 3. Anthropic 完整经典缓存 web_search 仍不支持：默认请求明确失败且认证/POST为0；正例明确由 Runtime 配置 web_search=disabled，Gateway 不过滤工具，不标 Full。原生映射只有获得等价缓存/text+image语义证据才能开放；缺能力不阻碍其他 Provider 推进。
 4. Gemini → 兼容 API/Ollama，按原计划逐项验证原生请求/工具/usage/reasoning/images/context/结构化输出与版本化报告；Models 清单和合成 fixture 不证明商业 Full。
@@ -35,22 +35,23 @@ F/G：Anthropic 客户端动态工具发现与 v4 历史载体当前范围已三
 
 ## 当前问题 / 环境
 
-- Anthropic 原生缓存网页映射仍无等价证据，已改明确 unsupported_anthropic_web_search 并验证默认经典在 Key/HTTP 前失败。显式禁用网页的真实动态发现正例通过，不能据此宣称默认经典兼容。Windows/macOS 新增执行路径还须本轮 CI；商业 Provider 未验证。
+- Anthropic 原生缓存网页映射仍无等价证据，已改明确 unsupported_anthropic_web_search 并验证默认经典在 Key/HTTP 前失败。显式禁用网页的真实动态发现正例通过，不能据此宣称默认经典兼容。Windows/macOS 新增执行路径在旧 CI 实际通过，唯 Lite 两轮路径断言失败：macOS临时目录别名/Windows规范化前缀与输入路径词法不同，必须 canonicalize 两方后比较。本机目录别名复现证实；修复后三平台整套仍待验。商业 Provider 未验证。
 - .git 普通沙箱只读，Git 提交/push 用 require_escalated；用户已授权。gh 已登录 bboytang，repo/workflow scope；旧 helper 缺 workflow scope，发布用 git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main，不改全局配置或输出凭据。
 - 正常沙箱禁止 loopback 且 /tmp/.git 触发凭据文件的 Git 拒绝；完整测试使用获授权执行环境、TMPDIR=/var/tmp，不能放松保护。本机无 Windows/Xcode/gnome-keyring-daemon，对应原生验证用 GitHub。
 - 同步 SecretStore 读开始后无法强制停止，但取消后不 POST；Broker 引用可换 Key，不等于组织身份；无自动 drop_block/retry。未配置真实模型 Key。
 
 ## 文件与 Git 状态
 
-- branch main 跟踪 origin/main；本轮启动时 HEAD=bd1183d，远端同步。本轮源码 46d03d5 与 docs 已 push，CI 已验收；本轮未提交 model/providers/anthropic/src/tools.rs、tests/http/discovery.rs、HANDOFF.md 与下述 Runtime 两文件；当前源码以 git status 为准。源码/CI checkpoint 以实际 git log 为准。
+- branch main 跟踪 origin/main；本轮启动时 HEAD=bd1183d，远端同步。本轮源码 46d03d5 与 docs 已 push，CI 已验收；本轮 b403b0d 已提交/push，源码工作区干净；本轮未提交为 HANDOFF/docs 验收状态及 runtime/bridge/tests/real_runtime.rs 单处 canonicalize 路径检查修复；无生产源码/依赖/品牌修改，源码以 git status 为准。源码/CI checkpoint 以实际 git log 为准。
 - 本轮：model/providers/anthropic/src/{tools,request,provider,client,binding,projection,response_stream}.rs；tests/{tools,discovery,http}.rs、tests/http/{discovery,compiled}.rs；docs/CAIdex-Anthropic-Provider-设计与验收.md。本轮不改生产 Runtime、依赖和品牌。
-- runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的既有未提交 Lite 接线本轮已续接完善：新增默认缓存网页拒绝、显式 scope MCP 发现/执行/重启，合成 SecretStore 读取计数、初始 trace 与 discovery SSE 分片。本轮可连同 Provider 门控一起聚焦提交；生产 Runtime、依赖与品牌未改。
+- runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的既有未提交 Lite 接线本轮已续接完善：新增默认缓存网页拒绝、显式 scope MCP 发现/执行/重启，合成 SecretStore 读取计数、初始 trace 与 discovery SSE 分片。本轮已连同 Provider 门控一起提交/push；生产 Runtime、依赖与品牌未改。
 - docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md 是执行基准；原 V2 仅历史参考。Runtime-能力对照、Credentials/Model-Gateway/OpenAI/Anthropic 设计与验收保留详细阶段证据。
 - credentials/core、apps/cli、model/core/providers/gateway、runtime/bridge、upstream/codex、.github/workflows/ci.yml、scripts 是已建立代码边界；assets/brand 四份原件未改。
 
 ## 测试与审查结果
 
-- 本轮 cargo test --workspace --locked exit0（Anthropic HTTP50）；Clippy -D warnings/fmt/diff/Python AST 通过。日志 /tmp/caidex-anthropic-runtime-{workspace,clippy,gates}.log。
+- 本轮路径修复：临时目录别名下 real_lite_runtime_via_native_anthropic_adapter 先同一 starts_with 断言失败，再通过；/tmp/caidex-runtime-path-{red,green,workspace,full,clippy}.log。完整 workspace、全部真实 Runtime30、Clippy/fmt/diff 通过；CI 37653194672 三平台结果已核对，Linux30通过、macOS/Windows各28通过1失败，HTTP50全过。修复后新 CI 待提交/验收。
+- 上轮 cargo test --workspace --locked exit0（Anthropic HTTP50）；Clippy -D warnings/fmt/diff/Python AST 通过。日志 /tmp/caidex-anthropic-runtime-{workspace,clippy,gates}.log。
 - 本地真实 Runtime：--ignored 全部30通过（无 skip），日志 /tmp/caidex-anthropic-runtime-full.log；其中默认经典为明确拒绝负例，不是缓存网页支持。正例实际3轮 MCP + app-server 重启第4轮；Lite3也通过。默认 workspace 不执行 ignored 原生服务/真实 Runtime 项；本机缺原生服务由 CI 验。
 - 两项工具映射、显式配置/raw beta、v4 降级与审查发现的用户追加文字已实际 RED→GREEN。JSON/SSE 搜索分片、大整数、原始发现输出、deferred/重复/schema 修订、并行 custom、篡改/配置门控、联合 betas 均本地验证；新增10项本轮三平台 CI 全部通过，不等于真实模型能力。
 - 上轮审查的搜索 added 状态 Minor 本轮已 RED→GREEN 修复；网页错误门控也先 RED→GREEN。真实 MCP 初始缺 profile RED，明确开启配置后通过；初版 MCP 文本断言与固定 Runtime structuredContent 格式不符，已改断言实际 JSON 且与落盘原文相等，未改生产数据。本轮独立审查无 Critical/Important，2项覆盖 Minor 留下一步；商业/签名/完整缓存 web、生产 Host 权限及尚未运行的三平台验收单独保留，不授予能力。

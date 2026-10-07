@@ -1602,7 +1602,13 @@ async fn real_anthropic_adapter(mode: &str) {
             .as_str()
             .expect("persisted rollout path"),
     );
-    assert!(path.starts_with(harness.directory.0.join("data")));
+    assert!(
+        path.canonicalize()
+            .unwrap()
+            .starts_with(harness.directory.0.join("data").canonicalize().unwrap()),
+        "rollout must remain inside the isolated CODEX_HOME: {}",
+        path.display()
+    );
     let rollout = std::fs::read_to_string(path).unwrap();
     let histories: Vec<Value> = rollout
         .lines()
