@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- Anthropic ModelProvider 六方法已实现：AnthropicModel 执行端配置、ApiKey reference 元数据、模型清单过滤、别名/版本门控；复用原生 client/编译器/投影。新增 6 项 HTTP 回归（累计 22）及完整配置联动、非流式完整投影预算检查通过；workspace/Clippy/fmt/diff 通过，日志 /tmp/caidex-anthropic-provider-workspace.log，末次仅补测试后 HTTP/Clippy 复验通过。源码准备提交并启动三平台 CI。Gateway/native context headers/响应关联头、请求前缀/账户绑定及实际 Runtime 接入仍未完成。
+- Anthropic ModelProvider 六方法已实现：源码 6ae83b9 已提交/push，CI 37614432384（SHA 6ae83b96b29d7767de46c5052b595c6f3a53b375）in_progress；需继续核对同一运行及新增 6 项逐平台日志。AnthropicModel 执行端配置、ApiKey reference、清单过滤、别名/版本门控，复用原生传输/编译器/投影。HTTP 累计 22 项、配置联动及完整投影预算检查、本地 workspace/Clippy/fmt/diff 通过；日志 /tmp/caidex-anthropic-provider-workspace.log，末次仅补测试后 HTTP/Clippy 复验通过。Gateway/native context headers/响应关联头、请求前缀/账户绑定及实际 Runtime 接入仍未完成。
 - Responses SSE 已三平台验收：源码 6a3986a，CI 37613084679 completed/success，新增 4 项投影及 2 项 HTTP 逐平台日志通过；本地 workspace/Clippy/fmt/diff 通过。custom 输入块结束后完整解包；完整原生回复验证后才发载体及 done；不宣称逐字符 custom 流。
 
 - 固定 Runtime 字段处理已实现并三平台验收：源码 1afee18，runtime_parameters.rs / ServiceTierMapping / 本地元数据开关，新增 3 项测试及扩展经典/Lite 实际 HTTP 两轮均通过；workspace/Clippy/fmt/diff 与 CI 37611149491 success。非空 stream_options/access_programs、priority/flex 仍明确拒绝，原生缓存策略不宣称等价。
@@ -70,7 +70,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 6a3986a / 交接 8e8a480 已提交/push；未提交修改：model/core/src/provider.rs 新增 ApiKey variant，Anthropic provider.rs / client.rs / request.rs / lib.rs 及 HTTP 新测试，HANDOFF.md。先完成 Provider 本地与 CI 验证，再进入 Gateway。SSE 无待验项。
+- branch `main` 跟踪 `origin/main`，Provider 源码 6ae83b9 已提交/push；本次仅交接 checkpoint 待提交，源码工作区干净。恢复文件 model/providers/anthropic/src/provider.rs 及 tests/http/{provider,streaming}.rs；先确认 CI 37614432384，再进入 Gateway。SSE 无待验项。
 
 ## 测试结果
 
