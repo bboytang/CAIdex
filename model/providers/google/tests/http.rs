@@ -1576,3 +1576,106 @@ async fn native_stream_header_and_idle_timeouts_never_complete_a_stalled_stop() 
         fixture.disconnected().await;
     }
 }
+
+#[tokio::test]
+async fn signed_json_and_stream_history_restore_the_exact_native_content_for_a_second_post() {
+    use caidex_model_core::{CanonicalRequest, ResponsesDialect};
+    use caidex_provider_google::NativeHistory;
+    for streaming in [false, true] {
+        let mut first = native_reply("STOP");
+        first["candidates"][0]["content"]["parts"] = json!([
+            {"text":"原生思考","thought":true,"thoughtSignature":"c2lnMQ=="},
+            {"functionCall":{"name":"echo","id":"native-call","args":{"text":"原文"}},"thoughtSignature":"c2lnMg=="},
+            {"futurePart":{"opaque":true}}
+        ]);
+        let initial = if streaming {
+            Reply::sse(std::slice::from_ref(&first))
+        } else {
+            Reply::json(first.clone())
+        };
+        let mut fixture = Fixture::start(vec![initial, Reply::json(native_reply("STOP"))]).await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let mut input = native_input();
+        input["tools"] =
+            json!([{"functionDeclarations":[{"name":"echo","parameters":{"type":"object"}}]}]);
+        let history = if streaming {
+            let mut stream = client
+                .stream_content(
+                    "models/fixture-001",
+                    input.clone(),
+                    RequestContext::default(),
+                )
+                .await
+                .unwrap();
+            loop {
+                if let NativeStreamEvent::Completed(complete) =
+                    stream.next().await.unwrap().unwrap()
+                {
+                    break NativeHistory::from_stream(
+                        &complete,
+                        "models/fixture-001",
+                        &input,
+                        Some(0),
+                        "history-fixture",
+                        128 * 1024,
+                    )
+                    .unwrap();
+                }
+            }
+        } else {
+            let response = client
+                .generate_content(
+                    "models/fixture-001",
+                    input.clone(),
+                    RequestContext::default(),
+                )
+                .await
+                .unwrap();
+            NativeHistory::from_response(
+                &response,
+                "models/fixture-001",
+                &input,
+                Some(0),
+                "history-fixture",
+                128 * 1024,
+            )
+            .unwrap()
+        };
+        assert_eq!(request_body(&fixture.request().await), input);
+        let projection = history.to_responses(128 * 1024).unwrap();
+        assert_eq!(projection.output()[1]["call_id"], "native-call");
+        let canonical = CanonicalRequest::new(
+            json!({"model":"alias","input":projection.output()}),
+            ResponsesDialect::Lite,
+        )
+        .unwrap();
+        let stored: Value =
+            serde_json::from_slice(&serde_json::to_vec(&canonical).unwrap()).unwrap();
+        let restored = NativeHistory::from_responses_output(
+            stored["input"].as_array().unwrap(),
+            "models/fixture-001",
+            &input,
+            128 * 1024,
+        )
+        .unwrap();
+        assert_eq!(restored.native_response(), &first);
+        let content = restored.replay_content().unwrap();
+        assert_eq!(content, &first["candidates"][0]["content"]);
+        let mut next = input.clone();
+        next["contents"]
+            .as_array_mut()
+            .unwrap()
+            .push(content.clone());
+        next["contents"].as_array_mut().unwrap().push(json!({"role":"user","parts":[{"functionResponse":{"name":"echo","id":"native-call","response":{"result":"合成结果"}}}]}));
+        client
+            .generate_content(
+                "models/fixture-001",
+                next.clone(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(request_body(&fixture.request().await), next);
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}

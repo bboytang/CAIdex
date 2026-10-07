@@ -169,37 +169,9 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         wire: Value,
         streaming: bool,
     ) -> ProviderResult<(reqwest::RequestBuilder, usize)> {
+        let expected_candidates = validate_generation_request(model, &wire, streaming)?;
         let invalid = || ProviderError::new(400, "google_invalid_request");
-        if !crate::catalog::resource_name(model) || !wire.is_object() || wire.get("model").is_some()
-        {
-            return Err(invalid());
-        }
-        let contents = wire["contents"]
-            .as_array()
-            .filter(|v| !v.is_empty())
-            .ok_or_else(invalid)?;
-        for content in contents {
-            crate::content::validate_content(content, false)?;
-        }
         let body = serde_json::to_vec(&wire).map_err(|_| invalid())?;
-        let expected_candidates = if streaming {
-            match crate::content::present(&wire, "generationConfig") {
-                None => 1,
-                Some(config) if config.is_object() => {
-                    match crate::content::present(config, "candidateCount") {
-                        None => 1,
-                        Some(count) => count
-                            .as_u64()
-                            .and_then(|count| usize::try_from(count).ok())
-                            .filter(|count| *count > 0)
-                            .ok_or_else(invalid)?,
-                    }
-                }
-                _ => return Err(invalid()),
-            }
-        } else {
-            1
-        };
         let method = if streaming {
             "streamGenerateContent"
         } else {
@@ -365,4 +337,43 @@ pub(crate) fn transport(error: reqwest::Error) -> ProviderError {
             "provider_transport_error"
         },
     )
+}
+
+/// Shared native request boundary for HTTP and bound history. JSON generation
+/// keeps its existing parameter acceptance; streams/history need candidate count.
+pub(crate) fn validate_generation_request(
+    model: &str,
+    wire: &Value,
+    streaming: bool,
+) -> ProviderResult<usize> {
+    let invalid = || ProviderError::new(400, "google_invalid_request");
+    if !crate::catalog::resource_name(model) || !wire.is_object() || wire.get("model").is_some() {
+        return Err(invalid());
+    }
+    let contents = wire["contents"]
+        .as_array()
+        .filter(|v| !v.is_empty())
+        .ok_or_else(invalid)?;
+    for content in contents {
+        crate::content::validate_content(content, false)?;
+    }
+    let expected_candidates = if streaming {
+        match crate::content::present(wire, "generationConfig") {
+            None => 1,
+            Some(config) if config.is_object() => {
+                match crate::content::present(config, "candidateCount") {
+                    None => 1,
+                    Some(count) => count
+                        .as_u64()
+                        .and_then(|count| usize::try_from(count).ok())
+                        .filter(|count| *count > 0)
+                        .ok_or_else(invalid)?,
+                }
+            }
+            _ => return Err(invalid()),
+        }
+    } else {
+        1
+    };
+    Ok(expected_candidates)
 }

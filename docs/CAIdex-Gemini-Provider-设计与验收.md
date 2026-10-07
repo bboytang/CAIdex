@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP已实现并三平台验收；最新传输源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项逐平台通过。Responses转换、版本化历史、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准为V3，代码在原方案的model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON、原生SSE解析及streamGenerateContent HTTP已实现并三平台验收；最新传输源码`27d227aeac01e19216d44a920896ac6618b89e28`，[CI37666947624](https://github.com/bboytang/CAIdex/actions/runs/37666947624)三平台completed/success，Google全30项逐平台通过。v1原生历史与Responses输出投影已本地实现（Google37项通过，本轮完整验证/审查/三平台CI待验）；Responses请求编译/工具映射、ModelProvider六方法、Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -107,3 +107,28 @@ worker拥有socket与Models/JSON共用owned permit；读取与send均受绝对ca
 本轮唯一fresh-context只读审查无Critical/Important；Minor1暂缓：满槽时取消/Drop的直接专项覆盖未补，当前覆盖读取期取消/Drop和满槽caller/total deadline。生产发送共用cancel/deadline guard，Drop abort同一worker，未发现实现缺陷；覆盖补充后才能宣称此组合已专项验收。
 
 排除项裁定：投影/历史/六方法/Registry/Gateway/真实Gemini Runtime留下一步，误用native证据会漏功能；商业/签名真实性/重组后实际回放/Full无live证据，误判会错误授予能力或提交被拒；生产Host/历史权限留H/I，误判会泄漏敏感数据，raw不作日志；全ProtoJSON/完整schema/媒体/模型参数沿canonical已知形状边界，误判会原生拒绝，不把形状检查当完整能力；旧parser/Minors不重复独立审查、不冒称已修复，成本为既有覆盖边界仍在；同步SecretStore开始后不能强停，只保证取消后无迟到POST，成本为后台读取资源；Windows/macOS必须本轮精确源码新CI，旧parserCI不能代验，误用会漏平台新增问题。均沿既定架构和阶段边界。
+
+
+## v1原生历史与Responses输出投影（本地已实现，三平台待验收）
+
+NativeHistory沿既有opaque载体模式使用caidex.google.native-history.v1:，provider=google/version=1，保存执行端选定的安全models资源、原始native request、独立CAIdex generation_id、显式candidate_index和完整response；流式另存所有原生JSON chunks。responseId/modelVersion缺失仍为未知，不拿请求路由或本地ID伪造服务端身份。请求校验提取自既有client供HTTP/历史复用，JSON HTTP原有参数接受范围保持；history按stream相同canonical candidateCount（缺省1）核对完整候选及范围。多候选必须选一条，完整替代候选原文仍保存；prompt阻断选择None。
+
+历史通过reasoning.encrypted_content进入经典/Lite canonical wire，该字段在CAIdex边界只是敏感JSON载体，不是加密、密码学认证或OpenAI密文。恢复要求完整连续carrier/display group、同执行端指定model、同原始native request；重放校验思考summary、可见text/role/存在的phase、函数name/call_id/namespace/JSON arguments及顺序/数量。Runtime可省略展示ID/phase或补status，等价JSON空白可变化；原始native值不由这些展示字段重建。provider/version/错模型/错请求/不一致/局部组/超限报静态错误。服务端签名真实性与同时伪造完整载体/投影的认证不在结构校验能力内，保护历史的H/I仍待实现。
+
+流式历史恢复时通过已验ContentStream重建派生response并与载体中response精确比较；坏/缺终态chunk或停止后新Part拒绝，完整raw chunks含未知字段/空值/重复usage保持。capsule序列化总大小有界；重框定增加的SSE分隔字节不冒充原始HTTP预算，网络原预算仍由HTTP worker执行。replay_content只给出所选候选存在且非空的原始Content，Part/thoughtSignature的位置与值不合并、不搬移；保留native角色默认表示，下一请求编译阶段负责其多轮角色归属。当前回放调用者显式提供原始请求校验，尚非自动canonical请求编译器。[Content/Part/FunctionCall契约](https://ai.google.dev/api/generate-content)
+
+输出投影仅产生所选候选的thought文本summary、可见text和STOP且非thought的客户端functionCall；server tool/code/media/未来Part留raw数据，不执行/抓取。native函数ID提供时原样使用，缺省时以本次generation_id/候选/Part位置生成稳定关联ID，重复最终call_id拒绝；缺省args表示为空对象，原始缺省仍留载体。STOP为生成completed；MAX_TOKENS/过滤/阻断/未知reason为incomplete，坏工具调用failed；这些非STOP不交付可执行function_call，文本保持commentary。完整工具声明/namespace/custom/动态发现映射及result配对留请求编译阶段，当前native函数名称投影不是这些能力的完成证据。
+
+usageMetadata.promptTokenCount已含cache，totalTokenCount含prompt+thoughts+candidates；规范化input直接取prompt，output取已知candidates+thoughts或明确total-prompt，total取原值/精确和。不会加cache或toolUsePrompt两次、不补缺省0；不足推导完整三计数时usage=null而raw保持。参与当前归一化计算的计数矛盾或u64相加溢出拒绝，cache/reasoning细节只在明确提供时设置；部分计数的已知下界矛盾覆盖边界见下列Minor。多候选计数为整次generation，不按所选候选猜分摊。[原生UsageMetadata](https://ai.google.dev/api/generate-content#UsageMetadata)
+
+新增history6与真实HTTP1已有效RED→GREEN，Google全37项通过：JSON/SSE完整wire/chunks/签名/未知Part/大数字面值与classic/Lite往返、选择/终态/安全拒绝/展示一致性、重复部分usage按字段覆盖、独立模型/request归属、native可选ID；实际JSON/SSE→canonical序列化→restore→下一原生POST精确保留Content/签名/functionResponse。reply/Key全部合成、没有执行工具或商业API；此HTTP正例使用客户端明确组装下一native body，不冒称六方法/Gateway/实际Gemini Runtime已接。日志 /tmp/caidex-google-history-{red,green,http-red,http-green}.log；完整workspace259passed/0failed/32ignored、Clippy -D warnings、fmt/diff通过；独立审查/精确源码新CI尚未完成。日志 /tmp/caidex-google-history-{workspace,clippy}.log。
+
+下一步：完成本轮验收后接Responses请求编译和原生工具映射（经典/Lite、namespace/custom/结果配对、图片、推理/结构输出/Runtime参数），再六方法/Registry/Gateway和固定Runtime。商业/签名实际验证/Full、生产访问控制仍保留边界，不混用Interactions的signature/事件字段。旧SSE重复/部分usage覆盖Minor由本轮history回归补齐（候选计数1→7、thought及末尾total补齐与raw值全保留）；旧满槽取消/Drop直接专项覆盖等其余Minor保持原边界。
+
+
+本轮唯一fresh-context只读审查无Critical/Important，2项代码Minor暂缓，1项交接旧checkpoint文本在常规阶段更新中删除：
+
+- 缺promptTokenCount的部分usage：total=1/candidates=7/thoughts=3或total=1/cache=2目前接受，规范化usage=null且完整原值保留，未造虚假计数；没有检查已知下界与total的矛盾。审查临时独立程序已复现（/tmp/caidex-google-history-review.rs）；以后补RED→GREEN下界校验才能宣称全量矛盾拒绝，不把现有覆盖夸大。
+- STOP里只有thought=true的functionCall加最终普通text时，不投影该调用，但native outcome仍为ToolCall，text phase为commentary。复现同上；目前为边缘展示一致性问题，无商业该组合证据；以后基于实际非thought客户端调用判phase并补回归，当前不标已修复。
+
+本轮排除项裁定：自动请求编译/工具映射/六方法/Gateway/真实Runtime是下一里程碑，误用本轮输出证据会漏功能；缺省role的model归属及失败/过滤/MAX_TOKENS中未执行call的配对/拒绝策略须在编译器落实，误用replay_content会提交不合适历史，本轮它只是原始Content借用视图；取消/HTTP截断流不能构造NativeStreamResponse，当前不承诺中断历史恢复，误判会丢失中断恢复上下文，留Host/Chat历史阶段单独记录而不伪装生成完成；展示ID/status可变但原生内容及语义字段仍真源，误判会用展示状态篡改回放；同时伪造载体/投影/source及签名真实性不是结构校验认证，误判会认领未认证数据，生产H/I访问控制与live验证仍待验；完整ProtoJSON/schema与旧parser/HTTP Minor保持既定canonical范围，误判会兼容请求拒绝，不重做已验阶段；商业Full无live证据，误判会错误能力承诺，不授予；本轮Windows/macOS需精确源码新CI，误用旧证据会漏平台问题。本轮只读取完成的native响应，JSON/SSE原始生成终态与Responses状态保持各自语义，不改变既定架构。
