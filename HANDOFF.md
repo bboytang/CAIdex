@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前：F/G 经典 builtin client tool_search 的共享 wire 契约已实现：专用借用视图、客户端 call_id 与完成边界结构校验，JSON arguments/原工具声明保留，不转成普通 function；新增2项先 RED→GREEN，核心22/workspace/Clippy/fmt/diff 本地通过。原生动态发现/inline/deferred、v3 前缀与 web_search 缓存语义还未接入，经典仍为已知 RED；完整 F/G 未验收。
+- 当前：F/G 经典 builtin client tool_search 的共享 wire 契约已实现：专用借用视图、客户端 call_id 与完成边界结构校验，JSON arguments/原工具声明保留，不转成普通 function；新增2项先 RED→GREEN，核心22/workspace/Clippy/fmt/diff 本地通过；源码 d29234c90f512f1f839753612194783f4f8afe6e 的 CI 37644294771 三平台 completed/success，新增2项逐平台通过。原生动态发现/inline/deferred、v3 前缀与 web_search 缓存语义还未接入，经典仍为已知 RED；完整 F/G 未验收。
 - 上步 Anthropic verbosity/partial usage 源码 aa5d3bf 的 CI 37641597463 三平台通过，不重做该验收。实际 Lite 两轮+落盘 v3、Code Mode 审批执行/原生结果回放、interrupt socket 三项上步本地通过；Runtime fixture 两文件仍未提交。本轮共享契约不改变 Runtime/Provider 执行权，仅 loopback 合成 fixture，无真实 Key/商业调用。
 - Fallback 身份/回放已三平台验收：源码 1f5e022，CI 37621255255 completed/success，新增 6 项逐平台日志通过。原生 SSE 更新实际 serving model、校验交接链和无 delta，换模型后已知 token 计数重新归属，iterations/raw wire 保留；echo 按末次交接过滤，投影只执行最终模型客户端调用。固定 Provider 对未配置实际模型报错并关闭，无 done/重试。
 - Anthropic input_transformations、上下文头、六方法/SSE、请求参数、summary/context、strict:true 结构化输出已三平台验收；源码/CI/范围见测试结果及 Anthropic 设计文档。上轮 Lite-only/Lite-first 初始化错误已修正，恢复不再重做；v3 当前绑定范围已验，Lite Gateway/实际工具执行本地3项通过，经典与完整三平台接线仍待验。
@@ -33,11 +33,10 @@
 
 ## 下一步顺序
 
-1. 重试同步本地后续交接文档提交：远端 main 仍 aa5d3bf，此前文档 push 三次 GitHub 500，本次恢复时上轮残留 push 也确认 500；Git Data API 上传也失败；正常非强制 push 即可，若服务仍失败则继续第 2 项，不重复参数/usage 已通过的三平台验收。保留尚未完成的 Runtime 两文件；生产提示映射是显式软指导，不宣称原生参数等价，切换指导触发已有 v3 prefix_mismatch。
-2. 接着落实经典 builtin client tool_search / provider web_search 的原生转换与能力门控。共享 core 专用视图/完成边界已实现，不重复实现或改成普通 function；下一步从 ToolMap、request、projection/response_stream 接入客户端专用 call/output，关联有效 pending ID 后加载声明，并验证 inline/deferred 的稳定前缀及显式 beta/profile 门控。固定请求含 tool_search execution=client（专用 call/output、动态工具发现）和 web_search external_web_access=false / text+image；不能当普通 function、静默删工具或把离线缓存语义换成实时联网。官方 client search 文档与固定 handler已读取，原生 deferred/inline tool 例外仍待实现；ToolMap 当前仍仅 function/custom/namespace。诊断 wire 在 /var/tmp/caidex-anthropic-gateway-{classic,lite}-wire.json（合成）。恢复失败：TMPDIR=/var/tmp cargo test -p caidex-runtime --test real_runtime real_classic_runtime_via_native_anthropic_adapter --locked -- --ignored。
-3. 将已本地通过的 Lite Gateway fixture 与经典完整接线一并验收：经典/Lite 多轮、实际工具/结果、interrupt、持久化 signed history；本轮 Lite3已通过，不重做已验 v3 模块。现有 Python fixture 已支持认证组织 GET/native SSE/Code Mode/阻塞 socket；无商业调用。完整实际 Runtime 命令当前须 --skip real_classic_runtime_via_native_anthropic_adapter，28通过不等于全通过。经典成功后再完整三平台检查并提交接线。
-4. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性。
-5. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
+1. 接着落实经典 builtin client tool_search / provider web_search 的原生转换与能力门控。共享 core 专用视图/完成边界已实现，不重复实现或改成普通 function；下一步从 ToolMap、request、projection/response_stream 接入客户端专用 call/output，关联有效 pending ID 后加载声明，并验证 inline/deferred 的稳定前缀及显式 beta/profile 门控。固定请求含 tool_search execution=client（专用 call/output、动态工具发现）和 web_search external_web_access=false / text+image；不能当普通 function、静默删工具或把离线缓存语义换成实时联网。官方 client search 文档与固定 handler已读取，原生 deferred/inline tool 例外仍待实现；ToolMap 当前仍仅 function/custom/namespace。诊断 wire 在 /var/tmp/caidex-anthropic-gateway-{classic,lite}-wire.json（合成）。恢复失败：TMPDIR=/var/tmp cargo test -p caidex-runtime --test real_runtime real_classic_runtime_via_native_anthropic_adapter --locked -- --ignored。
+2. 将已本地通过的 Lite Gateway fixture 与经典完整接线一并验收：经典/Lite 多轮、实际工具/结果、interrupt、持久化 signed history；本轮 Lite3已通过，不重做已验 v3 模块。现有 Python fixture 已支持认证组织 GET/native SSE/Code Mode/阻塞 socket；无商业调用。完整实际 Runtime 命令当前须 --skip real_classic_runtime_via_native_anthropic_adapter，28通过不等于全通过。经典成功后再完整三平台检查并提交接线。
+3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性。
+4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
 
 ## 重要架构决定
 
@@ -55,7 +54,7 @@
 
 ## 问题 / 阻塞
 
-- 本轮最终文档同步被 GitHub 写入故障阻塞：Git push 此前连续 3 次、恢复时的残留 push 再次远端 Internal Server Error（含 HTTP/1.1/无 delta 重试）；只读 API 正常，Git Data API 上传也失败，未更新远端 ref。上步 verbosity/usage 修复已发布并通过 CI，本轮 core 与完整 HANDOFF/文档和 Runtime 未提交文件保留；恢复网络写入后非强制 push 文档，无需重做开发。
+- GitHub 写入故障已恢复：此前连续 push 500/Git Data API 失败后，本轮最终普通非强制 push 成功，aa5d3bf→d29234c。源码和此前文档已同步；本轮三平台 CI 37644294771 已全部通过。Runtime 两个未完成测试文件仅本地保留，不受服务故障影响。
 - 原自动审批额度问题已恢复，依赖下载/编译成功。正常沙箱注入 `/tmp/.git` 导致文件保护测试被拒绝；相同代码在获授权的正常执行环境通过，未削弱保护。
 - `.git` 普通执行只读，提交/push 用 require_escalated。GitHub CLI 2.45.0 已核验登录 `bboytang`、scope repo/workflow；普通沙箱网络受限时 auth status 的 invalid 提示不能作为凭据失效证据。
 - 旧 Git helper 缺 workflow scope。发布使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不输出凭据或修改用户全局配置。
@@ -71,7 +70,7 @@
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `model/providers/anthropic/src/client.rs`、`model/providers/anthropic/tests/http/organization.rs`、`docs/CAIdex-Anthropic-Provider-设计与验收.md`：已验组织来源/guard；`binding.rs`、`request.rs`、`provider.rs`、`projection.rs`、`response_stream.rs` 与 `tests/http/binding.rs` 为已验 v3 实现/回归；`runtime/bridge/tests/real_runtime.rs` 和 `tests/fixtures/responses_server.py` 是下一步实际 Adapter 恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；远端/已发布生产源码 aa5d3bfeeeafbe8e1465daca22cecc60f501bf45，三平台 CI 37641597463 已完成通过。后续本地文档提交（d455455、8b03bba、a12fe88）及本轮 core 契约/文档仍未同步，main ahead（以 git log 为准）；不要 reset。关键未提交仅 runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的 Anthropic 接线（Lite3本地通过，经典 builtin 用例仍失败）。生产 Runtime、依赖和品牌未改。不要丢弃未完成 fixture 或提交已知 RED 的 Runtime 接线触发失败 CI。
+- branch `main` 跟踪 `origin/main`；本轮源码 d29234c 及此前3个文档提交已 push，GitHub 500 故障已恢复；后续交接 checkpoint 以 git log 为准。本轮核心源码 d29234c90f512f1f839753612194783f4f8afe6e 的三平台 CI 37644294771 已完成通过；当前 branch/远端文档提交以 git log 为准。关键未提交仅 runtime/bridge/tests/real_runtime.rs、tests/fixtures/responses_server.py 的 Anthropic 接线（Lite3/本轮定向7本地通过，经典 builtin 用例仍失败）。生产 Runtime、依赖和品牌未改。不要丢弃未完成 fixture 或提交已知 RED 的 Runtime 接线触发失败 CI。
 
 ## 测试结果
 
@@ -111,4 +110,4 @@
 
 - 参数/usage 修复最终验收：源码 aa5d3bfeeeafbe8e1465daca22cecc60f501bf45，[CI 37641597463](https://github.com/bboytang/CAIdex/actions/runs/37641597463) Linux/Windows/macOS 全部 completed/success；逐平台 2 个 verbosity 测试、style v3 HTTP 门控、缓存 usage/原生 fallback 部分计数回归通过（结构化6、HTTP45、投影9、协议15）。workspace/fmt/Clippy/native credentials/schema/doctor 和既有真实 Runtime Linux25/WindowsmacOS24通过。日志 /tmp/caidex-ci-37641597463.log。独立审查无重要问题；未提交的新 Lite3/经典接线不包含在该 CI，不宣称经典或商业 API 通过。
 
-- 本轮 tool_search core：新增2项先 RED（客户端缺 call_id 错误通过）→GREEN，核心22项、完整 workspace、Clippy -D warnings、fmt/diff 本地通过；日志 /tmp/caidex-tool-search-core-{workspace,clippy,lite-runtime}.log。workspace 默认忽略真实 Runtime 29项与 native 依赖测试；本轮另跑真实 Lite 定向7项全部通过（包含当前原生 Adapter/审批执行/interrupt 三项）；未跑本机缺原生服务的 ignored keyring，也未把未完成经典用例标绿。经典已知 invalid_anthropic_tools 未修复，当前共享视图不代表 Anthropic 原生动态工具或新增三平台 CI 通过。独立审查指出失败终态遗漏，补 RED→GREEN 后覆盖 completed/incomplete/failed/error，最终复核无问题；修正后 workspace/Clippy 全过。
+- 本轮 tool_search core：新增2项先 RED（客户端缺 call_id 错误通过）→GREEN，核心22项、完整 workspace、Clippy -D warnings、fmt/diff 本地通过；日志 /tmp/caidex-tool-search-core-{workspace,clippy,lite-runtime}.log。workspace 默认忽略真实 Runtime 29项与 native 依赖测试；本轮另跑真实 Lite 定向7项全部通过（包含当前原生 Adapter/审批执行/interrupt 三项）；未跑本机缺原生服务的 ignored keyring，也未把未完成经典用例标绿。经典已知 invalid_anthropic_tools 未修复，当前共享视图不代表 Anthropic 原生动态工具已支持。独立审查指出失败终态遗漏，补 RED→GREEN 后覆盖 completed/incomplete/failed/error，最终复核无问题；修正后 workspace/Clippy 全过。源码 d29234c90f512f1f839753612194783f4f8afe6e 的 [CI 37644294771](https://github.com/bboytang/CAIdex/actions/runs/37644294771) Linux/Windows/macOS 全部 completed/success，日志逐平台新增2项通过；workspace/fmt/Clippy/native credentials/schema/doctor 与既有真实 Runtime Linux25/WindowsmacOS24通过。日志 /tmp/caidex-ci-37644294771.log；未提交的新 Anthropic Runtime 接线未纳入该 CI。
