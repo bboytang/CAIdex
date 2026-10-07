@@ -4,12 +4,12 @@
 
 ## 当前任务
 
-- 正在实现 Responses SSE：新增 response_stream.rs 的 ResponsesProjection / ProjectedStreamingResponse，文本/摘要/function 参数实时转换，custom JSON 输入块结束后解包；仅 native message_stop 后发完整签名载体及最终 done，校验完整原生块、投影和序号。新增 4 项纯协议测试及 2 项 HTTP 取消/Drop/完成测试通过；fixture 名称遮蔽已修正，最终完整 workspace、Clippy/fmt/diff 已通过；日志 /tmp/caidex-response-stream-workspace.log。当前 main 准备提交源码/测试和文档，ModelProvider/Gateway 尚未接入。
+- Responses SSE 已实现：源码 6a3986a 已提交/push，ResponsesProjection / ProjectedStreamingResponse 实时转换文本/摘要/function 参数；custom JSON 输入块结束后解包；仅完整原生回复验证后发签名载体及最终 done。新增 4 项协议及 2 项 HTTP 测试、本地 workspace/Clippy/fmt/diff 通过；日志 /tmp/caidex-response-stream-workspace.log。CI 37613084679 同一源码 SHA：Linux/macOS success，Windows in_progress，需继续查同一运行及逐平台新增测试日志。ModelProvider/Gateway 尚未接入。
 
 - 固定 Runtime 字段处理已实现并三平台验收：源码 1afee18，runtime_parameters.rs / ServiceTierMapping / 本地元数据开关，新增 3 项测试及扩展经典/Lite 实际 HTTP 两轮均通过；workspace/Clippy/fmt/diff 与 CI 37611149491 success。非空 stream_options/access_programs、priority/flex 仍明确拒绝，原生缓存策略不宣称等价。
 
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。
-- 下一步实现 Anthropic ModelProvider 六方法与 Responses SSE 转换，再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
+- 下一步实现 Anthropic ModelProvider 六方法，再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体和 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
 
 ## 已完成
@@ -69,7 +69,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 1afee18、checkpoint beb23c6 已提交/push，源码工作区干净；本次仅验收文档待提交，提交后以实际 HEAD 续接。恢复文件 model/providers/anthropic/src/{runtime_parameters,request,transfer,projection}.rs；随后开始完整 Provider/Responses SSE/Gateway。
+- branch `main` 跟踪 `origin/main`，源码 6a3986a 已提交/push；本次交接核对仅 HANDOFF.md 更新待提交。恢复文件 model/providers/anthropic/src/{response_stream,stream,request,transfer,projection}.rs；先确认 CI 37613084679，再实现完整 Provider/Gateway。
 
 ## 测试结果
 
