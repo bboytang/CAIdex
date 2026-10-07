@@ -4,12 +4,13 @@
 
 ## 当前任务
 
-- Responses SSE 已实现：源码 6a3986a 已提交/push，ResponsesProjection / ProjectedStreamingResponse 实时转换文本/摘要/function 参数；custom JSON 输入块结束后解包；仅完整原生回复验证后发签名载体及最终 done。新增 4 项协议及 2 项 HTTP 测试、本地 workspace/Clippy/fmt/diff 通过；日志 /tmp/caidex-response-stream-workspace.log。CI 37613084679 同一源码 SHA：Linux/macOS success，Windows in_progress，需继续查同一运行及逐平台新增测试日志。ModelProvider/Gateway 尚未接入。
+- Anthropic ModelProvider 六方法已实现：AnthropicModel 执行端配置、ApiKey reference 元数据、模型清单过滤、别名/版本门控；复用原生 client/编译器/投影。新增 6 项 HTTP 回归（累计 22）及完整配置联动、非流式完整投影预算检查通过；workspace/Clippy/fmt/diff 通过，日志 /tmp/caidex-anthropic-provider-workspace.log，末次仅补测试后 HTTP/Clippy 复验通过。源码准备提交并启动三平台 CI。Gateway/native context headers/响应关联头、请求前缀/账户绑定及实际 Runtime 接入仍未完成。
+- Responses SSE 已三平台验收：源码 6a3986a，CI 37613084679 completed/success，新增 4 项投影及 2 项 HTTP 逐平台日志通过；本地 workspace/Clippy/fmt/diff 通过。custom 输入块结束后完整解包；完整原生回复验证后才发载体及 done；不宣称逐字符 custom 流。
 
 - 固定 Runtime 字段处理已实现并三平台验收：源码 1afee18，runtime_parameters.rs / ServiceTierMapping / 本地元数据开关，新增 3 项测试及扩展经典/Lite 实际 HTTP 两轮均通过；workspace/Clippy/fmt/diff 与 CI 37611149491 success。非空 stream_options/access_programs、priority/flex 仍明确拒绝，原生缓存策略不宣称等价。
 
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。
-- 下一步实现 Anthropic ModelProvider 六方法，再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
+- ModelProvider 六方法本地通过、三平台待验；再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体和 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
 
 ## 已完成
@@ -35,8 +36,8 @@
 
 ## 下一步顺序
 
-1. effort/thinking、strict:true、summary/context 已三平台验收；固定 Runtime 常规字段已验；下一步进入完整 Provider/SSE/Gateway，非等价额外参数保持明确拒绝，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
-2. 完成 Anthropic ModelProvider 六方法、原生认证需求、Responses SSE 事件转换、Gateway 注入及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。配置/HTTP fixture 通过不等于完整 Adapter 或商业模型支持，不重做已验传输。
+1. 确认 ModelProvider 六方法源码对应三平台 CI，并更新验收结果；此前请求参数/SSE 均已验，不重做传输。custom grammar 仅提示，未建立硬约束等价。
+2. 明确原生 context headers/响应关联头和请求前缀/账户绑定，再接 Gateway 及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。当前非空 headers 仍拒绝、Provider 不持久化请求，不能宣称直接可接 Runtime；配置/HTTP fixture 通过不等于完整 Adapter 或商业模型支持。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
 
@@ -69,7 +70,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 6a3986a 已提交/push；本次交接核对仅 HANDOFF.md 更新待提交。恢复文件 model/providers/anthropic/src/{response_stream,stream,request,transfer,projection}.rs；先确认 CI 37613084679，再实现完整 Provider/Gateway。
+- branch `main` 跟踪 `origin/main`，源码 6a3986a / 交接 8e8a480 已提交/push；未提交修改：model/core/src/provider.rs 新增 ApiKey variant，Anthropic provider.rs / client.rs / request.rs / lib.rs 及 HTTP 新测试，HANDOFF.md。先完成 Provider 本地与 CI 验证，再进入 Gateway。SSE 无待验项。
 
 ## 测试结果
 

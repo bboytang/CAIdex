@@ -93,6 +93,7 @@ pub struct RequestContext {
 pub enum CredentialRequirement {
     None,
     Bearer { reference: CredentialRef },
+    ApiKey { reference: CredentialRef },
 }
 
 pub struct ProviderResponse {

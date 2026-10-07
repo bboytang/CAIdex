@@ -123,6 +123,69 @@ async fn released(client: &AnthropicClient<Store>) {
 }
 
 #[tokio::test]
+async fn model_provider_streams_signed_function_history_for_classic_and_lite() {
+    use caidex_model_core::{
+        CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,
+    };
+    use caidex_provider_anthropic::{AnthropicProvider, NativeMessage, ToolMap};
+    let tools = [json!({"type":"function","name":"data_only","parameters":{"type":"object"}})];
+    let map = ToolMap::new(&tools, 10).unwrap();
+    let body = complete().replace("\"data_only\"", &map.native_tools()[0]["name"].to_string());
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let mut fixture = Fixture::start(body.clone(), false, "text/event-stream").await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let provider =
+            AnthropicProvider::new(client, vec![super::provider::profile()], 10).unwrap();
+        let prompt = json!({"role":"user","content":"hello"});
+        let wire = if dialect == ResponsesDialect::Classic {
+            json!({"model":"alias","tools":tools,"input":[prompt],"stream":true})
+        } else {
+            json!({"model":"alias","input":[{"type":"additional_tools","role":"developer","tools":tools},prompt],"stream":true})
+        };
+        let mut stream = provider
+            .stream_response(
+                CanonicalRequest::new(wire, dialect).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap()
+            .events;
+        let mut completed = None;
+        let mut arguments = String::new();
+        while let Some(item) = tokio::time::timeout(Duration::from_secs(5), stream.next())
+            .await
+            .unwrap()
+        {
+            if let ProviderStreamEvent::Model(event) = item.unwrap() {
+                if event.response.kind() == "response.function_call_arguments.delta" {
+                    arguments.push_str(event.response.wire()["delta"].as_str().unwrap());
+                }
+                if event.response.kind() == "response.completed" {
+                    completed = Some(event.response.wire()["response"].clone());
+                }
+            }
+        }
+        let completed = completed.unwrap();
+        assert_eq!(arguments, "{\"n\":18446744073709551616}");
+        assert_eq!(completed["output"][1]["name"], "data_only");
+        let restored = NativeMessage::from_responses_output(
+            completed["output"].as_array().unwrap(),
+            "native",
+            128 * 1024,
+        )
+        .unwrap();
+        assert_eq!(restored.content()[0]["signature"], "signed+/==\n");
+        assert_eq!(restored.content()[1]["name"], map.native_tools()[0]["name"]);
+        let sent = received(&mut fixture.requests).await;
+        assert_eq!(sent["model"], "native");
+        assert_eq!(sent["max_tokens"], 100);
+        assert_eq!(sent["stream"], true);
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        received(&mut fixture.closed).await;
+    }
+}
+
+#[tokio::test]
 async fn native_http_stream_preserves_signed_blocks_tools_usage_and_closes_without_http_eof() {
     let mut fixture = Fixture::start(complete(), false, "text/event-stream; charset=utf-8").await;
     let (client, _) = client(&fixture.base, Some(KEY), Limits::default());

@@ -355,6 +355,9 @@ impl MessagesRequest {
     pub fn tools(&self) -> &ToolMap {
         &self.tools
     }
+    pub(crate) fn into_parts(self) -> (Value, ToolMap) {
+        (self.wire, self.tools)
+    }
 }
 fn register(
     item: &Value,

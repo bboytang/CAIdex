@@ -60,6 +60,12 @@ pub struct AnthropicClient<S: SecretStore> {
     permits: Arc<Semaphore>,
 }
 impl<S: SecretStore + 'static> AnthropicClient<S> {
+    pub(crate) fn credential(&self) -> &CredentialRef {
+        &self.config.credential
+    }
+    pub(crate) fn limits(&self) -> &Limits {
+        &self.limits
+    }
     pub fn new(
         config: AnthropicConfig,
         broker: Arc<Broker<S>>,

@@ -17,6 +17,8 @@ use tokio::{
 
 #[path = "http/compiled.rs"]
 mod compiled;
+#[path = "http/provider.rs"]
+mod provider;
 #[path = "http/streaming.rs"]
 mod streaming;
 

@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP/SSE client。它是完整 Adapter 的基础，已有原生回复→Responses 投影和版本化原生回放，固定 Runtime 经典/Lite 两轮载体测试三平台通过；已有基础 Responses 请求→Messages 转换；尚未完成能力参数映射、ModelProvider 六方法、Gateway 注入和完整 Runtime 互操作。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；已实现 AnthropicProvider 六方法，执行端配置承接现有推理/结构化输出/Runtime 字段门控。固定 Runtime 经典/Lite 载体测试及前述转换阶段已三平台通过；六方法验证状态见 HANDOFF.md。Gateway/native context headers/响应关联头、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -22,7 +22,7 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 `from_responses_output` 仅恢复完整回复组：检查前缀/provider/version、大小、原生 schema、准确模型版本，以及展示文本/工具/推理与载体的一致性，拒绝丢失、修改或错误作用域的投影。允许 Runtime 展示 ID/status 变化和等价工具 JSON 格式；结构一致性校验不防止同时伪造载体和展示内容，提供商仍负责验证 thinking 签名。原生字段、内容顺序、signature/redacted data、citations/未来块/usage 保留在载体，不能从展示文本重建。
 
-文本显示及基本 function 工具投影已实现；服务端工具/未知块保持原生数据，绝不投影为 Runtime 可执行客户端工具。命名空间/custom 工具声明与调用映射已实现；引用展示、工具结果/完整请求翻译、流式 Responses 事件转换仍待实现。stop reason 分开保留；max_tokens/context 上限/pause/未知原因转 incomplete。refusal/tool_use 的 completed 仅是生成结束，不代表任务成功。usage 输入归一化为未缓存+缓存读+缓存写，缺失保持未知，累计值不重复相加；原始 usage 单独完整保存。
+文本、命名空间/function/custom 工具、工具结果与 Responses SSE 转换已实现；服务端工具/未知块保持原生数据，绝不投影为 Runtime 可执行客户端工具。引用展示及其他尚未支持的原生语义仍需独立映射。stop reason 分开保留；max_tokens/context 上限/pause/未知原因转 incomplete。refusal/tool_use 的 completed 仅是生成结束，不代表任务成功。usage 输入归一化为未缓存+缓存读+缓存写，缺失保持未知，累计值不重复相加；原始 usage 单独完整保存。
 
 ## 工具映射与历史绑定
 
@@ -54,7 +54,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 用户与工具结果图片按原顺序转换：HTTPS URL 引用、JPEG/PNG/GIF/WebP base64 data URL；不抓取网络图片或本地文件，base64 格式校验后保留原数据。OpenAI file_id 不可用于另一提供商；非 auto detail 尚未建立等价语义，明确拒绝。图片实际格式/尺寸/模型限制仍由提供商验证。
 
-原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。当前只支持基础请求字段；reasoning 的 summary/context、text/structured output、cache/service/metadata 等尚未映射的字段明确报 unsupported；effort 仅按执行端明确映射转换，完整 source 保留不等于原生语义支持。完整 Adapter、Responses SSE 转换和真实 Runtime 工具执行尚未完成。
+原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。基础构造入口默认关闭额外能力；reasoning、summary/context、strict:true 结构化输出和 Runtime 字段通过 RequestOptions 显式门控，详见下文。其他未映射语义明确报 unsupported；完整 source 保留不等于原生语义支持。完整 Adapter/Gateway 和真实 Runtime 工具执行尚未完成。
 
 基础请求转换源码 `d774ff5` 的 [CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092) 三平台全部 success：各平台请求 8/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过。真实 Runtime 既有 Linux 25、Windows/macOS 24 项通过。新增 HTTP 两轮验证编译结果通过原生传输回放签名和 custom 结果，不代表完整 Gateway 或 Runtime Anthropic 工具执行已验收。
 
@@ -72,9 +72,9 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ## 后续顺序
 
-1. 原生 HTTP SSE 与回复/工具投影三平台已验；基础请求转换三平台已验，继续能力参数映射/接口接入。
-2. 实现 Responses→Messages、工具/图片/推理/结构化输出映射和执行端原生 history；经典与 Lite 分别验收，不将未知字段静默丢弃。
-3. 完成 ModelProvider 六方法、原生认证需求元数据、Gateway 注入及固定 Runtime 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
+1. 完成 ModelProvider 六方法本地及三平台验收，复用已验收的原生传输/请求转换/SSE 投影。
+2. 明确 native context headers/响应关联头、请求前缀/账户绑定，再接 Gateway；不静默丢弃未映射语义。
+3. 固定 Runtime 经典/Lite 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
 
 ## 官方契约依据
@@ -134,6 +134,16 @@ ResponsesProjection 接收已验证的 NativeStreamEvent。原生块结束事件
 
 ProjectedStreamingResponse 直接拉取原生单槽 worker，无第二次模型请求或额外传输 worker；有限 pending 事件保留背压，取消/超时错误与 Drop 会释放原生 socket/并发 slot。一次 poll 对无投影 metadata 事件最多处理 32 个，避免阻塞执行器；native ping 映射 heartbeat。
 
-新增 4 项投影测试：字节切分、文本/摘要/工具增量及签名回放、SSE 序号与终态、停止类型、模型/最终块不匹配、预算及失败后不得完成。新增 2 项真实 HTTP fixture：无 native stop 时先收到文本、取消/Drop 关 socket 释放 slot、完整 signed function 回放且无需 HTTP EOF。验证状态见 HANDOFF.md；ModelProvider/Gateway、生产请求前缀/账户绑定、实际 Runtime 工具执行仍待接入，商业 API 未调用。
+新增 4 项投影测试：字节切分、文本/摘要/工具增量及签名回放、SSE 序号与终态、停止类型、模型/最终块不匹配、预算及失败后不得完成。新增 2 项真实 HTTP fixture：无 native stop 时先收到文本、取消/Drop 关 socket 释放 slot、完整 signed function 回放且无需 HTTP EOF。源码 6a3986a 的 [CI 37613084679](https://github.com/bboytang/CAIdex/actions/runs/37613084679) 三平台全部 success，新增 6 项逐平台日志核对通过；本地 workspace/Clippy/fmt/diff 通过。Gateway、生产请求前缀/账户绑定及实际 Runtime 工具执行仍待接入，商业 API 未调用。
 
 依据：[OpenAI Streaming responses](https://developers.openai.com/api/docs/guides/streaming-responses)、[Anthropic Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming)。
+
+## ModelProvider 六方法
+
+AnthropicProvider 接收已初始化的 AnthropicClient、AnthropicModel 列表及原生清单数量上限，复用同一认证/TLS/并发/超时/字节预算。AnthropicModel 固定别名、准确 native model、max_tokens/max_tools 和现有 RequestOptions 的执行端映射；默认不猜模型能力。空/重复身份、非法 metadata、零预算和超过已声明 output_limit 的预算拒绝；使用现有编译器检查映射重复，不增加另一套请求校验器。
+
+list_models 读取完整原生清单并与配置的 native model 取交集，返回 ProviderCatalog 可用性证据，不给未配置模型自动路由或 Full 标签。metadata/capabilities 不读取 Key；credential_requirements 使用共享 ApiKey variant，只公开 Broker reference。create_response/stream_response 分别校验模式、别名、dialect 与 streaming 门控；经编译器及原生传输后投影。非流式亦校验准确回复模型和投影预算，不能把错误模型回复纳入原生历史；流式复用 ProjectedStreamingResponse。
+
+新增 6 项回归覆盖模型清单过滤/认证元数据、坏 profile 和虚假 Full 报告、经典/Lite 多轮 signed custom history 与完整配置联动、错误回复模型、发送前拒绝（Key 未读）、经典/Lite signed function 流式回复。HTTP 累计 22 项；本地与 CI 验证状态见 HANDOFF.md。所有模型和秘密为合成 fixture，未调用商业 API。
+
+当前 native client 对非空 ContextHeaders 仍明确拒绝，Provider 返回空响应 ContextHeaders；未完成 request-id/turn-state 映射，不宣称 Runtime/Gateway 可直接使用。client_metadata/prompt_cache_key 在编译 source 保留且不外发；Provider 本身不持久化原始请求，生产 Host 仍须保存调用端 canonical 请求与本地归属。v2 回复载体不证明原请求前缀/账户匹配，配置/模型变化后的 signed history 和真实 Runtime 工具执行需后续验收。

@@ -1,9 +1,10 @@
-//! Native Anthropic protocol and HTTP client. ModelProvider conversion and
-//! Codex history mapping are subsequent work, not mocked interfaces.
+//! Native Anthropic inference and Responses projection. No tool executor,
+//! implicit credentials, model-name capability guesses or inference retries.
 mod catalog;
 mod client;
 mod message;
 mod projection;
+mod provider;
 mod reasoning;
 mod request;
 mod response_stream;
@@ -17,6 +18,7 @@ pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::{ModelCatalog, ModelsPage, NativeModel};
 pub use client::{AnthropicClient, AnthropicConfig};
 pub use message::{MessageOutcome, NativeMessage};
+pub use provider::{AnthropicModel, AnthropicProvider};
 pub use reasoning::{ReasoningMapping, SummaryMapping, ThinkingContext};
 pub use request::{MessagesRequest, RequestOptions};
 pub use response_stream::{ProjectedStreamingResponse, ResponsesProjection};
