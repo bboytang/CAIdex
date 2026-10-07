@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前 Anthropic ToolMap 已接入 v2 原生回复投影/历史载体：固定原始工具声明、namespace/function/custom 身份及 custom 原文；旧 v1 兼容。源码未提交，工具 7/投影 7/协议 12 项通过，完整 workspace/HTTP、真实 Runtime 25 项、workspace Clippy/fmt/diff 已通过，待提交和三平台 CI。请求转换、工具结果、ModelProvider/Gateway 尚未实现。
+- 当前 Anthropic ToolMap 已接入 v2 原生回复投影/历史载体：固定原始工具声明、namespace/function/custom 身份及 custom 原文；旧 v1 兼容。源码 bfaebb5 已提交/push，工具 7/投影 7/协议 12 项通过，完整 workspace/HTTP、真实 Runtime 25 项、workspace Clippy/fmt/diff 已通过；CI 37579438958 正在运行。请求转换、工具结果、ModelProvider/Gateway 尚未实现。
 - A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，首轮 Linux native keyring fixture 竞态已修正（`1fc0d3c`），[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 三平台全部 success；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
@@ -66,7 +66,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD `56f9b74`；此前已提交源码与验收文档均在远端。本次未提交：Cargo.lock、model/providers/anthropic/Cargo.toml、src/lib.rs，以及新增 src/tools.rs、tests/tools.rs；另修改 src/projection.rs、Provider 验收文档及本交接。ToolMap/v2 集成待完整验证及提交，不宣称完整 Adapter 已验收。此前 CI 37578134958 对应源码/fixture SHA `1fc0d3cdfff52285c4f91720141432130c847a25`，本次重新查询三平台 completed/success。
+- branch `main` 跟踪 `origin/main`，源码 HEAD `bfaebb5` 已提交/push，源码工作区干净；本交接正在补 CI 恢复点。[CI 37579438958](https://github.com/bboytang/CAIdex/actions/runs/37579438958) 对应 SHA `bfaebb5bfa94dc73eedd6ba04b61def86d8c0417`，已确认 in_progress。相关实现 src/tools.rs、src/projection.rs 与 tests/tools.rs；未接入完整请求/工具结果转换。
 
 ## 测试结果
 
@@ -87,4 +87,4 @@
 - 首轮 CI 37577688434：Windows/macOS success，Linux native keyring fixture 的 readiness Ping 自动激活另一 Secret Service，Broker status 返回 StorageAccessDenied；未执行 Linux 后续 Runtime。修正脚本为总线 NameHasOwner 查询+default collection Locked=false，避免自动激活；不重试凭据操作、不修改生产逻辑/安全检查。日志 `/tmp/caidex-ci-37577688434-linux.log`，修正后的实际 native keyring 已在新 CI 通过。
 - 最新 [CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958)，源码/fixture 修正 `1fc0d3c`：三平台 fmt/Clippy/workspace、native keyring、schema/doctor 全部 success；Anthropic 协议 12/HTTP 13/投影 7 项各平台通过。真实 Runtime 经典/Lite 两项新回放各平台通过，累计 Linux 25、Windows/macOS 24 项。日志 `/tmp/caidex-ci-37578134958.log`；跨机器以 GitHub 链接为准。该测试只验证版本化原生载体穿过固定 Runtime，不代表完整 Anthropic Gateway、请求转换、Code Mode 工具执行或商业模型已验。
 
-- ToolMap/v2 本轮本机：工具 7/投影 7/协议 12/HTTP 13 项与完整 workspace 通过；固定真实 Runtime 既有 25 项通过（载体执行覆盖 v1，v2 工具执行尚待 Adapter 接入），workspace all-targets Clippy/fmt/diff 通过。日志 /tmp/caidex-toolmap-workspace.log、/tmp/caidex-toolmap-runtime.log。尚未运行新源码的三平台 CI，旧 CI 不作为新源码验收。
+- ToolMap/v2 本轮本机：工具 7/投影 7/协议 12/HTTP 13 项与完整 workspace 通过；固定真实 Runtime 既有 25 项通过（载体执行覆盖 v1，v2 工具执行尚待 Adapter 接入），workspace all-targets Clippy/fmt/diff 通过。日志 /tmp/caidex-toolmap-workspace.log、/tmp/caidex-toolmap-runtime.log。新源码 CI 37579438958 正在运行，结果待验收；旧 CI 不作为新源码验收。
