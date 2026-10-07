@@ -44,6 +44,8 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 回复投影/回放新增 7 项测试与固定 Runtime 经典/Lite 各一项：[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 三平台全部成功（回复源码 a0de05f、fixture 修正 1fc0d3c）。每个平台协议 12/HTTP 13/投影 7 项通过，Runtime 累计 Linux 25、Windows/macOS 各 24 项。首轮 Linux native keyring 就绪检查触发 D-Bus 自动激活，已改为不激活的 owner 查询及 unlocked collection 门槛；新 CI 原生 keyring 通过，未改生产凭据逻辑。载体测试不是完整 Anthropic 请求/Gateway 互操作、商业模型或 Code Mode 工具验收。
 
+工具映射/历史绑定源码 `bfaebb5` 的 [CI 37579438958](https://github.com/bboytang/CAIdex/actions/runs/37579438958) 三平台全部 success：各平台工具 7/投影 7/协议 12/HTTP 13 项，workspace/fmt/Clippy、native keyring/schema/doctor 通过；既有真实 Runtime Linux 25、Windows/macOS 各 24 项通过。v2 工具测试覆盖 canonical wire 与原生回复还原，完整请求转换/Gateway 和真实 Runtime 工具执行仍待接入验收。
+
 ## 后续顺序
 
 1. 原生 HTTP SSE 与回复投影/回放三平台已验，继续下一项请求转换与接口接入。
