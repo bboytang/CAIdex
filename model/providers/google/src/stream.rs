@@ -39,6 +39,7 @@ impl fmt::Debug for ContentEvent {
 
 /// Chunks are the lossless native record. The response is a derived view:
 /// ordered Parts are appended unchanged; scalar metadata uses its latest value.
+#[derive(Clone)]
 pub struct NativeStreamResponse {
     chunks: Vec<Value>,
     response: NativeResponse,

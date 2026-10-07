@@ -1,6 +1,8 @@
 use crate::{ClientOptions, Error, Limits, ModelCatalog, ModelsPage, NativeModel, NativeResponse};
 use caidex_credentials::{Broker, CredentialRef, SecretKind, SecretStore};
-use caidex_model_core::{ProviderError, ProviderResult, RequestContext};
+use caidex_model_core::{
+    ContextHeaders, ProviderError, ProviderResult, RESPONSE_HEADERS, RequestContext,
+};
 use caidex_provider_custom::{CustomResponses, retry_after};
 use reqwest::{Url, header::HeaderValue};
 use serde_json::Value;
@@ -79,6 +81,12 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             limits,
         })
     }
+    pub(crate) fn limits(&self) -> &Limits {
+        &self.limits
+    }
+    pub(crate) fn credential(&self) -> &CredentialRef {
+        &self.config.credential
+    }
     /// Every page shares one permit, absolute deadline and total byte budget.
     /// Tokens are encoded as query data; secrets only enter a sensitive header.
     pub async fn discover_models(
@@ -124,6 +132,16 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         wire: Value,
         context: RequestContext,
     ) -> ProviderResult<NativeResponse> {
+        self.generate_content_with_headers(model, wire, context)
+            .await
+            .map(|(native, _)| native)
+    }
+    pub(crate) async fn generate_content_with_headers(
+        &self,
+        model: &str,
+        wire: Value,
+        context: RequestContext,
+    ) -> ProviderResult<(NativeResponse, ContextHeaders)> {
         let deadline = self.deadline(&context)?;
         let (request, _) = self.generation_request(model, wire, false)?;
         let _permit = self
@@ -132,9 +150,13 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             .map_err(|_| ProviderError::new(503, "provider_busy"))?;
         let mut remaining = self.limits.response_bytes;
         let response = self
-            .json(request, &context, deadline, &mut remaining)
+            .execute(request, &context, deadline, "application/json")
             .await?;
-        NativeResponse::parse(response)
+        let headers = response_headers(response.headers())?;
+        let wire = self
+            .read_json(response, &context, deadline, &mut remaining)
+            .await?;
+        Ok((NativeResponse::parse(wire)?, headers))
     }
     /// Candidate stops are not transport completion: delivery retains late
     /// metadata and requires normal HTTP EOF before a completed native record.
@@ -154,6 +176,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         let response = self
             .execute(request, &context, deadline, "text/event-stream")
             .await?;
+        let headers = response_headers(response.headers())?;
         Ok(crate::transfer::stream(
             response,
             context,
@@ -161,6 +184,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             self.limits.clone(),
             permit,
             expected_candidates,
+            headers,
         ))
     }
     fn generation_request(
@@ -221,9 +245,18 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         deadline: Instant,
         remaining: &mut usize,
     ) -> ProviderResult<Value> {
-        let mut response = self
+        let response = self
             .execute(request, context, deadline, "application/json")
             .await?;
+        self.read_json(response, context, deadline, remaining).await
+    }
+    async fn read_json(
+        &self,
+        mut response: reqwest::Response,
+        context: &RequestContext,
+        deadline: Instant,
+        remaining: &mut usize,
+    ) -> ProviderResult<Value> {
         let mut bytes = Vec::new();
         while let Some(chunk) = guard(
             response.chunk(),
@@ -376,4 +409,21 @@ pub(crate) fn validate_generation_request(
         1
     };
     Ok(expected_candidates)
+}
+
+fn response_headers(headers: &reqwest::header::HeaderMap) -> ProviderResult<ContextHeaders> {
+    let mut result = ContextHeaders::default();
+    // A native request ID is optional; no OpenAI turn state or arbitrary header forwarding.
+    for value in headers.get_all("x-request-id") {
+        let value = value
+            .to_str()
+            .map_err(|_| ProviderError::new(502, "provider_invalid_response_header"))?;
+        if value.trim().is_empty() {
+            return Err(ProviderError::new(502, "provider_invalid_response_header"));
+        }
+        result
+            .insert("x-request-id", value.to_owned(), RESPONSE_HEADERS)
+            .map_err(|_| ProviderError::new(502, "provider_invalid_response_header"))?;
+    }
+    Ok(result)
 }

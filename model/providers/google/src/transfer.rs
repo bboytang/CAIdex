@@ -2,7 +2,7 @@ use crate::{
     ContentEvent, ContentStream, Limits, NativeStreamResponse,
     client::{guard, transport},
 };
-use caidex_model_core::{ProviderError, ProviderResult, RequestContext};
+use caidex_model_core::{ContextHeaders, ProviderError, ProviderResult, RequestContext};
 use futures_util::Stream;
 use std::{
     pin::Pin,
@@ -23,10 +23,16 @@ pub enum NativeStreamEvent {
     Completed(NativeStreamResponse),
 }
 pub struct NativeStreamingResponse {
+    headers: ContextHeaders,
     receiver: mpsc::Receiver<NativeStreamEvent>,
     worker: JoinHandle<()>,
     failure: Arc<Mutex<Option<ProviderError>>>,
     terminal: bool,
+}
+impl NativeStreamingResponse {
+    pub fn headers(&self) -> &ContextHeaders {
+        &self.headers
+    }
 }
 impl Stream for NativeStreamingResponse {
     type Item = ProviderResult<NativeStreamEvent>;
@@ -64,6 +70,7 @@ pub(crate) fn stream(
     limits: Limits,
     permit: OwnedSemaphorePermit,
     expected_candidates: usize,
+    headers: ContextHeaders,
 ) -> NativeStreamingResponse {
     let (sender, receiver) = mpsc::channel(1);
     let failure = Arc::new(Mutex::new(None));
@@ -87,6 +94,7 @@ pub(crate) fn stream(
         // A full data slot must not block delivery of the terminal error.
     });
     NativeStreamingResponse {
+        headers,
         receiver,
         worker,
         failure,
