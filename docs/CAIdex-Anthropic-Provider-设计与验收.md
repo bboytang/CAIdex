@@ -72,8 +72,8 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ## 后续顺序
 
-1. 完成 ModelProvider 六方法本地及三平台验收，复用已验收的原生传输/请求转换/SSE 投影。
-2. 明确 native context headers/响应关联头、请求前缀/账户绑定，再接 Gateway；不静默丢弃未映射语义。
+1. 实现 native context headers/响应关联头和请求前缀/账户绑定，复用已验收的原生传输/请求转换/SSE 投影/六方法。
+2. 接 Gateway，经典/Lite 分别验证；不静默丢弃未映射语义。
 3. 固定 Runtime 经典/Lite 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
 
@@ -144,6 +144,6 @@ AnthropicProvider 接收已初始化的 AnthropicClient、AnthropicModel 列表�
 
 list_models 读取完整原生清单并与配置的 native model 取交集，返回 ProviderCatalog 可用性证据，不给未配置模型自动路由或 Full 标签。metadata/capabilities 不读取 Key；credential_requirements 使用共享 ApiKey variant，只公开 Broker reference。create_response/stream_response 分别校验模式、别名、dialect 与 streaming 门控；经编译器及原生传输后投影。非流式亦校验准确回复模型和投影预算，不能把错误模型回复纳入原生历史；流式复用 ProjectedStreamingResponse。
 
-新增 6 项回归覆盖模型清单过滤/认证元数据、坏 profile 和虚假 Full 报告、经典/Lite 多轮 signed custom history 与完整配置联动、错误回复模型、发送前拒绝（Key 未读）、经典/Lite signed function 流式回复。HTTP 累计 22 项；本地与 CI 验证状态见 HANDOFF.md。所有模型和秘密为合成 fixture，未调用商业 API。
+新增 6 项回归覆盖模型清单过滤/认证元数据、坏 profile 和虚假 Full 报告、经典/Lite 多轮 signed custom history 与完整配置联动、错误回复模型/完整投影预算、发送前拒绝（Key 未读）、经典/Lite signed function 流式回复。HTTP 累计 22 项；源码 6ae83b9 的 [CI 37614432384](https://github.com/bboytang/CAIdex/actions/runs/37614432384) 三平台 success，新增 6 项逐平台日志核对通过，workspace/fmt/Clippy/native keyring/schema/doctor 及既有 Runtime Linux 25、Windows/macOS 24 项通过。本地 workspace/Clippy/fmt/diff 通过；末次只增强测试后 HTTP/Clippy 复验通过。所有模型和秘密为合成 fixture，未调用商业 API。
 
 当前 native client 对非空 ContextHeaders 仍明确拒绝，Provider 返回空响应 ContextHeaders；未完成 request-id/turn-state 映射，不宣称 Runtime/Gateway 可直接使用。client_metadata/prompt_cache_key 在编译 source 保留且不外发；Provider 本身不持久化原始请求，生产 Host 仍须保存调用端 canonical 请求与本地归属。v2 回复载体不证明原请求前缀/账户匹配，配置/模型变化后的 signed history 和真实 Runtime 工具执行需后续验收。

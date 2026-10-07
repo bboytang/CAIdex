@@ -4,13 +4,13 @@
 
 ## 当前任务
 
-- Anthropic ModelProvider 六方法已实现：源码 6ae83b9 已提交/push，CI 37614432384（SHA 6ae83b96b29d7767de46c5052b595c6f3a53b375）in_progress；需继续核对同一运行及新增 6 项逐平台日志。AnthropicModel 执行端配置、ApiKey reference、清单过滤、别名/版本门控，复用原生传输/编译器/投影。HTTP 累计 22 项、配置联动及完整投影预算检查、本地 workspace/Clippy/fmt/diff 通过；日志 /tmp/caidex-anthropic-provider-workspace.log，末次仅补测试后 HTTP/Clippy 复验通过。Gateway/native context headers/响应关联头、请求前缀/账户绑定及实际 Runtime 接入仍未完成。
+- Anthropic ModelProvider 六方法已实现并三平台验收：源码 6ae83b9，CI 37614432384 success，新增 6 项逐平台通过。AnthropicModel 执行端配置、ApiKey reference、清单过滤、别名/版本门控，复用原生传输/编译器/投影；HTTP 累计 22 项、配置联动及完整投影预算检查、本地 workspace/Clippy/fmt/diff 通过。下一阶段：native context headers/响应关联头与请求前缀/账户契约，再接 Gateway/实际 Runtime；这些尚未完成。
 - Responses SSE 已三平台验收：源码 6a3986a，CI 37613084679 completed/success，新增 4 项投影及 2 项 HTTP 逐平台日志通过；本地 workspace/Clippy/fmt/diff 通过。custom 输入块结束后完整解包；完整原生回复验证后才发载体及 done；不宣称逐字符 custom 流。
 
 - 固定 Runtime 字段处理已实现并三平台验收：源码 1afee18，runtime_parameters.rs / ServiceTierMapping / 本地元数据开关，新增 3 项测试及扩展经典/Lite 实际 HTTP 两轮均通过；workspace/Clippy/fmt/diff 与 CI 37611149491 success。非空 stream_options/access_programs、priority/flex 仍明确拒绝，原生缓存策略不宣称等价。
 
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。
-- ModelProvider 六方法本地通过、三平台待验；再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
+- 六方法/SSE 已验，再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体和 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
 
 ## 已完成
@@ -36,8 +36,8 @@
 
 ## 下一步顺序
 
-1. 确认 ModelProvider 六方法源码对应三平台 CI，并更新验收结果；此前请求参数/SSE 均已验，不重做传输。custom grammar 仅提示，未建立硬约束等价。
-2. 明确原生 context headers/响应关联头和请求前缀/账户绑定，再接 Gateway 及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。当前非空 headers 仍拒绝、Provider 不持久化请求，不能宣称直接可接 Runtime；配置/HTTP fixture 通过不等于完整 Adapter 或商业模型支持。
+1. 实现原生 context headers/响应关联头的明确契约；当前非空 headers 仍拒绝，Provider 不持久化 canonical 请求，生产 Host 尚待承接本地归属。请求参数/SSE/六方法已验，不重做传输。
+2. 实现请求前缀/执行端账户作用域的历史校验，再接 Gateway 及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。HTTP fixture 通过不等于完整 Adapter/商业模型支持；custom grammar 仅提示，未建立硬约束等价。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
 
@@ -61,6 +61,7 @@
 - `.git` 普通执行只读，提交/push 用 require_escalated。GitHub CLI 2.45.0 已核验登录 `bboytang`、scope repo/workflow；普通沙箱网络受限时 auth status 的 invalid 提示不能作为凭据失效证据。
 - 旧 Git helper 缺 workflow scope。发布使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不输出凭据或修改用户全局配置。
 - 本机没有 Windows/Xcode/gnome-keyring-daemon，相关验证转 GitHub。无真实模型、客户端逐状态截图/真机验证；按计划保留明确验收项。
+- Anthropic v2 载体仅检查回复/模型/投影，较新模型签名还可绑定 system/tools/messages 前缀及账户。下一阶段须保留请求前缀和执行端作用域并补 mode/tool/trim/resume 回归，不得 drop_block/retry 掩盖不匹配。依据：Anthropic preserved-thinking 官方文档（见 Provider 设计文档）。
 
 ## 文件与 Git 状态
 
@@ -70,7 +71,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，Provider 源码 6ae83b9 已提交/push；本次仅交接 checkpoint 待提交，源码工作区干净。恢复文件 model/providers/anthropic/src/provider.rs 及 tests/http/{provider,streaming}.rs；先确认 CI 37614432384，再进入 Gateway。SSE 无待验项。
+- branch `main` 跟踪 `origin/main`，Provider 源码 6ae83b9 / checkpoint f6a3df3 已提交/push；本次验收文档随收尾提交，无未完成源码改动。续接先检查实际 HEAD/status。恢复文件 model/providers/anthropic/src/{provider,client,projection,request}.rs、tests/http/{provider,streaming}.rs；下一步进入上下文头和历史契约。
 
 ## 测试结果
 
@@ -83,15 +84,11 @@
 - 本机文件保护回归使用 TMPDIR=/var/tmp；保留 Git 存储拒绝。所有秘密/推理为合成 fixture，不读用户模型 Key。跨机器以 GitHub 链接为准，本地 /tmp 日志可丢失。
 - iOS/商业 API/客户端逐状态 UI/真机/UAC/签名未验；macOS Rust CI 不等于 iOS 构建。完整客户端和 H–R 尚未完成。
 
-- 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；已实现 strict:true 的请求转换，完整验证与其余语义待继续。
-
-
-- 本次恢复点：strict:true 已验；summary/context 已三平台验收，继续其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
-
 - 结构化转换 [CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)，源码 SHA 9796682e13cb50e7bf52f3581b543b240eacdbd0：Windows/Linux/macOS 全部 completed/success，逐平台日志核对新增 4 项通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-structured-workspace.log、/tmp/caidex-ci-37583615309.log。strict:true 阶段源码与验收文档均已提交/push。
-
-- 新发现：较新 Anthropic 模型的签名可绑定 system/tools/历史消息前缀及账户，当前载体仅验证 native 回复和投影，不证明请求前缀或账户相同。完整 Adapter 必须保留请求前缀契约并补 mode/tool/trim/resume 回归，不得自动 drop_block/retry 掩盖不匹配。资料 https://platform.claude.com/docs/en/build-with-claude/preserved-thinking 。
 
 - Summary/context [CI 37610039312](https://github.com/bboytang/CAIdex/actions/runs/37610039312)，源码 SHA 024b211bbd6ae31ff0160ca3995ed75a4eadae5d：三平台全部 completed/success，逐平台日志核对新增 3 项与扩展 HTTP fixture 通过；累计推理 8/请求 12/结构化 4/HTTP 14/协议 12/投影 7/工具 7 项，本地完整 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-summary-context-workspace.log、/tmp/caidex-ci-37610039312.log。上一步自动审核额度失败未执行完整测试，本次已补验，不存在该测试遗留任务。
 
 - Runtime 字段 [CI 37611149491](https://github.com/bboytang/CAIdex/actions/runs/37611149491)，源码 SHA 1afee186b3162a2d534438eee9e9cbd25bd81832：三平台全部 completed/success，日志核对新增 3 项及扩展 HTTP 两轮逐平台通过；workspace/fmt/Clippy/native keyring/schema/doctor 与既有 Runtime 回归通过。本地日志 /tmp/caidex-runtime-parameters-workspace.log、/tmp/caidex-ci-37611149491.log。未调用商业 API，尚未实际 Anthropic Runtime 工具执行。
+
+- SSE [CI 37613084679](https://github.com/bboytang/CAIdex/actions/runs/37613084679)，源码 SHA 6a3986a0b705f3e8ce0937c9def712bd906b32cf：三平台 success，新增投影 4/HTTP 2 逐平台日志通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-response-stream-workspace.log、/tmp/caidex-ci-37613084679.log。
+- ModelProvider [CI 37614432384](https://github.com/bboytang/CAIdex/actions/runs/37614432384)，源码 SHA 6ae83b96b29d7767de46c5052b595c6f3a53b375：三平台 success，新增 6 项逐平台日志通过（HTTP 累计 22），workspace/fmt/Clippy/native keyring/schema/doctor 全过，既有真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-anthropic-provider-workspace.log、/tmp/caidex-ci-37614432384.log；末次仅增强测试后 HTTP/Clippy 本地复验通过。仍未做实际 Anthropic Gateway/Runtime 工具执行或商业 API 验收。
