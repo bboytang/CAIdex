@@ -4,12 +4,14 @@ mod catalog;
 mod client;
 mod message;
 mod stream;
+mod transfer;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::{ModelCatalog, ModelsPage, NativeModel};
 pub use client::{AnthropicClient, AnthropicConfig};
 pub use message::{MessageOutcome, NativeMessage};
 pub use stream::{MessageEvent, MessageStream, NativeStreamState};
+pub use transfer::{NativeStreamEvent, NativeStreamingResponse};
 
 use caidex_model_core::{ProviderError, ProviderResult};
 use serde_json::Value;

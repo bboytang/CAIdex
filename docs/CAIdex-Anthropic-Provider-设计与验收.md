@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP client。它是完整 Adapter 的基础，尚未实现 ModelProvider 六方法、Responses 经典/Lite 转换、Gateway 注入和固定 Runtime 互操作。
+`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP/SSE client。它是完整 Adapter 的基础，尚未实现 ModelProvider 六方法、Responses 经典/Lite 转换、Gateway 注入和固定 Runtime 互操作。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -14,15 +14,21 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 原生回复按 content 原顺序保留，包括 thinking/signature、redacted_thinking、工具及未来块；回放直接使用原内容。签名不做密码学验证，缺少完整签名的 thinking 当前拒绝回放。SSE 增量重建文本、签名、工具 JSON 和 citations，严格校验 lifecycle/index/usage；usage 累计值替换而非相加。未知事件/块保留；无法重建的未知 delta 在 block stop 报错，避免伪造无损 history。`Completed` 只表示收到完整 message_stop，具体 end_turn/tool_use/max_tokens/pause/refusal 等由 MessageOutcome 区分。
 
+`stream_message` 与非流式共用认证、HTTP 状态和 media-type 检查，使用 stream=true 和 text/event-stream。返回原生事件流，只有解析器完成 message_stop 后才提供独立 Completed(NativeMessage) 数据项；保留原生签名、工具内容和累计 usage，不执行工具。原生 error 事件被替换为静态 ProviderError，不输出第三方诊断文本、URL 或原始 frame。
+
+事件队列容量为 1，读取和发送均受取消/总 deadline 约束。I/O worker 持有并发许可；流无人读取时也会因超时/取消关闭 socket、释放许可，并独立保存错误，待已有队列项排空后交付。Drop 终止 worker。正常完成主动关闭上游连接，不等待 HTTP EOF；截断、非法 SSE、超限和错误不生成完整回复。
+
 ## 验证
 
 - 12 项协议测试：所有字节切分及逐字节 UTF-8/SSE、签名和 opaque 顺序、工具输入、累计 usage、各 stop reason、未知字段/大整数、截断/取消/错误/预算、Models 分页与能力证据。
-- 7 项真实 loopback HTTP 测试：认证/版本/workspace、游标编码、两轮原生签名回放、429 安全分类且不重试、取消及 missing Key 不发送、实际 socket EOF/timeout/并发许可释放、跨页字节和数量上限、配置拒绝。
+- 7 项基础真实 loopback HTTP 测试：认证/版本/workspace、游标编码、两轮原生签名回放、429 安全分类且不重试、取消及 missing Key 不发送、实际 socket EOF/timeout/并发许可释放、跨页字节和数量上限、配置拒绝。
 - 使用合成秘密与离线 fixture，未读取用户模型 Key、调用商业 API或执行工具。源码 `95df007` 的 [CI 37575612338](https://github.com/bboytang/CAIdex/actions/runs/37575612338) 在 Linux/Windows/macOS 全部成功：每个平台 12 项协议、7 项 HTTP 测试通过，既有固定 Runtime 回归 Linux 23、Windows/macOS 各 22 项通过。该 Runtime 回归尚不验证 Anthropic 互操作。
+
+新增 6 项原生 SSE socket 测试：签名/工具/累计 usage、完成后主动关闭、静态错误分类、EOF/大小上限、Drop/取消、满队列 deadline/错误保存/许可释放、idle timeout/content-type。新增流式三平台验收尚待本轮 CI，不能套用上一阶段通过记录。
 
 ## 后续顺序
 
-1. 接入原生 HTTP SSE：单槽背压、取消/Drop/未消费队列 deadline、错误事件脱敏、完整结束校验及真实 socket 测试。
+1. 原生 HTTP SSE 已实现，本机新增 6 项 socket 测试通过，继续核验本轮完整 workspace 与三平台 CI。
 2. 实现 Responses→Messages、工具/图片/推理/结构化输出映射和执行端原生 history；经典与 Lite 分别验收，不将未知字段静默丢弃。
 3. 完成 ModelProvider 六方法、原生认证需求元数据、Gateway 注入及固定 Runtime 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。

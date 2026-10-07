@@ -1,10 +1,11 @@
-use crate::{ModelCatalog, ModelsPage, NativeMessage, NativeModel};
+use crate::transfer::guard;
+use crate::{ModelCatalog, ModelsPage, NativeMessage, NativeModel, NativeStreamingResponse};
 use caidex_credentials::{Broker, CredentialRef, SecretKind, SecretStore};
 use caidex_model_core::{ProviderError, ProviderResult, RequestContext};
 use caidex_provider_custom::{ClientOptions, CustomResponses, Error, Limits, retry_after};
 use reqwest::{Url, header::HeaderValue};
 use serde_json::Value;
-use std::{fmt, future::Future, sync::Arc, time::SystemTime};
+use std::{fmt, sync::Arc, time::SystemTime};
 use tokio::{sync::Semaphore, time::Instant};
 
 /// Executor-owned profile. Caller JSON cannot choose a URL, credential or scope.
@@ -56,7 +57,7 @@ pub struct AnthropicClient<S: SecretStore> {
     broker: Arc<Broker<S>>,
     http: reqwest::Client,
     limits: Limits,
-    permits: Semaphore,
+    permits: Arc<Semaphore>,
 }
 impl<S: SecretStore + 'static> AnthropicClient<S> {
     pub fn new(
@@ -87,7 +88,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
             config,
             broker,
             http,
-            permits: Semaphore::new(limits.in_flight),
+            permits: Arc::new(Semaphore::new(limits.in_flight)),
             limits,
         })
     }
@@ -134,23 +135,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         context: RequestContext,
     ) -> ProviderResult<NativeMessage> {
         let deadline = self.deadline(&context)?;
-        if model.trim().is_empty()
-            || model.chars().any(char::is_control)
-            || !wire.is_object()
-            || wire["max_tokens"].as_u64().is_none()
-            || !wire["messages"].is_array()
-            || wire
-                .get("stream")
-                .is_some_and(|v| !v.is_null() && v != false)
-        {
-            return Err(ProviderError::new(400, "invalid_native_message_request"));
-        }
-        wire["model"] = model.into();
-        wire["stream"] = false.into();
-        let body = serde_json::to_vec(&wire).expect("JSON value");
-        if body.len() > self.limits.request_bytes {
-            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
-        }
+        let body = self.message_body(model, &mut wire, false)?;
         let _permit = self
             .permits
             .try_acquire()
@@ -170,6 +155,61 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
             self.json(outgoing, &context, deadline, &mut remaining)
                 .await?,
         )
+    }
+    /// Foreground native SSE. Dropping the delivery cancels its I/O worker.
+    pub async fn stream_message(
+        &self,
+        model: &str,
+        mut wire: Value,
+        context: RequestContext,
+    ) -> ProviderResult<NativeStreamingResponse> {
+        let deadline = self.deadline(&context)?;
+        let body = self.message_body(model, &mut wire, true)?;
+        let permit = self
+            .permits
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
+        let url = self
+            .config
+            .base
+            .join("messages")
+            .expect("fixed relative path");
+        let outgoing = self
+            .http
+            .post(url)
+            .header("content-type", "application/json")
+            .body(body);
+        let response = self
+            .execute(outgoing, &context, deadline, "text/event-stream")
+            .await?;
+        Ok(crate::transfer::stream(
+            response,
+            context,
+            deadline,
+            self.limits.clone(),
+            permit,
+        ))
+    }
+    fn message_body(&self, model: &str, wire: &mut Value, stream: bool) -> ProviderResult<Vec<u8>> {
+        if model.trim().is_empty()
+            || model.chars().any(char::is_control)
+            || !wire.is_object()
+            || wire["max_tokens"].as_u64().is_none()
+            || !wire["messages"].is_array()
+            || wire
+                .get("stream")
+                .is_some_and(|v| !v.is_null() && v != stream)
+        {
+            return Err(ProviderError::new(400, "invalid_native_message_request"));
+        }
+        wire["model"] = model.into();
+        wire["stream"] = stream.into();
+        let body = serde_json::to_vec(wire).expect("JSON value");
+        if body.len() > self.limits.request_bytes {
+            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
+        Ok(body)
     }
     fn deadline(&self, context: &RequestContext) -> ProviderResult<Instant> {
         if context.cancellation.is_cancelled() {
@@ -191,51 +231,37 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
             .unwrap_or(Instant::now() + self.limits.total_timeout)
             .min(Instant::now() + self.limits.total_timeout))
     }
-    async fn guard<T>(
-        &self,
-        operation: impl Future<Output = T>,
-        context: &RequestContext,
-        deadline: Instant,
-    ) -> ProviderResult<T> {
-        tokio::select! {
-            biased;
-            _ = context.cancellation.cancelled() => Err(ProviderError::new(503, "provider_cancelled")),
-            _ = tokio::time::sleep_until(deadline) => Err(ProviderError::new(504, "provider_timeout")),
-            result = operation => Ok(result),
-        }
-    }
-    async fn json(
+    async fn execute(
         &self,
         mut outgoing: reqwest::RequestBuilder,
         context: &RequestContext,
         deadline: Instant,
-        remaining: &mut usize,
-    ) -> ProviderResult<Value> {
+        media_type: &str,
+    ) -> ProviderResult<reqwest::Response> {
+        self.deadline(context)?;
         let broker = self.broker.clone();
         let reference = self.config.credential.clone();
         let header_deadline = deadline.min(Instant::now() + self.limits.header_timeout);
-        let secret = self
-            .guard(
-                tokio::task::spawn_blocking(move || broker.resolve(&reference)),
-                context,
-                header_deadline,
-            )
-            .await?
-            .map_err(|_| ProviderError::new(503, "credential_unavailable"))?
-            .map_err(|_| ProviderError::new(503, "credential_unavailable"))?
-            .ok_or_else(|| ProviderError::new(503, "credential_missing"))?;
+        let secret = guard(
+            tokio::task::spawn_blocking(move || broker.resolve(&reference)),
+            context,
+            header_deadline,
+        )
+        .await?
+        .map_err(|_| ProviderError::new(503, "credential_unavailable"))?
+        .map_err(|_| ProviderError::new(503, "credential_unavailable"))?
+        .ok_or_else(|| ProviderError::new(503, "credential_missing"))?;
         let mut key = HeaderValue::from_str(secret.expose())
             .map_err(|_| ProviderError::new(503, "credential_invalid_header"))?;
         key.set_sensitive(true);
         outgoing = outgoing
             .header("x-api-key", key)
             .header("anthropic-version", "2023-06-01")
-            .header("accept", "application/json");
+            .header("accept", media_type);
         if let Some(workspace) = &self.config.workspace {
             outgoing = outgoing.header("anthropic-workspace-id", workspace.clone());
         }
-        let mut response = self
-            .guard(outgoing.send(), context, header_deadline)
+        let response = guard(outgoing.send(), context, header_deadline)
             .await?
             .map_err(transport)?;
         let status = response.status();
@@ -274,20 +300,31 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
                     .next()
                     .unwrap_or("")
                     .trim()
-                    .eq_ignore_ascii_case("application/json")
+                    .eq_ignore_ascii_case(media_type)
             })
         {
             return Err(ProviderError::new(502, "provider_invalid_content_type"));
         }
+        Ok(response)
+    }
+    async fn json(
+        &self,
+        outgoing: reqwest::RequestBuilder,
+        context: &RequestContext,
+        deadline: Instant,
+        remaining: &mut usize,
+    ) -> ProviderResult<Value> {
+        let mut response = self
+            .execute(outgoing, context, deadline, "application/json")
+            .await?;
         let mut bytes = Vec::new();
-        while let Some(chunk) = self
-            .guard(
-                response.chunk(),
-                context,
-                deadline.min(Instant::now() + self.limits.idle_timeout),
-            )
-            .await?
-            .map_err(transport)?
+        while let Some(chunk) = guard(
+            response.chunk(),
+            context,
+            deadline.min(Instant::now() + self.limits.idle_timeout),
+        )
+        .await?
+        .map_err(transport)?
         {
             *remaining = remaining
                 .checked_sub(chunk.len())
@@ -297,7 +334,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         serde_json::from_slice(&bytes).map_err(|_| ProviderError::new(502, "provider_invalid_json"))
     }
 }
-fn transport(error: reqwest::Error) -> ProviderError {
+pub(crate) fn transport(error: reqwest::Error) -> ProviderError {
     ProviderError::new(
         if error.is_timeout() { 504 } else { 502 },
         if error.is_timeout() {

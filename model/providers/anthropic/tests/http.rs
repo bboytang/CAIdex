@@ -15,6 +15,9 @@ use tokio::{
     sync::mpsc,
 };
 
+#[path = "http/streaming.rs"]
+mod streaming;
+
 const KEY: &str = "SYNTHETIC_ANTHROPIC_KEY";
 struct Store {
     reads: Arc<AtomicUsize>,

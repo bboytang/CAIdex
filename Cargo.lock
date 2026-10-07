@@ -387,6 +387,7 @@ dependencies = [
  "caidex-credentials",
  "caidex-model-core",
  "caidex-provider-custom",
+ "futures-util",
  "reqwest",
  "serde",
  "serde_json",
