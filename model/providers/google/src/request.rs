@@ -28,6 +28,14 @@ pub struct GenerateContentRequest {
     source: Value,
     tools: ToolMap,
 }
+/// Fixed execution-side image capabilities. Empty lists mean unsupported,
+/// not model-name inference or proof of live service compatibility.
+#[derive(Default)]
+pub struct RequestOptions<'a> {
+    pub image_mime_types: &'a [&'a str],
+    pub tool_result_image_mime_types: &'a [&'a str],
+    pub image_detail_mappings: &'a [crate::ImageDetailMapping],
+}
 impl GenerateContentRequest {
     pub fn from_responses(
         request: &CanonicalRequest,
@@ -36,6 +44,24 @@ impl GenerateContentRequest {
         max_bytes: usize,
         max_tools: usize,
     ) -> ProviderResult<Self> {
+        Self::from_responses_with_options(
+            request,
+            native_model,
+            max_tokens,
+            max_bytes,
+            max_tools,
+            &RequestOptions::default(),
+        )
+    }
+    pub fn from_responses_with_options(
+        request: &CanonicalRequest,
+        native_model: &str,
+        max_tokens: u64,
+        max_bytes: usize,
+        max_tools: usize,
+        options: &RequestOptions<'_>,
+    ) -> ProviderResult<Self> {
+        crate::media::validate_options(options)?;
         let source = request.wire();
         if !crate::catalog::resource_name(native_model)
             || max_tokens == 0
@@ -285,13 +311,9 @@ impl GenerateContentRequest {
                 {
                     return Err(invalid());
                 }
-                // Validate supported output blocks, retaining their exact order,
-                // text and metadata in the native object-valued response.
-                if !result.output.as_array().is_some_and(Vec::is_empty) {
-                    text_parts(result.output, false)?;
-                }
                 let mut response =
-                    json!({"name":binding.native["name"],"response":{"output":result.output}});
+                    crate::media::tool_output(result.output, binding.order, options, max_bytes)?;
+                response["name"] = binding.native["name"].clone();
                 if let Some(id) = crate::content::present(&binding.native, "id") {
                     response["id"] = id.clone();
                 }
@@ -327,7 +349,7 @@ impl GenerateContentRequest {
                 {
                     return Err(invalid());
                 }
-                let parts = text_parts(&item["content"], role == "assistant")?;
+                let parts = content_parts(&item["content"], role, options, max_bytes)?;
                 match role {
                     "developer" | "system" if contents.is_empty() => {
                         system.extend(parts);
@@ -401,7 +423,12 @@ fn register(
     );
     Ok(())
 }
-fn text_parts(content: &Value, assistant: bool) -> ProviderResult<Vec<Value>> {
+fn content_parts(
+    content: &Value,
+    role: &str,
+    options: &RequestOptions<'_>,
+    max_bytes: usize,
+) -> ProviderResult<Vec<Value>> {
     if let Some(text) = content.as_str() {
         return Ok(vec![json!({"text":text})]);
     }
@@ -411,16 +438,28 @@ fn text_parts(content: &Value, assistant: bool) -> ProviderResult<Vec<Value>> {
         .ok_or_else(invalid)?;
     blocks
         .iter()
-        .map(|block| match block["type"].as_str() {
-            Some("input_text" | "text") => {
-                Ok(json!({"text":block["text"].as_str().ok_or_else(invalid)?}))
+        .map(|block| {
+            if block["type"] == "input_image" {
+                if role != "user" {
+                    return Err(ProviderError::new(400, "unsupported_google_images"));
+                }
+                crate::media::image(block, options, false, max_bytes)
+            } else {
+                text_part(block, role == "assistant")
             }
-            Some("output_text") if assistant => {
-                Ok(json!({"text":block["text"].as_str().ok_or_else(invalid)?}))
-            }
-            _ => Err(unsupported()),
         })
         .collect()
+}
+pub(crate) fn text_part(block: &Value, assistant: bool) -> ProviderResult<Value> {
+    match block["type"].as_str() {
+        Some("input_text" | "text") => {
+            Ok(json!({"text":block["text"].as_str().ok_or_else(invalid)?}))
+        }
+        Some("output_text") if assistant => {
+            Ok(json!({"text":block["text"].as_str().ok_or_else(invalid)?}))
+        }
+        _ => Err(unsupported()),
+    }
 }
 fn append(contents: &mut Vec<Value>, role: &str, parts: Vec<Value>, merge: bool) {
     if let Some(last) = contents

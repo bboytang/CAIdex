@@ -1996,3 +1996,209 @@ async fn responses_compiler_replays_json_and_sse_signed_history_over_three_nativ
         assert_eq!(reads.load(Ordering::SeqCst), 3);
     }
 }
+
+// Catches encoding images as text, moving nested tool media to user Parts,
+// losing signatures/references across persistence, or bypassing prefix checks.
+#[tokio::test]
+async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_replay() {
+    use caidex_model_core::{CanonicalRequest, ResponsesDialect};
+    use caidex_provider_google::{
+        GenerateContentRequest, ImageDetailMapping, NativeHistory, RequestOptions, ToolMap,
+    };
+    const MODEL: &str = "models/fixture-media";
+    const LIMIT: usize = 256 * 1024;
+    let declarations = json!([
+        {"type":"function","name":"inspect","parameters":{"type":"object"}},
+        {"type":"custom","name":"raw","format":{"type":"text"}}
+    ]);
+    let map = ToolMap::new(declarations.as_array().unwrap(), 8).unwrap();
+    let details = [ImageDetailMapping::new("high".into(), "MEDIA_RESOLUTION_HIGH".into()).unwrap()];
+    let options = RequestOptions {
+        image_mime_types: &["image/png"],
+        tool_result_image_mime_types: &["image/png", "image/jpeg"],
+        image_detail_mappings: &details,
+    };
+    let make_request = |dialect: ResponsesDialect, mut input: Vec<Value>| {
+        let mut source =
+            json!({"model":"alias","stream":true,"store":false,"parallel_tool_calls":true});
+        if dialect == ResponsesDialect::Lite {
+            input.insert(
+                0,
+                json!({"type":"additional_tools","role":"developer","tools":declarations}),
+            );
+        } else {
+            source["tools"] = declarations.clone();
+        }
+        source["input"] = json!(input);
+        CanonicalRequest::new(source, dialect).unwrap()
+    };
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let signed = json!({"role":"model","parts":[
+            {"functionCall":{"name":map.native_tools()[0]["name"],"args":{}},"thoughtSignature":"image-function"},
+            {"functionCall":{"name":map.native_tools()[1]["name"],"id":"raw-media","args":{"input":" original🙂 "}},"thoughtSignature":"image-custom"}
+        ]});
+        let first_reply = json!({"candidates":[{"finishReason":"STOP","content":signed}]});
+        let second_reply = json!({"candidates":[{"finishReason":"STOP","content":{"parts":[
+            {"text":"media inspected","thoughtSignature":"media-final"}]}}]});
+        let mut fixture = Fixture::start(vec![
+            Reply::json(first_reply),
+            Reply::sse(std::slice::from_ref(&second_reply)),
+            Reply::json(native_reply("STOP")),
+        ])
+        .await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let mut input = vec![json!({"role":"user","content":[
+            {"type":"input_text","text":"inspect"},
+            {"type":"input_image","image_url":"data:image/png;base64,aW1hZ2U=","detail":"high"}
+        ]})];
+        let first = GenerateContentRequest::from_responses_with_options(
+            &make_request(dialect, input.clone()),
+            MODEL,
+            128,
+            LIMIT,
+            8,
+            &options,
+        )
+        .unwrap();
+        let reply = client
+            .generate_content(MODEL, first.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let sent = fixture.request().await;
+        assert!(
+            sent.starts_with(
+                "POST /proxy/v1beta/models/fixture-media:generateContent HTTP/1.1\r\n"
+            )
+        );
+        let body = request_body(&sent);
+        assert_eq!(
+            body["contents"][0],
+            json!({"role":"user","parts":[
+                {"text":"inspect"},{"inlineData":{"mimeType":"image/png","data":"aW1hZ2U="},"mediaResolution":{"level":"MEDIA_RESOLUTION_HIGH"}}
+            ]})
+        );
+        let projected = NativeHistory::from_response(
+            &reply,
+            MODEL,
+            first.wire(),
+            Some(0),
+            "media-http-first",
+            LIMIT,
+        )
+        .unwrap()
+        .with_tools(first.tools(), LIMIT)
+        .unwrap()
+        .to_responses(LIMIT)
+        .unwrap();
+        input.extend(projected.output().to_vec());
+        input.extend([
+            json!({"type":"custom_tool_call_output","call_id":"raw-media","output":[
+                {"type":"input_image","image_url":"data:image/jpeg;base64,Y3VzdG9t","detail":"auto"}]}),
+            json!({"type":"function_call_output","call_id":"call_media-http-first_0_0","output":[
+                {"type":"input_text","text":"before","future":{"keep":true}},
+                {"type":"input_image","image_url":"data:image/png;base64,cmVzdWx0","future":"keep"},
+                {"type":"input_text","text":"after"}]})
+        ]);
+        let stored = serde_json::to_vec(&make_request(dialect, input.clone())).unwrap();
+        let restored =
+            CanonicalRequest::new(serde_json::from_slice(&stored).unwrap(), dialect).unwrap();
+        let second = GenerateContentRequest::from_responses_with_options(
+            &restored, MODEL, 128, LIMIT, 8, &options,
+        )
+        .unwrap();
+        let user_index = usize::from(dialect == ResponsesDialect::Lite);
+        let mut edited = restored.wire().clone();
+        edited["input"][user_index]["content"][1]["image_url"] =
+            "data:image/png;base64,ZWRpdA==".into();
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &CanonicalRequest::new(edited, dialect).unwrap(),
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &options
+            )
+            .unwrap_err()
+            .code,
+            "google_history_request_mismatch"
+        );
+        let mut unsafe_source = restored.wire().clone();
+        unsafe_source["input"][user_index]["content"][1]["image_url"] =
+            "https://invalid.example/private.png".into();
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &CanonicalRequest::new(unsafe_source, dialect).unwrap(),
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &options
+            )
+            .unwrap_err()
+            .code,
+            "unsupported_google_image_source"
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        let mut stream = client
+            .stream_content(MODEL, second.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let reply = loop {
+            if let NativeStreamEvent::Completed(reply) = stream.next().await.unwrap().unwrap() {
+                break reply;
+            }
+        };
+        assert!(stream.next().await.is_none());
+        let sent = fixture.request().await;
+        assert!(sent.starts_with(
+            "POST /proxy/v1beta/models/fixture-media:streamGenerateContent?alt=sse HTTP/1.1\r\n"
+        ));
+        let body = request_body(&sent);
+        assert_eq!(body["contents"][1], signed);
+        let results = json!({"role":"user","parts":[
+            {"functionResponse":{"name":map.native_tools()[0]["name"],"response":{"output":[
+                {"type":"input_text","text":"before","future":{"keep":true}},
+                {"type":"input_image","image_url":{"$ref":"caidex_image_1_1"},"future":"keep"},
+                {"type":"input_text","text":"after"}]},"parts":[{"inlineData":{"mimeType":"image/png","data":"cmVzdWx0","displayName":"caidex_image_1_1"}}]}},
+            {"functionResponse":{"name":map.native_tools()[1]["name"],"id":"raw-media","response":{"output":[
+                {"type":"input_image","image_url":{"$ref":"caidex_image_2_0"},"detail":"auto"}]},"parts":[{"inlineData":{"mimeType":"image/jpeg","data":"Y3VzdG9t","displayName":"caidex_image_2_0"}}]}}
+        ]});
+        assert_eq!(body["contents"][2], results);
+        let projected = NativeHistory::from_stream(
+            &reply,
+            MODEL,
+            second.wire(),
+            Some(0),
+            "media-http-second",
+            LIMIT,
+        )
+        .unwrap()
+        .with_tools(second.tools(), LIMIT)
+        .unwrap()
+        .to_responses(LIMIT)
+        .unwrap();
+        input.extend(projected.output().to_vec());
+        input.push(json!({"role":"user","content":"third"}));
+        let stored = serde_json::to_vec(&make_request(dialect, input)).unwrap();
+        let restored =
+            CanonicalRequest::new(serde_json::from_slice(&stored).unwrap(), dialect).unwrap();
+        let third = GenerateContentRequest::from_responses_with_options(
+            &restored, MODEL, 128, LIMIT, 8, &options,
+        )
+        .unwrap();
+        client
+            .generate_content(MODEL, third.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let sent = fixture.request().await;
+        let body = request_body(&sent);
+        assert_eq!(body["contents"][1], signed);
+        assert_eq!(body["contents"][2], results);
+        assert_eq!(
+            body["contents"][3],
+            json!({"role":"model","parts":[{"text":"media inspected","thoughtSignature":"media-final"}]})
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 3);
+    }
+}
