@@ -166,7 +166,7 @@ MessageStream 保留 message_start.message 中的报告。fallback 后的最终 
 
 Responses 投影及历史恢复共用检查：已知 thinking_dropped 的 prefix/model/organization/end_user_binding_mismatch 返回静态 502 anthropic_input_thinking_dropped；已知 thinking_mismatch_allowed/prefix_binding_mismatch 返回静态 502 anthropic_input_binding_mismatch。回放旧或改动载体中的这些报告报 400 invalid_anthropic_replay。流式在首帧或末帧见到已知问题立即终止，不交付 output_item.done、终态或新历史载体；末帧错误之前已发送的展示/参数增量不被冒充成完成。ProjectedStreamingResponse 沿用 Drop 关闭原生 worker/socket 并释放许可，不增加传输 worker，不 drop_block、删历史或重试；原始诊断/path/扩展内容不加入错误。未知报告按原生契约保留，不构成已验证兼容性的证据。
 
-新增 5 项回归覆盖报告形状、逐字节 SSE、缺省/null/空与最终数组替换、未知字段/大整数、两种已知 type 与四种 drop reason、旧载体防绕过、经典/Lite 实际 JSON/SSE、首帧/末帧失败后的无工具 done/完成/socket 关闭/slot 释放与单次 Key 读取。协议 13/投影 8/增量投影 5/HTTP 28 及完整 workspace/Clippy/fmt/diff 本地通过；三平台 CI 状态见 HANDOFF.md。
+新增 5 项回归覆盖报告形状、逐字节 SSE、缺省/null/空与最终数组替换、未知字段/大整数、两种已知 type 与四种 drop reason、旧载体防绕过、经典/Lite 实际 JSON/SSE、首帧/末帧失败后的无工具 done/完成/socket 关闭/slot 释放与单次 Key 读取。源码 b4d05fd（完整 SHA b4d05fdfc623343992fdb5592456b03718dd247d）的 [CI 37618365350](https://github.com/bboytang/CAIdex/actions/runs/37618365350) 三平台 completed/success，新增 5 项逐平台日志核对通过，协议 13/投影 8/增量投影 5/HTTP 28 及 workspace/fmt/Clippy/native keyring/schema/doctor、既有真实 Runtime Linux 25/Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过。
 
 尚未接入 thinking-binding-controls-2026-08-01 执行端 beta opt-in、前缀快照和真实组织作用域；缺省报告无法发现静默 drop，不宣称完整历史绑定或商业模型验收。官方 SDK 会根据 fallback 块更新 serving model，当前原生流仍须补对应身份核对，不能据此宣称跨模型 fallback 兼容。上述工作完成后再接 Gateway/实际 Runtime。
 
