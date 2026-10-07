@@ -24,11 +24,11 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 - 7 项基础真实 loopback HTTP 测试：认证/版本/workspace、游标编码、两轮原生签名回放、429 安全分类且不重试、取消及 missing Key 不发送、实际 socket EOF/timeout/并发许可释放、跨页字节和数量上限、配置拒绝。
 - 使用合成秘密与离线 fixture，未读取用户模型 Key、调用商业 API或执行工具。源码 `95df007` 的 [CI 37575612338](https://github.com/bboytang/CAIdex/actions/runs/37575612338) 在 Linux/Windows/macOS 全部成功：每个平台 12 项协议、7 项 HTTP 测试通过，既有固定 Runtime 回归 Linux 23、Windows/macOS 各 22 项通过。该 Runtime 回归尚不验证 Anthropic 互操作。
 
-新增 6 项原生 SSE socket 测试：签名/工具/累计 usage、完成后主动关闭、静态错误分类、EOF/大小上限、Drop/取消、满队列 deadline/错误保存/许可释放、idle timeout/content-type。新增流式三平台验收尚待本轮 CI，不能套用上一阶段通过记录。
+新增 6 项原生 SSE socket 测试：签名/工具/累计 usage、完成后主动关闭、静态错误分类、EOF/大小上限、Drop/取消、满队列 deadline/错误保存/许可释放、idle timeout/content-type。源码 `4b856b8` 的 [CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343) 三平台全部成功，逐平台确认协议 12/HTTP 13 项通过；既有 Runtime Linux 23、Windows/macOS 各 22 项回归通过。尚不验证 Anthropic Runtime 互操作。
 
 ## 后续顺序
 
-1. 原生 HTTP SSE 已实现，本机新增 6 项 socket 测试通过，继续核验本轮完整 workspace 与三平台 CI。
+1. 原生 HTTP SSE 已实现，本机 workspace 与三平台 CI 已验收。下一步完成以下请求/history 与接口转换，不重复实现传输。
 2. 实现 Responses→Messages、工具/图片/推理/结构化输出映射和执行端原生 history；经典与 Lite 分别验收，不将未知字段静默丢弃。
 3. 完成 ModelProvider 六方法、原生认证需求元数据、Gateway 注入及固定 Runtime 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
