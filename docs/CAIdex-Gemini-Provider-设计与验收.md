@@ -29,11 +29,11 @@
 - 本地 catalog4 + HTTP9 已通过，目录和 HTTP 正例各有实现前 RED → GREEN；随后完整 workspace/Clippy 日志通过，fmt/diff 检查通过。日志 `/tmp/caidex-google-{catalog-red,catalog-green,http-red,http-green,native-foundation}.log`、`/tmp/caidex-google-foundation-{workspace,clippy}.log`。
 - 覆盖 raw/大整数保留、能力 Unknown、完整有界分页/重复/cursor 循环、分页 token 编码、原生 header 认证、错误凭据 kind/provider/owner、无效 header Key、未配置/预取消/过期/context 拒绝时无 HTTP、累计预算、无重试、slot 与真实 socket 关闭、阻塞凭据读取取消。
 - TLS fixture 在内存生成 CA/leaf/私钥：可信且 hostname/expiry 有效时 GET 成功；未信任 CA、hostname 不符、过期均失败且服务器未收到认证 HTTP。所有 Key/模型/响应为合成 fixture，不调用商业 API。
-- 独立只读审查无 Critical/Important；源码提交/push 与本阶段三平台 CI 尚待完成；旧 Anthropic CI 不能作为 Google 新源码证据。当前普通 workspace 不执行 ignored Runtime/原生服务，Foundation CI 会显式执行既有验证。
+- 独立只读审查无 Critical/Important；源码 `d5a1132b449cae28923e2da7f2349e72b12696eb` 已提交/push，[CI 37657922506](https://github.com/bboytang/CAIdex/actions/runs/37657922506) 三平台 completed/success。逐平台核对新增 catalog4+HTTP9 全部13个测试名各通过一次；workspace/fmt/Clippy/native credentials/schema/doctor 均通过，既有真实 Runtime Linux30/WindowsmacOS29通过。普通 workspace 不执行 ignored Runtime/原生服务，CI已显式验证；macOS stdout/stderr标记有交错，按具体测试名和终态核对，不以 marker 顺序代替结果。日志 `/tmp/caidex-ci-37657922506{,-linux,-macos,-windows}.log`，跨机器以 CI 为准。
 
 ## 下一步
 
-1. 完成本阶段独立审查及三平台验收，更新 HANDOFF 与本文件的精确 source SHA/CI。
+1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
 2. 原生 generateContent/streamGenerateContent 的请求、回复、SSE 与终态；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
 3. 建立版本化原生历史、请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
@@ -43,7 +43,7 @@
 
 1. `catalog.rs` 的 token limits 只接受 canonical JSON 非负整数；ProtoJSON 允许的字符串/整值浮点或指数表示会拒绝整个目录。Google 当前规范输出普通整数；未来有实际兼容端点证据再扩展精确解析，原 raw 不变。
 2. 目录/HTTP 的大整数相等比较使用同一 serde_json 配置，不能独立检测双方同时舍入；当前 core arbitrary_precision 已启用。后续补原始数字字面值断言。
-3. caller deadline 用例在读凭据/建连前开始 100ms 计时，繁忙 runner 若未到 socket 阶段已超时，其断连断言可能失败；本机通过，三平台待验。若实测发生先复现并修同步，不跳过用例或放松生产 timeout。
+3. caller deadline 用例在读凭据/建连前开始 100ms 计时，繁忙 runner 若未到 socket 阶段已超时，其断连断言可能失败；本机及本次三平台均通过，调度风险仍暂缓。若后续实测发生先复现并修同步，不跳过用例或放松生产 timeout。
 
 审查排除项及裁定（已确认阶段边界，非架构重规划）：
 
@@ -51,4 +51,4 @@
 - 商业行为/Full 无合成 fixture 之外证据，不授予兼容等级；错误成本是错误能力承诺，须另获真实 API 授权并验收。
 - 已开始同步 SecretStore 读无法强停，沿 Broker 现有边界；只保证取消后无迟到 GET。成本是后台读取仍占资源，不宣称强制中止。
 - 本模块不是通用 ProtoJSON codec；未来字段原样保留，替代字段拼写等完整 codec 语义未承诺。成本是非 canonical 兼容服务可能被拒绝，具体整数边界见 Minor1。
-- Windows/macOS 不以旧 Anthropic CI 代验；本阶段新 CI 完成前保持待验。成本是未发现平台问题，依赖后续精确源码三平台检查。
+- Windows/macOS 不以旧 Anthropic CI 代验；本阶段新 CI 已核对精确源码并三平台通过。若误用旧证据，成本是未发现新增平台问题，后续阶段继续各自验收。
