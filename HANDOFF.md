@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 正在补固定 Runtime 字段：新增 runtime_parameters.rs / ServiceTierMapping、RequestOptions 本地元数据开关，接受 include 的推理载体请求、保留原始元数据，显式转换 default/auto 档位；非空 stream_options/access_programs 与 priority/flex 仍明确拒绝。新增 3 项测试通过，实际 HTTP 两轮扩展；完整 workspace、Clippy/fmt/diff 已通过，样式告警已修正；日志 /tmp/caidex-runtime-parameters-workspace.log。main 有上述源码/测试和文档准备提交，CI 尚未触发。
+- 正在补固定 Runtime 字段：新增 runtime_parameters.rs / ServiceTierMapping、RequestOptions 本地元数据开关，接受 include 的推理载体请求、保留原始元数据，显式转换 default/auto 档位；非空 stream_options/access_programs 与 priority/flex 仍明确拒绝。新增 3 项测试通过，实际 HTTP 两轮扩展；完整 workspace、Clippy/fmt/diff 已通过，样式告警已修正；日志 /tmp/caidex-runtime-parameters-workspace.log。源码 1afee18 已提交/push；CI 37611149491 已排队，待验收。
 
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。
 - 下一步处理固定 Runtime 的 include、prompt_cache_key、client_metadata、service_tier/stream_options 等参数；再完成完整 Anthropic ModelProvider/Gateway。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
@@ -67,7 +67,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 024b211、checkpoint 33872b3 已提交/push，源码工作区干净；本次仅验收文档待提交，提交后以实际 HEAD 续接。恢复文件 model/providers/anthropic/src/{reasoning,request}.rs、tests/{reasoning.rs,http/compiled.rs}。
+- branch `main` 跟踪 `origin/main`，源码 1afee18 已提交/push，源码工作区干净；本次 checkpoint 文档待提交。[CI 37611149491](https://github.com/bboytang/CAIdex/actions/runs/37611149491) 对应 SHA 1afee186b3162a2d534438eee9e9cbd25bd81832。恢复文件 model/providers/anthropic/src/{runtime_parameters,request}.rs、tests/{runtime_parameters.rs,http/compiled.rs}；先核对 CI，随后开始完整 Provider/Responses SSE/Gateway 接入。
 
 ## 测试结果
 
