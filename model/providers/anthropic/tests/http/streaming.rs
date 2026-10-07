@@ -365,3 +365,113 @@ async fn idle_timeout_and_bad_content_type_fail_without_completion() {
         received(&mut fixture.closed).await;
     }
 }
+
+#[tokio::test]
+async fn projected_http_text_arrives_before_native_stop_and_cancellation_closes_transport() {
+    use caidex_model_core::ProviderStreamEvent;
+    use caidex_provider_anthropic::{ProjectedStreamingResponse, ResponsesProjection, ToolMap};
+    let body = [start(),event(json!({"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}})),event(json!({"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"live🙂"}}))].concat();
+    let mut fixture = Fixture::start(body, false, "text/event-stream").await;
+    let (client, _) = client(&fixture.base, Some(KEY), Limits::default());
+    let context = RequestContext::default();
+    let cancel = context.cancellation.clone();
+    let native = client
+        .stream_message("native", request(), context)
+        .await
+        .unwrap();
+    let projection =
+        ResponsesProjection::new("native".into(), ToolMap::new(&[], 10).unwrap(), 128 * 1024)
+            .unwrap();
+    let mut stream = ProjectedStreamingResponse::new(native, projection);
+    loop {
+        let event = tokio::time::timeout(Duration::from_secs(5), stream.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        if let ProviderStreamEvent::Model(event) = event {
+            assert!(event.response.terminal().is_none());
+            assert_ne!(event.response.kind(), "response.output_item.done");
+            if event.response.text_delta() == Some("live🙂") {
+                break;
+            }
+        }
+    }
+    cancel.cancel();
+    let error = tokio::time::timeout(Duration::from_secs(5), stream.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap_err();
+    assert_eq!(error.code, "provider_cancelled");
+    assert!(stream.next().await.is_none());
+    received(&mut fixture.closed).await;
+    released(&client).await;
+}
+
+#[tokio::test]
+async fn projected_http_complete_signed_function_history_preserves_raw_arguments_and_drop_closes() {
+    use caidex_model_core::ProviderStreamEvent;
+    use caidex_provider_anthropic::{
+        NativeMessage, ProjectedStreamingResponse, ResponsesProjection, ToolMap,
+    };
+    let map = ToolMap::new(
+        &[json!({"type":"function","name":"data_only","parameters":{"type":"object"}})],
+        10,
+    )
+    .unwrap();
+    let body = complete().replace(
+        "\"name\":\"data_only\"",
+        &format!("\"name\":{}", map.native_tools()[0]["name"]),
+    );
+    let mut fixture = Fixture::start(body, false, "text/event-stream").await;
+    let (client, _) = super::client(&fixture.base, Some(KEY), Limits::default());
+    let native = client
+        .stream_message("native", request(), RequestContext::default())
+        .await
+        .unwrap();
+    let mut stream = ProjectedStreamingResponse::new(
+        native,
+        ResponsesProjection::new("native".into(), map, 128 * 1024).unwrap(),
+    );
+    let mut response = None;
+    while let Some(event) = tokio::time::timeout(Duration::from_secs(5), stream.next())
+        .await
+        .unwrap()
+    {
+        if let ProviderStreamEvent::Model(event) = event.unwrap()
+            && event.response.terminal().is_some()
+        {
+            response = Some(event.response.wire()["response"].clone());
+        }
+    }
+    let response = response.unwrap();
+    let native = NativeMessage::from_responses_output(
+        response["output"].as_array().unwrap(),
+        "native",
+        128 * 1024,
+    )
+    .unwrap();
+    assert_eq!(native.content()[0]["signature"], "signed+/==\n");
+    assert_eq!(
+        response["output"][1]["arguments"],
+        "{\"n\":18446744073709551616}"
+    );
+    received(&mut fixture.closed).await;
+    released(&client).await;
+
+    let mut fixture = Fixture::start(start(), false, "text/event-stream").await;
+    let (client, _) = super::client(&fixture.base, Some(KEY), Limits::default());
+    let native = client
+        .stream_message("native", request(), RequestContext::default())
+        .await
+        .unwrap();
+    let stream = ProjectedStreamingResponse::new(
+        native,
+        ResponsesProjection::new("native".into(), ToolMap::new(&[], 10).unwrap(), 128 * 1024)
+            .unwrap(),
+    );
+    drop(stream);
+    received(&mut fixture.closed).await;
+    released(&client).await;
+}

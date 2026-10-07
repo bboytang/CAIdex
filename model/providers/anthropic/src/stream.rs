@@ -16,6 +16,7 @@ pub enum NativeStreamState {
 pub struct MessageEvent {
     frame: SseEvent,
     wire: Value,
+    stopped_block: Option<Value>,
 }
 impl MessageEvent {
     pub fn kind(&self) -> &str {
@@ -23,6 +24,9 @@ impl MessageEvent {
     }
     pub fn wire(&self) -> &Value {
         &self.wire
+    }
+    pub(crate) fn stopped_block(&self) -> Option<&Value> {
+        self.stopped_block.as_ref()
     }
     pub fn frame(&self) -> &SseEvent {
         &self.frame
@@ -208,7 +212,16 @@ impl MessageStream {
                 // they cannot alter identity, block content or completion.
                 _ => (),
             }
-            events.push(MessageEvent { frame, wire });
+            let stopped_block = if kind == "content_block_stop" {
+                Some(self.blocks[index(&wire)?].wire.clone())
+            } else {
+                None
+            };
+            events.push(MessageEvent {
+                frame,
+                wire,
+                stopped_block,
+            });
         }
         Ok(events)
     }

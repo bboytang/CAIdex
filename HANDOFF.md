@@ -4,6 +4,8 @@
 
 ## 当前任务
 
+- 正在实现 Responses SSE：新增 response_stream.rs 的 ResponsesProjection / ProjectedStreamingResponse，文本/摘要/function 参数实时转换，custom JSON 输入块结束后解包；仅 native message_stop 后发完整签名载体及最终 done，校验完整原生块、投影和序号。新增 4 项纯协议测试及 2 项 HTTP 取消/Drop/完成测试通过；fixture 名称遮蔽已修正，最终完整 workspace、Clippy/fmt/diff 已通过；日志 /tmp/caidex-response-stream-workspace.log。当前 main 准备提交源码/测试和文档，ModelProvider/Gateway 尚未接入。
+
 - 固定 Runtime 字段处理已实现并三平台验收：源码 1afee18，runtime_parameters.rs / ServiceTierMapping / 本地元数据开关，新增 3 项测试及扩展经典/Lite 实际 HTTP 两轮均通过；workspace/Clippy/fmt/diff 与 CI 37611149491 success。非空 stream_options/access_programs、priority/flex 仍明确拒绝，原生缓存策略不宣称等价。
 
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。

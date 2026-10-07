@@ -125,3 +125,15 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 ServiceTierMapping 由执行端固定：source default/auto 到 native standard_only/auto；不按同名推断 SLA/计费等价。无映射、重复配置、priority/flex 都拒绝，避免伪装能力。stream_options 缺省/null/空对象为无额外投递要求，sequential_cutoff 等非空值尚未等价实现，明确拒绝；access_programs 非空亦拒绝。
 
 新增 3 项回归，经典/Lite 实际 HTTP 两轮扩展检查原生档位及本地字段未外发、原始 source 保留。完整 workspace/Clippy/fmt/diff 通过；[CI 37611149491](https://github.com/bboytang/CAIdex/actions/runs/37611149491)（源码 1afee18）三平台全部 success，新增 3 项与扩展 HTTP 两轮逐平台通过。依据：[OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)、[Anthropic Messages](https://platform.claude.com/docs/en/api/messages/create)、固定上游 d27764b 的 codex-api/src/common.rs 与 core/src/client.rs。完整 Adapter / Runtime 工具执行 / 商业 API 仍未验收。
+
+## 原生 SSE 到 Responses 增量投影
+
+ResponsesProjection 接收已验证的 NativeStreamEvent。原生块结束事件携带内部完成块快照，避免重建第二套原生解析器；最终 NativeMessage 必须与每个已停止块、准确模型和响应 ID 相符。文本、摘要、function 参数实时发送，function 保留原始 JSON 空白及数值精度；custom 的 JSON 包装在块结束后恢复完整原始字符串（目前不承诺逐字符 custom 输入展示）。signature/redaction/server 工具/未知块不变成普通文本或客户端执行工具，完整 native wire 留在 v2 载体中。
+
+原生 message_stop 之后，先发送 reasoning 载体 done，再按输出顺序发送其他 done 和终态；不会把块结束、EOF、HTTP 200 当成功。MessageOutcome 中 max_tokens/context window/pause/未知停止原因仍为 incomplete，refusal 保留原生分类。事件序号覆盖所有输出，汇总结果重新校验与载体的一致性；最大事件/原生累计字节受显式上限限制，错误只有静态代码。文本 phase 在最终状态已知后定案。
+
+ProjectedStreamingResponse 直接拉取原生单槽 worker，无第二次模型请求或额外传输 worker；有限 pending 事件保留背压，取消/超时错误与 Drop 会释放原生 socket/并发 slot。一次 poll 对无投影 metadata 事件最多处理 32 个，避免阻塞执行器；native ping 映射 heartbeat。
+
+新增 4 项投影测试：字节切分、文本/摘要/工具增量及签名回放、SSE 序号与终态、停止类型、模型/最终块不匹配、预算及失败后不得完成。新增 2 项真实 HTTP fixture：无 native stop 时先收到文本、取消/Drop 关 socket 释放 slot、完整 signed function 回放且无需 HTTP EOF。验证状态见 HANDOFF.md；ModelProvider/Gateway、生产请求前缀/账户绑定、实际 Runtime 工具执行仍待接入，商业 API 未调用。
+
+依据：[OpenAI Streaming responses](https://developers.openai.com/api/docs/guides/streaming-responses)、[Anthropic Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming)。

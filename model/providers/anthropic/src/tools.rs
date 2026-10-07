@@ -174,6 +174,18 @@ impl ToolMap {
         };
         Ok(json!({"type":"tool_use","id":call.call_id,"name":alias,"input":input}))
     }
+    pub(crate) fn responses_call_start(&self, block: &Value) -> ProviderResult<Value> {
+        let binding = self
+            .bindings
+            .get(block["name"].as_str().ok_or_else(invalid)?)
+            .ok_or_else(invalid)?;
+        let mut placeholder = block.clone();
+        placeholder["input"] = match binding.kind {
+            ToolKind::Function => json!({}),
+            ToolKind::Custom => json!({"input":""}),
+        };
+        Ok(self.responses_call(&placeholder)?.wire().clone())
+    }
     /// Exact namespace and custom/function kind are recovered from the fixed
     /// map. A name from outside that map cannot select a Runtime tool.
     pub fn responses_call(&self, block: &Value) -> ProviderResult<ResponseItem> {
