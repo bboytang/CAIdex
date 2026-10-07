@@ -2,7 +2,7 @@
 
 阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。后续 Provider 与实际商业模型兼容性仍需验收，不能将已有离线证据当作 F/G 全部验收。
 
-原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic 原生适配及实际 Runtime 离线接线范围已三平台验收，见 [Anthropic 当前范围](CAIdex-Anthropic-Provider-设计与验收.md)；Gemini Models、generateContent JSON、原生SSE解析及流式HTTP、v1原生历史/Responses输出投影、工具身份映射/v2声明绑定历史及Responses请求编译基础已三平台验收，图片/工具结果媒体、推理及结构输出转换亦已三平台验收（最新源码a097b16/[CI37690749429](https://github.com/bboytang/CAIdex/actions/runs/37690749429)，Google72项逐平台通过），其余Runtime参数、六方法及实际Gemini Runtime接线尚未完成，见 [Gemini 当前范围](CAIdex-Gemini-Provider-设计与验收.md)。兼容 API/Ollama 与真实商业模型兼容性仍待后续。
+原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic 原生适配及实际 Runtime 离线接线范围已三平台验收，见 [Anthropic 当前范围](CAIdex-Anthropic-Provider-设计与验收.md)；Gemini Models、generateContent JSON、原生SSE解析及流式HTTP、v1原生历史/Responses输出投影、工具身份映射/v2声明绑定历史及Responses请求编译基础已三平台验收，图片/工具结果媒体、推理、结构输出及其余Runtime参数转换亦已三平台验收（最新源码05f6f91/[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)，Google78项逐平台通过），六方法/Registry/Gateway及实际Gemini Runtime接线尚未完成，见 [Gemini 当前范围](CAIdex-Gemini-Provider-设计与验收.md)。兼容 API/Ollama 与真实商业模型兼容性仍待后续。
 
 ## 固定协议依据
 
