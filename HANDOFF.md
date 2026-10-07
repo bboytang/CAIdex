@@ -4,7 +4,7 @@
 
 ## 当前任务与恢复点
 
-F/G：Gemini v1绑定原生历史与Responses输出投影已提交/push并三平台验收，源码`421ead55b8c516021c81be277808bda37a2f886a`，[CI37672020384](https://github.com/bboytang/CAIdex/actions/runs/37672020384)completed/success。下一步是Responses请求编译和工具映射，再六方法/Registry/Gateway/固定真实Runtime。不要重复已验Models/JSON/SSE/HTTP/历史或Anthropic阶段。完整F/G未验收，H–R尚未实施。
+F/G：Gemini v1绑定原生历史与Responses输出投影已提交/push并三平台验收，源码`421ead55b8c516021c81be277808bda37a2f886a`，[CI37672020384](https://github.com/bboytang/CAIdex/actions/runs/37672020384)completed/success。当前在实现请求编译器的依赖：ToolMap及显式v2映射历史，Google44项、完整workspace266passed/0failed/32ignored及Clippy/fmt/diff本地通过，唯一独立审查无Critical/Important、1项prefix交叉替换覆盖Minor暂缓；新源码提交/CI待完成；随后Responses请求编译，再六方法/Registry/Gateway/固定真实Runtime。不要重复已验Models/JSON/SSE/HTTP/历史或Anthropic阶段。完整F/G未验收，H–R尚未实施。
 
 完整项目/文档公开、提交/push/CI及离线合成fixture已获授权，不重复询问。不读取用户模型Key，不调用商业API；合成fixture不授予商业Full。
 
@@ -36,7 +36,7 @@ F/G：Gemini v1绑定原生历史与Responses输出投影已提交/push并三平
 
 ## 问题 / 环境 / 暂缓项
 
-- Gemini本轮审查无Critical/Important；2项代码Minor暂缓：缺prompt的部分usage已知下界与total矛盾仍返回usage=null；只有thought函数调用的STOP可能令可见text phase为commentary。旧满槽取消/Drop直接专项覆盖、ProtoJSON替代整数表示等Minor详见Gemini文档；重复/部分usage更新专项已由新history回归补齐，不重复列为未补。
+- Gemini工具映射审查无Critical/Important，1项覆盖Minor暂缓：完整有效v1/v2组的prefix-only互换尚无专项回归，现有显式版本核对正确，不能夸大覆盖。上轮history2项代码Minor暂缓：缺prompt的部分usage已知下界与total矛盾仍返回usage=null；只有thought函数调用的STOP可能令可见text phase为commentary。旧满槽取消/Drop直接专项覆盖、ProtoJSON替代整数表示等Minor详见Gemini文档；重复/部分usage更新专项已由新history回归补齐，不重复列为未补。
 - Anthropic cached网页/grammar硬约束仍无等价证据；重启第三轮回复精确比较、Lite落盘custom result完整比较两项覆盖Minor暂缓，详见Anthropic文档。
 - 未配置真实模型Key；商业推理/签名真实性/Full、生产Host权限、客户端UI/iOS/真机/签名未验。macOS Rust CI不是iOS应用构建。
 - .git普通沙箱只读，提交/push用require_escalated。gh为bboytang；旧helper缺workflow scope，发布用git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main，不改全局或输出凭据。
@@ -45,13 +45,14 @@ F/G：Gemini v1绑定原生历史与Responses输出投影已提交/push并三平
 
 ## 文件与 Git 状态
 
-- branch main跟踪origin/main；源码421ead5已提交/push。本次续接起点工作区干净；验收后的HANDOFF/Gemini/Model-Gateway文档更新随此次交接单独提交/push，没有未完成代码修改。提交后须核对工作区干净且HEAD=origin/main；文档commit不触发路径限定CI，验收锚定上述源码SHA。
+- branch main跟踪origin/main，起点99be6c8；本轮未提交tools.rs/tests/tools.rs、history.rs v2、HTTP1、lib.rs导出、Cargo清单/lock及HANDOFF/Gemini文档。sha2沿既有锁定0.10.9只新增Google直接依赖；源码421ead5已提交/push。本次续接起点工作区干净；验收后的HANDOFF/Gemini/Model-Gateway文档更新随此次交接单独提交/push，本段前半的新工具映射代码仍未提交，待完成新验收；上次文档更新已push且起点干净。之后须核对实际Git状态；文档commit不触发路径限定CI，验收锚定上述源码SHA。
 - 执行基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅背景，冲突以V3为准。详细历史证据留Runtime-能力对照及各Provider/Credentials/Model-Gateway验收文档。
-- 当前相关：model/providers/google/src/{client,content,stream,transfer,history}.rs、tests/{catalog,content,stream,http,history}.rs；下一步参考Anthropic request/tools/native_history及model/core，不复制HTTP栈。
+- 当前相关：model/providers/google/src/{client,content,stream,transfer,history}.rs、tests/{catalog,content,stream,http,history}.rs；下一步参考Anthropic request/tools/projection/binding及model/core，不复制HTTP栈。
 - 代码边界：credentials/core、apps/cli、model/core/providers/gateway、runtime/bridge、upstream/codex、.github/workflows/ci.yml、scripts；assets/brand四份原件未改。
 
 ## 最近验证
 
-- 新history6/实际HTTP1有效RED→GREEN；本地Google37、workspace259passed/0failed/32ignored，Clippy -D warnings/fmt/diff通过。唯一独立审查无Critical/Important，代码Minor和排除项裁定留Gemini文档。
+- 本轮tools6初始501 RED→GREEN，namespace说明丢失独立RED→GREEN；实际HTTP1扩大已测codec集成范围（无单独实现前RED），Google44、本地workspace266/0fail/32ignored与Clippy/fmt/diff通过。日志 /tmp/caidex-google-tools-{red,map-green-history-red,green,namespace-red,http-green,workspace,clippy}.log；唯一审查无Critical/Important，prefix-only v1/v2交换覆盖Minor暂缓；新源码提交/CI未完成。
+- 上轮history6/实际HTTP1有效RED→GREEN；本地Google37、workspace259passed/0failed/32ignored，Clippy -D warnings/fmt/diff通过。唯一独立审查无Critical/Important，代码Minor和排除项裁定留Gemini文档。
 - 精确源码421ead55b8c516021c81be277808bda37a2f886a的CI37672020384三平台completed/success且所有步骤已核对；每个平台Google catalog4/content3/history6/HTTP20/stream4共37个测试名各通过一次。workspace Linux259/Windows254/macOS258（0失败，ignored32/30/30），真实Runtime Linux30/WindowsmacOS29（0失败/0ignored）；fmt/Clippy/native credentials/schema/doctor通过。
 - 日志：/tmp/caidex-google-history-{red,green,http-red,http-green,workspace,clippy}.log、/tmp/caidex-ci-37672020384-status.json与{,-linux,-windows,-macos}.log。跨机器以GitHub证据为准；普通workspace忽略的Runtime/原生服务由CI显式执行。

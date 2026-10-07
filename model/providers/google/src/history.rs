@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use std::{collections::HashSet, fmt};
 
 const PREFIX: &str = "caidex.google.native-history.v1:";
+const TOOLS_PREFIX: &str = "caidex.google.native-history.v2:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "google_invalid_history")
 }
@@ -18,6 +19,14 @@ fn replay_error() -> ProviderError {
 #[serde(transparent)]
 pub struct NativeHistory(Value);
 impl NativeHistory {
+    /// Explicit mapped projection: own the declarations that produced the
+    /// response, and verify them against the actual native request. Plain v1
+    /// constructors/projections keep their original behavior.
+    pub fn with_tools(mut self, tools: &crate::ToolMap, max_bytes: usize) -> ProviderResult<Self> {
+        self.0["version"] = 2.into();
+        self.0["tools"] = json!(tools.source());
+        Self::new(self.0, max_bytes)
+    }
     pub fn from_response(
         response: &NativeResponse,
         model: &str,
@@ -52,10 +61,18 @@ impl NativeHistory {
         let history = Self(wire);
         history.check_size(max_bytes)?;
         if history.0["provider"] != "google"
-            || history.0["version"] != 1
+            || !matches!(history.0["version"].as_u64(), Some(1 | 2))
             || crate::content::nonempty(&history.0["generation_id"]).is_none()
         {
             return Err(invalid());
+        }
+        if let Some(tools) = history.mapped_tools(max_bytes)? {
+            let native_tools = crate::content::present(history.request(), "tools");
+            if !(tools.native_tools().is_empty() && native_tools.is_none_or(|v| v == &json!([])))
+                && native_tools != Some(&json!([{"functionDeclarations":tools.native_tools()}]))
+            {
+                return Err(ProviderError::new(400, "google_history_tool_mismatch"));
+            }
         }
         let count = crate::client::validate_generation_request(
             history.0["model"].as_str().ok_or_else(invalid)?,
@@ -107,10 +124,31 @@ impl NativeHistory {
         Ok(history)
     }
     fn check_size(&self, max_bytes: usize) -> ProviderResult<()> {
-        if max_bytes == 0 || self.0.to_string().len().saturating_add(PREFIX.len()) > max_bytes {
+        if max_bytes == 0
+            || self.0.to_string().len().saturating_add(self.prefix().len()) > max_bytes
+        {
             return Err(ProviderError::new(502, "google_history_too_large"));
         }
         Ok(())
+    }
+    fn prefix(&self) -> &'static str {
+        if self.0["version"] == 2 {
+            TOOLS_PREFIX
+        } else {
+            PREFIX
+        }
+    }
+    fn mapped_tools(&self, max_bytes: usize) -> ProviderResult<Option<crate::ToolMap>> {
+        if self.0["version"] == 2 {
+            Ok(Some(
+                crate::ToolMap::new(self.0["tools"].as_array().ok_or_else(invalid)?, max_bytes)
+                    .map_err(|_| invalid())?,
+            ))
+        } else if self.0.get("tools").is_some() {
+            Err(invalid())
+        } else {
+            Ok(None)
+        }
     }
     pub fn native_response(&self) -> &Value {
         &self.0["response"]
@@ -137,6 +175,7 @@ impl NativeHistory {
     }
     pub fn to_responses(&self, max_bytes: usize) -> ProviderResult<CanonicalResponse> {
         self.check_size(max_bytes)?;
+        let tools = self.mapped_tools(max_bytes)?;
         let native =
             NativeResponse::parse(self.native_response().clone()).expect("validated history");
         let position = native.candidates().iter().position(|c| {
@@ -175,16 +214,26 @@ impl NativeHistory {
                 if !ids.insert(call_id.clone()) {
                     return Err(ProviderError::new(502, "google_invalid_projection"));
                 }
-                let args = crate::content::present(call, "args")
-                    .cloned()
-                    .unwrap_or_else(|| json!({}));
-                items.push(json!({"type":"function_call","id":format!("fc_{id}_{}_{}",self.0["candidate_index"],index),
-                    "status":"completed","call_id":call_id,"name":call["name"],"arguments":args.to_string()}));
+                let mut item = if let Some(tools) = &tools {
+                    tools
+                        .responses_call(call, &call_id)
+                        .map_err(|_| ProviderError::new(502, "google_invalid_projection"))?
+                        .wire()
+                        .clone()
+                } else {
+                    let args = crate::content::present(call, "args")
+                        .cloned()
+                        .unwrap_or_else(|| json!({}));
+                    json!({"type":"function_call","call_id":call_id,"name":call["name"],"arguments":args.to_string()})
+                };
+                item["id"] = format!("fc_{id}_{}_{}", self.0["candidate_index"], index).into();
+                item["status"] = "completed".into();
+                items.push(item);
             }
             // Server tools, media and future Parts remain opaque native data.
         }
         let mut output = vec![json!({"type":"reasoning","id":format!("rs_{id}_native"),
-            "summary":summary,"encrypted_content":format!("{PREFIX}{}",self.0)})];
+            "summary":summary,"encrypted_content":format!("{}{}",self.prefix(),self.0)})];
         output.extend(items);
         let (status, detail) = match outcome {
             Some(CandidateOutcome::Stop | CandidateOutcome::ToolCall) => ("completed", None),
@@ -222,8 +271,17 @@ impl NativeHistory {
         if carrier["type"] != "reasoning" || max_bytes == 0 || capsule.len() > max_bytes {
             return Err(replay_error());
         }
-        let text = capsule.strip_prefix(PREFIX).ok_or_else(replay_error)?;
+        let (text, version) = if let Some(text) = capsule.strip_prefix(TOOLS_PREFIX) {
+            (text, 2)
+        } else if let Some(text) = capsule.strip_prefix(PREFIX) {
+            (text, 1)
+        } else {
+            return Err(replay_error());
+        };
         let envelope: Value = serde_json::from_str(text).map_err(|_| replay_error())?;
+        if envelope["version"] != version {
+            return Err(replay_error());
+        }
         let history = Self::new(envelope, max_bytes).map_err(|_| replay_error())?;
         if history.0["model"] != expected_model {
             return Err(ProviderError::new(400, "google_history_model_mismatch"));
@@ -266,6 +324,11 @@ impl NativeHistory {
                         return Err(replay_error());
                     }
                 }
+                "custom_tool_call"
+                    if actual["call_id"] == expected["call_id"]
+                        && actual["name"] == expected["name"]
+                        && actual["namespace"] == expected["namespace"]
+                        && actual["input"] == expected["input"] => {}
                 _ => return Err(replay_error()),
             }
         }

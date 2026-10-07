@@ -1679,3 +1679,139 @@ async fn signed_json_and_stream_history_restore_the_exact_native_content_for_a_s
         assert_eq!(reads.load(Ordering::SeqCst), 2);
     }
 }
+
+#[tokio::test]
+async fn mapped_json_and_stream_calls_keep_namespace_custom_input_and_native_replay_on_http() {
+    use caidex_model_core::{CanonicalRequest, ResponsesDialect};
+    use caidex_provider_google::{NativeHistory, ToolMap};
+    let declarations = json!([{"type":"namespace","name":"functions","tools":[
+        {"type":"function","name":"echo","parameters":{"type":"object","properties":{"text":{"type":"string"}}},"strict":false},
+        {"type":"custom","name":"patch","format":{"type":"text"}}]}]);
+    let map = ToolMap::new(declarations.as_array().unwrap(), 10).unwrap();
+    for streaming in [false, true] {
+        let mut first = native_reply("STOP");
+        first["candidates"][0]["content"]["parts"] = json!([
+            {"functionCall":{"name":map.native_tools()[0]["name"],"id":"native-echo","args":{"text":"原文"}},"thoughtSignature":"sig-echo"},
+            {"functionCall":{"name":map.native_tools()[1]["name"],"args":{"input":"\npatch 中文🙂\n "}},"thoughtSignature":"sig-patch"},
+            {"futurePart":{"keep":true}}]);
+        let initial = if streaming {
+            Reply::sse(std::slice::from_ref(&first))
+        } else {
+            Reply::json(first.clone())
+        };
+        let mut fixture = Fixture::start(vec![initial, Reply::json(native_reply("STOP"))]).await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let mut input = native_input();
+        input["tools"] = json!([{"functionDeclarations":map.native_tools()}]);
+        let raw = if streaming {
+            let mut stream = client
+                .stream_content(
+                    "models/fixture-001",
+                    input.clone(),
+                    RequestContext::default(),
+                )
+                .await
+                .unwrap();
+            loop {
+                if let NativeStreamEvent::Completed(complete) =
+                    stream.next().await.unwrap().unwrap()
+                {
+                    break NativeHistory::from_stream(
+                        &complete,
+                        "models/fixture-001",
+                        &input,
+                        Some(0),
+                        "mapped-http",
+                        128 * 1024,
+                    )
+                    .unwrap();
+                }
+            }
+        } else {
+            let native = client
+                .generate_content(
+                    "models/fixture-001",
+                    input.clone(),
+                    RequestContext::default(),
+                )
+                .await
+                .unwrap();
+            NativeHistory::from_response(
+                &native,
+                "models/fixture-001",
+                &input,
+                Some(0),
+                "mapped-http",
+                128 * 1024,
+            )
+            .unwrap()
+        };
+        let sent = fixture.request().await;
+        assert_eq!(request_body(&sent), input);
+        assert!(
+            sent.to_ascii_lowercase()
+                .contains("x-goog-api-key: caidex_synthetic_google_key\r\n")
+        );
+        let projected = raw
+            .with_tools(&map, 128 * 1024)
+            .unwrap()
+            .to_responses(128 * 1024)
+            .unwrap();
+        assert_eq!(projected.output()[1]["name"], "echo");
+        assert_eq!(projected.output()[1]["namespace"], "functions");
+        assert_eq!(projected.output()[1]["call_id"], "native-echo");
+        assert_eq!(projected.output()[2]["type"], "custom_tool_call");
+        assert_eq!(projected.output()[2]["input"], "\npatch 中文🙂\n ");
+        assert_eq!(projected.output()[2]["call_id"], "call_mapped-http_0_1");
+        let dialect = if streaming {
+            ResponsesDialect::Lite
+        } else {
+            ResponsesDialect::Classic
+        };
+        let canonical =
+            CanonicalRequest::new(json!({"model":"alias","input":projected.output()}), dialect)
+                .unwrap();
+        let stored: Value =
+            serde_json::from_slice(&serde_json::to_vec(&canonical).unwrap()).unwrap();
+        let restored = NativeHistory::from_responses_output(
+            stored["input"].as_array().unwrap(),
+            "models/fixture-001",
+            &input,
+            128 * 1024,
+        )
+        .unwrap();
+        assert_eq!(restored.native_response(), &first);
+        let mut next = input;
+        next["contents"]
+            .as_array_mut()
+            .unwrap()
+            .push(restored.replay_content().unwrap().clone());
+        next["contents"].as_array_mut().unwrap().push(json!({"role":"user","parts":[
+            {"functionResponse":{"id":"native-echo","name":map.native_tools()[0]["name"],"response":{"output":"结果🙂"}}},
+            {"functionResponse":{"name":map.native_tools()[1]["name"],"response":{"output":"patch result\n"}}}]}));
+        client
+            .generate_content(
+                "models/fixture-001",
+                next.clone(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        let sent = request_body(&fixture.request().await);
+        assert_eq!(sent, next);
+        assert_eq!(sent["contents"][1], first["candidates"][0]["content"]);
+        // Native missing ID stays omitted in replay/result; local Runtime ID is
+        // association metadata, never inserted into the signed native Content.
+        assert!(
+            sent["contents"][1]["parts"][1]["functionCall"]
+                .get("id")
+                .is_none()
+        );
+        assert!(
+            sent["contents"][2]["parts"][1]["functionResponse"]
+                .get("id")
+                .is_none()
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}
