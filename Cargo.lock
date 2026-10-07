@@ -381,6 +381,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-provider-anthropic"
+version = "0.1.0"
+dependencies = [
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-provider-custom",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "caidex-provider-custom"
 version = "0.1.0"
 dependencies = [
