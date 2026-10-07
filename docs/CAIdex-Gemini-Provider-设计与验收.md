@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准为V3，代码在model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON/SSE/HTTP、v1原生历史/输出投影、ToolMap/v2声明绑定及Responses请求编译基础已三平台验收；最新源码08402e6caccba2b0ff7cc98dc09f60ea4ea16078，[CI37679653990](https://github.com/bboytang/CAIdex/actions/runs/37679653990)completed/success，Google53项逐平台通过。图片/推理/结构输出/Runtime参数、六方法/Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准为V3，代码在model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON/SSE/HTTP、v1原生历史/输出投影、ToolMap/v2声明绑定、Responses请求编译基础及图片/工具结果媒体已三平台验收；最新源码cf8c2c942c593858b3a2b775b3ea94c5510a9877，[CI37684084386](https://github.com/bboytang/CAIdex/actions/runs/37684084386)completed/success，Google60项逐平台通过。推理/结构输出/Runtime参数、六方法/Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -35,7 +35,7 @@
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
 2. generateContent JSON、原生SSE解析和streamGenerateContent?alt=sse真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已三平台验收，继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
-3. 版本化原生历史与Responses输出投影已三平台验收；继续Responses请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
+3. 版本化原生历史与Responses输出投影已三平台验收；请求/工具/图片编译范围已验，继续推理/结构化输出/Runtime参数转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
 ## 独立审查记录
 
@@ -171,3 +171,17 @@ Ruling: 结果组统一等全部配对后按原native call顺序发出，含本�
 源码08402e6caccba2b0ff7cc98dc09f60ea4ea16078的[CI37679653990](https://github.com/bboytang/CAIdex/actions/runs/37679653990)三平台completed/success，全部步骤核对；catalog4/content3/history6/HTTP22/request8/stream4/tools6共Google53个名字各平台各通过一次。workspace日志汇总Linux275/Windows270/macOS274，0失败，ignored32/30/30；真实Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志 /tmp/caidex-ci-37679653990-status.json与{-watch,-linux,-windows,-macos}.log；本地凭据子进程stdout交错使汇总少计1条，不能把摘要差异当遗漏用例，CI该用例已明确通过。
 
 恢复点：继续图片/工具结果媒体（inlineData、FunctionResponse.parts及引用/能力边界），再推理/结构输出/Runtime参数，随后六方法/Registry/Gateway/固定Runtime。原生单调用约束、工具发现/网页、后置system等unsupported边界仍明确，不以编译器离线证据标商业Full或完整F/G完成。
+
+## 图片与工具结果媒体（三平台已验收）
+
+沿GenerateContentRequest增加显式执行端RequestOptions，默认空能力仍拒绝图片；不从模型名或目录推断支持。用户data URL仅接受配置允许的PNG/JPEG/WEBP/HEIC/HEIF，生成inlineData并保持原base64、文本/图片顺序；工具结果独立能力只接受PNG/JPEG/WEBP，媒体放FunctionResponse.parts.inlineData，response.output按原数组位置使用单键$ref对象，displayName由全局调用序和块序生成。function/custom、并行逆序到达及缺省native ID仍沿原配对/输出策略，source保存完整canonical原文，签名Part不改。[用户图片格式](https://ai.google.dev/gemini-api/docs/generate-content/image-understanding#supported_image_formats)、[原生多模态工具结果](https://ai.google.dev/gemini-api/docs/generate-content/function-calling?hl=en#multimodal_function_responses)。
+
+ImageDetailMapping由执行端明确把low/high/original意图映射为native per-Part mediaResolution.level；映射存在才声明相应能力，不承诺跨Provider画质/token等价。auto/缺省/null不设置分辨率；未知detail拒绝，工具结果非auto拒绝，FunctionResponsePart没有该分辨率字段。不改全局generationConfig，也不把Google实验/部分模型能力猜成全模型支持。[分辨率契约](https://ai.google.dev/gemini-api/docs/generate-content/media-resolution)。
+
+Ruling: 只支持有界base64 data URL，不抓取远程URL/读取本地路径/认领file_id；检查编码及非空字节，不解码像素或检测文件魔数，内容与模型视觉能力仍由服务验证。成本是URL、file_id或未列格式需以后独立附件通道，不新增隐式IO。原请求和展开后的native body均受字节预算；仅复用已锁定base64 0.22.1，无新第三方版本。
+
+Ruling: 含媒体的工具结果中，结构化单键$ref对象属于原生媒体引用语义，必须只引用本结果生成的displayName且每个名字仅出现一次；未知/重复引用在发送前拒绝。其他metadata保留，字符串内的JSON字面文本不解释；纯文本结果原有$ref数据行为不改。成本是与保留语法冲突的结构化元数据需编码为文本或以后建立等价协议，不能默默重定向图片。固定上游工具结果content schema无input_file，PDF/音频/其他附件本轮保持unsupported，不借原生文档支持虚构canonical类型。
+
+6项媒体回归初始5项RED→GREEN，引用冲突第6项独立RED→GREEN；既有编译器8项通过。新增实际HTTP1验证经典/Lite三POST（JSON→SSE→持久化往返）图片/签名/媒体引用与结果关联，编辑旧图片和外部URL在新增Key读取之前拒绝；这是扩大已TDD编解码行为的集成覆盖，无独立HTTP实现前RED。全部回复/Key/编码字节合成，不证明真实图片识别、签名真实性、商业接受或Full。日志/tmp/caidex-google-media-{red,green,ref-red,ref-green,http}.log；完整workspace282passed/0failed/32ignored、Clippy -D warnings/fmt/diff通过；唯一fresh-context只读审查无Critical/Important/新增Minor；独立复跑媒体6+编译器8通过。源码cf8c2c942c593858b3a2b775b3ea94c5510a9877的[CI37684084386](https://github.com/bboytang/CAIdex/actions/runs/37684084386)三平台completed/success，精确head及全部步骤已核对。Google catalog4/content3/history6/HTTP23/request8/media6/stream4/tools6共60个名字逐平台各通过一次；workspace Linux282/Windows277/macOS281，0失败，ignored32/30/30；真实Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志/tmp/caidex-ci-37684084386-status.json及{-watch,-linux,-windows,-macos}.log，跨机器以GitHub为准。后续仍按HANDOFF继续推理/结构输出/Runtime参数，再六方法/Registry/Gateway/固定Runtime，不把本轮canonical Lite fixture当实际Runtime工具执行。
+
+本轮审查排除项裁定：实际图片识别/商业接受/签名真实性未调用live，不授予Full，误判成本是错误能力承诺；displayName采用官方多模态指南及REST示例，通用API生成参考暂缺该字段，真实端点接受仍待live证据，误判成本是服务拒绝。编码校验而非像素/MIME魔数、URL/file_id/本地读取/PDF/音频、分辨率等价及工具detail、保留$ref语法均依上述Ruling，误判成本为不支持的附件或元数据被拒，不能冒称无损任意内容。六方法/Registry/Gateway/实际Gemini Runtime及parallelfalse、推理/结构输出/参数/后置system/放宽历史绑定仍下一阶段，误判成本是漏功能或错用历史；非阻塞/部分native结果仍只接受完整组，误判成本是请求拒绝/时序不兼容。旧parser/history/HTTP Minor及生产历史权限/整组伪造认证未改，误判成本是夸大覆盖或认领未认证历史；Windows/macOS须本次精确源码CI，误用旧CI会漏新增平台问题。唯一审查报告/tmp/caidex-google-media-review.md，不派第二次审查。
