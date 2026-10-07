@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前新增 Anthropic 中途 system/developer 指令：执行端显式能力开关、原位置及相邻 system 顺序、原生位置门控、完整工具结果后插入和 server result 后插入已实现。请求测试累计 12 项通过，经典/Lite 实际 HTTP 回放及 workspace/Clippy/fmt/diff 通过；源码未提交，三平台 CI 待跑。推理/结构化输出/context/完整 Provider/Gateway 仍未完成。
+- 当前新增 Anthropic 中途 system/developer 指令：执行端显式能力开关、原位置及相邻 system 顺序、原生位置门控、完整工具结果后插入和 server result 后插入已实现。请求测试累计 12 项通过，经典/Lite 实际 HTTP 回放及 workspace/Clippy/fmt/diff 通过；源码 2ccbe38 已提交/push，CI 37581359918 已确认 in_progress，结果待验收。推理/结构化输出/context/完整 Provider/Gateway 仍未完成。
 - A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，首轮 Linux native keyring fixture 竞态已修正（`1fc0d3c`），[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 三平台全部 success；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
@@ -66,7 +66,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD b4fb59b。当前未提交 src/request.rs、tests/request.rs、tests/http/compiled.rs 及交接/Provider 文档；基础转换 d774ff5 的 CI 37580529092 三平台已验，新中途指令源码待提交及 CI。
+- branch `main` 跟踪 `origin/main`，源码 HEAD 2ccbe38 已提交/push，源码工作区干净，本交接补 CI checkpoint。[CI 37581359918](https://github.com/bboytang/CAIdex/actions/runs/37581359918) 对应 SHA 2ccbe38397016a92ba2d64fbe1b40c7ee3af1c6a，in_progress。恢复文件 src/request.rs、tests/request.rs、tests/http/compiled.rs。
 
 ## 测试结果
 
@@ -94,4 +94,4 @@
 - MessagesRequest [CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092)：三平台全部 success，各平台请求 8/HTTP 14/协议 12/投影 7/工具 7 项、workspace/fmt/Clippy/native keyring/schema/doctor 通过；真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-ci-37580529092.log。HTTP 两轮是原生 fixture，不代表完整 Anthropic Gateway/Runtime 工具执行或商业 API 已验。
 - 下一项官方契约已查：mid-conversation-system-messages 文档声明部分模型可用且有 user/system/assistant 位置限制，不能统一重排；effort 使用 output_config.effort，thinking 模式/强度支持需显式能力证据，不能按名字猜。资料链接在 Provider 文档，下一步据此设计能力映射。
 
-- 中途指令本机：新增 4 项请求回归（累计 12）通过，既有实际 HTTP 两轮扩展位置检查通过；完整 workspace（请求 11 项时）通过，随后新增 server result 定向测试通过，workspace Clippy/fmt/diff 通过。生产源码未在后续测试增补后修改。新阶段未跑三平台 CI/真实 Runtime Anthropic 工具执行；日志 /tmp/caidex-system-workspace.log。
+- 中途指令本机：新增 4 项请求回归（累计 12）通过，既有实际 HTTP 两轮扩展位置检查通过；完整 workspace（请求 11 项时）通过，随后新增 server result 定向测试通过，workspace Clippy/fmt/diff 通过。生产源码未在后续测试增补后修改。新阶段三平台 CI 37581359918 运行中，未验真实 Runtime Anthropic 工具执行；日志 /tmp/caidex-system-workspace.log。
