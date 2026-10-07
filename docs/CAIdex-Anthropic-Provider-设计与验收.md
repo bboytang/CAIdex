@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP/SSE client。它是完整 Adapter 的基础，已有原生回复→Responses 投影和版本化原生回放，固定 Runtime 经典/Lite 两轮载体测试三平台通过；尚未实现 Responses 请求→Messages、ModelProvider 六方法、Gateway 注入和完整 Runtime 互操作。
+`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP/SSE client。它是完整 Adapter 的基础，已有原生回复→Responses 投影和版本化原生回放，固定 Runtime 经典/Lite 两轮载体测试三平台通过；已有基础 Responses 请求→Messages 转换；尚未完成能力参数映射、ModelProvider 六方法、Gateway 注入和完整 Runtime 互操作。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -46,9 +46,19 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 工具映射/历史绑定源码 `bfaebb5` 的 [CI 37579438958](https://github.com/bboytang/CAIdex/actions/runs/37579438958) 三平台全部 success：各平台工具 7/投影 7/协议 12/HTTP 13 项，workspace/fmt/Clippy、native keyring/schema/doctor 通过；既有真实 Runtime Linux 25、Windows/macOS 各 24 项通过。v2 工具测试覆盖 canonical wire 与原生回复还原，完整请求转换/Gateway 和真实 Runtime 工具执行仍待接入验收。
 
+## Responses 请求基础转换
+
+`MessagesRequest::from_responses` 编译原生请求并保留完整收到的 Responses source。native model 与正数 max_tokens 由执行端显式提供，不按别名猜 token 上限；输入和原生输出 JSON 均检查字节预算。经典读取顶层 tools/instructions，Lite 仅读取首项 developer additional_tools；初始 system/developer 文本进入 native system，保留顺序。中途 system/developer 目前明确拒绝，后续按提供商实际能力接入，不能把它们静默提升到所有历史之前。
+
+v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改动。function/custom 调用与结果通过 call_id/kind 关联；旧式只有 name/namespace 的 function 结果仅在待完成集合内唯一匹配时接受。未知/重复/错误身份、未齐的并行结果、结果与下一批调用交错明确拒绝。结果先放入紧接 assistant 的 user 内容，再允许普通 user 文本；此层不执行工具。
+
+用户与工具结果图片按原顺序转换：HTTPS URL 引用、JPEG/PNG/GIF/WebP base64 data URL；不抓取网络图片或本地文件，base64 格式校验后保留原数据。OpenAI file_id 不可用于另一提供商；非 auto detail 尚未建立等价语义，明确拒绝。图片实际格式/尺寸/模型限制仍由提供商验证。
+
+原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。当前只支持基础请求字段；reasoning、text/structured output、context、cache/service/metadata 等尚未映射的字段明确报 unsupported，完整 source 保留不等于原生语义支持。完整 Adapter、Responses SSE 转换和真实 Runtime 工具执行尚未完成。
+
 ## 后续顺序
 
-1. 原生 HTTP SSE 与回复投影/回放三平台已验，继续下一项请求转换与接口接入。
+1. 原生 HTTP SSE 与回复/工具投影三平台已验；基础请求转换本机已验，继续三平台 CI 与能力参数映射/接口接入。
 2. 实现 Responses→Messages、工具/图片/推理/结构化输出映射和执行端原生 history；经典与 Lite 分别验收，不将未知字段静默丢弃。
 3. 完成 ModelProvider 六方法、原生认证需求元数据、Gateway 注入及固定 Runtime 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
@@ -62,3 +72,5 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 - [OpenAI reasoning](https://developers.openai.com/api/docs/guides/reasoning#preserve-reasoning-without-stored-responses)：Responses 的 opaque 回放字段；CAIdex 原生载体仅复用固定 Runtime 的传输槽位，不是 OpenAI 密文。
 - [Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching#tracking-cache-performance)：总输入计数为三项相加，不能只取非缓存 input_tokens。
+
+- [Images and vision](https://platform.claude.com/docs/en/build-with-claude/vision)：原生 URL/base64 图片内容形状与格式支持；CAIdex 不代替模型的图片尺寸/格式验收。

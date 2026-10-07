@@ -232,3 +232,22 @@ impl NativeMessage {
         )
     }
 }
+
+/// Determine the contiguous display group length before full coherence checking.
+pub(crate) fn replay_group_len(item: &Value, max_bytes: usize) -> ProviderResult<usize> {
+    let capsule = item["encrypted_content"].as_str().ok_or_else(invalid)?;
+    if max_bytes == 0 || capsule.len() > max_bytes {
+        return Err(invalid());
+    }
+    let text = capsule
+        .strip_prefix(PREFIX)
+        .or_else(|| capsule.strip_prefix(TOOLS_PREFIX))
+        .ok_or_else(invalid)?;
+    let envelope: Value = serde_json::from_str(text).map_err(|_| invalid())?;
+    let native = NativeMessage::parse(envelope["message"].clone()).map_err(|_| invalid())?;
+    Ok(1 + native
+        .content()
+        .iter()
+        .filter(|block| matches!(block["type"].as_str(), Some("text" | "tool_use")))
+        .count())
+}

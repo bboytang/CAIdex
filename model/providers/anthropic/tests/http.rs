@@ -15,6 +15,8 @@ use tokio::{
     sync::mpsc,
 };
 
+#[path = "http/compiled.rs"]
+mod compiled;
 #[path = "http/streaming.rs"]
 mod streaming;
 

@@ -1,0 +1,87 @@
+use super::*;
+use caidex_model_core::{CanonicalRequest, ResponseItem, ResponsesDialect};
+use caidex_provider_anthropic::{MessagesRequest, ToolMap};
+
+#[tokio::test]
+async fn compiled_classic_and_lite_requests_replay_signed_custom_history_over_real_http() {
+    let declarations = vec![
+        json!({"type":"namespace","name":"functions","tools":[{"type":"custom","name":"patch"}]}),
+    ];
+    let map = ToolMap::new(&declarations, 10).unwrap();
+    let call = map.native_call(&ResponseItem::new(json!({"type":"custom_tool_call","namespace":"functions","name":"patch","call_id":"tool-one","input":"\npatch🙂\n"})).unwrap()).unwrap();
+    let mut first_reply = reply();
+    first_reply["content"].as_array_mut().unwrap().push(call);
+    first_reply["stop_reason"] = "tool_use".into();
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let (base, mut requests, _, fixture_task) = fixture(
+            vec![(200, first_reply.to_string()), (200, reply().to_string())],
+            false,
+        )
+        .await;
+        let (client, reads) = client(&base, Some(KEY), Limits::default());
+        let prompt = json!({"type":"message","role":"user","content":"start"});
+        let wire = if dialect == ResponsesDialect::Lite {
+            json!({"model":"alias","input":[{"type":"additional_tools","role":"developer","tools":declarations},prompt],"parallel_tool_calls":false})
+        } else {
+            json!({"model":"alias","input":[prompt],"tools":declarations,"parallel_tool_calls":false})
+        };
+        let first = MessagesRequest::from_responses(
+            &CanonicalRequest::new(wire.clone(), dialect).unwrap(),
+            "native",
+            100,
+            128 * 1024,
+            10,
+        )
+        .unwrap();
+        let native = client
+            .create_message("native", first.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        let projected = native
+            .to_responses_with_tools(first.tools(), 128 * 1024)
+            .unwrap();
+        assert_eq!(
+            projected.output().last().unwrap()["type"],
+            "custom_tool_call"
+        );
+        let mut input = wire["input"].as_array().unwrap().clone();
+        input.extend(projected.output().to_vec());
+        input.push(
+            json!({"type":"custom_tool_call_output","call_id":"tool-one","output":"\nresult🙂\n "}),
+        );
+        let mut second_wire = wire.clone();
+        second_wire["input"] = input.into();
+        let second = MessagesRequest::from_responses(
+            &CanonicalRequest::new(second_wire, dialect).unwrap(),
+            "native",
+            100,
+            128 * 1024,
+            10,
+        )
+        .unwrap();
+        let result = client
+            .create_message("native", second.wire().clone(), RequestContext::default())
+            .await
+            .unwrap();
+        assert_eq!(result.wire(), &reply());
+        let (_, first_body) = requests.recv().await.unwrap();
+        assert_eq!(
+            serde_json::from_slice::<Value>(&first_body).unwrap(),
+            *first.wire()
+        );
+        let (head, second_body) = requests.recv().await.unwrap();
+        assert!(
+            head.to_ascii_lowercase()
+                .contains("x-api-key: synthetic_anthropic_key")
+        );
+        let sent: Value = serde_json::from_slice(&second_body).unwrap();
+        assert_eq!(sent["messages"][1], native.replay_message());
+        assert_eq!(sent["messages"][2]["content"][0]["tool_use_id"], "tool-one");
+        assert_eq!(
+            sent["messages"][2]["content"][0]["content"][0]["text"],
+            "\nresult🙂\n "
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+        fixture_task.await.unwrap();
+    }
+}

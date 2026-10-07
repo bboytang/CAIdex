@@ -384,6 +384,7 @@ dependencies = [
 name = "caidex-provider-anthropic"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "caidex-credentials",
  "caidex-model-core",
  "caidex-provider-custom",
