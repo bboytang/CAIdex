@@ -83,6 +83,72 @@ fn native_reply_replay_keeps_order_signatures_redaction_tools_usage_and_future_p
 }
 
 #[test]
+fn native_input_transformations_validate_shape_and_fallback_replaces_initial_report() {
+    let initial = json!([{"type":"future_transform","opaque":{"n":18446744073709551616_u128}}]);
+    let final_report = json!([{"type":"thinking_dropped","path":"messages.1.content.0",
+        "reason":"organization_binding_mismatch","future":"retain"}]);
+    for replacement in [
+        None,
+        Some(final_report.clone()),
+        Some(json!([])),
+        Some(Value::Null),
+    ] {
+        let mut events = events();
+        events[0]["message"]["input_transformations"] = initial.clone();
+        if let Some(value) = &replacement {
+            events[21]["input_transformations"] = value.clone();
+        }
+        let bytes = stream(&events);
+        let mut parser = parser();
+        for byte in bytes {
+            parser.push(&[byte]).unwrap();
+        }
+        let native = parser.completed_message().unwrap();
+        let expected = replacement
+            .as_ref()
+            .filter(|v| !v.is_null())
+            .unwrap_or(&initial);
+        assert_eq!(&native.wire()["input_transformations"], expected);
+        assert_eq!(
+            native.input_transformations(),
+            expected.as_array().map(Vec::as_slice)
+        );
+        // Reporting a drop is native generation data, not a native parse error.
+        assert_eq!(native.outcome(), MessageOutcome::ToolUse);
+        assert!(!format!("{native:?}").contains("messages.1.content.0"));
+    }
+    for invalid in [
+        json!({}),
+        json!(false),
+        json!([null]),
+        json!([{}]),
+        json!([{"type":"thinking_dropped","path":"messages.1.content.0"}]),
+        json!([{"type":"thinking_mismatch_allowed","path":false,"reason":"prefix_binding_mismatch"}]),
+    ] {
+        let mut wire = message(content(), "end_turn");
+        wire["input_transformations"] = invalid.clone();
+        assert_eq!(
+            NativeMessage::parse(wire).unwrap_err().code,
+            "anthropic_invalid_message"
+        );
+        for at_start in [true, false] {
+            let mut values = events();
+            if at_start {
+                values[0]["message"]["input_transformations"] = invalid.clone();
+            } else {
+                values[21]["input_transformations"] = invalid.clone();
+            }
+            let mut parser = parser();
+            assert_eq!(
+                parser.push(&stream(&values)).unwrap_err().code,
+                "anthropic_invalid_stream"
+            );
+            assert!(parser.completed_message().is_none());
+        }
+    }
+}
+
+#[test]
 fn native_stop_reasons_are_not_flattened_to_success_or_automatically_retried() {
     for (reason, outcome) in [
         ("end_turn", MessageOutcome::EndTurn),

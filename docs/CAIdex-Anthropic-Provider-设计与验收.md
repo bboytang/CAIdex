@@ -157,3 +157,17 @@ AnthropicConfig.with_local_runtime_context 由执行端显式启用；仅接受 
 新增 4 项 HTTP 回归，扩展既有经典/Lite 流式 fixture，覆盖 opt-in、三项本地字段未外发、响应关联、缺省/重复/空/坏编码/超长头、坏 SSE 头关闭 socket/释放 slot、发送前拒绝且 Key 未读。HTTP 累计 26 项。本轮还修正 profile 初始化的 Lite-only/Lite-first input 形状错误，使用合法消息数组并扩展原配置回归。源码 f35d2a7（完整 SHA f35d2a7ba6f53794d20b9c8cf9d07b918231a98d）的 [CI 37616230221](https://github.com/bboytang/CAIdex/actions/runs/37616230221) 三平台 completed/success，新增 4 项及扩展 2 项逐平台日志核对通过；workspace/fmt/Clippy/native keyring/schema/doctor 及既有真实 Runtime Linux 25、Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过。请求前缀/账户历史及完整 Anthropic Gateway/实际 Runtime 工具执行未完成。
 
 依据：[Anthropic response headers](https://platform.claude.com/docs/en/api/overview)、[Anthropic request ID](https://platform.claude.com/docs/en/api/errors)、[固定 Codex client.rs](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs)。所有 HTTP 为合成 fixture，未调用商业 API。
+
+## Input transformations 与历史交付门控
+
+NativeMessage.input_transformations 返回原生报告的借用视图；JSON 和 SSE 验证可选数组及已知报告 type/path/reason 字符串形状。缺省/null 与空数组区分保留，未知 type/reason 和扩展字段保持原始数据及数值精度，不猜其语义。原生 parse/HTTP 接口把报告作为生成数据返回，不把 HTTP 200 或生成结束当作输入推理已保留的证明。
+
+MessageStream 保留 message_start.message 中的报告。fallback 后的最终 message_delta 在事件顶层携带新数组，而不是 delta 内；非 null 数组替换初始报告，缺省/null 不覆盖（与官方 SDK 相同），不能累加两个不同 serving model 的报告。
+
+Responses 投影及历史恢复共用检查：已知 thinking_dropped 的 prefix/model/organization/end_user_binding_mismatch 返回静态 502 anthropic_input_thinking_dropped；已知 thinking_mismatch_allowed/prefix_binding_mismatch 返回静态 502 anthropic_input_binding_mismatch。回放旧或改动载体中的这些报告报 400 invalid_anthropic_replay。流式在首帧或末帧见到已知问题立即终止，不交付 output_item.done、终态或新历史载体；末帧错误之前已发送的展示/参数增量不被冒充成完成。ProjectedStreamingResponse 沿用 Drop 关闭原生 worker/socket 并释放许可，不增加传输 worker，不 drop_block、删历史或重试；原始诊断/path/扩展内容不加入错误。未知报告按原生契约保留，不构成已验证兼容性的证据。
+
+新增 5 项回归覆盖报告形状、逐字节 SSE、缺省/null/空与最终数组替换、未知字段/大整数、两种已知 type 与四种 drop reason、旧载体防绕过、经典/Lite 实际 JSON/SSE、首帧/末帧失败后的无工具 done/完成/socket 关闭/slot 释放与单次 Key 读取。协议 13/投影 8/增量投影 5/HTTP 28 及完整 workspace/Clippy/fmt/diff 本地通过；三平台 CI 状态见 HANDOFF.md。
+
+尚未接入 thinking-binding-controls-2026-08-01 执行端 beta opt-in、前缀快照和真实组织作用域；缺省报告无法发现静默 drop，不宣称完整历史绑定或商业模型验收。官方 SDK 会根据 fallback 块更新 serving model，当前原生流仍须补对应身份核对，不能据此宣称跨模型 fallback 兼容。上述工作完成后再接 Gateway/实际 Runtime。
+
+依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)、[Beta Messages API](https://platform.claude.com/docs/en/api/typescript/beta/messages/create)、[官方 SDK message_delta 定义](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/types/beta/beta_raw_message_delta_event.py)、[官方 SDK 累积逻辑](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/streaming/_beta_messages.py)。未调用商业 API。

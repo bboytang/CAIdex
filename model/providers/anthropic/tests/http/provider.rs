@@ -33,6 +33,66 @@ fn canonical(dialect: ResponsesDialect, tools: &[Value], stream: bool) -> Canoni
 }
 
 #[tokio::test]
+async fn provider_json_binding_reports_reject_lossy_history_without_retry_for_both_dialects() {
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for (kind, reason, code) in [
+            (
+                "thinking_dropped",
+                "prefix_binding_mismatch",
+                Some("anthropic_input_thinking_dropped"),
+            ),
+            (
+                "thinking_dropped",
+                "model_binding_mismatch",
+                Some("anthropic_input_thinking_dropped"),
+            ),
+            (
+                "thinking_dropped",
+                "organization_binding_mismatch",
+                Some("anthropic_input_thinking_dropped"),
+            ),
+            (
+                "thinking_dropped",
+                "end_user_binding_mismatch",
+                Some("anthropic_input_thinking_dropped"),
+            ),
+            (
+                "thinking_mismatch_allowed",
+                "prefix_binding_mismatch",
+                Some("anthropic_input_binding_mismatch"),
+            ),
+            ("future_transform", "future_reason", None),
+        ] {
+            let mut native = reply();
+            native["input_transformations"] = json!([{"type":kind,"reason":reason,"path":"messages.1.content.0","private":"PRIVATE_REPORT"}]);
+            let (base, mut requests, _, task) =
+                fixture(vec![(200, native.to_string())], false).await;
+            let (client, reads) = client(&base, Some(KEY), Limits::default());
+            let provider = AnthropicProvider::new(client, vec![profile()], 10).unwrap();
+            let result = provider
+                .create_response(canonical(dialect, &[], false), RequestContext::default())
+                .await;
+            if let Some(code) = code {
+                let error = result.err().unwrap();
+                assert_eq!(error.code, code);
+                assert_eq!(error.http_status, 502);
+                assert!(!format!("{error:?}").contains("PRIVATE_REPORT"));
+            } else {
+                let response = result.unwrap().response;
+                let restored =
+                    NativeMessage::from_responses_output(response.output(), "native", 128 * 1024)
+                        .unwrap();
+                assert_eq!(restored.wire(), &native);
+            }
+            assert_eq!(reads.load(Ordering::SeqCst), 1);
+            assert!(received(&mut requests).await.0.starts_with("POST "));
+            task.await.unwrap();
+            assert!(requests.try_recv().is_err());
+        }
+    }
+}
+
+#[tokio::test]
 async fn provider_catalog_filters_profiles_and_api_key_requirement_is_safe_metadata() {
     let (base, mut requests, _, task) =
         fixture(vec![(200, page("native", false).to_string())], false).await;

@@ -29,6 +29,7 @@ impl NativeMessage {
         tools: Option<&ToolMap>,
         max_replay_bytes: usize,
     ) -> ProviderResult<CanonicalResponse> {
+        crate::message::check_input_bindings(self.wire())?;
         let (prefix, envelope) = match tools {
             Some(tools) => (
                 TOOLS_PREFIX,
@@ -98,6 +99,7 @@ impl NativeMessage {
             return Err(invalid());
         }
         let message = Self::parse(envelope["message"].clone()).map_err(|_| invalid())?;
+        crate::message::check_input_bindings(message.wire()).map_err(|_| invalid())?;
         if message.model() != expected_model {
             return Err(ProviderError::new(400, "anthropic_replay_model_mismatch"));
         }

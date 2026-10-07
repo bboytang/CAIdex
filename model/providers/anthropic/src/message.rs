@@ -1,5 +1,5 @@
 use crate::{invalid_message, string, validate_block, validate_usage};
-use caidex_model_core::ProviderResult;
+use caidex_model_core::{ProviderError, ProviderResult};
 use serde::Serialize;
 use serde_json::{Value, json};
 use std::{collections::HashSet, fmt};
@@ -50,6 +50,13 @@ impl NativeMessage {
     pub fn wire(&self) -> &Value {
         &self.0
     }
+    /// Native binding reports, including future entries, remain history data.
+    /// Missing reports do not prove that the provider preserved input thinking.
+    pub fn input_transformations(&self) -> Option<&[Value]> {
+        self.0["input_transformations"]
+            .as_array()
+            .map(Vec::as_slice)
+    }
     pub fn outcome(&self) -> MessageOutcome {
         if self.0["stop_details"]["type"] == "refusal" {
             return MessageOutcome::Refusal;
@@ -88,5 +95,53 @@ pub(crate) fn validate_start(wire: &Value) -> ProviderResult<()> {
     {
         return Err(invalid_message());
     }
-    validate_usage(&wire["usage"])
+    validate_usage(&wire["usage"])?;
+    validate_input_transformations(wire)
+}
+
+pub(crate) fn validate_input_transformations(wire: &Value) -> ProviderResult<()> {
+    let Some(value) = wire.get("input_transformations").filter(|v| !v.is_null()) else {
+        return Ok(());
+    };
+    for entry in value.as_array().ok_or_else(invalid_message)? {
+        let kind = string(entry, "type").ok_or_else(invalid_message)?;
+        if matches!(kind, "thinking_dropped" | "thinking_mismatch_allowed")
+            && (string(entry, "path").is_none() || string(entry, "reason").is_none())
+        {
+            return Err(invalid_message());
+        }
+    }
+    Ok(())
+}
+
+/// A successful native generation may still report dropped or unbound input.
+/// The Responses adapter must not release executable done/history as if that
+/// input had been preserved. Raw native APIs retain the reports for the caller.
+pub(crate) fn check_input_bindings(wire: &Value) -> ProviderResult<()> {
+    validate_input_transformations(wire)?;
+    for entry in wire["input_transformations"]
+        .as_array()
+        .into_iter()
+        .flatten()
+    {
+        let code = match (entry["type"].as_str(), entry["reason"].as_str()) {
+            (
+                Some("thinking_dropped"),
+                Some(
+                    "prefix_binding_mismatch"
+                    | "model_binding_mismatch"
+                    | "organization_binding_mismatch"
+                    | "end_user_binding_mismatch",
+                ),
+            ) => "anthropic_input_thinking_dropped",
+            (Some("thinking_mismatch_allowed"), Some("prefix_binding_mismatch")) => {
+                "anthropic_input_binding_mismatch"
+            }
+            // The native contract permits future types/reasons. Preserve them;
+            // do not invent their semantics or infer compatibility evidence.
+            _ => continue,
+        };
+        return Err(ProviderError::new(502, code));
+    }
+    Ok(())
 }

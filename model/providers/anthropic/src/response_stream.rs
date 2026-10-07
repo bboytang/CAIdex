@@ -95,6 +95,7 @@ impl ResponsesProjection {
                         if self.id.is_some() || wire["message"]["model"] != self.model {
                             return Err(invalid());
                         }
+                        crate::message::check_input_bindings(&wire["message"])?;
                         let id = wire["message"]["id"]
                             .as_str()
                             .ok_or_else(invalid)?
@@ -245,6 +246,7 @@ impl ResponsesProjection {
                             self.emit(json!({"type":"response.custom_tool_call_input.delta","item_id":item["id"],"output_index":block.output_index,"delta":item["input"]}),&mut output)?;
                         }
                     }
+                    "message_delta" => crate::message::check_input_bindings(wire)?,
                     "message_stop" => {
                         if self.id.is_none()
                             || self.stopped

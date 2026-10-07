@@ -189,6 +189,15 @@ impl MessageStream {
                         return Err(invalid());
                     }
                     message.as_object_mut().unwrap().extend(delta.clone());
+                    // Fallback reports live on the event, outside delta, and
+                    // replace the initial message_start report rather than add.
+                    if let Some(transformations) =
+                        wire.get("input_transformations").filter(|v| !v.is_null())
+                    {
+                        crate::message::validate_input_transformations(&wire)
+                            .map_err(|_| invalid())?;
+                        message["input_transformations"] = transformations.clone();
+                    }
                     if let Some(usage) = wire.get("usage") {
                         merge_usage(&mut message["usage"], usage)?;
                     }

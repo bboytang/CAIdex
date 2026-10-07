@@ -51,6 +51,85 @@ fn native_projection_roundtrips_all_native_fields_through_classic_and_lite_wire(
     }
     assert!(!format!("{response:?}").contains("signature"));
 }
+
+#[test]
+fn input_binding_reports_block_lossy_projection_and_replay_but_preserve_future_reports() {
+    for (kind, reason, code) in [
+        (
+            "thinking_dropped",
+            "prefix_binding_mismatch",
+            "anthropic_input_thinking_dropped",
+        ),
+        (
+            "thinking_dropped",
+            "model_binding_mismatch",
+            "anthropic_input_thinking_dropped",
+        ),
+        (
+            "thinking_dropped",
+            "organization_binding_mismatch",
+            "anthropic_input_thinking_dropped",
+        ),
+        (
+            "thinking_dropped",
+            "end_user_binding_mismatch",
+            "anthropic_input_thinking_dropped",
+        ),
+        (
+            "thinking_mismatch_allowed",
+            "prefix_binding_mismatch",
+            "anthropic_input_binding_mismatch",
+        ),
+    ] {
+        let mut wire = message("tool_use");
+        let report = json!([{"type":kind,"reason":reason,"path":"messages.1.content.0","private":"PRIVATE_REPORT"}]);
+        wire["input_transformations"] = report.clone();
+        let native = NativeMessage::parse(wire).unwrap();
+        let error = native.to_responses(LIMIT).unwrap_err();
+        assert_eq!(error.code, code);
+        assert_eq!(error.http_status, 502);
+        assert!(!format!("{error:?}").contains("PRIVATE_REPORT"));
+        assert_eq!(
+            native.input_transformations().unwrap(),
+            report.as_array().unwrap()
+        );
+
+        // Old or altered carriers cannot bypass the common replay check.
+        let mut output = projected();
+        let prefix = "caidex.anthropic.native-message.v1:";
+        let mut envelope: Value = serde_json::from_str(
+            output[0]["encrypted_content"]
+                .as_str()
+                .unwrap()
+                .strip_prefix(prefix)
+                .unwrap(),
+        )
+        .unwrap();
+        envelope["message"]["input_transformations"] = report;
+        output[0]["encrypted_content"] = format!("{prefix}{envelope}").into();
+        assert_eq!(
+            NativeMessage::from_responses_output(&output, "native-fixture", LIMIT)
+                .unwrap_err()
+                .code,
+            "invalid_anthropic_replay"
+        );
+    }
+    for report in [
+        Value::Null,
+        json!([]),
+        json!([{"type":"future_transform","opaque":{"n":18446744073709551616_u128}}]),
+        json!([{"type":"thinking_dropped","reason":"future_binding","path":"messages.1.content.0","opaque":"retain"}]),
+    ] {
+        let mut wire = message("tool_use");
+        wire["input_transformations"] = report;
+        let native = NativeMessage::parse(wire.clone()).unwrap();
+        let response = native.to_responses(LIMIT).unwrap();
+        let restored =
+            NativeMessage::from_responses_output(response.output(), "native-fixture", LIMIT)
+                .unwrap();
+        assert_eq!(restored.wire(), &wire);
+    }
+}
 #[test]
 fn stop_outcomes_and_phases_are_preserved_without_flattening_limits_or_pause() {
     for (reason, state, detail) in [

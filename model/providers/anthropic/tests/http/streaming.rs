@@ -162,6 +162,115 @@ async fn invalid_native_stream_request_id_closes_socket_and_releases_slot_before
 }
 
 #[tokio::test]
+async fn provider_start_and_fallback_binding_failures_close_socket_without_tool_done_or_retry() {
+    use caidex_model_core::{
+        CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,
+    };
+    use caidex_provider_anthropic::{AnthropicProvider, ToolMap};
+    let tools = [json!({"type":"function","name":"data_only","parameters":{"type":"object"}})];
+    let map = ToolMap::new(&tools, 10).unwrap();
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for at_start in [true, false] {
+            for (kind, reason, code) in [
+                (
+                    "thinking_dropped",
+                    "organization_binding_mismatch",
+                    "anthropic_input_thinking_dropped",
+                ),
+                (
+                    "thinking_mismatch_allowed",
+                    "prefix_binding_mismatch",
+                    "anthropic_input_binding_mismatch",
+                ),
+            ] {
+                let mut frames: Vec<Value> = complete()
+                    .split("\n\n")
+                    .filter_map(|frame| frame.lines().find_map(|line| line.strip_prefix("data: ")))
+                    .map(|data| serde_json::from_str(data).unwrap())
+                    .collect();
+                let report = json!([{"type":kind,"reason":reason,"path":"messages.1.content.0","private":"PRIVATE_REPORT"}]);
+                frames[0]["message"]["input_transformations"] = json!([]);
+                if at_start {
+                    frames[0]["message"]["input_transformations"] = report;
+                } else {
+                    frames
+                        .iter_mut()
+                        .find(|v| v["type"] == "message_delta")
+                        .unwrap()["input_transformations"] = report;
+                }
+                let body = frames
+                    .into_iter()
+                    .map(event)
+                    .collect::<String>()
+                    .replace("\"data_only\"", &map.native_tools()[0]["name"].to_string());
+                let mut fixture = Fixture::start(body, false, "text/event-stream").await;
+                let (client, reads) = client(
+                    &fixture.base,
+                    Some(KEY),
+                    Limits {
+                        in_flight: 1,
+                        ..Default::default()
+                    },
+                );
+                let provider =
+                    AnthropicProvider::new(client, vec![super::provider::profile()], 10).unwrap();
+                let mut input = vec![json!({"role":"user","content":"hello"})];
+                let mut wire = json!({"model":"alias","stream":true});
+                if dialect == ResponsesDialect::Classic {
+                    wire["tools"] = tools.to_vec().into();
+                } else {
+                    input.insert(
+                        0,
+                        json!({"type":"additional_tools","role":"developer","tools":tools}),
+                    );
+                }
+                wire["input"] = input.into();
+                let mut stream = provider
+                    .stream_response(
+                        CanonicalRequest::new(wire, dialect).unwrap(),
+                        RequestContext::default(),
+                    )
+                    .await
+                    .unwrap()
+                    .events;
+                let mut model_frames = 0;
+                loop {
+                    match tokio::time::timeout(Duration::from_secs(5), stream.next())
+                        .await
+                        .unwrap()
+                        .unwrap()
+                    {
+                        Ok(ProviderStreamEvent::Model(event)) => {
+                            model_frames += 1;
+                            assert!(event.response.terminal().is_none());
+                            assert_ne!(event.response.kind(), "response.output_item.done");
+                            assert!(!event.frame.data.contains("PRIVATE_REPORT"));
+                        }
+                        Ok(ProviderStreamEvent::Heartbeat) => (),
+                        Err(error) => {
+                            assert_eq!(error.code, code);
+                            assert_eq!(error.http_status, 502);
+                            assert!(!format!("{error:?}").contains("PRIVATE_REPORT"));
+                            break;
+                        }
+                    }
+                }
+                assert_eq!(model_frames == 0, at_start);
+                assert!(stream.next().await.is_none());
+                assert_eq!(reads.load(Ordering::SeqCst), 1);
+                received(&mut fixture.requests).await;
+                received(&mut fixture.closed).await;
+                let error = provider
+                    .discover_models(RequestContext::default())
+                    .await
+                    .unwrap_err();
+                assert_ne!(error.code, "provider_busy");
+            }
+        }
+    }
+}
+
+#[tokio::test]
 async fn model_provider_streams_signed_function_history_for_classic_and_lite() {
     use caidex_model_core::{
         CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,

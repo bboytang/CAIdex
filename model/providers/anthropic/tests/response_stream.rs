@@ -207,6 +207,88 @@ fn wrong_model_and_mismatched_completion_fail_without_fabricating_done() {
 }
 
 #[test]
+fn start_and_fallback_binding_reports_never_release_executable_done_or_history() {
+    for at_start in [true, false] {
+        for (kind, code) in [
+            ("thinking_dropped", "anthropic_input_thinking_dropped"),
+            (
+                "thinking_mismatch_allowed",
+                "anthropic_input_binding_mismatch",
+            ),
+        ] {
+            let mut values = events("tool_use", &tools());
+            let report = json!([{"type":kind,"reason":"prefix_binding_mismatch","path":"messages.1.content.0"}]);
+            values[0]["message"]["input_transformations"] = json!([]);
+            if at_start {
+                values[0]["message"]["input_transformations"] = report;
+            } else {
+                let delta = values
+                    .iter_mut()
+                    .find(|v| v["type"] == "message_delta")
+                    .unwrap();
+                delta["input_transformations"] = report;
+            }
+            let body = values.iter().map(frame).collect::<String>();
+            let mut parser = MessageStream::new(LIMIT, LIMIT).unwrap();
+            let parsed = parser.push(body.as_bytes()).unwrap();
+            let mut projection = ResponsesProjection::new("native".into(), tools(), LIMIT).unwrap();
+            let mut failure = None;
+            let mut delivered = Vec::new();
+            for event in parsed {
+                match projection.push(NativeStreamEvent::Event(event)) {
+                    Ok(events) => delivered.extend(events),
+                    Err(error) => {
+                        failure = Some(error);
+                        break;
+                    }
+                }
+            }
+            assert_eq!(failure.unwrap().code, code);
+            assert!(delivered.iter().all(|e| e.response.terminal().is_none()
+                && e.response.kind() != "response.output_item.done"));
+            assert_eq!(delivered.is_empty(), at_start);
+            assert!(
+                projection
+                    .push(NativeStreamEvent::Completed(
+                        parser.completed_message().unwrap().clone()
+                    ))
+                    .is_err()
+            );
+        }
+    }
+    // Unknown reports follow the native forward-compatibility contract and
+    // survive both initial and serving-model replacement in the final carrier.
+    let mut values = events("tool_use", &tools());
+    values[0]["message"]["input_transformations"] = json!([{"type":"future_initial","opaque":1}]);
+    let final_report = json!([{"type":"future_serving","opaque":18446744073709551616_u128}]);
+    values
+        .iter_mut()
+        .find(|v| v["type"] == "message_delta")
+        .unwrap()["input_transformations"] = final_report.clone();
+    let mut parser = MessageStream::new(LIMIT, LIMIT).unwrap();
+    let mut projection = ResponsesProjection::new("native".into(), tools(), LIMIT).unwrap();
+    for event in parser
+        .push(values.iter().map(frame).collect::<String>().as_bytes())
+        .unwrap()
+    {
+        projection.push(NativeStreamEvent::Event(event)).unwrap();
+    }
+    let events = projection
+        .push(NativeStreamEvent::Completed(
+            parser.completed_message().unwrap().clone(),
+        ))
+        .unwrap();
+    let response = &events.last().unwrap().response.wire()["response"];
+    let restored = NativeMessage::from_responses_output(
+        response["output"].as_array().unwrap(),
+        "native",
+        LIMIT,
+    )
+    .unwrap();
+    assert_eq!(restored.wire()["input_transformations"], final_report);
+}
+
+#[test]
 fn projection_budgets_and_post_terminal_events_never_emit_false_completion() {
     assert!(ResponsesProjection::new("native".into(), tools(), 0).is_err());
     assert!(ResponsesProjection::new("native".repeat(100), tools(), 100).is_err());
