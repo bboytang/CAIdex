@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，正在保存本阶段；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
+- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，CI 37577688434 排队中；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -64,7 +64,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD `b74cdf2`；本轮未提交：Anthropic `src/projection.rs`、`tests/projection.rs` 和 lib 模块入口，Runtime dev-dependency/Cargo.lock、Python wire fixture、real_runtime 两项测试及 Provider/HANDOFF 文档。生产 Runtime 未改，第三方版本未变。本机新增 7 项投影与经典/Lite 载体各一项已通过；完整 workspace 已通过，日志 `/tmp/caidex-anthropic-projection-workspace.log`；新增断言后的完整真实 Runtime 25 项通过，日志 `/tmp/caidex-anthropic-projection-runtime.log`。
+- branch `main` 跟踪 `origin/main`，原生回复投影/回放源码 `a0de05f` 已提交/push，工作区无未提交源码。[CI 37577688434](https://github.com/bboytang/CAIdex/actions/runs/37577688434) 对应完整 SHA `a0de05f063c128856a739c42cef92d9dceb3e4dc`，刚核验为 queued；恢复先核对该具体运行。本轮文件：Anthropic `src/projection.rs`、`tests/projection.rs`、Runtime dev-dependency/lock、Python wire fixture/real_runtime、Provider/HANDOFF 文档；生产 Runtime 未改。
 
 ## 测试结果
 
