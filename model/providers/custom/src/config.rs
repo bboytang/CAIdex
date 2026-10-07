@@ -1,7 +1,7 @@
 use crate::{Error, Result};
 use caidex_credentials::CredentialRef;
 use caidex_model_core::{ModelMetadata, ResponsesDialect};
-use reqwest::Url;
+use reqwest::{Url, header::HeaderValue};
 use std::{fmt, net::IpAddr};
 
 /// Exact Responses endpoint, selected by executor configuration, never by a
@@ -9,6 +9,7 @@ use std::{fmt, net::IpAddr};
 pub struct CustomResponses {
     pub(crate) endpoint: Url,
     pub(crate) credential: Option<CredentialRef>,
+    pub(crate) scope: Vec<(&'static str, HeaderValue)>,
 }
 impl CustomResponses {
     pub fn new(endpoint: &str, credential: Option<CredentialRef>) -> Result<Self> {
@@ -29,7 +30,33 @@ impl CustomResponses {
         Ok(Self {
             endpoint,
             credential,
+            scope: Vec::new(),
         })
+    }
+    /// Executor-owned OpenAI routing scope, never caller-supplied HTTP headers.
+    pub fn with_openai_scope(
+        mut self,
+        organization: Option<&str>,
+        project: Option<&str>,
+    ) -> Result<Self> {
+        self.scope.clear();
+        for (name, value) in [
+            ("openai-organization", organization),
+            ("openai-project", project),
+        ] {
+            if let Some(value) = value {
+                if value.is_empty()
+                    || value.len() > 1024
+                    || !value.bytes().all(|byte| (33..=126).contains(&byte))
+                {
+                    return Err(Error::InvalidScope);
+                }
+                let mut value = HeaderValue::from_str(value).map_err(|_| Error::InvalidScope)?;
+                value.set_sensitive(true);
+                self.scope.push((name, value));
+            }
+        }
+        Ok(self)
     }
 }
 impl fmt::Debug for CustomResponses {

@@ -83,9 +83,12 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
-            "gateway-classic" => "wire-classic",
-            "gateway-lite" => "wire-lite",
-            "gateway-stall-classic" | "gateway-stall-lite" => "wire-stall",
+            "gateway-classic" | "gateway-openai-classic" => "wire-classic",
+            "gateway-lite" | "gateway-openai-lite" => "wire-lite",
+            "gateway-stall-classic"
+            | "gateway-stall-lite"
+            | "gateway-openai-stall-classic"
+            | "gateway-openai-stall-lite" => "wire-stall",
             _ => mode,
         };
         let binary = std::env::var_os("CAIDEX_CODEX_BIN").unwrap_or_else(|| "codex".into());
@@ -133,7 +136,9 @@ impl Harness {
             .as_u64()
             .unwrap();
         let model = match (fixture_mode, mode) {
-            ("wire-lite", _) | (_, "gateway-stall-lite") => "gpt-6.1-sol",
+            ("wire-lite", _) | (_, "gateway-stall-lite" | "gateway-openai-stall-lite") => {
+                "gpt-6.1-sol"
+            }
             ("wire-classic" | "wire-stall", _) => "gpt-5.5",
             _ => "gpt-5.1-codex",
         };
@@ -141,35 +146,69 @@ impl Harness {
             use caidex_credentials::{Broker, CredentialRef, Id, SecretKind};
             use caidex_model_core::ResponsesDialect;
             use caidex_model_gateway::{CustomResponses, Limits, ModelRoute};
+            let native_openai = mode.starts_with("gateway-openai-");
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
-                provider: Id::new("custom").unwrap(),
+                provider: Id::new(if native_openai { "openai" } else { "custom" }).unwrap(),
                 profile: Id::new("fixture").unwrap(),
                 kind: SecretKind::ApiKey,
             };
-            let adapter = CustomResponses::new(
-                &format!("http://127.0.0.1:{port}/v1/responses"),
-                Some(credential),
-            )
-            .unwrap();
-            Some(
-                caidex_model_gateway::start(
-                    vec![
-                        ModelRoute::new(
+            let broker = Arc::new(Broker::new(owner, GatewayFixtureStore));
+            if native_openai {
+                use caidex_provider_openai::{OpenAiConfig, OpenAiProvider};
+                let config = OpenAiConfig::new(credential)
+                    .unwrap()
+                    .with_base_url(&format!("http://127.0.0.1:{port}/v1"))
+                    .unwrap()
+                    .with_scope(Some("org-fixture"), Some("proj-fixture"))
+                    .unwrap();
+                let provider = Arc::new(
+                    OpenAiProvider::new(
+                        config,
+                        vec![caidex_model_core::ModelMetadata::configured(
                             model.into(),
                             model.into(),
                             vec![ResponsesDialect::Classic, ResponsesDialect::Lite],
-                            adapter,
-                        )
-                        .unwrap(),
-                    ],
-                    Arc::new(Broker::new(owner, GatewayFixtureStore)),
-                    Limits::default(),
+                        )],
+                        broker.clone(),
+                        Limits::default(),
+                    )
+                    .unwrap(),
+                );
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        provider,
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
                 )
-                .await
-                .unwrap(),
-            )
+            } else {
+                let adapter = CustomResponses::new(
+                    &format!("http://127.0.0.1:{port}/v1/responses"),
+                    Some(credential),
+                )
+                .unwrap();
+                Some(
+                    caidex_model_gateway::start(
+                        vec![
+                            ModelRoute::new(
+                                model.into(),
+                                model.into(),
+                                vec![ResponsesDialect::Classic, ResponsesDialect::Lite],
+                                adapter,
+                            )
+                            .unwrap(),
+                        ],
+                        broker,
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            }
         } else {
             None
         };
@@ -1331,6 +1370,10 @@ async fn real_model_wire(mode: &str, dialect: caidex_model_core::ResponsesDialec
     let requests = trace["wireRequests"].as_array().unwrap();
     for request in requests {
         assert_eq!(request["accept"], "text/event-stream");
+        if mode.starts_with("gateway-openai-") {
+            assert_eq!(request["organization"], "org-fixture");
+            assert_eq!(request["project"], "proj-fixture");
+        }
         let body = &request["body"];
         let normalized = CanonicalRequest::new(body.clone(), dialect).unwrap();
         assert!(normalized.is_streaming());
@@ -1442,9 +1485,39 @@ async fn real_lite_runtime_via_gateway_with_executor_credential() {
 }
 
 #[tokio::test]
+#[ignore = "requires pinned Codex; native OpenAI adapter, synthetic two-turn classic fixture"]
+async fn real_classic_runtime_via_native_openai_adapter() {
+    real_model_wire(
+        "gateway-openai-classic",
+        caidex_model_core::ResponsesDialect::Classic,
+    )
+    .await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; native OpenAI adapter, synthetic two-turn Lite fixture"]
+async fn real_lite_runtime_via_native_openai_adapter() {
+    real_model_wire(
+        "gateway-openai-lite",
+        caidex_model_core::ResponsesDialect::Lite,
+    )
+    .await;
+}
+
+#[tokio::test]
 #[ignore = "requires pinned Codex and loopback; interrupt closes classic/Lite Gateway upstream socket"]
 async fn real_runtime_interrupt_via_gateway_closes_provider_socket() {
-    for mode in ["gateway-stall-classic", "gateway-stall-lite"] {
+    interrupt_gateway(&["gateway-stall-classic", "gateway-stall-lite"]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; native OpenAI classic/Lite interrupt closes actual socket"]
+async fn real_runtime_interrupt_via_native_openai_closes_provider_socket() {
+    interrupt_gateway(&["gateway-openai-stall-classic", "gateway-openai-stall-lite"]).await;
+}
+
+async fn interrupt_gateway(modes: &[&str]) {
+    for mode in modes {
         let mut harness = Harness::start(mode).await;
         let thread = harness.create_thread().await;
         let client = harness.runtime.client();

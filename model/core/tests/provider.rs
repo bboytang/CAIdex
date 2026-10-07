@@ -100,6 +100,8 @@ fn configured_models_and_protocol_fixtures_cannot_claim_full_live_runtime_compat
     assert!(metadata.validate().is_ok());
     metadata.codex_compatibility.as_mut().unwrap().source = EvidenceSource::Configured;
     assert!(metadata.validate().is_err());
+    metadata.codex_compatibility.as_mut().unwrap().source = EvidenceSource::ProviderCatalog;
+    assert!(metadata.validate().is_err());
 }
 
 #[test]

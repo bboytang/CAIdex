@@ -399,6 +399,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-provider-openai"
+version = "0.1.0"
+dependencies = [
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-model-gateway",
+ "caidex-provider-custom",
+ "futures-util",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "caidex-runtime"
 version = "0.1.0"
 dependencies = [
@@ -406,6 +421,7 @@ dependencies = [
  "caidex-credentials",
  "caidex-model-core",
  "caidex-model-gateway",
+ "caidex-provider-openai",
  "serde",
  "serde_json",
  "thiserror",

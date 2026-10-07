@@ -22,8 +22,14 @@ pub(crate) async fn guard<T>(
     }
 }
 
-pub(crate) fn headers(response: &mut Response, context: &ContextHeaders) {
+pub(crate) fn headers(response: &mut Response, context: &ContextHeaders) -> Result<(), Failure> {
     for (name, value) in context.iter() {
+        if !caidex_model_core::RESPONSE_HEADERS.contains(&name) {
+            return Err(Failure::new(
+                StatusCode::BAD_GATEWAY,
+                "provider_invalid_context_header",
+            ));
+        }
         let mut value = HeaderValue::from_str(value).expect("validated header");
         value.set_sensitive(true);
         response.headers_mut().insert(
@@ -31,6 +37,7 @@ pub(crate) fn headers(response: &mut Response, context: &ContextHeaders) {
             value,
         );
     }
+    Ok(())
 }
 
 pub(crate) fn stream(

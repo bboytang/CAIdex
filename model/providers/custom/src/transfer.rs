@@ -176,11 +176,21 @@ async fn pump<S: SecretStore>(
 }
 
 pub(crate) async fn json<S: SecretStore>(
-    mut upstream: reqwest::Response,
+    upstream: reqwest::Response,
     state: &ProviderState<S>,
     context: &RequestContext,
     deadline: Instant,
 ) -> ProviderResult<CanonicalResponse> {
+    CanonicalResponse::new(value(upstream, state, context, deadline).await?)
+        .map_err(|_| ProviderError::new(502, "provider_invalid_response"))
+}
+
+pub(crate) async fn value<S: SecretStore>(
+    mut upstream: reqwest::Response,
+    state: &ProviderState<S>,
+    context: &RequestContext,
+    deadline: Instant,
+) -> ProviderResult<serde_json::Value> {
     let mut bytes = Vec::new();
     loop {
         let chunk = guard(
@@ -203,5 +213,5 @@ pub(crate) async fn json<S: SecretStore>(
     if let Some(error) = wire.get_mut("error").filter(|value| !value.is_null()) {
         *error = state.broker.redactor().json(error);
     }
-    CanonicalResponse::new(wire).map_err(|_| ProviderError::new(502, "provider_invalid_response"))
+    Ok(wire)
 }

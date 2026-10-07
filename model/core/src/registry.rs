@@ -42,6 +42,8 @@ pub enum CompatibilityLevel {
 #[serde(rename_all = "camelCase")]
 pub enum EvidenceSource {
     Configured,
+    /// Availability from a provider's models endpoint, not inference evidence.
+    ProviderCatalog,
     ProtocolFixture,
     LiveProvider,
     /// Actual provider inference through the fixed Runtime, not a synthetic
@@ -111,7 +113,10 @@ impl ModelMetadata {
             && (report.schema_version != 1
                 || !valid(&report.reference)
                 || !valid(&report.tested_model_version)
-                || report.source == EvidenceSource::Configured
+                || matches!(
+                    report.source,
+                    EvidenceSource::Configured | EvidenceSource::ProviderCatalog
+                )
                 || matches!(
                     report.level,
                     CompatibilityLevel::Full | CompatibilityLevel::Compatible

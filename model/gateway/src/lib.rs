@@ -14,10 +14,10 @@ use axum::{
     response::Response,
     routing::post,
 };
-use caidex_credentials::{Broker, Secret, SecretStore};
+use caidex_credentials::{Broker, Redactor, Secret, SecretStore};
 use caidex_model_core::{
-    CancellationToken, CanonicalRequest, ModelProvider, ProviderError, RequestContext,
-    ResponsesDialect,
+    CancellationToken, CanonicalRequest, CapabilitySupport, ModelProvider, ProviderError,
+    RequestContext, ResponsesDialect,
 };
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 use subtle::ConstantTimeEq;
@@ -92,14 +92,25 @@ pub async fn start<S: SecretStore + 'static>(
         CustomResponsesProvider::new(routes, broker.clone(), limits.clone())
             .map_err(configuration_error)?,
     );
+    start_with_provider(provider, broker.redactor(), limits).await
+}
+
+/// Inject a configured native adapter (or provider router) without changing the
+/// Codex HTTP contract. Register the listener token in the executor's redactor.
+/// This does not list models, read credentials, or start inference at startup.
+pub async fn start_with_provider(
+    provider: Arc<dyn ModelProvider>,
+    redactor: &Redactor,
+    limits: Limits,
+) -> Result<RunningGateway> {
+    limits.validate().map_err(configuration_error)?;
     let mut random = [0_u8; 32];
     getrandom::fill(&mut random).map_err(|_| Error::Initialization)?;
     let token = Arc::new(
         Secret::new(random.iter().map(|byte| format!("{byte:02x}")).collect())
             .map_err(|_| Error::Initialization)?,
     );
-    broker
-        .redactor()
+    redactor
         .register(&token)
         .map_err(|_| Error::Initialization)?;
     let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
@@ -251,17 +262,38 @@ async fn handle(
         .map_err(|_| Failure::new(StatusCode::BAD_REQUEST, "invalid_json"))?;
     let request = CanonicalRequest::new(wire, dialect)
         .map_err(|_| Failure::new(StatusCode::BAD_REQUEST, "invalid_model_request"))?;
+    let metadata = state
+        .provider
+        .metadata(request.model())
+        .map_err(model_error)?;
+    if metadata.id != request.model() || metadata.validate().is_err() {
+        return Err(Failure::new(
+            StatusCode::BAD_GATEWAY,
+            "provider_invalid_metadata",
+        ));
+    }
+    if !metadata.dialects.contains(&dialect) {
+        return Err(Failure::new(StatusCode::BAD_REQUEST, "unsupported_dialect"));
+    }
+    if request.is_streaming() && metadata.capabilities.streaming == CapabilitySupport::Unsupported {
+        return Err(Failure::new(
+            StatusCode::BAD_REQUEST,
+            "unsupported_streaming",
+        ));
+    }
     let context = RequestContext {
         headers: context_headers,
         cancellation: state.cancellation.child_token(),
         deadline: Some(deadline.into_std()),
     };
     if request.is_streaming() {
-        let result = state
-            .provider
-            .stream_response(request, context)
-            .await
-            .map_err(model_error)?;
+        let result = transfer::guard(
+            state.provider.stream_response(request, context),
+            state.cancellation.clone(),
+            deadline.min(Instant::now() + state.limits.header_timeout),
+        )
+        .await?
+        .map_err(model_error)?;
         let mut response = Response::builder()
             .header(header::CONTENT_TYPE, "text/event-stream")
             .header(header::CACHE_CONTROL, "no-store")
@@ -273,14 +305,16 @@ async fn handle(
                 permit,
             ))
             .expect("static headers");
-        transfer::headers(&mut response, &result.headers);
+        transfer::headers(&mut response, &result.headers)?;
         Ok(response)
     } else {
-        let result = state
-            .provider
-            .create_response(request, context)
-            .await
-            .map_err(model_error)?;
+        let result = transfer::guard(
+            state.provider.create_response(request, context),
+            state.cancellation.clone(),
+            deadline,
+        )
+        .await?
+        .map_err(model_error)?;
         let mut response = Response::builder()
             .header(header::CONTENT_TYPE, "application/json")
             .header(header::CACHE_CONTROL, "no-store")
@@ -288,7 +322,7 @@ async fn handle(
                 serde_json::to_vec(&result.response).expect("validated response"),
             ))
             .expect("static headers");
-        transfer::headers(&mut response, &result.headers);
+        transfer::headers(&mut response, &result.headers)?;
         Ok(response)
     }
 }
@@ -304,6 +338,7 @@ fn configuration_error(error: caidex_provider_custom::Error) -> Error {
     match error {
         caidex_provider_custom::Error::InvalidEndpoint => Error::InvalidEndpoint,
         caidex_provider_custom::Error::InvalidRoute => Error::InvalidRoute,
+        caidex_provider_custom::Error::InvalidScope => Error::InvalidRoute,
         caidex_provider_custom::Error::InvalidLimits => Error::InvalidLimits,
         caidex_provider_custom::Error::Initialization => Error::Initialization,
     }

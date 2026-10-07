@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A/B/C 已完成，D/E 与 F 第一至第三步当前范围已验收。源码 42fdaa3 / CI 37552752561 Linux、Windows、macOS 全部 success。下一任务为 F/G 原生 Provider Adapter 与模型兼容性/opaque history；未来 UI/Host/同步/iOS 仍按后续阶段验收。
+- A/B/C 已完成，D/E 与 F 第一至第三步当前范围已验收。源码 42fdaa3 / CI 37552752561 三平台 success；HEAD 67cc91a 为验收文档。当前 F/G 原生 OpenAI Adapter 离线开发：原生模型发现/显式 org/project scope、Responses 六方法与可注入 Provider 的 Gateway。按 V3 既有授权使用本地协议服务，不读/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -20,6 +20,7 @@
 - F 第一步：新增 model/core，保留经典/Lite wire/未知 item/event/opaque 与工具字符串；增量 SSE/UTF-8/换行/帧上限/终态/序号/响应身份验证。真实固定 Runtime 经典和 Lite 两轮请求/推理回放通过，仅合成回复。
 - F 第二步（三平台已验）：model/gateway 只监听 loopback、随机独立访问 token、固定模型/endpoint/dialect、执行端 Broker 认证；SSE/非流式 JSON、单槽背压、真实断开/取消、超时、429/HTTP 错误分类和诊断脱敏。真实 Runtime 经典/Lite 各两轮通过，interrupt 在两条路径均实际关闭上游 socket；没有调用商业模型或执行 Code Mode 工具。
 - F 第三步（三平台已验）：ModelProvider 六方法实际实现、CanonicalResponse/能力 Registry/版本化兼容性报告、独立 Custom Responses client。配置清单无自动发现/Full 标签，未知能力/上限不编造；Broker reference metadata 无秘密。HTTP-date、四项请求/两项响应 context header、单槽失败保存、取消/Drop/单并发 slot 释放、TLS 可信/未知 CA/错 hostname/过期 fixture 通过。
+- F/G OpenAI 当前实现（本机已验，CI 待验）：原生 Models GET、配置可调用模型交集、ProviderCatalog 证据门槛、scope/Broker、默认 store=false 与前台门控；原生两轮完整 output 回放、经典/Lite、Gateway 注入入口及独立 deadline/metadata/响应头门控。新 OpenAI 11/Gateway 注入 4 项通过；真实 Runtime 新增 3 项及全部 Linux 23 项通过。
 
 ## 未完成
 
@@ -29,9 +30,10 @@
 
 ## 下一步顺序
 
-1. 读取模型设计与 V2 第 14–22 节，按 V3 顺序接入 OpenAI、Anthropic、Gemini、兼容 API/Ollama。先核对官方协议，实现 Adapter 的实际六方法/能力与模型清单，使用本地合成 fixture 验证；不重新抽离已完成的 Custom client/Registry。
-2. 各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/prompt compatibility 与兼容性报告逐项落实；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权，当前离线工作可继续；不重做 A–E 或重复请求公开授权。
-3. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。
+1. OpenAI 本机 workspace/真实 Runtime 23 项/fmt/Clippy/diff 已通过；提交/push/三平台 CI，检查实际 jobs/logs 后写验收结果。Models 清单不提供 context/capabilities，不由可用模型名称猜 Full 或全部可调用 Responses。
+2. 已使用 OpenAI Docs MCP search/fetch 官方文档；Models reference 的 MCP 内容只有占位摘要，已用官方网页核实 schema。随后按 V3 接入 Anthropic→Gemini→兼容 API/Ollama；不重做已验 Custom client/Registry。
+3. 各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/prompt compatibility 与兼容性报告逐项落实；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权；不重做 A–E 或重复请求公开授权。
+4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。V3 已授权真实 API 授权前使用离线元数据/协议服务；之前将 Key 确认扩大到离线开发已纠正，不以该问卷阻塞离线工作。真实 Key/付费调用仍须另行授权。
 
 ## 重要架构决定
 
@@ -60,7 +62,7 @@
 - `.github/workflows/ci.yml`、`scripts/test-linux-secret-service.sh`、Cargo.toml/lock：新增 E 三平台与 Linux 私有服务验收。
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；功能源码 42fdaa3 已推送/三平台已验，之后仅验收文档提交。无遗留未提交源码，生产 TLS 策略未放宽；续接时用 Git 核对实际 HEAD/工作区。
+- branch `main` 跟踪 `origin/main`，HEAD 67cc91a；功能源码 42fdaa3 已推送/三平台已验。当前未提交：新增 `model/providers/openai/`、Gateway 注入测试、原生 Runtime dev fixture；修改共享 Custom 传输/Models GET/scope、core 证据来源、Cargo.toml/lock、README/HANDOFF 及新原生验收文档。无真实模型 Key/调用；当前完整回归/CI 未完成。续接先核对 Git。
 
 ## 测试结果
 
@@ -71,4 +73,5 @@
 - 既有 Runtime 协议 19 项与同 clock tick 目录隔离回归 1 项三平台通过。首轮时钟目录碰撞已修复（原子序号/创建成功才取得清理所有权），未禁用或盲目重试失败测试。
 - 本机 workspace/fmt/Clippy/真实 Runtime 20 项及单并发 slot 释放/TLS 定向复验通过。E 安全文件/CLI 无已知回归，既有 headless no-default-features/脚本 bash -n 已验；本机 native Linux Secret Service 未执行，由 CI 私有服务验证。
 - 日志 `/tmp/caidex-ci-37552752561.log` 用于本机复查，跨机器以 GitHub 链接为准。所有凭据回归用合成秘密，不读用户模型 Key；真实 Runtime 使用本地 fixture/隔离临时项目。
+- 本轮本机原生 OpenAI 11/Gateway 注入 4/core 20/Custom 7/Gateway HTTP 18 项通过，完整 workspace/固定 Runtime Linux 23 项/fmt/Clippy --workspace --all-targets -D warnings/diff --check 通过；GitHub CI 待验。无需真实模型 Key/付费调用，尚不宣称商业模型兼容性。
 - iOS、商业模型/其他 Provider、Windows Shell 批准后实际执行、真机/UAC/签名尚未执行；macOS Rust 验证不代表 iOS 构建。

@@ -30,13 +30,15 @@ node scripts/codex-binary.mjs
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
 - `model/core`：ModelProvider 六方法接口、模型能力/兼容性 Registry、经典/Lite 请求/完整回复/工具/usage 视图、增量 SSE 和流生命周期。
 - `model/providers/custom`：可独立调用的 Custom Responses 推理 client，供普通 Chat 与 Gateway 共用；配置模型列表、Broker 认证、显式 context headers、TLS 验证、取消/超时/背压与安全错误。
-- `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，通过 ModelProvider 调用模型；生产 Host/CLI 配置入口和其他 Provider 待实现。
+- `model/providers/openai`：原生 Models 发现/Responses 适配器，显式执行端组织/项目与凭据引用；复用共享传输，默认无服务端历史存储。当前使用合成协议服务验证，真实 API 兼容性待验。
+- `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和其他 Provider 待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
 - `upstream/codex`：版本/源码锁定、协议基准和上游许可证。
 - `assets/brand`：用户指定的品牌原件。
 - `docs/CAIdex-实施计划-V3.md`：阶段顺序与验收条件。
 - `docs/CAIdex-Model-Gateway-设计与验收.md`：模型协议/真实 wire 验证与 Gateway 恢复点。
+- `docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生模型发现、认证/存储边界与离线验收。
 - `docs/CAIdex-Runtime-能力对照.md`：完整固定协议清单、实现范围与 CLI 对照验收状态。
 - `docs/CAIdex-UI-规范-V1.md`：UI 布局和 CAIdex 功能入口。
 - `HANDOFF.md`：当前进度、验证与下一步；每次续接先读。

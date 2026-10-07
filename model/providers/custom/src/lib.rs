@@ -31,6 +31,8 @@ pub enum Error {
     InvalidRoute,
     #[error("invalid gateway limits")]
     InvalidLimits,
+    #[error("invalid provider organization or project")]
+    InvalidScope,
     #[error("provider could not initialize")]
     Initialization,
 }
@@ -95,6 +97,32 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
                 limits,
             }),
         })
+    }
+    /// Bounded authenticated metadata GET for an executor-configured endpoint.
+    /// Shares TLS, credentials, concurrency and deadlines with inference; no
+    /// model body can choose this destination. Used by native model discovery.
+    pub async fn get_json(
+        &self,
+        configuration: &CustomResponses,
+        context: RequestContext,
+    ) -> ProviderResult<serde_json::Value> {
+        let deadline = request_deadline(&self.state, &context)?;
+        let _permit = self
+            .state
+            .permits
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
+        let outgoing = self
+            .state
+            .client
+            .get(configuration.endpoint.clone())
+            .header(header::ACCEPT, "application/json");
+        let upstream = execute(&self.state, outgoing, configuration, &context, deadline).await?;
+        if !is_media_type(upstream.headers(), "application/json") {
+            return Err(ProviderError::new(502, "provider_invalid_content_type"));
+        }
+        transfer::value(upstream, &self.state, &context, deadline).await
     }
 }
 
@@ -211,17 +239,7 @@ async fn send<S: SecretStore + 'static>(
     request: &CanonicalRequest,
     context: &RequestContext,
 ) -> ProviderResult<(reqwest::Response, OwnedSemaphorePermit, Instant)> {
-    let deadline = context
-        .deadline
-        .map(Instant::from_std)
-        .unwrap_or(Instant::now() + state.limits.total_timeout)
-        .min(Instant::now() + state.limits.total_timeout);
-    if context.cancellation.is_cancelled() {
-        return Err(ProviderError::new(503, "provider_cancelled"));
-    }
-    if deadline <= Instant::now() {
-        return Err(ProviderError::new(504, "provider_timeout"));
-    }
+    let deadline = request_deadline(state, context)?;
     let model = state
         .models
         .get(request.model())
@@ -258,6 +276,38 @@ async fn send<S: SecretStore + 'static>(
             },
         )
         .body(bytes);
+    if let Some((name, value)) = request.dialect().lite_header() {
+        outgoing = outgoing.header(name, value);
+    }
+    let upstream = execute(state, outgoing, &model.adapter, context, deadline).await?;
+    Ok((upstream, permit, deadline))
+}
+
+fn request_deadline<S: SecretStore>(
+    state: &ProviderState<S>,
+    context: &RequestContext,
+) -> ProviderResult<Instant> {
+    let deadline = context
+        .deadline
+        .map(Instant::from_std)
+        .unwrap_or(Instant::now() + state.limits.total_timeout)
+        .min(Instant::now() + state.limits.total_timeout);
+    if context.cancellation.is_cancelled() {
+        return Err(ProviderError::new(503, "provider_cancelled"));
+    }
+    if deadline <= Instant::now() {
+        return Err(ProviderError::new(504, "provider_timeout"));
+    }
+    Ok(deadline)
+}
+
+async fn execute<S: SecretStore + 'static>(
+    state: &ProviderState<S>,
+    mut outgoing: reqwest::RequestBuilder,
+    configuration: &CustomResponses,
+    context: &RequestContext,
+    deadline: Instant,
+) -> ProviderResult<reqwest::Response> {
     for (name, value) in context.headers.iter() {
         if !REQUEST_HEADERS.contains(&name) {
             return Err(ProviderError::new(400, "invalid_context_header"));
@@ -267,10 +317,10 @@ async fn send<S: SecretStore + 'static>(
         value.set_sensitive(true);
         outgoing = outgoing.header(name, value);
     }
-    if let Some((name, value)) = request.dialect().lite_header() {
-        outgoing = outgoing.header(name, value);
+    for (name, value) in &configuration.scope {
+        outgoing = outgoing.header(*name, value.clone());
     }
-    if let Some(reference) = model.adapter.credential.clone() {
+    if let Some(reference) = configuration.credential.clone() {
         let broker = state.broker.clone();
         let secret = transfer::guard(
             async move { tokio::task::spawn_blocking(move || broker.resolve(&reference)).await },
@@ -320,7 +370,7 @@ async fn send<S: SecretStore + 'static>(
         }
         return Err(error);
     }
-    Ok((upstream, permit, deadline))
+    Ok(upstream)
 }
 
 /// RFC Retry-After accepts delta seconds or an HTTP-date. Date hints are rounded

@@ -1,0 +1,18 @@
+[package]
+name = "caidex-provider-openai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+caidex-credentials = { path = "../../../credentials/core", default-features = false }
+caidex-model-core = { path = "../../core" }
+caidex-provider-custom = { path = "../custom" }
+reqwest = { version = "=0.13.5", default-features = false, features = ["rustls", "stream"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+caidex-model-gateway = { path = "../../gateway" }
+futures-util = "=0.3.34"
+tokio = { workspace = true, features = ["net"] }
