@@ -4,9 +4,9 @@
 
 ## 当前任务
 
-- 正在完成 Anthropic 结构化输出请求转换：新增 src/structured.rs、RequestOptions、tests/structured.rs（4 项），扩展经典/Lite 实际 HTTP 两轮 schema+effort 合并检查。新增 4 项及完整 workspace 均通过，Clippy/fmt/diff 通过；日志 /tmp/caidex-structured-workspace.log。当前 main 的上述源码/测试和文档准备提交/push，三平台 CI 尚待验收。
+- Anthropic strict:true 结构化输出请求转换已实现并三平台验收：源码 9796682，新 src/structured.rs、RequestOptions、tests/structured.rs（4 项），经典/Lite 实际 HTTP 两轮 schema+effort 合并检查通过。workspace/Clippy/fmt/diff 通过；CI 37583615309 全部 success。非 strict、JSON mode、wrapper description/verbosity 语义与完整 Provider/Gateway 仍未完成。
 
-- 当前新增 Anthropic ReasoningMapping：执行端显式 effort→原生 effort/thinking（adaptive/disabled/between_tools/manual）映射、预算及冲突门控已实现；5 项新推理测试和既有 12 项请求测试通过。经典/Lite 实际 HTTP 两轮扩展推理参数检查，workspace/Clippy/fmt/diff 已通过。源码 25081d8 已提交/push，CI 37582398993 三平台全部 success。summary/context/结构化输出/完整 Provider/Gateway 仍未完成。
+- 当前新增 Anthropic ReasoningMapping：执行端显式 effort→原生 effort/thinking（adaptive/disabled/between_tools/manual）映射、预算及冲突门控已实现；5 项新推理测试和既有 12 项请求测试通过。经典/Lite 实际 HTTP 两轮扩展推理参数检查，workspace/Clippy/fmt/diff 已通过。源码 25081d8 已提交/push，CI 37582398993 三平台全部 success。summary/context、其余结构化输出语义及完整 Provider/Gateway 仍未完成。
 - A–E、F 第一至第三步当前范围和 OpenAI 离线 Adapter 已验收。Anthropic 原生 HTTP/SSE、回复/工具载体及基础请求/中途指令已三平台验收，完整 ModelProvider/Gateway 未完成；F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
@@ -84,4 +84,6 @@
 
 - 2026-10-07 中断核查：重新查询上述 CI，三平台仍为 completed/success；断开时处于结构化输出资料核对阶段，未开始实现，没有遗留源码修改或上一阶段待完成 CI。恢复先确认 Responses text.format/strict 契约，再实现能力门控、schema 保留及 effort 合并回归；summary/context 等随后逐项处理。
 
-- 本次恢复点：完成完整 workspace 重跑并确认新增 4 项通过，检查 diff/fmt，提交/push 源码及文档，验收三平台 CI；随后继续 summary/context、其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
+- 本次恢复点：strict:true 请求转换已验收，继续 summary/context、其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
+
+- 结构化转换 [CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)，源码 SHA 9796682e13cb50e7bf52f3581b543b240eacdbd0：Windows/Linux/macOS 全部 completed/success，逐平台日志核对新增 4 项通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-structured-workspace.log、/tmp/caidex-ci-37583615309.log。main 源码已提交/push，当前仅本次验收文档待提交，提交后以实际 HEAD 续接；没有源码遗留修改。

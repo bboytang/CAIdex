@@ -102,6 +102,6 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 本次支持空/普通 text 配置。strict:false、strict 缺省/null、json_object、非空 wrapper description、非空 verbosity 和未知配置字段明确报不支持，仍需后续语义映射。执行端开关及 HTTP fixture 只证明请求转换，不证明模型实际支持，也不证明输出符合任意 schema；原生拒绝/max_tokens 仍按已有 outcome 区分。schema 全量透传可能由原生 API 拒绝，不能把透传误标成全约束验收。
 
-新增 4 项结构化转换回归，覆盖经典/Lite、effort/thinking 合并、source/schema 精确保留、能力门控、不支持语义、坏输入、数值精度及最终 body 字节上限；既有真实 HTTP 两轮 fixture 同时核验 format 和 effort。验证状态见 HANDOFF.md。
+新增 4 项结构化转换回归，覆盖经典/Lite、effort/thinking 合并、source/schema 精确保留、能力门控、不支持语义、坏输入、数值精度及最终 body 字节上限；既有真实 HTTP 两轮 fixture 同时核验 format 和 effort。完整 workspace/Clippy/fmt/diff 通过；[CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)（源码 9796682）三平台全部 success，新增 4 项逐平台通过。
 
 依据：[OpenAI Structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[Anthropic Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)。未调用商业 API。
