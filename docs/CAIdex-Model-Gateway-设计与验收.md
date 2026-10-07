@@ -99,6 +99,6 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 
 ## 下一步顺序
 
-1. 按 V3/原 V2 第 14–22 节依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，使用已验六方法接口与 Registry，先以本地合成 fixture 验证原生 Adapter/模型清单。
+1. OpenAI 当前离线适配范围已通过三平台验收，按 V3/原 V2 第 14–22 节继续 Anthropic→Gemini→兼容 API/Ollama，使用已验六方法接口与 Registry，先以本地合成 fixture 验证原生 Adapter/模型清单；OpenAI 真实模型兼容性与原生历史限制继续保留验收项。
 2. 补各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility；不要把 Responses pass-through 当作最终跨提供商 Gateway。
 3. 原生 opaque history、经典/Code Mode、多轮签名/模型切换分别验收并生成实际证据报告。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。

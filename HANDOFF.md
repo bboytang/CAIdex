@@ -63,7 +63,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，功能源码 e7253c8 已提交/push/三平台验收；验收文档与交接记录随后单独提交。无未完成源码修改或真实模型 Key/调用；续接以实际 Git status/log 核对文档提交及工作区。
+- branch `main` 跟踪 `origin/main`，功能源码 e7253c8 已提交/push/三平台验收；验收文档与交接记录已在 fdc7254 提交/push。额度中断后复核：GitHub main 与本机一致，工作区无遗留源码或未跟踪文件、无残留构建进程。本次仅更新文档恢复点，续接以实际 Git status/log 为准。
 
 ## 测试结果
 
@@ -75,4 +75,5 @@
 - 本机 workspace/fmt/Clippy/真实 Runtime 20 项及单并发 slot 释放/TLS 定向复验通过。E 安全文件/CLI 无已知回归，既有 headless no-default-features/脚本 bash -n 已验；本机 native Linux Secret Service 未执行，由 CI 私有服务验证。
 - 日志 `/tmp/caidex-ci-37552752561.log` 用于本机复查，跨机器以 GitHub 链接为准。所有凭据回归用合成秘密，不读用户模型 Key；真实 Runtime 使用本地 fixture/隔离临时项目。
 - 本轮 [CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266)，源码 e7253c8：三平台 fmt/Clippy/workspace/schema/doctor 与既有 native keyring 回归全部通过。OpenAI 11/Gateway 注入 4/core 20/Custom 7/Gateway HTTP 18 项各平台通过；真实 Runtime Linux 23、Windows/macOS 各 22 项，新增原生经典/Lite 两轮及两路径 interrupt 实际 EOF/reset 通过。本机 workspace/Runtime 23/fmt/Clippy/diff 通过；日志 `/tmp/caidex-ci-37573720266.log`。不代表商业模型或 Code Mode 工具执行已验。
+- 中断后重新查询 GitHub：上述 CI completed/success，三个 job 均 success，提交 SHA 与 e7253c8 一致；验收文档 fdc7254 已在远端。未修改源码，本次不重复运行已有通过的代码测试。
 - iOS、商业模型/其他 Provider、Windows Shell 批准后实际执行、真机/UAC/签名尚未执行；macOS Rust 验证不代表 iOS 构建。
