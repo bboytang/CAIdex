@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准为V3，代码在model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON/SSE/HTTP、v1原生历史/输出投影、ToolMap/v2声明绑定、Responses请求编译基础及图片/工具结果媒体已三平台验收；推理转换亦已三平台验收；最新源码f3284fbef7c046b733dbcdeab20c5bc7741e4f0d，[CI37687665151](https://github.com/bboytang/CAIdex/actions/runs/37687665151)completed/success，Google65项逐平台通过；结构输出/其余Runtime参数、六方法/Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准为V3，代码在model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON/SSE/HTTP、v1原生历史/输出投影、ToolMap/v2声明绑定、Responses请求编译、图片/工具结果媒体、推理及结构输出转换已三平台验收；最新源码a097b16322f9e680119c4d3d4a656ecaebee42ab，[CI37690749429](https://github.com/bboytang/CAIdex/actions/runs/37690749429)completed/success，Google72项逐平台通过。其余Runtime参数、六方法/Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -35,7 +35,7 @@
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
 2. generateContent JSON、原生SSE解析和streamGenerateContent?alt=sse真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已三平台验收，继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
-3. 版本化原生历史与Responses输出投影已三平台验收；请求/工具/图片编译范围已验，继续结构化输出/其余Runtime参数转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
+3. 版本化原生历史与Responses输出投影已三平台验收；请求/工具/图片编译范围已验，继续其余Runtime参数转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
 ## 独立审查记录
 
@@ -202,6 +202,22 @@ Ruling: context current_turn/all_turns是执行端声明的原生保留策略，
 
 本轮唯一fresh-context只读审查无Critical/Important/新增Minor，独立reasoning5/request8通过；原Minor未变。排除项逐项裁定：商业接受/质量/签名真实性及Full无live证据，模型profile的范围/档位/关闭能力由执行端显式承担（误判成本是服务拒绝、截断或错误能力承诺）；summary长度/可用性、实际context承接不能由显示开关/本地声明证明（成本是意图不等价）。预算与输出上限独立、开放effort及canonical原生JSON形状按上述契约，替代ProtoJSON拼写未承诺（成本是非canonical配置被拒）；预算0且native includeThoughts=true在没有显式非none summary时只请求可用显示，不启用思考。完整原request绑定不放松（成本是改变有效配置后旧历史拒绝）。六方法/Registry/Gateway/实际Gemini Runtime及Lite parallelfalse、结构输出/高级参数/发现/网页/后置system/非阻塞部分结果仍后续范围（成本是功能缺失或请求拒绝）；媒体服务接受/displayName/像素识别等旧契约没有新增live证据（成本是服务拒绝）；旧parser/history/HTTP/codec Minor、生产Host权限/整组载体伪造认证未修复（成本是夸大覆盖或认领未认证历史）。Windows/macOS/Linux须本轮精确源码CI，旧CI不能代验（成本是漏平台问题）。报告/tmp/caidex-google-reasoning-review.md，不派第二次审查。
 
-下一阶段检查点（尚未实现）：[现行结构输出指南](https://ai.google.dev/gemini-api/docs/generate-content/structured-output#limitations)明确模型会忽略不支持的JSON Schema属性；REST示例使用generationConfig.responseFormat.text.schema。接线前核对API参考的旧responseJsonSchema与新responseFormat支持范围，建立显式能力/子集拒绝边界，不能套用Anthropic原样传schema后等待服务拒绝的假设。
+推理阶段留下的检查点（结构输出已按下节落实）：[现行结构输出指南](https://ai.google.dev/gemini-api/docs/generate-content/structured-output#limitations)明确模型会忽略不支持的JSON Schema属性；REST示例使用generationConfig.responseFormat.text.schema。接线前核对API参考的旧responseJsonSchema与新responseFormat支持范围，建立显式能力/子集拒绝边界，不能套用Anthropic原样传schema后等待服务拒绝的假设。
 
 推理源码f3284fbef7c046b733dbcdeab20c5bc7741e4f0d的[CI37687665151](https://github.com/bboytang/CAIdex/actions/runs/37687665151)三平台completed/success，精确head及全部步骤核对。Google catalog4/content3/history6/HTTP23/request8/media6/reasoning5/stream4/tools6共65个名字逐平台各通过一次；workspace Linux287/Windows282/macOS286，0失败，ignored32/30/30；真实Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志/tmp/caidex-ci-37687665151-status.json与{-watch,-linux,-windows,-macos}.log。本轮未新增实际Gemini Runtime接线或商业验证，macOS Rust检查不是iOS应用构建；下一步沿HANDOFF继续结构输出及其余Runtime参数。
+
+## 结构输出转换（三平台已验收）
+
+现有RequestOptions新增supports_structured_outputs及独立supports_structured_outputs_with_tools声明；默认仍拒绝，不能从model名称/目录猜测。text.format=json_schema要求strict:true，name验证后只作canonical标签，wrapper description/non-strict/未知字段明确拒绝；schema内title/description原样保留。json_object使用native对象Schema保证对象意图，text/缺省/null不设额外控制；verbosity仍属后续参数转换。现行generationConfig.responseFormat.text使用API参考canonical MIME枚举APPLICATION_JSON及原schema，不发送已弃用responseMimeType/responseSchema/_responseJsonSchema，不借typed OpenAPI Schema重写JSON Schema。[现行格式](https://ai.google.dev/api/generate-content.md#TextResponseFormat)。
+
+Schema检查是native支持子集门控，不是结果求值器：type含nullable数组、title/description、日期format、字符串/数字enum、minimum/maximum、array items/prefixItems/minItems/maxItems、object properties/required/additionalProperties、anyOf、$defs及无环本地JSON Pointer $ref保持原文与数值精度。属性名不被当关键词；未知/被忽略的关键字（pattern/minLength等）、oneOf（native按anyOf解释）、布尔schema（additionalProperties除外）及未知format拒绝，不静默删除约束。只解析本地JSON Pointer，无外部IO；$id/$anchor/anchor引用及循环引用未建立严格等价，明确unsupported，不按服务有限展开假装完整递归语义。[JSON Schema原生支持](https://ai.google.dev/api/generate-content.md#GenerationConfig)、[忽略属性的限制](https://ai.google.dev/gemini-api/docs/generate-content/structured-output#limitations)。
+
+Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG指数展开；不展开/改写schema，不新增validator依赖。超限/未支持schema须明确拒绝，未来有实际需求与原生等价证据再扩展，不降低strict意图。原生服务仍验证自身Schema复杂度/模型接受；此编译器不认证生成值/业务正确性，不能把合成JSON回复标商业结构输出或Full。Schema与任何thinking设置一起在history处理前进入完整native request绑定，改Schema/移除格式拒绝旧v1/v2历史，不删签名或放松原绑定。
+
+6项有效RED→GREEN，既有request8/reasoning5通过；扩大既有HTTP媒体/推理用例，budget/level及经典/Lite各三POST加入输出Schema与原文JSON回复，保留摘要/签名/媒体/工具关联/落盘往返；改Schema及不支持pattern在新增Key读取之前编译拒绝。HTTP为既有编译器行为集成扩展，无独立实现前RED。日志/tmp/caidex-google-structured-{red,green,http}.log；审查前完整workspace293passed/0failed/32ignored、Google71个名字各通过一次、Clippy -D warnings/fmt/diff已通过；唯一审查及精确源码三平台CI已完成（见本节最终证据）。
+
+唯一fresh-context审查发现1项Important（无Critical/新增Minor）：本地$ref直接用JSON Pointer查找而未先解码URI fragment，%61/a同名定义能令循环引用漏检；非法百分号和~转义也是同一根因。已按RFC6901在共享路径先解码一次UTF-8片段、校验%HH与~0/~1语法，再由Value::pointer查找；原始$ref/source/native schema保持不变，无新依赖/IO。新增第7项回归对编码循环、坏编码/UTF-8/tilde、合法空格/Unicode/编码分隔符/一次解码语义完成有效RED→GREEN，结构输出7/request8/reasoning5通过。此为审查后的唯一修复，修复后最终完整workspace294passed/0failed/32ignored、Google72项逐名通过、Clippy -D warnings/fmt/diff通过；新CI已完成（见下），不派第二次审查。[RFC6901](https://www.rfc-editor.org/info/rfc6901/)。报告/tmp/caidex-google-structured-review.md，独立复现/tmp/caidex-google-ref-review-repro.log；修复日志/tmp/caidex-google-structured-ref-{red,green}.log。
+
+审查18项排除裁定（不是隐含支持）：1/3/5商业wire/模型profile/组合能力及Full无live证据，显式开关不授予LiveRuntime（成本是服务拒绝或错误能力承诺）；2结果schema/业务值不由编译器求值，应用验证后续落实（成本是不合预期输出不能被认领为已校验）；4签名真实性/整组载体认证与16生产Host权限/原生凭据/客户端iOS/真机签名保持后续边界（成本是认领未认证历史或未验证客户端）。6六方法/Registry/Gateway/实际Gemini Runtime、7Lite parallelfalse/发现/网页/strict工具/grammar/后置system、8verbosity/高级参数仍下一步（成本是请求明确拒绝或漏功能）；9外部/anchor/ID/循环/布尔schema及广泛关键词按本节门控拒绝，本地编码引用缺陷已修，不能把它排除（成本是未支持的schema拒绝）。10矛盾/不可满足schema、enum/type一致性、服务数值/复杂度及替代整数表示不承诺完整metaschema验证，已接受约束原文保留（成本是服务拒绝/无可满足结果）；11wrapper name仅本地标签，其他wrapper语义明确拒绝（成本是请求者期望的额外意图未支持）；12既有完整native请求绑定拒绝schema/注释改变或移除，不自动迁移（成本是需要新分支/线程或后续承接策略）。13真实推理/摘要/context及14图像/MIME/displayName/组合服务接受无新增live证据（成本是错误模型能力承诺）；15旧Gemini/Anthropic Minor未修未复审（成本是夸大覆盖）；17新精确源码三平台CI仍必需，旧CI不能代验（成本是漏平台问题，macOS Rust≠iOS）；18扩大既有HTTP没有独立集成RED，如实记录编译器RED→GREEN及集成验收（成本是夸大TDD证据）。
+
+结构输出源码a097b16322f9e680119c4d3d4a656ecaebee42ab的[CI37690749429](https://github.com/bboytang/CAIdex/actions/runs/37690749429)三平台completed/success，精确head及全部步骤核对；Google catalog4/content3/history6/HTTP23/request8/media6/reasoning5/stream4/structured7/tools6共72个名字逐平台各通过一次。workspace Linux294/Windows289/macOS293，0失败，ignored32/30/30；真实Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志/tmp/caidex-ci-37690749429-status.json与{-watch,-linux,-windows,-macos}.log，跨机器以GitHub为准。容量注释不影响macOS成功，Rust CI不是iOS构建；本轮不认证生成值/商业Full或实际Gemini Runtime接线。继续HANDOFF记录的其余Runtime参数阶段，不重做结构输出。
