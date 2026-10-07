@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前开发 Anthropic MessagesRequest：经典/Lite 声明、前缀 system/developer 指令、文本、原生 v1/v2 历史回放、function/custom 结果关联及 URL/base64 图片已实现；新增 8 项转换测试通过，完整 workspace/HTTP 两轮、真实 Runtime 25 项及 workspace Clippy/fmt/diff 已通过。源码未提交，待三平台 CI。推理/结构化输出/context/中途 developer 指令、ModelProvider/Gateway 仍未实现，当前未支持参数明确拒绝。
+- 当前开发 Anthropic MessagesRequest：经典/Lite 声明、前缀 system/developer 指令、文本、原生 v1/v2 历史回放、function/custom 结果关联及 URL/base64 图片已实现；新增 8 项转换测试通过，完整 workspace/HTTP 两轮、真实 Runtime 25 项及 workspace Clippy/fmt/diff 已通过。源码 d774ff5 已提交/push，CI 37580529092 已排队，结果待验收。推理/结构化输出/context/中途 developer 指令、ModelProvider/Gateway 仍未实现，当前未支持参数明确拒绝。
 - A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，首轮 Linux native keyring fixture 竞态已修正（`1fc0d3c`），[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 三平台全部 success；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
@@ -66,7 +66,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，HEAD `90c11e0`；ToolMap 源码 bfaebb5 三平台已验。当前未提交：Cargo.lock、Anthropic Cargo.toml/src/lib.rs/src/projection.rs/tests/http.rs，新增 src/request.rs、tests/request.rs、tests/http/compiled.rs，及本交接。所有权编译 fixture 已修复；workspace/HTTP/Runtime/Clippy/fmt/diff 通过，待提交和三平台 CI。
+- branch `main` 跟踪 `origin/main`，源码 HEAD `d774ff5` 已提交/push，源码工作区干净；本交接补 CI checkpoint。新增 src/request.rs、tests/request.rs、tests/http/compiled.rs，修改 projection/lib/HTTP tests/Cargo 及 Provider 文档。[CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092) 对应 SHA `d774ff553e30631eb7727ef9305318db646287ec`，已确认 queued，结果待验收。
 
 ## 测试结果
 
