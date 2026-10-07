@@ -17,6 +17,8 @@ use tokio::{
 
 #[path = "http/compiled.rs"]
 mod compiled;
+#[path = "http/context.rs"]
+mod context;
 #[path = "http/provider.rs"]
 mod provider;
 #[path = "http/streaming.rs"]
@@ -52,6 +54,14 @@ fn client(
     key: Option<&'static str>,
     limits: Limits,
 ) -> (AnthropicClient<Store>, Arc<AtomicUsize>) {
+    client_with_context(base, key, limits, false)
+}
+fn client_with_context(
+    base: &str,
+    key: Option<&'static str>,
+    limits: Limits,
+    local_context: bool,
+) -> (AnthropicClient<Store>, Arc<AtomicUsize>) {
     let reads = Arc::new(AtomicUsize::new(0));
     let broker = Arc::new(Broker::new(
         Id::new("executor").unwrap(),
@@ -60,12 +70,15 @@ fn client(
             key,
         },
     ));
-    let config = AnthropicConfig::new(reference())
+    let mut config = AnthropicConfig::new(reference())
         .unwrap()
         .with_base_url(base)
         .unwrap()
         .with_workspace("fixture-workspace")
         .unwrap();
+    if local_context {
+        config = config.with_local_runtime_context();
+    }
     (AnthropicClient::new(config, broker, limits).unwrap(), reads)
 }
 fn page(id: &str, more: bool) -> Value {
@@ -92,10 +105,23 @@ async fn fixture(
     mpsc::UnboundedReceiver<()>,
     tokio::task::JoinHandle<()>,
 ) {
+    fixture_with_headers(replies, stall, "").await
+}
+async fn fixture_with_headers(
+    replies: Vec<(u16, String)>,
+    stall: bool,
+    headers: &str,
+) -> (
+    String,
+    mpsc::UnboundedReceiver<(String, Vec<u8>)>,
+    mpsc::UnboundedReceiver<()>,
+    tokio::task::JoinHandle<()>,
+) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base = format!("http://{}/proxy/v1/", listener.local_addr().unwrap());
     let (tx, requests) = mpsc::unbounded_channel();
     let (closed_tx, closed) = mpsc::unbounded_channel();
+    let headers = headers.to_owned();
     let task = tokio::spawn(async move {
         for (status, body) in replies {
             let (mut socket, _) = listener.accept().await.unwrap();
@@ -136,7 +162,7 @@ async fn fixture(
                 }
             } else {
                 let response = format!(
-                    "HTTP/1.1 {status} Fixture\r\ncontent-type: application/json\r\nretry-after: 7\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+                    "HTTP/1.1 {status} Fixture\r\ncontent-type: application/json\r\nretry-after: 7\r\ncontent-length: {}\r\nconnection: close\r\n{headers}\r\n{body}",
                     body.len()
                 );
                 socket.write_all(response.as_bytes()).await.unwrap();

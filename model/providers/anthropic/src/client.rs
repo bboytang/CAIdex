@@ -1,7 +1,9 @@
 use crate::transfer::guard;
 use crate::{ModelCatalog, ModelsPage, NativeMessage, NativeModel, NativeStreamingResponse};
 use caidex_credentials::{Broker, CredentialRef, SecretKind, SecretStore};
-use caidex_model_core::{ProviderError, ProviderResult, RequestContext};
+use caidex_model_core::{
+    ContextHeaders, ProviderError, ProviderResult, RESPONSE_HEADERS, RequestContext,
+};
 use caidex_provider_custom::{ClientOptions, CustomResponses, Error, Limits, retry_after};
 use reqwest::{Url, header::HeaderValue};
 use serde_json::Value;
@@ -13,6 +15,7 @@ pub struct AnthropicConfig {
     base: Url,
     credential: CredentialRef,
     workspace: Option<HeaderValue>,
+    local_runtime_context: bool,
 }
 impl AnthropicConfig {
     pub fn new(credential: CredentialRef) -> Result<Self, Error> {
@@ -23,6 +26,7 @@ impl AnthropicConfig {
             base: Url::parse("https://api.anthropic.com/v1/").expect("fixed URL"),
             credential,
             workspace: None,
+            local_runtime_context: false,
         })
     }
     pub fn with_base_url(mut self, base: &str) -> Result<Self, Error> {
@@ -44,6 +48,12 @@ impl AnthropicConfig {
         value.set_sensitive(true);
         self.workspace = Some(value);
         Ok(self)
+    }
+    /// Accept session/request/turn metadata as local RequestContext only. No
+    /// native cache, account or sticky-routing equivalence is implied.
+    pub fn with_local_runtime_context(mut self) -> Self {
+        self.local_runtime_context = true;
+        self
     }
 }
 impl fmt::Debug for AnthropicConfig {
@@ -123,7 +133,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
             if let Some(cursor) = &cursor {
                 url.query_pairs_mut().append_pair("after_id", cursor);
             }
-            let wire = self
+            let (wire, _) = self
                 .json(self.http.get(url), &context, deadline, &mut remaining)
                 .await?;
             cursor = catalog.append(ModelsPage::parse(wire)?)?;
@@ -137,9 +147,21 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
     pub async fn create_message(
         &self,
         model: &str,
-        mut wire: Value,
+        wire: Value,
         context: RequestContext,
     ) -> ProviderResult<NativeMessage> {
+        Ok(self
+            .create_message_with_headers(model, wire, context)
+            .await?
+            .0)
+    }
+    /// Preserve the native request-id as the shared response correlation header.
+    pub async fn create_message_with_headers(
+        &self,
+        model: &str,
+        mut wire: Value,
+        context: RequestContext,
+    ) -> ProviderResult<(NativeMessage, ContextHeaders)> {
         let deadline = self.deadline(&context)?;
         let body = self.message_body(model, &mut wire, false)?;
         let _permit = self
@@ -157,10 +179,10 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
             .header("content-type", "application/json")
             .body(body);
         let mut remaining = self.limits.response_bytes;
-        NativeMessage::parse(
-            self.json(outgoing, &context, deadline, &mut remaining)
-                .await?,
-        )
+        let (wire, headers) = self
+            .json(outgoing, &context, deadline, &mut remaining)
+            .await?;
+        Ok((NativeMessage::parse(wire)?, headers))
     }
     /// Foreground native SSE. Dropping the delivery cancels its I/O worker.
     pub async fn stream_message(
@@ -189,13 +211,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         let response = self
             .execute(outgoing, &context, deadline, "text/event-stream")
             .await?;
-        Ok(crate::transfer::stream(
-            response,
-            context,
-            deadline,
-            self.limits.clone(),
-            permit,
-        ))
+        crate::transfer::stream(response, context, deadline, self.limits.clone(), permit)
     }
     fn message_body(&self, model: &str, wire: &mut Value, stream: bool) -> ProviderResult<Vec<u8>> {
         if model.trim().is_empty()
@@ -227,8 +243,16 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         {
             return Err(ProviderError::new(504, "provider_timeout"));
         }
-        // Native context/header conversion is explicit subsequent Adapter work.
-        if context.headers.iter().next().is_some() {
+        // Context remains owned by this request/stream worker and is never
+        // forwarded to native HTTP or metadata.user_id. Turn-state is an
+        // OpenAI server-issued routing token; no native equivalent is invented.
+        if context.headers.iter().any(|(name, _)| {
+            !self.config.local_runtime_context
+                || !matches!(
+                    name,
+                    "session_id" | "x-client-request-id" | "x-codex-turn-metadata"
+                )
+        }) {
             return Err(ProviderError::new(400, "unsupported_native_context_header"));
         }
         Ok(context
@@ -319,10 +343,11 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         context: &RequestContext,
         deadline: Instant,
         remaining: &mut usize,
-    ) -> ProviderResult<Value> {
+    ) -> ProviderResult<(Value, ContextHeaders)> {
         let mut response = self
             .execute(outgoing, context, deadline, "application/json")
             .await?;
+        let headers = response_headers(response.headers())?;
         let mut bytes = Vec::new();
         while let Some(chunk) = guard(
             response.chunk(),
@@ -337,8 +362,26 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
                 .ok_or_else(|| ProviderError::new(502, "provider_oversized_response"))?;
             bytes.extend_from_slice(&chunk);
         }
-        serde_json::from_slice(&bytes).map_err(|_| ProviderError::new(502, "provider_invalid_json"))
+        let wire = serde_json::from_slice(&bytes)
+            .map_err(|_| ProviderError::new(502, "provider_invalid_json"))?;
+        Ok((wire, headers))
     }
+}
+pub(crate) fn response_headers(
+    headers: &reqwest::header::HeaderMap,
+) -> ProviderResult<ContextHeaders> {
+    let invalid = || ProviderError::new(502, "provider_invalid_context_header");
+    let mut context = ContextHeaders::default();
+    for value in headers.get_all("request-id") {
+        let value = value.to_str().map_err(|_| invalid())?;
+        if value.trim().is_empty() {
+            return Err(invalid());
+        }
+        context
+            .insert("x-request-id", value.to_owned(), RESPONSE_HEADERS)
+            .map_err(|_| invalid())?;
+    }
+    Ok(context)
 }
 pub(crate) fn transport(error: reqwest::Error) -> ProviderError {
     ProviderError::new(

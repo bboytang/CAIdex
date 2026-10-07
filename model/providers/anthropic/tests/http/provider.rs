@@ -347,4 +347,15 @@ fn provider_profiles_reject_duplicate_ids_invalid_budgets_and_false_full_reports
         models.push(model);
         assert!(AnthropicProvider::new(client, models, 10).is_err());
     }
+    for dialects in [
+        vec![ResponsesDialect::Lite],
+        vec![ResponsesDialect::Lite, ResponsesDialect::Classic],
+    ] {
+        let (client, reads) = client("http://127.0.0.1:1/v1", Some(KEY), Limits::default());
+        let mut model = profile();
+        model.metadata.dialects = dialects.clone();
+        let provider = AnthropicProvider::new(client, vec![model], 10).unwrap();
+        assert_eq!(provider.metadata("alias").unwrap().dialects, dialects);
+        assert_eq!(reads.load(Ordering::SeqCst), 0);
+    }
 }

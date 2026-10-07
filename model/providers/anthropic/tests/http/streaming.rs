@@ -10,11 +10,15 @@ struct Fixture {
 }
 impl Fixture {
     async fn start(body: String, end_http: bool, content_type: &str) -> Self {
+        Self::with_headers(body, end_http, content_type, "").await
+    }
+    async fn with_headers(body: String, end_http: bool, content_type: &str, headers: &str) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let base = format!("http://{}/v1", listener.local_addr().unwrap());
         let (tx, requests) = mpsc::unbounded_channel();
         let (closed_tx, closed) = mpsc::unbounded_channel();
         let content_type = content_type.to_owned();
+        let headers = headers.to_owned();
         let task = tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
             let mut bytes = Vec::new();
@@ -34,6 +38,9 @@ impl Fixture {
                             .contains("x-api-key: synthetic_anthropic_key")
                     );
                     assert!(!head.to_ascii_lowercase().contains("authorization:"));
+                    for name in caidex_model_core::REQUEST_HEADERS {
+                        assert!(!head.to_ascii_lowercase().contains(name));
+                    }
                     let length = head
                         .lines()
                         .find_map(|line| {
@@ -53,7 +60,7 @@ impl Fixture {
             }
             tx.send(serde_json::from_slice(&bytes[offset..offset + length]).unwrap())
                 .unwrap();
-            socket.write_all(format!("HTTP/1.1 200 OK\r\ncontent-type: {content_type}\r\ntransfer-encoding: chunked\r\n\r\n").as_bytes()).await.unwrap();
+            socket.write_all(format!("HTTP/1.1 200 OK\r\ncontent-type: {content_type}\r\ntransfer-encoding: chunked\r\n{headers}\r\n").as_bytes()).await.unwrap();
             for piece in body.as_bytes().chunks(73) {
                 let chunk = format!("{:x}\r\n", piece.len());
                 if socket.write_all(chunk.as_bytes()).await.is_err()
@@ -123,6 +130,38 @@ async fn released(client: &AnthropicClient<Store>) {
 }
 
 #[tokio::test]
+async fn invalid_native_stream_request_id_closes_socket_and_releases_slot_before_delivery() {
+    for headers in [
+        "request-id: \r\n".into(),
+        "request-id: req_one\r\nrequest-id: req_two\r\n".into(),
+        format!("request-id: {}\r\n", "a".repeat(8193)),
+        "request-id: 非ASCII\r\n".into(),
+    ] {
+        let mut fixture =
+            Fixture::with_headers(start(), false, "text/event-stream", &headers).await;
+        let (client, _) = client(
+            &fixture.base,
+            Some(KEY),
+            Limits {
+                in_flight: 1,
+                ..Default::default()
+            },
+        );
+        let error = client
+            .stream_message("native", request(), RequestContext::default())
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "provider_invalid_context_header");
+        assert_eq!(error.http_status, 502);
+        assert!(!format!("{error:?}").contains("req_one"));
+        received(&mut fixture.requests).await;
+        received(&mut fixture.closed).await;
+        released(&client).await;
+    }
+}
+
+#[tokio::test]
 async fn model_provider_streams_signed_function_history_for_classic_and_lite() {
     use caidex_model_core::{
         CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,
@@ -132,8 +171,15 @@ async fn model_provider_streams_signed_function_history_for_classic_and_lite() {
     let map = ToolMap::new(&tools, 10).unwrap();
     let body = complete().replace("\"data_only\"", &map.native_tools()[0]["name"].to_string());
     for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
-        let mut fixture = Fixture::start(body.clone(), false, "text/event-stream").await;
-        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let mut fixture = Fixture::with_headers(
+            body.clone(),
+            false,
+            "text/event-stream",
+            "request-id: req_stream\r\nx-codex-turn-state: native-spoof\r\n",
+        )
+        .await;
+        let (client, reads) =
+            client_with_context(&fixture.base, Some(KEY), Limits::default(), true);
         let provider =
             AnthropicProvider::new(client, vec![super::provider::profile()], 10).unwrap();
         let prompt = json!({"role":"user","content":"hello"});
@@ -142,14 +188,16 @@ async fn model_provider_streams_signed_function_history_for_classic_and_lite() {
         } else {
             json!({"model":"alias","input":[{"type":"additional_tools","role":"developer","tools":tools},prompt],"stream":true})
         };
-        let mut stream = provider
+        let response = provider
             .stream_response(
                 CanonicalRequest::new(wire, dialect).unwrap(),
-                RequestContext::default(),
+                super::context::local_context(),
             )
             .await
-            .unwrap()
-            .events;
+            .unwrap();
+        assert_eq!(response.headers.get("x-request-id"), Some("req_stream"));
+        assert!(response.headers.get("x-codex-turn-state").is_none());
+        let mut stream = response.events;
         let mut completed = None;
         let mut arguments = String::new();
         while let Some(item) = tokio::time::timeout(Duration::from_secs(5), stream.next())

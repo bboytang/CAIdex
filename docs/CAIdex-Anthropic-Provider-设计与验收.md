@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；已实现 AnthropicProvider 六方法，执行端配置承接现有推理/结构化输出/Runtime 字段门控。固定 Runtime 经典/Lite 载体测试及前述转换阶段已三平台通过；六方法验证状态见 HANDOFF.md。Gateway/native context headers/响应关联头、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。本轮接入执行端本地上下文策略和原生响应关联头，验证状态见 HANDOFF.md。Gateway、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -10,7 +10,7 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 `discover_models(max_models, context)` 访问配置基址下的 Models 路径，使用 `limit=1000` 和 URL 编码的 `after_id`。完整分页共享单个并发许可、总 deadline、累计响应字节预算；重复 ID、坏游标、不完整结果和数量上限报错，不返回部分模型清单。能力仅由 Models 已声明的 image_input/thinking/structured_outputs 支持标记及正数 token 上限映射；缺失/null/零上限保持未知。名称不推导能力或 Codex 兼容性。
 
-`create_message(model, native_json, context)` 发送非流式原生 Messages JSON：明确 max_tokens，固定 model 参数覆盖 body model，stream=false；保留原生消息内容及未知字段，限制请求/响应大小。它不是 Responses 请求转换，未全面验证提供商的所有输入 schema，其他参数是否合法仍由原生服务判定。携带尚未映射的 context headers 明确拒绝。并发、认证/header timeout、响应 idle timeout、总 deadline、取消和 drop 不触发重试；已开始的同步 SecretStore 读取不能强制中止，取消后不发送请求。
+`create_message(model, native_json, context)` 发送非流式原生 Messages JSON：明确 max_tokens，固定 model 参数覆盖 body model，stream=false；保留原生消息内容及未知字段，限制请求/响应大小。它不是 Responses 请求转换，未全面验证提供商的所有输入 schema，其他参数是否合法仍由原生服务判定。context headers 默认拒绝；执行端显式启用本地 Runtime 策略时仅允许下文三项本地字段，不外发。并发、认证/header timeout、响应 idle timeout、总 deadline、取消和 drop 不触发重试；已开始的同步 SecretStore 读取不能强制中止，取消后不发送请求。
 
 原生回复按 content 原顺序保留，包括 thinking/signature、redacted_thinking、工具及未来块；回放直接使用原内容。签名不做密码学验证，缺少完整签名的 thinking 当前拒绝回放。SSE 增量重建文本、签名、工具 JSON 和 citations，严格校验 lifecycle/index/usage；usage 累计值替换而非相加。未知事件/块保留；无法重建的未知 delta 在 block stop 报错，避免伪造无损 history。`Completed` 只表示收到完整 message_stop，具体 end_turn/tool_use/max_tokens/pause/refusal 等由 MessageOutcome 区分。
 
@@ -72,7 +72,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ## 后续顺序
 
-1. 实现 native context headers/响应关联头和请求前缀/账户绑定，复用已验收的原生传输/请求转换/SSE 投影/六方法。
+1. 完成本轮上下文头验证，然后实现请求前缀/账户绑定；复用已验收的原生传输/请求转换/SSE 投影/六方法。
 2. 接 Gateway，经典/Lite 分别验证；不静默丢弃未映射语义。
 3. 固定 Runtime 经典/Lite 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
@@ -146,4 +146,14 @@ list_models 读取完整原生清单并与配置的 native model 取交集，返
 
 新增 6 项回归覆盖模型清单过滤/认证元数据、坏 profile 和虚假 Full 报告、经典/Lite 多轮 signed custom history 与完整配置联动、错误回复模型/完整投影预算、发送前拒绝（Key 未读）、经典/Lite signed function 流式回复。HTTP 累计 22 项；源码 6ae83b9 的 [CI 37614432384](https://github.com/bboytang/CAIdex/actions/runs/37614432384) 三平台 success，新增 6 项逐平台日志核对通过，workspace/fmt/Clippy/native keyring/schema/doctor 及既有 Runtime Linux 25、Windows/macOS 24 项通过。本地 workspace/Clippy/fmt/diff 通过；末次只增强测试后 HTTP/Clippy 复验通过。所有模型和秘密为合成 fixture，未调用商业 API。
 
-当前 native client 对非空 ContextHeaders 仍明确拒绝，Provider 返回空响应 ContextHeaders；未完成 request-id/turn-state 映射，不宣称 Runtime/Gateway 可直接使用。client_metadata/prompt_cache_key 在编译 source 保留且不外发；Provider 本身不持久化原始请求，生产 Host 仍须保存调用端 canonical 请求与本地归属。v2 回复载体不证明原请求前缀/账户匹配，配置/模型变化后的 signed history 和真实 Runtime 工具执行需后续验收。
+当前 context headers 契约见下节；request-id 已接入，不编造原生 turn-state 等价。client_metadata/prompt_cache_key 在编译 source 保留且不外发；Provider 本身不持久化原始请求，生产 Host 仍须保存调用端 canonical 请求与本地归属。v2 回复载体不证明原请求前缀/账户匹配，配置/模型变化后的 signed history 和真实 Runtime 工具执行需后续验收。
+
+## 本地 Runtime 上下文与响应关联
+
+AnthropicConfig.with_local_runtime_context 由执行端显式启用；仅接受 session_id、x-client-request-id、x-codex-turn-metadata，在原 RequestContext 及 I/O worker 生命周期内保留，不发送到原生 HTTP 或 metadata.user_id。不会承诺 OpenAI 缓存亲和性、粘性路由或账户归属等价，也不代替 Host 的持久化。默认原生客户端继续拒绝这些头；错误方向头和 x-codex-turn-state 始终拒绝，后者是上游服务器发出的路由 token，而本 Adapter 不返回该头。
+
+成功原生 JSON/SSE 响应的 request-id 经共享 ContextHeaders 校验后映射到 x-request-id；create_message_with_headers 返回消息及关联头，原 create_message 保留原接口。NativeStreamingResponse.headers 在建流时提供关联头，AnthropicProvider 传至共享响应契约；不复制原生 x-request-id、turn-state、账户/认证或其他任意头。缺少 request-id 保持缺省，重复、空值、非 ASCII 或超过共享 8192 字节上限报静态 502。SSE 校验在 worker 启动前，失败立即关闭连接并释放 permit；错误状态沿用既有静态分类，不导出原生错误 body/header。
+
+新增 4 项 HTTP 回归，扩展既有经典/Lite 流式 fixture，覆盖 opt-in、三项本地字段未外发、响应关联、缺省/重复/空/坏编码/超长头、坏 SSE 头关闭 socket/释放 slot、发送前拒绝且 Key 未读。HTTP 累计 26 项。本轮还修正 profile 初始化的 Lite-only/Lite-first input 形状错误，使用合法消息数组并扩展原配置回归。验证状态见 HANDOFF.md；请求前缀/账户历史及 Gateway/实际 Runtime 未完成。
+
+依据：[Anthropic response headers](https://platform.claude.com/docs/en/api/overview)、[Anthropic request ID](https://platform.claude.com/docs/en/api/errors)、[固定 Codex client.rs](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs)。所有 HTTP 为合成 fixture，未调用商业 API。

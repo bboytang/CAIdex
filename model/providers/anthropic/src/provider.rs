@@ -4,9 +4,9 @@ use crate::{
 };
 use caidex_credentials::SecretStore;
 use caidex_model_core::{
-    CanonicalRequest, CapabilitySupport, ContextHeaders, CredentialRequirement, EvidenceSource,
-    ModelCapabilities, ModelMetadata, ModelProvider, ProviderError, ProviderFuture,
-    ProviderResponse, ProviderResult, RequestContext, StreamingResponse,
+    CanonicalRequest, CapabilitySupport, CredentialRequirement, EvidenceSource, ModelCapabilities,
+    ModelMetadata, ModelProvider, ProviderError, ProviderFuture, ProviderResponse, ProviderResult,
+    RequestContext, StreamingResponse,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -102,7 +102,7 @@ impl<S: SecretStore + 'static> AnthropicProvider<S> {
             // Existing compiler validates duplicate mappings even when no
             // reasoning/tier is requested; reuse it instead of a second validator.
             let request = CanonicalRequest::new(
-                serde_json::json!({"model":model.metadata.id,"input":"profile validation"}),
+                serde_json::json!({"model":model.metadata.id,"input":[{"role":"user","content":"profile validation"}]}),
                 model.metadata.dialects[0],
             )
             .map_err(|_| ProviderError::new(400, "invalid_anthropic_profile"))?;
@@ -174,9 +174,9 @@ impl<S: SecretStore + 'static> ModelProvider for AnthropicProvider<S> {
             let model = self.model(request.model())?;
             let compiled = model.compile(&request, self.client.limits().request_bytes)?;
             let (wire, tools) = compiled.into_parts();
-            let native = self
+            let (native, headers) = self
                 .client
-                .create_message(&model.metadata.native_model, wire, context)
+                .create_message_with_headers(&model.metadata.native_model, wire, context)
                 .await?;
             if native.model() != model.metadata.native_model {
                 return Err(ProviderError::new(502, "anthropic_response_model_mismatch"));
@@ -186,10 +186,7 @@ impl<S: SecretStore + 'static> ModelProvider for AnthropicProvider<S> {
             if response.wire().to_string().len() > self.client.limits().response_bytes {
                 return Err(ProviderError::new(502, "anthropic_projection_too_large"));
             }
-            Ok(ProviderResponse {
-                response,
-                headers: ContextHeaders::default(),
-            })
+            Ok(ProviderResponse { response, headers })
         })
     }
     fn stream_response(
@@ -213,9 +210,10 @@ impl<S: SecretStore + 'static> ModelProvider for AnthropicProvider<S> {
                 .client
                 .stream_message(&model.metadata.native_model, wire, context)
                 .await?;
+            let headers = native.headers().clone();
             Ok(StreamingResponse {
                 events: Box::pin(ProjectedStreamingResponse::new(native, projection)),
-                headers: ContextHeaders::default(),
+                headers,
             })
         })
     }

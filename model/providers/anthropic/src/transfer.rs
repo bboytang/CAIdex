@@ -1,7 +1,7 @@
 use crate::{
     Limits, MessageEvent, MessageStream, NativeMessage, NativeStreamState, client::transport,
 };
-use caidex_model_core::{ProviderError, ProviderResult, RequestContext};
+use caidex_model_core::{ContextHeaders, ProviderError, ProviderResult, RequestContext};
 use futures_util::Stream;
 use std::{
     future::Future,
@@ -23,10 +23,16 @@ pub enum NativeStreamEvent {
     Completed(NativeMessage),
 }
 pub struct NativeStreamingResponse {
+    headers: ContextHeaders,
     receiver: mpsc::Receiver<NativeStreamEvent>,
     worker: JoinHandle<()>,
     failure: Arc<Mutex<Option<ProviderError>>>,
     terminal: bool,
+}
+impl NativeStreamingResponse {
+    pub fn headers(&self) -> &ContextHeaders {
+        &self.headers
+    }
 }
 impl Stream for NativeStreamingResponse {
     type Item = ProviderResult<NativeStreamEvent>;
@@ -75,7 +81,8 @@ pub(crate) fn stream(
     deadline: Instant,
     limits: Limits,
     permit: OwnedSemaphorePermit,
-) -> NativeStreamingResponse {
+) -> ProviderResult<NativeStreamingResponse> {
+    let headers = crate::client::response_headers(upstream.headers())?;
     let (sender, receiver) = mpsc::channel(1);
     let failure = Arc::new(Mutex::new(None));
     let worker_failure = failure.clone();
@@ -91,12 +98,13 @@ pub(crate) fn stream(
         // Save failure out of band. A full data slot cannot hide cancellation
         // or deadline by making the worker wait to enqueue its error.
     });
-    NativeStreamingResponse {
+    Ok(NativeStreamingResponse {
+        headers,
         receiver,
         worker,
         failure,
         terminal: false,
-    }
+    })
 }
 async fn pump(
     mut upstream: reqwest::Response,
