@@ -4,10 +4,10 @@
 
 ## 当前任务
 
-- 正在补固定 Runtime 字段：新增 runtime_parameters.rs / ServiceTierMapping、RequestOptions 本地元数据开关，接受 include 的推理载体请求、保留原始元数据，显式转换 default/auto 档位；非空 stream_options/access_programs 与 priority/flex 仍明确拒绝。新增 3 项测试通过，实际 HTTP 两轮扩展；完整 workspace、Clippy/fmt/diff 已通过，样式告警已修正；日志 /tmp/caidex-runtime-parameters-workspace.log。源码 1afee18 已提交/push；CI 37611149491 已排队，待验收。
+- 固定 Runtime 字段处理已实现并三平台验收：源码 1afee18，runtime_parameters.rs / ServiceTierMapping / 本地元数据开关，新增 3 项测试及扩展经典/Lite 实际 HTTP 两轮均通过；workspace/Clippy/fmt/diff 与 CI 37611149491 success。非空 stream_options/access_programs、priority/flex 仍明确拒绝，原生缓存策略不宣称等价。
 
 - Anthropic summary/context 显式映射已实现并验收：源码 024b211，SummaryMapping / ThinkingContext、新增 3 项推理测试（累计 8 项）、经典/Lite 实际 HTTP 两轮扩展，workspace/Clippy/fmt/diff 与 CI 37610039312 三平台通过。恢复审查修正摘要不能映射 omitted、between_tools 不接受 display，并补齐上一步遗漏的交接。
-- 下一步处理固定 Runtime 的 include、prompt_cache_key、client_metadata、service_tier/stream_options 等参数；再完成完整 Anthropic ModelProvider/Gateway。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
+- 下一步实现 Anthropic ModelProvider 六方法与 Responses SSE 转换，再接 Gateway/真实 Runtime。strict:true 结构化输出（9796682）已验；非 strict/JSON mode/description/verbosity 与实际模型保留规则仍需后续验证。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体和 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
 
 ## 已完成
@@ -33,7 +33,7 @@
 
 ## 下一步顺序
 
-1. effort/thinking、strict:true、summary/context 已三平台验收；下一步接固定 Runtime 的 include、prompt_cache_key、client_metadata、service_tier/stream_options 等参数，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
+1. effort/thinking、strict:true、summary/context 已三平台验收；固定 Runtime 常规字段已验；下一步进入完整 Provider/SSE/Gateway，非等价额外参数保持明确拒绝，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
 2. 完成 Anthropic ModelProvider 六方法、原生认证需求、Responses SSE 事件转换、Gateway 注入及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。配置/HTTP fixture 通过不等于完整 Adapter 或商业模型支持，不重做已验传输。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
@@ -67,7 +67,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 1afee18 已提交/push，源码工作区干净；本次 checkpoint 文档待提交。[CI 37611149491](https://github.com/bboytang/CAIdex/actions/runs/37611149491) 对应 SHA 1afee186b3162a2d534438eee9e9cbd25bd81832。恢复文件 model/providers/anthropic/src/{runtime_parameters,request}.rs、tests/{runtime_parameters.rs,http/compiled.rs}；先核对 CI，随后开始完整 Provider/Responses SSE/Gateway 接入。
+- branch `main` 跟踪 `origin/main`，源码 1afee18、checkpoint beb23c6 已提交/push，源码工作区干净；本次仅验收文档待提交，提交后以实际 HEAD 续接。恢复文件 model/providers/anthropic/src/{runtime_parameters,request,transfer,projection}.rs；随后开始完整 Provider/Responses SSE/Gateway。
 
 ## 测试结果
 
@@ -90,3 +90,5 @@
 - 新发现：较新 Anthropic 模型的签名可绑定 system/tools/历史消息前缀及账户，当前载体仅验证 native 回复和投影，不证明请求前缀或账户相同。完整 Adapter 必须保留请求前缀契约并补 mode/tool/trim/resume 回归，不得自动 drop_block/retry 掩盖不匹配。资料 https://platform.claude.com/docs/en/build-with-claude/preserved-thinking 。
 
 - Summary/context [CI 37610039312](https://github.com/bboytang/CAIdex/actions/runs/37610039312)，源码 SHA 024b211bbd6ae31ff0160ca3995ed75a4eadae5d：三平台全部 completed/success，逐平台日志核对新增 3 项与扩展 HTTP fixture 通过；累计推理 8/请求 12/结构化 4/HTTP 14/协议 12/投影 7/工具 7 项，本地完整 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-summary-context-workspace.log、/tmp/caidex-ci-37610039312.log。上一步自动审核额度失败未执行完整测试，本次已补验，不存在该测试遗留任务。
+
+- Runtime 字段 [CI 37611149491](https://github.com/bboytang/CAIdex/actions/runs/37611149491)，源码 SHA 1afee186b3162a2d534438eee9e9cbd25bd81832：三平台全部 completed/success，日志核对新增 3 项及扩展 HTTP 两轮逐平台通过；workspace/fmt/Clippy/native keyring/schema/doctor 与既有 Runtime 回归通过。本地日志 /tmp/caidex-runtime-parameters-workspace.log、/tmp/caidex-ci-37611149491.log。未调用商业 API，尚未实际 Anthropic Runtime 工具执行。

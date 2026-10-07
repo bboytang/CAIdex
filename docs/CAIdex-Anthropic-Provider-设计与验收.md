@@ -124,4 +124,4 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ServiceTierMapping 由执行端固定：source default/auto 到 native standard_only/auto；不按同名推断 SLA/计费等价。无映射、重复配置、priority/flex 都拒绝，避免伪装能力。stream_options 缺省/null/空对象为无额外投递要求，sequential_cutoff 等非空值尚未等价实现，明确拒绝；access_programs 非空亦拒绝。
 
-新增 3 项回归，经典/Lite 实际 HTTP 两轮扩展检查原生档位及本地字段未外发、原始 source 保留。验证结果见 HANDOFF.md。依据：[OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)、[Anthropic Messages](https://platform.claude.com/docs/en/api/messages/create)、固定上游 d27764b 的 codex-api/src/common.rs 与 core/src/client.rs。完整 Adapter / Runtime 工具执行 / 商业 API 仍未验收。
+新增 3 项回归，经典/Lite 实际 HTTP 两轮扩展检查原生档位及本地字段未外发、原始 source 保留。完整 workspace/Clippy/fmt/diff 通过；[CI 37611149491](https://github.com/bboytang/CAIdex/actions/runs/37611149491)（源码 1afee18）三平台全部 success，新增 3 项与扩展 HTTP 两轮逐平台通过。依据：[OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)、[Anthropic Messages](https://platform.claude.com/docs/en/api/messages/create)、固定上游 d27764b 的 codex-api/src/common.rs 与 core/src/client.rs。完整 Adapter / Runtime 工具执行 / 商业 API 仍未验收。
