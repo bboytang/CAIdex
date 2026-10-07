@@ -1,6 +1,24 @@
 use caidex_model_core::{ProviderError, ProviderResult};
 use serde_json::{Value, json};
 use std::collections::BTreeSet;
+
+/// Executor-owned prompt guidance, not a native verbosity/length guarantee.
+#[derive(Debug)]
+pub struct VerbosityMapping {
+    source: String,
+    instruction: String,
+}
+impl VerbosityMapping {
+    pub fn new(source: String, instruction: String) -> ProviderResult<Self> {
+        if !matches!(source.as_str(), "low" | "medium" | "high") || instruction.trim().is_empty() {
+            return Err(invalid());
+        }
+        Ok(Self {
+            source,
+            instruction,
+        })
+    }
+}
 fn invalid() -> ProviderError {
     ProviderError::new(400, "invalid_google_output_format")
 }
@@ -10,30 +28,50 @@ fn unsupported() -> ProviderError {
 fn unsupported_schema() -> ProviderError {
     ProviderError::new(400, "unsupported_google_output_schema")
 }
-pub(crate) fn apply(
+pub(crate) fn apply<'a>(
     wire: &mut Value,
     source: &Value,
-    options: &crate::RequestOptions<'_>,
+    options: &'a crate::RequestOptions<'_>,
     has_tools: bool,
-) -> ProviderResult<()> {
+) -> ProviderResult<Option<&'a str>> {
+    let mut levels = BTreeSet::new();
+    if options
+        .verbosity_mappings
+        .iter()
+        .any(|m| !levels.insert(m.source.as_str()))
+    {
+        return Err(invalid());
+    }
     let Some(text) = source.get("text").filter(|v| !v.is_null()) else {
-        return Ok(());
+        return Ok(None);
     };
     let fields = text.as_object().ok_or_else(invalid)?;
     if fields
         .keys()
         .any(|k| !matches!(k.as_str(), "format" | "verbosity"))
-        || fields.get("verbosity").is_some_and(|v| !v.is_null())
     {
         return Err(unsupported());
     }
+    let mut verbosity = None;
+    if let Some(level) = fields.get("verbosity").filter(|v| !v.is_null()) {
+        let level = level.as_str().ok_or_else(invalid)?;
+        if !matches!(level, "low" | "medium" | "high") {
+            return Err(invalid());
+        }
+        let mapping = options
+            .verbosity_mappings
+            .iter()
+            .find(|m| m.source == level)
+            .ok_or_else(unsupported)?;
+        verbosity = Some(mapping.instruction.as_str());
+    }
     let Some(format) = fields.get("format").filter(|v| !v.is_null()) else {
-        return Ok(());
+        return Ok(verbosity);
     };
     let fields = format.as_object().ok_or_else(invalid)?;
     if format["type"] == "text" {
         return if fields.len() == 1 {
-            Ok(())
+            Ok(verbosity)
         } else {
             Err(unsupported())
         };
@@ -86,7 +124,7 @@ pub(crate) fn apply(
     }
     wire["generationConfig"]["responseFormat"] =
         json!({"text":{"mimeType":"APPLICATION_JSON","schema":schema}});
-    Ok(())
+    Ok(verbosity)
 }
 
 // This is a native supported-subset gate, not a JSON Schema evaluator. Google

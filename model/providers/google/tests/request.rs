@@ -465,7 +465,7 @@ fn unsupported_parameters_and_invalid_input_fail_before_transport() {
         (
             "include",
             json!(["message.output_text.logprobs"]),
-            "unsupported_google_request",
+            "unsupported_google_runtime_parameter",
         ),
         ("temperature", json!(0.3), "unsupported_google_request"),
         (

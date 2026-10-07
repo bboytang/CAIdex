@@ -2004,7 +2004,8 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
     use caidex_model_core::{CanonicalRequest, ResponsesDialect};
     use caidex_provider_google::{
         GenerateContentRequest, ImageDetailMapping, NativeHistory, ReasoningMapping,
-        RequestOptions, SummaryMapping, ThinkingContext, ToolMap,
+        RequestOptions, ServiceTierMapping, SummaryMapping, ThinkingContext, ToolMap,
+        VerbosityMapping,
     };
     const MODEL: &str = "models/fixture-media";
     const LIMIT: usize = 256 * 1024;
@@ -2015,7 +2016,16 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
     ]);
     let map = ToolMap::new(declarations.as_array().unwrap(), 8).unwrap();
     let details = [ImageDetailMapping::new("high".into(), "MEDIA_RESOLUTION_HIGH".into()).unwrap()];
+    let verbosity =
+        [
+            VerbosityMapping::new("medium".into(), "Describe the inspection result.".into())
+                .unwrap(),
+        ];
+    let tiers = [ServiceTierMapping::new("priority".into(), "priority".into()).unwrap()];
     let image_options = RequestOptions {
+        retain_runtime_metadata: true,
+        verbosity_mappings: &verbosity,
+        service_tier_mappings: &tiers,
         image_mime_types: &["image/png"],
         tool_result_image_mime_types: &["image/png", "image/jpeg"],
         image_detail_mappings: &details,
@@ -2026,7 +2036,10 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
     let make_request = |dialect: ResponsesDialect, mut input: Vec<Value>| {
         let mut source = json!({"model":"alias","stream":true,"store":false,"parallel_tool_calls":true,
                 "reasoning":{"effort":"high","summary":"auto","context":"all_turns"},
-                "text":{"format":{"type":"json_schema","name":"media_result","strict":true,"schema":output_schema}}});
+                "include":["reasoning.encrypted_content"],"prompt_cache_key":"media fixture",
+                "client_metadata":{"x-codex-turn-metadata":input.len().to_string()},
+                "service_tier":"priority","stream_options":{},
+                "text":{"verbosity":"medium","format":{"type":"json_schema","name":"media_result","strict":true,"schema":output_schema}}});
         if dialect == ResponsesDialect::Lite {
             input.insert(
                 0,
@@ -2037,6 +2050,25 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
         }
         source["input"] = json!(input);
         CanonicalRequest::new(source, dialect).unwrap()
+    };
+    let verify_parameters = |body: &Value| {
+        assert_eq!(body["serviceTier"], "priority");
+        assert_eq!(
+            body["systemInstruction"],
+            json!({"parts":[{"text":"Describe the inspection result."}]})
+        );
+        for key in [
+            "include",
+            "client_metadata",
+            "prompt_cache_key",
+            "stream_options",
+            "service_tier",
+            "text",
+            "cachedContent",
+            "labels",
+        ] {
+            assert!(body.get(key).is_none(), "{key}");
+        }
     };
     let summaries = [SummaryMapping::new("auto".into(), true).unwrap()];
     for (dialect, native, expected) in [
@@ -2110,6 +2142,7 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
             )
         );
         let body = request_body(&sent);
+        verify_parameters(&body);
         assert_eq!(
             body["generationConfig"],
             json!({"maxOutputTokens":128,"thinkingConfig":expected,"responseFormat":{"text":{"mimeType":"APPLICATION_JSON","schema":output_schema}}})
@@ -2235,6 +2268,54 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
             .code,
             "unsupported_google_output_schema"
         );
+        let mut unsupported = restored.wire().clone();
+        unsupported["stream_options"] = json!({"reasoning_summary_delivery":"sequential_cutoff"});
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &CanonicalRequest::new(unsupported, dialect).unwrap(),
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &options
+            )
+            .unwrap_err()
+            .code,
+            "unsupported_google_runtime_parameter"
+        );
+        let mut removed = restored.wire().clone();
+        removed.as_object_mut().unwrap().remove("service_tier");
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &CanonicalRequest::new(removed, dialect).unwrap(),
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &options
+            )
+            .unwrap_err()
+            .code,
+            "google_history_request_mismatch"
+        );
+        let changed_style =
+            [VerbosityMapping::new("medium".into(), "Different instruction.".into()).unwrap()];
+        assert_eq!(
+            GenerateContentRequest::from_responses_with_options(
+                &restored,
+                MODEL,
+                128,
+                LIMIT,
+                8,
+                &RequestOptions {
+                    verbosity_mappings: &changed_style,
+                    ..options
+                }
+            )
+            .unwrap_err()
+            .code,
+            "google_history_request_mismatch"
+        );
         assert_eq!(reads.load(Ordering::SeqCst), 1);
         let mut stream = client
             .stream_content(MODEL, second.wire().clone(), RequestContext::default())
@@ -2251,6 +2332,7 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
             "POST /proxy/v1beta/models/fixture-media:streamGenerateContent?alt=sse HTTP/1.1\r\n"
         ));
         let body = request_body(&sent);
+        verify_parameters(&body);
         assert_eq!(
             body["generationConfig"],
             json!({"maxOutputTokens":128,"thinkingConfig":expected,"responseFormat":{"text":{"mimeType":"APPLICATION_JSON","schema":output_schema}}})
@@ -2298,6 +2380,7 @@ async fn compiled_images_and_tool_media_survive_json_sse_and_persisted_native_re
         assert_eq!(final_native.wire(), &final_reply);
         let sent = fixture.request().await;
         let body = request_body(&sent);
+        verify_parameters(&body);
         assert_eq!(
             body["generationConfig"],
             json!({"maxOutputTokens":128,"thinkingConfig":expected,"responseFormat":{"text":{"mimeType":"APPLICATION_JSON","schema":output_schema}}})

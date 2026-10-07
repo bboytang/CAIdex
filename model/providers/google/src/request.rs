@@ -32,6 +32,10 @@ pub struct GenerateContentRequest {
 /// not model-name inference or proof of live service compatibility.
 #[derive(Default)]
 pub struct RequestOptions<'a> {
+    /// Retain routing hints locally; no native cache/metadata promise.
+    pub retain_runtime_metadata: bool,
+    pub service_tier_mappings: &'a [crate::ServiceTierMapping],
+    pub verbosity_mappings: &'a [crate::VerbosityMapping],
     pub image_mime_types: &'a [&'a str],
     pub tool_result_image_mime_types: &'a [&'a str],
     pub image_detail_mappings: &'a [crate::ImageDetailMapping],
@@ -91,6 +95,11 @@ impl GenerateContentRequest {
                     | "include"
                     | "reasoning"
                     | "text"
+                    | "prompt_cache_key"
+                    | "client_metadata"
+                    | "service_tier"
+                    | "stream_options"
+                    | "access_programs"
             ) {
                 return Err(unsupported());
             }
@@ -103,13 +112,6 @@ impl GenerateContentRequest {
             .is_some_and(|v| !v.is_boolean())
         {
             return Err(invalid());
-        }
-        if let Some(include) = source.get("include") {
-            let include = include.as_array().ok_or_else(invalid)?;
-            // A local carrier selection, never a native thinking/cache setting.
-            if include.iter().any(|v| v != "reasoning.encrypted_content") {
-                return Err(unsupported());
-            }
         }
         let input = match &source["input"] {
             Value::String(text) => vec![json!({"role":"user","content":text})],
@@ -158,9 +160,11 @@ impl GenerateContentRequest {
             ));
         }
         let mut wire = json!({"generationConfig":{"maxOutputTokens":max_tokens},"contents":[]});
+        crate::runtime_parameters::apply(&mut wire, source, options)?;
         // The actual thinking settings are part of every replay prefix.
         crate::reasoning::apply(&mut wire, source, options)?;
-        crate::structured::apply(&mut wire, source, options, !tools.native_tools().is_empty())?;
+        let verbosity =
+            crate::structured::apply(&mut wire, source, options, !tools.native_tools().is_empty())?;
         if !tools.native_tools().is_empty() {
             wire["tools"] = json!([{"functionDeclarations":tools.native_tools()}]);
             if source.get("tool_choice").is_some() {
@@ -203,7 +207,7 @@ impl GenerateContentRequest {
                     return Err(invalid());
                 }
                 wire["contents"] = json!(contents);
-                set_system(&mut wire, &system);
+                set_system(&mut wire, &system, verbosity);
                 let (history, count) = NativeHistory::from_responses_prefix(
                     &input[index..],
                     native_model,
@@ -383,7 +387,7 @@ impl GenerateContentRequest {
             return Err(invalid());
         }
         wire["contents"] = json!(contents);
-        set_system(&mut wire, &system);
+        set_system(&mut wire, &system, verbosity);
         if wire.to_string().len() > max_bytes {
             return Err(invalid());
         }
@@ -404,7 +408,11 @@ impl GenerateContentRequest {
         &self.tools
     }
 }
-fn set_system(wire: &mut Value, parts: &[Value]) {
+fn set_system(wire: &mut Value, parts: &[Value], verbosity: Option<&str>) {
+    let mut parts = parts.to_vec();
+    if let Some(instruction) = verbosity {
+        parts.push(json!({"text":instruction}));
+    }
     if !parts.is_empty() {
         wire["systemInstruction"] = json!({"parts":parts});
     }
