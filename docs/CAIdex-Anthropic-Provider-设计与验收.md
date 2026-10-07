@@ -72,7 +72,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ## 后续顺序
 
-1. 请求前缀/组织 v3 绑定已本地验证，三平台验收待完成；完成后按第 2 项接 Gateway，不重做已验模块。
+1. 请求前缀/组织 v3 当前范围已三平台验收（见末节）；按第 2 项接 Gateway，不重做已验模块。
 2. 接 Gateway，经典/Lite 分别验证；不静默丢弃未映射语义。
 3. 固定 Runtime 经典/Lite 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
@@ -229,6 +229,6 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 
 完整前缀逐载体保存会使长历史体积按轮数平方增长，现有 request/replay 字节预算明确限额，超限不交付新载体/工具 done；H 阶段持久化可去重。尚未接原生 cache_control、deferred/inline tool 例外、服务端 compaction 前缀重置、跨模型 fallback 许可或生产 Host 历史归属。图片 URL 相同也不能证明远端内容未变；这些原生语义不授予 Full 兼容性，需后续独立验收。
 
-新增 6 项离线回归：真实 JSON/SSE 两轮、前置零额外 Key 读取拒绝、legacy/版本降级、工具重排/改动、追加模式与重建 Provider、思考链 trim/gap/reinsert、未知块/大整数及前缀外模式参数、快照预算无 done/新历史。定向 6 项、完整 workspace/Clippy/fmt/diff 最终复验通过；独立审查发现原声明与 native 工具快照可不一致，已补共享回放校验并以用例 RED→GREEN 验证，最终完整回归通过。三平台 CI 尚待完成；日志 /tmp/caidex-anthropic-bound-workspace.log。未调用商业 API，Gateway/固定 Runtime Anthropic 工具执行留在下一步。
+新增 6 项离线回归：真实 JSON/SSE 两轮、前置零额外 Key 读取拒绝、legacy/版本降级、工具重排/改动、追加模式与重建 Provider、思考链 trim/gap/reinsert、未知块/大整数及前缀外模式参数、快照预算无 done/新历史。定向 6 项、完整 workspace/Clippy/fmt/diff 最终复验通过；独立审查发现原声明与 native 工具快照可不一致，已补共享回放校验并以用例 RED→GREEN 验证，最终完整回归通过。源码 305cf34aa5045d4de9c6877d6fade3805753e802 的 [CI 37637494900](https://github.com/bboytang/CAIdex/actions/runs/37637494900) 三平台 completed/success，新增 6 项逐平台日志通过（HTTP 44），workspace/fmt/Clippy/native credentials/schema/doctor 和既有真实 Runtime Linux 25/Windows/macOS 24 通过。本机经典/Lite 旧载体 Runtime 两项也通过。日志 /tmp/caidex-anthropic-bound-workspace.log、/tmp/caidex-ci-37637494900.log。未调用商业 API，Gateway/固定 Runtime Anthropic 工具执行留在下一步。
 
 依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)，实际组织来源及传输边界沿上一节已验实现。
