@@ -72,7 +72,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 ## 后续顺序
 
-1. 完成本轮上下文头验证，然后实现请求前缀/账户绑定；复用已验收的原生传输/请求转换/SSE 投影/六方法。
+1. 实现请求前缀/账户绑定，覆盖 mode/tool/trim/resume；复用已验收的原生传输/请求转换/SSE 投影/六方法及上下文头。
 2. 接 Gateway，经典/Lite 分别验证；不静默丢弃未映射语义。
 3. 固定 Runtime 经典/Lite 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
@@ -154,6 +154,6 @@ AnthropicConfig.with_local_runtime_context 由执行端显式启用；仅接受 
 
 成功原生 JSON/SSE 响应的 request-id 经共享 ContextHeaders 校验后映射到 x-request-id；create_message_with_headers 返回消息及关联头，原 create_message 保留原接口。NativeStreamingResponse.headers 在建流时提供关联头，AnthropicProvider 传至共享响应契约；不复制原生 x-request-id、turn-state、账户/认证或其他任意头。缺少 request-id 保持缺省，重复、空值、非 ASCII 或超过共享 8192 字节上限报静态 502。SSE 校验在 worker 启动前，失败立即关闭连接并释放 permit；错误状态沿用既有静态分类，不导出原生错误 body/header。
 
-新增 4 项 HTTP 回归，扩展既有经典/Lite 流式 fixture，覆盖 opt-in、三项本地字段未外发、响应关联、缺省/重复/空/坏编码/超长头、坏 SSE 头关闭 socket/释放 slot、发送前拒绝且 Key 未读。HTTP 累计 26 项。本轮还修正 profile 初始化的 Lite-only/Lite-first input 形状错误，使用合法消息数组并扩展原配置回归。验证状态见 HANDOFF.md；请求前缀/账户历史及 Gateway/实际 Runtime 未完成。
+新增 4 项 HTTP 回归，扩展既有经典/Lite 流式 fixture，覆盖 opt-in、三项本地字段未外发、响应关联、缺省/重复/空/坏编码/超长头、坏 SSE 头关闭 socket/释放 slot、发送前拒绝且 Key 未读。HTTP 累计 26 项。本轮还修正 profile 初始化的 Lite-only/Lite-first input 形状错误，使用合法消息数组并扩展原配置回归。源码 f35d2a7（完整 SHA f35d2a7ba6f53794d20b9c8cf9d07b918231a98d）的 [CI 37616230221](https://github.com/bboytang/CAIdex/actions/runs/37616230221) 三平台 completed/success，新增 4 项及扩展 2 项逐平台日志核对通过；workspace/fmt/Clippy/native keyring/schema/doctor 及既有真实 Runtime Linux 25、Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过。请求前缀/账户历史及完整 Anthropic Gateway/实际 Runtime 工具执行未完成。
 
 依据：[Anthropic response headers](https://platform.claude.com/docs/en/api/overview)、[Anthropic request ID](https://platform.claude.com/docs/en/api/errors)、[固定 Codex client.rs](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs)。所有 HTTP 为合成 fixture，未调用商业 API。
