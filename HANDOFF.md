@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前新增 Anthropic ReasoningMapping：执行端显式 effort→原生 effort/thinking（adaptive/disabled/between_tools/manual）映射、预算及冲突门控已实现；5 项新推理测试和既有 12 项请求测试通过。经典/Lite 实际 HTTP 两轮扩展推理参数检查，workspace/Clippy/fmt/diff 已通过。源码 25081d8 已提交/push，CI 37582398993 已确认 in_progress，结果待验收。summary/context/结构化输出/完整 Provider/Gateway 仍未完成。
+- 当前新增 Anthropic ReasoningMapping：执行端显式 effort→原生 effort/thinking（adaptive/disabled/between_tools/manual）映射、预算及冲突门控已实现；5 项新推理测试和既有 12 项请求测试通过。经典/Lite 实际 HTTP 两轮扩展推理参数检查，workspace/Clippy/fmt/diff 已通过。源码 25081d8 已提交/push，CI 37582398993 三平台全部 success。summary/context/结构化输出/完整 Provider/Gateway 仍未完成。
 - A–E、F 第一至第三步当前范围和 OpenAI 离线 Adapter 已验收。Anthropic 原生 HTTP/SSE、回复/工具载体及基础请求/中途指令已三平台验收，完整 ModelProvider/Gateway 未完成；F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
@@ -31,7 +31,7 @@
 
 ## 下一步顺序
 
-1. 完成 effort/thinking 映射阶段的提交及三平台 CI；接 summary/context、结构化输出及实际 Runtime 请求其他参数，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
+1. effort/thinking 已三平台验收；下一步接 summary/context、结构化输出及实际 Runtime 请求其他参数，保留模型别名/原生版本契约。custom grammar 仅提示，未建立硬约束等价。
 2. 完成 Anthropic ModelProvider 六方法、原生认证需求、Responses SSE 事件转换、Gateway 注入及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。配置/HTTP fixture 通过不等于完整 Adapter 或商业模型支持，不重做已验传输。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
@@ -65,7 +65,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，源码 HEAD 25081d8 已提交/push，源码工作区干净，本交接补 checkpoint。[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993) 对应 SHA 25081d8dfb9923e8d98f8bed5b7220570ac324fa，in_progress。恢复文件 src/reasoning.rs、src/request.rs、tests/reasoning.rs、tests/http/compiled.rs；完整 Provider/Gateway 尚未完成。
+- branch `main` 跟踪 `origin/main`，源码 25081d8、交接 checkpoint 7efceff 已提交/push，源码工作区干净；本次仅补验收文档，提交后以实际 HEAD 续接。[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993) 对应 SHA 25081d8dfb9923e8d98f8bed5b7220570ac324fa，三平台 completed/success。恢复文件 src/reasoning.rs、src/request.rs、tests/reasoning.rs、tests/http/compiled.rs；完整 Provider/Gateway 尚未完成。
 
 ## 测试结果
 
@@ -73,7 +73,9 @@
 - OpenAI [CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266)，源码 e7253c8：三平台 OpenAI 11 项及经典/Lite 两轮/interrupt fixture 通过；未调用商业 API。
 - Anthropic 中途指令 [CI 37581359918](https://github.com/bboytang/CAIdex/actions/runs/37581359918)，源码 2ccbe38：三平台请求 12/HTTP 14/协议 12/投影 7/工具 7 项，workspace/fmt/Clippy/native keyring/schema/doctor 全部 success；既有真实 Runtime Linux 25、Windows/macOS 24 项通过。
 - Runtime Anthropic 载体执行覆盖 v1；v2 工具/基础请求/中途指令用 canonical wire 及真实 HTTP fixture 验证，不代表完整 Anthropic Gateway/Runtime 工具执行、Code Mode 或商业 API 已验。
-- 本轮 effort/thinking：新增推理 5 项、既有请求 12 项及扩展 HTTP 经典/Lite 两轮全部通过；完整 workspace、workspace Clippy/fmt/diff 通过。日志 /tmp/caidex-reasoning-workspace.log；新阶段 CI 37582398993 运行中，结果待验收。
+- 本轮 effort/thinking：新增推理 5 项、既有请求 12 项及扩展 HTTP 经典/Lite 两轮全部通过；完整 workspace、workspace Clippy/fmt/diff 通过。日志 /tmp/caidex-reasoning-workspace.log；[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993) 三平台全部 success：各平台推理 5/请求 12/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过，既有 Runtime Linux 25、Windows/macOS 24 项通过；日志 /tmp/caidex-ci-37582398993.log。
 - Linux 私有 Secret Service fixture 曾被 readiness Ping 自动激活另一服务，已改 NameHasOwner+default collection Locked=false（1fc0d3c），之后三平台 CI 原生凭据通过。不要恢复自动激活 Ping 或削弱生产凭据检查。本机没有 gnome-keyring-daemon，由 CI 验证。
 - 本机文件保护回归使用 TMPDIR=/var/tmp；保留 Git 存储拒绝。所有秘密/推理为合成 fixture，不读用户模型 Key。跨机器以 GitHub 链接为准，本地 /tmp 日志可丢失。
 - iOS/商业 API/客户端逐状态 UI/真机/UAC/签名未验；macOS Rust CI 不等于 iOS 构建。完整客户端和 H–R 尚未完成。
+
+- 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；此项尚未实现。

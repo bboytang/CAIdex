@@ -68,7 +68,7 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 默认转换仅允许空/未设置的 reasoning；实际 effort 必须找到唯一映射。非空 summary/context、未知字段、坏类型明确拒绝，不能静默丢弃；null 已知可选字段视为未指定。原始请求 source 保留。更改 effort/模式可能影响缓存和签名上下文；当前尚未实现持久化配置版本/换模型承接，不宣称变化后的原生签名兼容已验证。
 
-新增 5 项推理回归及经典/Lite HTTP 两轮参数检查，完整 workspace/Clippy/fmt/diff 已通过；尚未完成完整 Provider/Gateway 或真实 Runtime Anthropic 工具执行。
+新增 5 项推理回归及经典/Lite HTTP 两轮参数检查，完整 workspace/Clippy/fmt/diff 已通过。[CI 37582398993](https://github.com/bboytang/CAIdex/actions/runs/37582398993)（源码 25081d8）三平台全部 success：各平台推理 5/请求 12/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过；既有 Runtime Linux 25、Windows/macOS 24 项通过。尚未完成完整 Provider/Gateway 或真实 Runtime Anthropic 工具执行。
 
 ## 后续顺序
 
@@ -93,3 +93,5 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 - [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)：output_config.effort 与 thinking 模式不同，后续逐项映射，不猜模型能力。
 
 - [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)：手动预算下限与 max_tokens 关系，interleaved beta 的例外需独立接入。
+
+- [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)：下一步接入 output_config.format 时与 effort 合并，保留 schema 约束，不能静默缩减。
