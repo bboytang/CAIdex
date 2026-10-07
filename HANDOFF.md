@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前：Anthropic 执行端 thinking-binding beta 与显式 error 映射已实现，验收中。开启后 JSON/SSE 必须提供对应 serving report；缺省/null 报静态错误且无完成/重试。输出前交接保留首帧接替模型报告，中途/多跳交接要求新报告。新增 5 项回归通过（HTTP 34/推理 9）；最终 workspace/Clippy/fmt/diff 本地通过，三平台 CI 待验。实际组织身份与 compiled 前缀快照仍未接入。
+- 当前：Anthropic 执行端 thinking-binding beta 与显式 error 映射已实现，验收中。开启后 JSON/SSE 必须提供对应 serving report；缺省/null 报静态错误且无完成/重试。输出前交接保留首帧接替模型报告，中途/多跳交接要求新报告。新增 5 项回归通过（HTTP 34/推理 9）；最终 workspace/Clippy/fmt/diff 本地通过，源码 4c6da57 已提交/push，CI 37624001219 in_progress，三平台结果待验。实际组织身份与 compiled 前缀快照仍未接入。
 - Fallback 身份/回放已三平台验收：源码 1f5e022，CI 37621255255 completed/success，新增 6 项逐平台日志通过。原生 SSE 更新实际 serving model、校验交接链和无 delta，换模型后已知 token 计数重新归属，iterations/raw wire 保留；echo 按末次交接过滤，投影只执行最终模型客户端调用。固定 Provider 对未配置实际模型报错并关闭，无 done/重试。
 - Anthropic input_transformations、上下文头、六方法/SSE、请求参数、summary/context、strict:true 结构化输出已三平台验收；源码/CI/范围见测试结果及 Anthropic 设计文档。上轮 Lite-only/Lite-first 初始化错误已修正，恢复不再重做；完整历史绑定与 Gateway/实际 Runtime 工具执行仍未验。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体及 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
@@ -67,7 +67,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，上轮验收 825efb5 已提交/push；本轮未提交 Anthropic client/message/provider/reasoning/transfer、对应 HTTP/推理测试及 HANDOFF/设计文档。beta opt-in 和报告门控已实现，本地完整验收通过，三平台 CI 待完成。恢复先完成当前验收，再继续实际账户及请求前缀绑定。
+- branch `main` 跟踪 `origin/main`，beta/report 源码 4c6da57680b09183d7d35342fa5ed426205bdb63 已提交/push；当前仅 HANDOFF.md CI checkpoint，随此 checkpoint 提交/push。源码无未提交修改；CI 37624001219 in_progress，结果待核对。恢复先核对此精确 SHA 的 CI，再继续实际账户及请求前缀绑定。
 
 ## 测试结果
 
@@ -93,4 +93,4 @@
 
 - Fallback 身份/回放：新增 6 项回归、本地完整 workspace/Clippy/fmt/diff 通过（协议 15/投影 9/增量投影 6/HTTP 30）。日志 /tmp/caidex-anthropic-fallback-workspace.log；源码 SHA 1f5e022942f1eab8153d4410dfb18ba6fb580533 已提交/push；[CI 37621255255](https://github.com/bboytang/CAIdex/actions/runs/37621255255) 三平台 completed/success，新增 6 项逐平台日志核对通过。workspace/fmt/Clippy/native keyring/schema/doctor 与既有真实 Runtime Linux 25、Windows/macOS 24 项通过；日志 /tmp/caidex-ci-37621255255.log。未调用商业 API；完整前缀/账户绑定、显式 fallback 配置/兼容组合和 Anthropic Gateway/实际 Runtime 工具执行未验。
 
-- Thinking binding beta：新增 5 项回归及既有默认不发送 beta 的 HTTP 检查通过（HTTP 34/推理 9）。输出前单/多跳与中途换回同名模型的报告归属、Models 清单无需 Messages 报告及实际 JSON/SSE header 已验。本地完整 workspace/Clippy/fmt/diff 通过，最终增强测试后 HTTP/Clippy 复验通过；日志 /tmp/caidex-anthropic-binding-beta-workspace.log。源码提交及三平台 CI 待完成。
+- Thinking binding beta：新增 5 项回归及既有默认不发送 beta 的 HTTP 检查通过（HTTP 34/推理 9）。输出前单/多跳与中途换回同名模型的报告归属、Models 清单无需 Messages 报告及实际 JSON/SSE header 已验。本地完整 workspace/Clippy/fmt/diff 通过，最终增强测试后 HTTP/Clippy 复验通过；日志 /tmp/caidex-anthropic-binding-beta-workspace.log。源码 SHA 4c6da57680b09183d7d35342fa5ed426205bdb63 已提交/push；[CI 37624001219](https://github.com/bboytang/CAIdex/actions/runs/37624001219) in_progress，三平台待验。
