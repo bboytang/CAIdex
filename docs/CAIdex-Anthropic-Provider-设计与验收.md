@@ -56,9 +56,11 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 
 原生 tool_choice 映射 auto/required/none，parallel_tool_calls 映射 disable_parallel_tool_use。当前只支持基础请求字段；reasoning、text/structured output、context、cache/service/metadata 等尚未映射的字段明确报 unsupported，完整 source 保留不等于原生语义支持。完整 Adapter、Responses SSE 转换和真实 Runtime 工具执行尚未完成。
 
+基础请求转换源码 `d774ff5` 的 [CI 37580529092](https://github.com/bboytang/CAIdex/actions/runs/37580529092) 三平台全部 success：各平台请求 8/HTTP 14/协议 12/投影 7/工具 7 项通过，workspace/fmt/Clippy/native keyring/schema/doctor 通过。真实 Runtime 既有 Linux 25、Windows/macOS 24 项通过。新增 HTTP 两轮验证编译结果通过原生传输回放签名和 custom 结果，不代表完整 Gateway 或 Runtime Anthropic 工具执行已验收。
+
 ## 后续顺序
 
-1. 原生 HTTP SSE 与回复/工具投影三平台已验；基础请求转换本机已验，继续三平台 CI 与能力参数映射/接口接入。
+1. 原生 HTTP SSE 与回复/工具投影三平台已验；基础请求转换三平台已验，继续能力参数映射/接口接入。
 2. 实现 Responses→Messages、工具/图片/推理/结构化输出映射和执行端原生 history；经典与 Lite 分别验收，不将未知字段静默丢弃。
 3. 完成 ModelProvider 六方法、原生认证需求元数据、Gateway 注入及固定 Runtime 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。
@@ -74,3 +76,6 @@ v1/v2 原生历史以完整投影组恢复，原 signed thinking/未知块不改
 - [Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching#tracking-cache-performance)：总输入计数为三项相加，不能只取非缓存 input_tokens。
 
 - [Images and vision](https://platform.claude.com/docs/en/build-with-claude/vision)：原生 URL/base64 图片内容形状与格式支持；CAIdex 不代替模型的图片尺寸/格式验收。
+
+- [Mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)：部分模型支持且限制放置位置；后续以显式能力配置接入，当前基础转换拒绝。
+- [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)：output_config.effort 与 thinking 模式不同，后续逐项映射，不猜模型能力。
