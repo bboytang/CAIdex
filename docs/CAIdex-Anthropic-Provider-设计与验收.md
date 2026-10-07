@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；本轮 beta 的验证状态见 HANDOFF.md。Gateway、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；beta 已三平台验收，状态见 HANDOFF.md。Gateway、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -196,6 +196,22 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 
 发送 header 本身是报告 opt-in；旧账户的前缀 enforcement 仍须 profile 明确提供 error 映射。空报告不等于已实现本地请求快照/账户绑定，也不证明商业模型能力。当前 v1/v2 仍没有 compiled system/tools/messages 或实际组织身份；这些及 mode/tool/trim/resume、Gateway/真实 Runtime 工具执行继续按 HANDOFF.md 开发。
 
-新增 5 项回归覆盖配置/mode/shape/请求字段门控、发送前零 Key 读取、经典/Lite 实际 JSON/SSE、缺省/null/数组/未来报告、合法输出前及中途/多跳报告归属、无 done/重试/socket/slot 与原生 400 静态分类。HTTP 34/推理 9、本地完整 workspace/Clippy/fmt/diff 通过；最终测试增强后 HTTP/Clippy 复验通过。三平台 CI 状态见 HANDOFF.md。所有数据为合成 fixture，未调用商业 API。
+新增 5 项回归覆盖配置/mode/shape/请求字段门控、发送前零 Key 读取、经典/Lite 实际 JSON/SSE、缺省/null/数组/未来报告、合法输出前及中途/多跳报告归属、无 done/重试/socket/slot 与原生 400 静态分类。HTTP 34/推理 9、本地完整 workspace/Clippy/fmt/diff 通过；最终测试增强后 HTTP/Clippy 复验通过。源码 4c6da57680b09183d7d35342fa5ed426205bdb63 的 [CI 37624001219](https://github.com/bboytang/CAIdex/actions/runs/37624001219) 三平台 completed/success，新增 5 项逐平台日志通过；workspace/fmt/Clippy/native keyring/schema/doctor 和既有真实 Runtime Linux 25、Windows/macOS 24 项通过。所有数据为合成 fixture，未调用商业 API。
 
 依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)、[Beta headers](https://platform.claude.com/docs/en/api/beta-headers)。后续真实账户身份来源为认证 API 返回值，而非 CredentialRef；官方 [API overview](https://platform.claude.com/docs/en/api/overview)、[Workspaces](https://platform.claude.com/docs/en/manage-claude/workspaces) 和 [Get Current Organization](https://platform.claude.com/docs/en/api/http/organization) 给出响应组织/工作区头和读取当前组织的契约，尚未在本地历史绑定中接入。
+
+## 实际组织身份来源与执行端发送前校验
+
+`AnthropicClient::current_organization(context)` 通过认证 GET `organizations/me` 获取当前 Key 所属组织 ID；验证 organization/id/name 形状及可选组织头与 body 一致，仅返回 ID。它不调用模型，不从 CredentialRef、Key 指纹或缓存推断身份。组织 ID 当作不透明标识，要求非空、可见 ASCII、最多 1024 字节；未知响应字段不会参与身份判断。
+
+`AnthropicConfig::with_expected_organization(id)` 由执行端显式指定预期组织。启用后，每次 Messages JSON/SSE 或 Models 分页请求先读取当前组织，验证相符后才发送模型输入/清单请求；同一请求的预检与实际发送共用一次 Broker 解析的 sensitive Key，不能在二者之间再次读取已被替换的 Key。每页重新解析并验证，不缓存本地 reference 的账户身份。预期组织不是原生请求选择头，不外发 `anthropic-organization-id`。未配置时保持原生客户端原有行为，不暗中增加 GET。
+
+预检 body 组织不符返回静态 400 `anthropic_organization_mismatch`，不发送模型历史/重试。实际成功 JSON/SSE/清单响应必须有唯一合法组织头，缺省/空/重复/坏编码/超长报 502 `anthropic_invalid_organization`，与预期不符报 `anthropic_response_organization_mismatch`；在数据/流交付前拒绝。组织头不进入共享 ContextHeaders，后者继续只提供原 request-id 关联。原生认证/429/redirect 等失败沿用安全分类，不回显 body、组织或 Key。
+
+复用现有 permit、TLS、JSON 字节预算、取消和 worker。身份响应独立受 response_bytes 限制，Models 清单仍使用跨页累计预算；不增加独立 worker 或依赖。启用 guard 时，Broker、组织预检（含 body）和实际响应头共用原单次 header_timeout 预算及整体 deadline，不给额外预检再分配一个完整建连等待窗口。独立 current_organization 的 headers 受 header_timeout，body 受 total/idle/deadline；取消或预检失败释放许可，不继续 POST。
+
+本步仅建立认证身份来源和执行端账户防误用门控。v1/v2 历史载体还没有组织归属与 compiled system/tools/messages 前缀，不能据此宣称 mode/tool/trim/resume 历史绑定已完成；下一步将实际已验证身份及 compiled 快照接入版本化载体，再验收 Gateway/真实 Runtime 工具执行。
+
+新增 4 项实际 socket 回归及现有配置负例扩展，HTTP 累计 38；覆盖同一 reference 换 Key 不复用旧身份、GET/POST 同一 Key、JSON/SSE 交付前门控、Models 两页预检、独立 lookup、错误/超时/取消/预算/slot 与无重试。完整 workspace/Clippy/fmt/diff 本地通过；三平台 CI 待推送核对。所有 Key/账户/回复为合成 fixture。
+
+依据：[Get Current Organization](https://platform.claude.com/docs/en/api/http/organization)、[API response headers](https://platform.claude.com/docs/en/api/overview)。实际商业账户与模型未调用。

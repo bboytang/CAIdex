@@ -19,6 +19,8 @@ use tokio::{
 mod compiled;
 #[path = "http/context.rs"]
 mod context;
+#[path = "http/organization.rs"]
+mod organization;
 #[path = "http/provider.rs"]
 mod provider;
 #[path = "http/streaming.rs"]
@@ -133,13 +135,30 @@ async fn fixture_with_headers(
     mpsc::UnboundedReceiver<()>,
     tokio::task::JoinHandle<()>,
 ) {
+    fixture_with_responses(
+        replies
+            .into_iter()
+            .map(|(status, body)| (status, body, "application/json".into(), headers.into()))
+            .collect(),
+        stall,
+    )
+    .await
+}
+async fn fixture_with_responses(
+    replies: Vec<(u16, String, String, String)>,
+    stall: bool,
+) -> (
+    String,
+    mpsc::UnboundedReceiver<(String, Vec<u8>)>,
+    mpsc::UnboundedReceiver<()>,
+    tokio::task::JoinHandle<()>,
+) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base = format!("http://{}/proxy/v1/", listener.local_addr().unwrap());
     let (tx, requests) = mpsc::unbounded_channel();
     let (closed_tx, closed) = mpsc::unbounded_channel();
-    let headers = headers.to_owned();
     let task = tokio::spawn(async move {
-        for (status, body) in replies {
+        for (status, body, media_type, headers) in replies {
             let (mut socket, _) = listener.accept().await.unwrap();
             let mut bytes = Vec::new();
             let (head, offset, length) = loop {
@@ -178,7 +197,7 @@ async fn fixture_with_headers(
                 }
             } else {
                 let response = format!(
-                    "HTTP/1.1 {status} Fixture\r\ncontent-type: application/json\r\nretry-after: 7\r\ncontent-length: {}\r\nconnection: close\r\n{headers}\r\n{body}",
+                    "HTTP/1.1 {status} Fixture\r\ncontent-type: {media_type}\r\nretry-after: 7\r\ncontent-length: {}\r\nconnection: close\r\n{headers}\r\n{body}",
                     body.len()
                 );
                 socket.write_all(response.as_bytes()).await.unwrap();
@@ -419,6 +438,12 @@ fn endpoint_scope_and_credential_types_are_executor_validated() {
             AnthropicConfig::new(reference())
                 .unwrap()
                 .with_workspace(workspace)
+                .is_err()
+        );
+        assert!(
+            AnthropicConfig::new(reference())
+                .unwrap()
+                .with_expected_organization(workspace)
                 .is_err()
         );
     }
