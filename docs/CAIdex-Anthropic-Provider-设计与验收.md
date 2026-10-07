@@ -212,6 +212,6 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 
 本步仅建立认证身份来源和执行端账户防误用门控。v1/v2 历史载体还没有组织归属与 compiled system/tools/messages 前缀，不能据此宣称 mode/tool/trim/resume 历史绑定已完成；下一步将实际已验证身份及 compiled 快照接入版本化载体，再验收 Gateway/真实 Runtime 工具执行。
 
-新增 4 项实际 socket 回归及现有配置负例扩展，HTTP 累计 38；覆盖同一 reference 换 Key 不复用旧身份、GET/POST 同一 Key、JSON/SSE 交付前门控、Models 两页预检、独立 lookup、错误/超时/取消/预算/slot 与无重试。完整 workspace/Clippy/fmt/diff 本地通过；三平台 CI 待推送核对。所有 Key/账户/回复为合成 fixture。
+新增 4 项实际 socket 回归及现有配置负例扩展，HTTP 累计 38；覆盖同一 reference 换 Key 不复用旧身份、GET/POST 同一 Key、JSON/SSE 交付前门控、Models 两页预检、独立 lookup、错误/超时/取消/预算/slot 与无重试。完整 workspace/Clippy/fmt/diff 本地通过；源码 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d 的 [CI 37632569624](https://github.com/bboytang/CAIdex/actions/runs/37632569624) in_progress，三平台结果待核对；最后增强 Models 用例后定向测试/Clippy/fmt/diff 复验通过。所有 Key/账户/回复为合成 fixture。
 
 依据：[Get Current Organization](https://platform.claude.com/docs/en/api/http/organization)、[API response headers](https://platform.claude.com/docs/en/api/overview)。实际商业账户与模型未调用。

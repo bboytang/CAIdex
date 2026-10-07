@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前：Anthropic 执行端 thinking-binding beta 与显式 error 映射已三平台验收。开启后 JSON/SSE 必须提供对应 serving report；缺省/null 报静态错误且无完成/重试。输出前交接保留首帧接替模型报告，中途/多跳交接要求新报告。新增 5 项回归通过（HTTP 34/推理 9）；最终 workspace/Clippy/fmt/diff 本地通过，源码 4c6da57 已提交/push，CI 37624001219 completed/success，新增 5 项逐平台日志通过。实际组织身份来源与执行端发送前校验已实现，本地 HTTP 38/workspace/Clippy/fmt/diff 通过；三平台 CI 待推送。历史载体中的组织绑定与 compiled 前缀快照仍未接入。
+- 当前：Anthropic 实际组织身份来源与执行端发送前校验已实现。预检和实际请求共用一次 Key 读取；组织不符不发历史，JSON/SSE/Models 回应在交付前校验组织头。新增 4 项回归（HTTP 累计 38）、完整 workspace/Clippy/fmt/diff 本地通过；源码 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d 已提交/push，CI 37632569624 in_progress，三平台待核对。Beta/report 上轮 CI 37624001219 已 success；历史载体组织归属与 compiled 前缀快照仍未接入。
 - Fallback 身份/回放已三平台验收：源码 1f5e022，CI 37621255255 completed/success，新增 6 项逐平台日志通过。原生 SSE 更新实际 serving model、校验交接链和无 delta，换模型后已知 token 计数重新归属，iterations/raw wire 保留；echo 按末次交接过滤，投影只执行最终模型客户端调用。固定 Provider 对未配置实际模型报错并关闭，无 done/重试。
 - Anthropic input_transformations、上下文头、六方法/SSE、请求参数、summary/context、strict:true 结构化输出已三平台验收；源码/CI/范围见测试结果及 Anthropic 设计文档。上轮 Lite-only/Lite-first 初始化错误已修正，恢复不再重做；完整历史绑定与 Gateway/实际 Runtime 工具执行仍未验。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体及 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
@@ -67,7 +67,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，beta/report 源码 4c6da57680b09183d7d35342fa5ed426205bdb63 已提交/push；当前未提交修改：client.rs 的组织身份 GET/同一 Key 预检/JSON-SSE 响应头门控，HTTP fixture 及新增 organization.rs 4 项回归，以及本轮交接/验收文档。Beta CI 37624001219 completed/success 已核对；本轮本地验证通过，独立审查已完成，源码提交/三平台 CI 待完成。
+- branch `main` 跟踪 `origin/main`；组织身份来源/guard 源码 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d 已提交/push（client.rs、HTTP fixture、新 organization.rs 4 项回归及验收文档）。当前只有本轮 CI checkpoint 文档，随检查点提交/push，无源码遗留。CI 37632569624 in_progress，恢复核对该精确 SHA 的三平台结果后继续载体组织归属和 compiled 前缀绑定。
 
 ## 测试结果
 
@@ -95,4 +95,4 @@
 
 - Thinking binding beta：新增 5 项回归及既有默认不发送 beta 的 HTTP 检查通过（HTTP 34/推理 9）。输出前单/多跳与中途换回同名模型的报告归属、Models 清单无需 Messages 报告及实际 JSON/SSE header 已验。本地完整 workspace/Clippy/fmt/diff 通过，最终增强测试后 HTTP/Clippy 复验通过；日志 /tmp/caidex-anthropic-binding-beta-workspace.log。源码 SHA 4c6da57680b09183d7d35342fa5ed426205bdb63 已提交/push；[CI 37624001219](https://github.com/bboytang/CAIdex/actions/runs/37624001219) 三平台 completed/success，新增 5 项逐平台日志通过；workspace/fmt/Clippy/native keyring/schema/doctor 和既有真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-ci-37624001219.log。
 
-- 组织身份来源/发送前校验：新增 HTTP 4 项（累计 38）及原配置负例通过，含 Key 同一引用更换、同一次 GET/POST 只读一次 Key、缺省/重复/非 ASCII/超长/不匹配组织头、JSON/SSE 无交付、Models 两页预检、公开只读 lookup、取消/socket/slot、header/total deadline、字节预算和原生 HTTP 分类无重试。本地 workspace/Clippy/fmt/diff 通过；日志 /tmp/caidex-anthropic-organization-workspace.log。未调用商业 API；历史载体组织/前缀绑定未完成。
+- 组织身份来源/发送前校验：新增 HTTP 4 项（累计 38）及原配置负例通过，含 Key 同一引用更换、同一次 GET/POST 只读一次 Key、缺省/重复/非 ASCII/超长/不匹配组织头、JSON/SSE 无交付、Models 两页预检、公开只读 lookup、取消/socket/slot、header/total deadline、字节预算和原生 HTTP 分类无重试。本地 workspace/Clippy/fmt/diff 通过，最后增强 Models 用例后定向测试/Clippy/fmt/diff 复验通过；日志 /tmp/caidex-anthropic-organization-workspace.log。源码 SHA 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d、[CI 37632569624](https://github.com/bboytang/CAIdex/actions/runs/37632569624) in_progress，三平台结果待核对。未调用商业 API；历史载体组织/前缀绑定未完成。
