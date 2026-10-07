@@ -44,9 +44,9 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 该路径使用 v4：完整 native message、初始 tools、按发生顺序的原始 discoveries，以及实际 compiled prefix/组织 binding。恢复逐项重建映射，检查历史中的客户端发现调用、原始结果和 inline 定义一致，再核对请求前缀。篡改/丢失记录、错误 ID 和降级拒绝；已有 v1–v3 非延迟工具路径保持原读取规则，旧载体中的动态/延迟声明不自动升级或认领。v4 仍是敏感 JSON 载体，不是加密、密码学认证或历史访问控制。
 
-SSE 搜索 JSON 分片内部累积，专用 call 不发送 function arguments 事件；只有原生 Completed、完整 v4/预算/历史门控成功后交付可执行 output_item.done。HTTP 合成 fixture 验证 JSON/SSE 三轮签名回放、工具加载及后续调用；没有在这个 fixture 中执行工具或调用商业 API。新增工具2、编译器4、HTTP4项，完整 workspace/Clippy/fmt 与 CI 状态见 HANDOFF.md；既有实际 Runtime Lite 接线仍是独立未提交验证，完整经典尚未通过。
+SSE 搜索 JSON 分片内部累积，专用 call 不发送 function arguments 事件；只有原生 Completed、完整 v4/预算/历史门控成功后交付可执行 output_item.done。HTTP 合成 fixture 验证 JSON/SSE 三轮签名回放、工具加载及后续调用；没有在这个 fixture 中执行工具或调用商业 API。新增工具2、编译器4、HTTP4项，源码 `46d03d52806a20b2e0ca3db1d6ed5fbfd31de5ed` 的 [CI 37650049761](https://github.com/bboytang/CAIdex/actions/runs/37650049761) 三平台 completed/success；逐平台新增10项、发现编译器4/HTTP49/工具9通过，workspace/Clippy/fmt/native credentials/schema/doctor 与既有实际 Runtime Linux25/WindowsmacOS24通过；既有实际 Runtime Lite 接线仍是独立未提交验证，完整经典尚未通过。
 
-独立审查的用户追加文字问题已用 RED→GREEN 回归修复。保留一个 Minor：搜索的 output_item.added 暂用 completed 占位状态；执行仍只取完整验证后的 done，后续修正展示状态。经典 `web_search external_web_access=false / text+image` 仍无已验证的 Anthropic 缓存语义映射，不能删除该工具、改成实时搜索或据此标记 Full。
+独立审查的用户追加文字问题已用 RED→GREEN 回归修复。保留一个 Minor：搜索的 output_item.added 暂用 completed 占位状态；执行仍只取完整验证后的 done，后续修正展示状态。经典 `web_search external_web_access=false / text+image` 仍无已验证的 Anthropic 缓存语义映射（复核 [Anthropic web search 文档](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) 描述为实时搜索，提示缓存不等于搜索数据缓存），不能删除该工具、改成实时搜索或据此标记 Full。
 
 契约依据：[OpenAI 客户端 tool search](https://developers.openai.com/api/docs/guides/tools-tool-search#client-executed-tool-search)、[Anthropic 原位置工具变更](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking#add-or-remove-tools-with-tool_addition-and-tool_removal)、[中途 system 消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)。模型配置和合成 fixture 不是商业模型能力证明。
 
