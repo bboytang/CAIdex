@@ -99,6 +99,9 @@ impl ContentStream {
     pub fn completed_response(&self) -> Option<&NativeStreamResponse> {
         self.completed.as_ref()
     }
+    pub(crate) fn take_completed_response(&mut self) -> Option<NativeStreamResponse> {
+        self.completed.take()
+    }
     pub fn push(&mut self, bytes: &[u8]) -> ProviderResult<Vec<ContentEvent>> {
         if self.state != NativeStreamState::Open {
             return Err(ProviderError::new(502, "google_stream_closed"));

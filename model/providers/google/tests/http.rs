@@ -1,7 +1,10 @@
 //! Synthetic credentials and actual loopback HTTP only.
 use caidex_credentials::{Broker, CredentialRef, Id, Secret, SecretKind, SecretStore};
 use caidex_model_core::{CancellationToken, ContextHeaders, REQUEST_HEADERS, RequestContext};
-use caidex_provider_google::{GeminiClient, GeminiConfig, Limits};
+use caidex_provider_google::{
+    CandidateOutcome, GeminiClient, GeminiConfig, Limits, NativeStreamEvent,
+};
+use futures_util::StreamExt;
 use serde_json::{Value, json};
 use std::{
     sync::{
@@ -74,6 +77,18 @@ struct Reply {
     stall: u8,
 }
 impl Reply {
+    fn sse(chunks: &[Value]) -> Self {
+        Self {
+            status: 200,
+            media: "text/event-stream; charset=utf-8",
+            headers: String::new(),
+            body: chunks
+                .iter()
+                .map(|wire| format!("data: {wire}\n\n"))
+                .collect(),
+            stall: 0,
+        }
+    }
     fn json(wire: Value) -> Self {
         Self {
             status: 200,
@@ -131,7 +146,7 @@ impl Fixture {
                         "HTTP/1.1 {} Fixture\r\ncontent-type: {}\r\ncontent-length: {}\r\nconnection: close\r\n{}\r\n",
                         reply.status,
                         reply.media,
-                        reply.body.len(),
+                        reply.body.len() + usize::from(matches!(reply.stall, 3 | 4)),
                         reply.headers
                     );
                     socket.write_all(head.as_bytes()).await.unwrap();
@@ -144,7 +159,7 @@ impl Fixture {
                         .await
                         .unwrap();
                 }
-                if reply.stall != 0 {
+                if matches!(reply.stall, 1..=3) {
                     let mut byte = [0];
                     match socket.read(&mut byte).await {
                         Ok(0) | Err(_) => {
@@ -1054,4 +1069,510 @@ async fn native_generation_cancel_closes_post_and_releases_shared_discovery_perm
             .is_empty()
     );
     assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn native_stream_posts_exact_wire_preserves_chunks_and_finishes_after_http_end() {
+    let parts = json!([
+        {"text":"思考","thought":true,"thoughtSignature":"c2ln"},
+        {"functionCall":{"name":"echo","id":"native-call","args":{"text":"原文"}},"thoughtSignature":"c2lnMg=="},
+        {"futurePart":{"opaque":true}}
+    ]);
+    let chunks = vec![
+        json!({"responseId":"stream-fixture","modelVersion":"fixture-001","candidates":[
+            {"index":1,"content":{"role":"model","parts":[{"text":"第二个"}]}},
+            {"index":0,"content":{"role":"model","parts":parts}}]}),
+        json!({"candidates":[{"index":0,"finishReason":"STOP"},{"index":1,"finishReason":"MAX_TOKENS"}]}),
+        serde_json::from_str(r#"{"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":2,"totalTokenCount":5},"future":{"big":18446744073709551616}}"#).unwrap(),
+    ];
+    let mut fixture = Fixture::start(vec![Reply::sse(&chunks)]).await;
+    let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+    let mut input = native_input();
+    input["generationConfig"]["candidateCount"] = json!(2);
+    input["systemInstruction"] = json!({"parts":[{"text":"固定指令"}]});
+    input["tools"] =
+        json!([{"functionDeclarations":[{"name":"echo","parameters":{"type":"object"}}]}]);
+    input["contents"][0]["parts"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"inlineData":{"mimeType":"image/png","data":"AA=="}}));
+    input["future"] = chunks[2]["future"].clone();
+    let mut stream = client
+        .stream_content(
+            "models/fixture-001",
+            input.clone(),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    let request = fixture.request().await;
+    assert!(request.starts_with(
+        "POST /proxy/v1beta/models/fixture-001:streamGenerateContent?alt=sse HTTP/1.1\r\n"
+    ));
+    let head = request
+        .split_once("\r\n\r\n")
+        .unwrap()
+        .0
+        .to_ascii_lowercase();
+    assert!(head.contains("x-goog-api-key: caidex_synthetic_google_key\r\n"));
+    assert!(
+        head.contains("accept: text/event-stream")
+            && head.contains("content-type: application/json")
+    );
+    assert!(!head.contains("authorization:") && !request.lines().next().unwrap().contains(KEY));
+    assert_eq!(request_body(&request), input);
+    for chunk in &chunks {
+        let NativeStreamEvent::Event(event) = stream.next().await.unwrap().unwrap() else {
+            panic!("premature completion")
+        };
+        assert_eq!(event.wire(), chunk);
+        assert!(!format!("{event:?}").contains("原文"));
+    }
+    let NativeStreamEvent::Completed(complete) = stream.next().await.unwrap().unwrap() else {
+        panic!("missing completion")
+    };
+    assert_eq!(complete.chunks(), chunks);
+    assert_eq!(
+        complete.response().candidates()[0]["content"]["parts"],
+        parts
+    );
+    assert_eq!(
+        complete.response().outcome(0),
+        Some(CandidateOutcome::ToolCall)
+    );
+    assert_eq!(
+        complete.response().outcome(1),
+        Some(CandidateOutcome::MaxTokens)
+    );
+    assert_eq!(
+        complete.response().wire()["usageMetadata"]["totalTokenCount"],
+        5
+    );
+    assert_eq!(
+        complete.response().wire()["future"]["big"].to_string(),
+        "18446744073709551616"
+    );
+    assert!(stream.next().await.is_none());
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn native_stream_rejects_invalid_input_context_counts_and_budgets_before_auth() {
+    let mut fixture = Fixture::start(vec![Reply::sse(&[native_reply("STOP")])]).await;
+    let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+    for (name, body) in [
+        ("models/../other", native_input()),
+        ("models/a?key=x", native_input()),
+        ("models/fixture", json!({"contents":[]})),
+        (
+            "models/fixture",
+            json!({"model":null,"contents":[{"parts":[{"text":"x"}]}]}),
+        ),
+        (
+            "models/fixture",
+            json!({"contents":[{"parts":[{"functionCall":{"name":"echo","args":"{}"}}]}]}),
+        ),
+    ] {
+        assert_eq!(
+            client
+                .stream_content(name, body, RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "google_invalid_request"
+        );
+    }
+    for config in [
+        json!([]),
+        json!(false),
+        json!({"candidateCount":0}),
+        json!({"candidateCount":-1}),
+        json!({"candidateCount":1.5}),
+        json!({"candidateCount":"2"}),
+    ] {
+        let mut input = native_input();
+        input["generationConfig"] = config;
+        assert_eq!(
+            client
+                .stream_content("models/fixture", input, RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "google_invalid_request"
+        );
+    }
+    let cancellation = CancellationToken::new();
+    cancellation.cancel();
+    let mut headers = ContextHeaders::default();
+    headers
+        .insert("session_id", "fixture".into(), REQUEST_HEADERS)
+        .unwrap();
+    for (context, code) in [
+        (
+            RequestContext {
+                cancellation,
+                ..Default::default()
+            },
+            "provider_cancelled",
+        ),
+        (
+            RequestContext {
+                deadline: Some(std::time::Instant::now() - Duration::from_secs(1)),
+                ..Default::default()
+            },
+            "provider_timeout",
+        ),
+        (
+            RequestContext {
+                headers,
+                ..Default::default()
+            },
+            "unsupported_native_context_header",
+        ),
+    ] {
+        assert_eq!(
+            client
+                .stream_content("models/fixture", native_input(), context)
+                .await
+                .err()
+                .unwrap()
+                .code,
+            code
+        );
+    }
+    let (small, small_reads) = self::client(
+        &fixture.base,
+        Some(KEY),
+        Limits {
+            request_bytes: 128,
+            ..Default::default()
+        },
+    );
+    for (name, input) in [
+        (
+            "models/fixture".to_owned(),
+            json!({"contents":[{"parts":[{"text":"x".repeat(256)}]}]}),
+        ),
+        (format!("models/{}", "a".repeat(256)), native_input()),
+    ] {
+        assert_eq!(
+            small
+                .stream_content(&name, input, RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "invalid_or_oversized_body"
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(small_reads.load(Ordering::SeqCst), 0);
+    assert!(fixture.requests.try_recv().is_err());
+}
+
+#[tokio::test]
+async fn native_stream_safe_errors_truncation_media_and_limits_never_retry_or_complete() {
+    for (status, media, code, error_status) in [
+        (429, "text/event-stream", "provider_rate_limited", 429),
+        (302, "text/event-stream", "provider_redirect_blocked", 502),
+        (
+            200,
+            "application/json",
+            "provider_invalid_content_type",
+            502,
+        ),
+    ] {
+        let mut reply = Reply::sse(&[json!({"error":{"message":KEY}})]);
+        reply.status = status;
+        reply.media = media;
+        reply.headers = "retry-after: 5\r\nlocation: https://example.invalid/\r\n".into();
+        let mut fixture = Fixture::start(vec![reply]).await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let error = client
+            .stream_content("models/fixture", native_input(), RequestContext::default())
+            .await
+            .err()
+            .unwrap();
+        assert_eq!((error.code, error.http_status), (code, error_status));
+        assert!(!format!("{error:?}").contains(KEY));
+        if status == 429 {
+            assert_eq!(error.retry_after_seconds, Some(5));
+        }
+        fixture.request().await;
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        assert!(fixture.requests.try_recv().is_err());
+    }
+    let stop = Reply::sse(&[native_reply("STOP")]).body;
+    for (body, stall, count, limits, code) in [
+        (
+            Reply::sse(&[json!({"error":{"code":429,"message":KEY}})]).body,
+            0,
+            1,
+            Limits::default(),
+            "provider_rate_limited",
+        ),
+        (
+            format!("data: {KEY}\n\n"),
+            0,
+            1,
+            Limits::default(),
+            "google_invalid_stream",
+        ),
+        (
+            "data: [DONE]\n\n".into(),
+            0,
+            1,
+            Limits::default(),
+            "google_invalid_stream",
+        ),
+        (
+            Reply::sse(&[native_reply("")]).body,
+            0,
+            1,
+            Limits::default(),
+            "google_stream_truncated",
+        ),
+        (
+            stop.clone(),
+            0,
+            2,
+            Limits::default(),
+            "google_stream_truncated",
+        ),
+        (
+            format!("{stop}data: {{"),
+            0,
+            1,
+            Limits::default(),
+            "google_stream_truncated",
+        ),
+        (
+            stop.clone(),
+            4,
+            1,
+            Limits::default(),
+            "provider_transport_error",
+        ),
+        (
+            stop.clone(),
+            0,
+            1,
+            Limits {
+                frame_bytes: 16,
+                ..Default::default()
+            },
+            "google_invalid_stream",
+        ),
+        (
+            stop,
+            0,
+            1,
+            Limits {
+                response_bytes: 16,
+                ..Default::default()
+            },
+            "google_stream_too_large",
+        ),
+    ] {
+        let mut reply = Reply::sse(&[]);
+        reply.body = body;
+        reply.stall = stall;
+        let mut fixture = Fixture::start(vec![reply]).await;
+        let (client, reads) = client(&fixture.base, Some(KEY), limits);
+        let mut input = native_input();
+        input["generationConfig"]["candidateCount"] = json!(count);
+        let mut stream = client
+            .stream_content("models/fixture", input, RequestContext::default())
+            .await
+            .unwrap();
+        loop {
+            match tokio::time::timeout(WAIT, stream.next())
+                .await
+                .unwrap()
+                .unwrap()
+            {
+                Ok(NativeStreamEvent::Event(_)) => (),
+                Ok(NativeStreamEvent::Completed(_)) => {
+                    panic!("failed HTTP/native stream completed")
+                }
+                Err(error) => {
+                    assert_eq!(error.code, code);
+                    assert!(!format!("{error:?}").contains(KEY));
+                    break;
+                }
+            }
+        }
+        assert!(stream.next().await.is_none());
+        fixture.request().await;
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        assert!(fixture.requests.try_recv().is_err());
+    }
+}
+
+#[tokio::test]
+async fn native_stream_drop_and_cancel_close_socket_and_release_shared_permit() {
+    for cancel in [false, true] {
+        let mut open = native_reply("");
+        open["candidates"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("finishReason");
+        let mut reply = Reply::sse(&[open]);
+        reply.stall = 3;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(json!({}))]).await;
+        let (client, reads) = client(
+            &fixture.base,
+            Some(KEY),
+            Limits {
+                in_flight: 1,
+                ..Default::default()
+            },
+        );
+        let cancellation = CancellationToken::new();
+        let mut stream = client
+            .stream_content(
+                "models/fixture",
+                native_input(),
+                RequestContext {
+                    cancellation: cancellation.clone(),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        fixture.request().await;
+        assert!(matches!(
+            stream.next().await.unwrap().unwrap(),
+            NativeStreamEvent::Event(_)
+        ));
+        assert_eq!(
+            client
+                .discover_models(1, RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "provider_busy"
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        if cancel {
+            cancellation.cancel();
+            assert_eq!(
+                stream.next().await.unwrap().err().unwrap().code,
+                "provider_cancelled"
+            );
+            assert!(stream.next().await.is_none());
+        }
+        drop(stream);
+        fixture.disconnected().await;
+        assert!(
+            client
+                .discover_models(1, RequestContext::default())
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert!(fixture.request().await.starts_with("GET "));
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}
+
+#[tokio::test]
+async fn unconsumed_native_stream_deadlines_close_socket_keep_error_and_release_slot() {
+    for caller in [false, true] {
+        let mut open = native_reply("");
+        open["candidates"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("finishReason");
+        let mut reply = Reply::sse(&[open.clone(), open.clone(), open]);
+        reply.stall = 3;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(json!({}))]).await;
+        let (client, reads) = client(
+            &fixture.base,
+            Some(KEY),
+            Limits {
+                in_flight: 1,
+                total_timeout: Duration::from_secs(if caller { 15 } else { 3 }),
+                header_timeout: Duration::from_secs(15),
+                idle_timeout: Duration::from_secs(15),
+                ..Default::default()
+            },
+        );
+        let context = RequestContext {
+            deadline: caller.then(|| std::time::Instant::now() + Duration::from_secs(3)),
+            ..Default::default()
+        };
+        let mut stream = client
+            .stream_content("models/fixture", native_input(), context)
+            .await
+            .unwrap();
+        fixture.request().await;
+        assert_eq!(
+            client
+                .discover_models(1, RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "provider_busy"
+        );
+        fixture.disconnected().await; // No receiver polls: a full slot cannot hide the deadline.
+        assert!(
+            client
+                .discover_models(1, RequestContext::default())
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        fixture.request().await;
+        assert!(matches!(
+            stream.next().await.unwrap().unwrap(),
+            NativeStreamEvent::Event(_)
+        ));
+        assert_eq!(
+            stream.next().await.unwrap().err().unwrap().code,
+            "provider_timeout"
+        );
+        assert!(stream.next().await.is_none());
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}
+
+#[tokio::test]
+async fn native_stream_header_and_idle_timeouts_never_complete_a_stalled_stop() {
+    for stall in [1, 3] {
+        let mut reply = Reply::sse(&[native_reply("STOP")]);
+        reply.stall = stall;
+        let mut fixture = Fixture::start(vec![reply]).await;
+        let (client, _) = client(
+            &fixture.base,
+            Some(KEY),
+            Limits {
+                header_timeout: Duration::from_secs(if stall == 1 { 2 } else { 10 }),
+                idle_timeout: Duration::from_millis(200),
+                ..Default::default()
+            },
+        );
+        let result = client
+            .stream_content("models/fixture", native_input(), RequestContext::default())
+            .await;
+        let error = if stall == 1 {
+            result.err().unwrap()
+        } else {
+            let mut stream = result.unwrap();
+            assert!(matches!(
+                stream.next().await.unwrap().unwrap(),
+                NativeStreamEvent::Event(_)
+            ));
+            let error = stream.next().await.unwrap().err().unwrap();
+            assert!(stream.next().await.is_none());
+            error
+        };
+        assert_eq!((error.http_status, error.code), (504, "provider_timeout"));
+        fixture.request().await;
+        fixture.disconnected().await;
+    }
 }

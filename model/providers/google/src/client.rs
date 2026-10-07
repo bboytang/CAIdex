@@ -44,7 +44,7 @@ pub struct GeminiClient<S: SecretStore> {
     broker: Arc<Broker<S>>,
     http: reqwest::Client,
     limits: Limits,
-    permits: Semaphore,
+    permits: Arc<Semaphore>,
 }
 impl<S: SecretStore + 'static> GeminiClient<S> {
     pub fn new(
@@ -75,7 +75,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             config,
             broker,
             http,
-            permits: Semaphore::new(limits.in_flight),
+            permits: Arc::new(Semaphore::new(limits.in_flight)),
             limits,
         })
     }
@@ -125,6 +125,50 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         context: RequestContext,
     ) -> ProviderResult<NativeResponse> {
         let deadline = self.deadline(&context)?;
+        let (request, _) = self.generation_request(model, wire, false)?;
+        let _permit = self
+            .permits
+            .try_acquire()
+            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
+        let mut remaining = self.limits.response_bytes;
+        let response = self
+            .json(request, &context, deadline, &mut remaining)
+            .await?;
+        NativeResponse::parse(response)
+    }
+    /// Candidate stops are not transport completion: delivery retains late
+    /// metadata and requires normal HTTP EOF before a completed native record.
+    pub async fn stream_content(
+        &self,
+        model: &str,
+        wire: Value,
+        context: RequestContext,
+    ) -> ProviderResult<crate::NativeStreamingResponse> {
+        let deadline = self.deadline(&context)?;
+        let (request, expected_candidates) = self.generation_request(model, wire, true)?;
+        let permit = self
+            .permits
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
+        let response = self
+            .execute(request, &context, deadline, "text/event-stream")
+            .await?;
+        Ok(crate::transfer::stream(
+            response,
+            context,
+            deadline,
+            self.limits.clone(),
+            permit,
+            expected_candidates,
+        ))
+    }
+    fn generation_request(
+        &self,
+        model: &str,
+        wire: Value,
+        streaming: bool,
+    ) -> ProviderResult<(reqwest::RequestBuilder, usize)> {
         let invalid = || ProviderError::new(400, "google_invalid_request");
         if !crate::catalog::resource_name(model) || !wire.is_object() || wire.get("model").is_some()
         {
@@ -138,32 +182,48 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             crate::content::validate_content(content, false)?;
         }
         let body = serde_json::to_vec(&wire).map_err(|_| invalid())?;
-        let url = self
+        let expected_candidates = if streaming {
+            match crate::content::present(&wire, "generationConfig") {
+                None => 1,
+                Some(config) if config.is_object() => {
+                    match crate::content::present(config, "candidateCount") {
+                        None => 1,
+                        Some(count) => count
+                            .as_u64()
+                            .and_then(|count| usize::try_from(count).ok())
+                            .filter(|count| *count > 0)
+                            .ok_or_else(invalid)?,
+                    }
+                }
+                _ => return Err(invalid()),
+            }
+        } else {
+            1
+        };
+        let method = if streaming {
+            "streamGenerateContent"
+        } else {
+            "generateContent"
+        };
+        let mut url = self
             .config
             .base
-            .join(&format!("{model}:generateContent"))
+            .join(&format!("{model}:{method}"))
             .map_err(|_| invalid())?;
+        if streaming {
+            url.query_pairs_mut().append_pair("alt", "sse");
+        }
         if body.len() > self.limits.request_bytes || url.as_str().len() > self.limits.request_bytes
         {
             return Err(ProviderError::new(413, "invalid_or_oversized_body"));
         }
-        let _permit = self
-            .permits
-            .try_acquire()
-            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
-        let mut remaining = self.limits.response_bytes;
-        let response = self
-            .json(
-                self.http
-                    .post(url)
-                    .header("content-type", "application/json")
-                    .body(body),
-                &context,
-                deadline,
-                &mut remaining,
-            )
-            .await?;
-        NativeResponse::parse(response)
+        Ok((
+            self.http
+                .post(url)
+                .header("content-type", "application/json")
+                .body(body),
+            expected_candidates,
+        ))
     }
     fn deadline(&self, context: &RequestContext) -> ProviderResult<Instant> {
         if context.cancellation.is_cancelled() {
@@ -189,6 +249,32 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         deadline: Instant,
         remaining: &mut usize,
     ) -> ProviderResult<Value> {
+        let mut response = self
+            .execute(request, context, deadline, "application/json")
+            .await?;
+        let mut bytes = Vec::new();
+        while let Some(chunk) = guard(
+            response.chunk(),
+            context,
+            deadline.min(Instant::now() + self.limits.idle_timeout),
+        )
+        .await?
+        .map_err(transport)?
+        {
+            *remaining = remaining
+                .checked_sub(chunk.len())
+                .ok_or_else(|| ProviderError::new(502, "provider_oversized_response"))?;
+            bytes.extend_from_slice(&chunk);
+        }
+        serde_json::from_slice(&bytes).map_err(|_| ProviderError::new(502, "provider_invalid_json"))
+    }
+    async fn execute(
+        &self,
+        request: reqwest::RequestBuilder,
+        context: &RequestContext,
+        deadline: Instant,
+        media: &str,
+    ) -> ProviderResult<reqwest::Response> {
         let header_deadline = deadline.min(Instant::now() + self.limits.header_timeout);
         let broker = self.broker.clone();
         let reference = self.config.credential.clone();
@@ -204,10 +290,10 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         let mut key = HeaderValue::from_str(secret.expose())
             .map_err(|_| ProviderError::new(503, "credential_invalid_header"))?;
         key.set_sensitive(true);
-        let mut response = guard(
+        let response = guard(
             request
                 .header("x-goog-api-key", key)
-                .header("accept", "application/json")
+                .header("accept", media)
                 .send(),
             context,
             header_deadline,
@@ -250,29 +336,15 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
                     .next()
                     .unwrap_or("")
                     .trim()
-                    .eq_ignore_ascii_case("application/json")
+                    .eq_ignore_ascii_case(media)
             })
         {
             return Err(ProviderError::new(502, "provider_invalid_content_type"));
         }
-        let mut bytes = Vec::new();
-        while let Some(chunk) = guard(
-            response.chunk(),
-            context,
-            deadline.min(Instant::now() + self.limits.idle_timeout),
-        )
-        .await?
-        .map_err(transport)?
-        {
-            *remaining = remaining
-                .checked_sub(chunk.len())
-                .ok_or_else(|| ProviderError::new(502, "provider_oversized_response"))?;
-            bytes.extend_from_slice(&chunk);
-        }
-        serde_json::from_slice(&bytes).map_err(|_| ProviderError::new(502, "provider_invalid_json"))
+        Ok(response)
     }
 }
-async fn guard<T>(
+pub(crate) async fn guard<T>(
     operation: impl Future<Output = T>,
     context: &RequestContext,
     deadline: Instant,
@@ -284,7 +356,7 @@ async fn guard<T>(
         result=operation=>Ok(result),
     }
 }
-fn transport(error: reqwest::Error) -> ProviderError {
+pub(crate) fn transport(error: reqwest::Error) -> ProviderError {
     ProviderError::new(
         if error.is_timeout() { 504 } else { 502 },
         if error.is_timeout() {

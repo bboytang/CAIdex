@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。原生非流式 generateContent/NativeResponse 已实现并三平台验收，源码5c41ae2aaea2632b5c98689f7c14b26ba826d0ef已提交/push，CI37661724323 completed/success；SSE解析已三平台验收（源码4c9571a/CI37664189813）；原生流式HTTP、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
+阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。原生非流式 generateContent/NativeResponse 已实现并三平台验收，源码5c41ae2aaea2632b5c98689f7c14b26ba826d0ef已提交/push，CI37661724323 completed/success；SSE解析已三平台验收（源码4c9571a/CI37664189813）；原生流式HTTP已实现、本地Google30项通过，工作区252passed/0failed、Clippy已通过，独立审查无Critical/Important、三平台CI待验收；Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -34,7 +34,7 @@
 ## 下一步
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
-2. generateContent JSON及原生SSE解析已验收；继续 streamGenerateContent?alt=sse 的真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
+2. generateContent JSON及原生SSE解析已验收；streamGenerateContent?alt=sse 的真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已实现，完成本轮工作区/审查/三平台验收后继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
 3. 建立版本化原生历史、请求/工具/图片/推理/结构化输出转换，再接现有六方法、Registry、Gateway 与固定真实 Runtime；经典/Lite、审批/工具/取消/恢复分别验收。不执行工具，不创建第二套 Agent，不隐式降级或标商业 Full。
 
 ## 独立审查记录
@@ -89,3 +89,21 @@ NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未�
 审查Minor1暂缓：重复/部分usage更新的专项覆盖未补（当前只检查末尾usage）；现实现按提供字段覆盖，不相加，原始每个chunk均保留，不冒称此分支已专项验收。
 
 本轮排除项裁定：原生HTTP/cleanEOF检测/背压/socket/slot是下一接线阶段（误用解析证据会漏传输问题）；Responses投影/版本历史/六方法/Gateway/实际Gemini Runtime未接（误判漏功能）；签名真实性/重组Part的提供商回放未验（误判签名请求被拒）；商业/Full无live证据（误判错误能力承诺）；全ProtoJSON/完整媒体函数schema沿已知形状canonical边界（误判兼容端点拒绝）；字节/JSON空白不承诺，只保留native JSON语义（误判失去逐字节一致性）；停止后无新Part的metadata与未知停止原因保留，不授予任务成功（误判未知语义被误当成功）；comment/control-only尾不作为生成数据，残data/event不完成（误判会把截断当完成，当前严格尾查询亦拒绝残未结束comment行）；生产历史访问控制留H/I（误判历史泄漏，raw不作为公共日志）。以上均保留既定阶段边界，后续接线继续逐项验证。
+
+
+## 原生流式 HTTP（本地已实现，三平台待验收）
+
+`GeminiClient::stream_content(model, native_json, context)` POST `models/<id>:streamGenerateContent?alt=sse`；请求原文/安全路径与JSON生成共用generation_request，Broker/header/status/media与Models/JSON共用execute；认证仍只在sensitive x-goog-api-key。不新增通用传输层，不改变JSON生成接受的原生参数范围。stream独立校验generationConfig对象及canonical正整数candidateCount，缺省/null为1；真实模型支持的候选上限由原生服务判定，不按名称猜测。[原生流式方法](https://ai.google.dev/api/generate-content)
+
+新增NativeStreamingResponse提供原生Event和唯一Completed；复用已验ContentStream。容量1的交付队列、16KiB解析批次、frame/response原字节预算控制缓存，保留所有native chunks和派生视图。候选停止后继续接收usage，只有正常HTTP正文EOF才finish并取走完整记录，不为传输错误/取消/超时调用finish，不用STOP代替EOF。停止但HTTP未结束会idle超时；HTTP截断/残SSE尾/缺候选或未停都不能完成。
+
+worker拥有socket与Models/JSON共用owned permit；读取与send均受绝对caller/total deadline及CancellationToken约束，读取另受idle限制。Drop abort worker；满槽而无人消费时timeout仍关闭socket、释放slot。安全error另存于队列外，已排队Event之后交付一次，不因满槽等待塞入error；debug不打印wire。无redirect/retry/环境proxy/TLS弱化，签名/工具均只为数据。沿既有Broker边界，同步Key读取开始后无法强停，但取消后不POST。
+
+新增HTTP6有效RED→GREEN，Google全30项本地通过：精确原生请求/代理路径/只header认证、候选数及前置零Key/网络、multi-candidate签名Part/大数字字面值/末尾usage、static错误/429/redirect/media/超限/原生坏帧/真实不完整Content-Length、Drop/取消真实socket关闭及共享slot释放、未消费流caller与total deadline满槽错误保存、header/STOP后idle timeout。日志 /tmp/caidex-google-stream-http-{red,green}.log。完整workspace252passed/0failed/32ignored，Clippy -D warnings、fmt/diff通过；独立审查无Critical/Important，精确源码三平台CI待执行，不能用旧解析CI代验。日志 /tmp/caidex-google-stream-http-{workspace,clippy}.log。
+
+阶段边界仍为native HTTP：版本化敏感历史/Responses投影/六方法/Registry/Gateway/实际Gemini Runtime未接，商业签名回放和Full无live证据；生产历史访问控制留H/I，raw不作为公共日志。既有重复/部分usage专项覆盖Minor仍暂缓，不能用本轮单次末尾usage测试宣称已补齐。
+
+
+本轮唯一fresh-context只读审查无Critical/Important；Minor1暂缓：满槽时取消/Drop的直接专项覆盖未补，当前覆盖读取期取消/Drop和满槽caller/total deadline。生产发送共用cancel/deadline guard，Drop abort同一worker，未发现实现缺陷；覆盖补充后才能宣称此组合已专项验收。
+
+排除项裁定：投影/历史/六方法/Registry/Gateway/真实Gemini Runtime留下一步，误用native证据会漏功能；商业/签名真实性/重组后实际回放/Full无live证据，误判会错误授予能力或提交被拒；生产Host/历史权限留H/I，误判会泄漏敏感数据，raw不作日志；全ProtoJSON/完整schema/媒体/模型参数沿canonical已知形状边界，误判会原生拒绝，不把形状检查当完整能力；旧parser/Minors不重复独立审查、不冒称已修复，成本为既有覆盖边界仍在；同步SecretStore开始后不能强停，只保证取消后无迟到POST，成本为后台读取资源；Windows/macOS必须本轮精确源码新CI，旧parserCI不能代验，误用会漏平台新增问题。均沿既定架构和阶段边界。
