@@ -5,7 +5,7 @@
 ## 当前任务
 
 - 正在实现 Anthropic summary/context：新增 SummaryMapping、ThinkingContext 执行端声明，summary 只改变已启用 thinking 的 display；context 只接受与原生保留策略完全相符的值，不删历史。新增 3 项推理测试（累计 8 项）、经典/Lite 两轮 HTTP fixture 扩展；修正 between_tools 不得带 display。
-- 上一步因自动审批审核额度用尽中断；此次已修正摘要不能映射 omitted、补齐交接，8 项专项测试通过；最终完整 workspace、Clippy/fmt/diff 已通过；日志 /tmp/caidex-summary-context-workspace.log。main 基于已推送 87541b5，有 5 个 Anthropic 源码/测试文件未提交。此次差异审查和本地验证已完成，准备提交/push/CI。
+- 上一步因自动审批审核额度用尽中断；此次已修正摘要不能映射 omitted、补齐交接，8 项专项测试通过；最终完整 workspace、Clippy/fmt/diff 已通过；日志 /tmp/caidex-summary-context-workspace.log。源码 024b211 已提交/push，本地完整验证完成；CI 37610039312 已排队，待三平台验收。
 - strict:true 结构化输出（9796682）及 effort/thinking（25081d8）已三平台验收；完整 Anthropic ModelProvider/Gateway、F/G 整体和 H–R 尚未完成。继续 V3 离线 fixture 授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目及文档公开至 bboytang/CAIdex，提交/push/CI 沿用授权。
 
@@ -66,7 +66,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，恢复 HEAD 87541b5；当前未提交修改：model/providers/anthropic/src/{lib,reasoning,request}.rs 与 tests/{reasoning.rs,http/compiled.rs}，以及本次交接更新。尚未提交或推送 summary/context，上一阶段 CI 37583615309 已 success。
+- branch `main` 跟踪 `origin/main`，summary/context 源码 024b211 已提交/push，源码工作区干净；本次仅补 checkpoint 文档。恢复文件 model/providers/anthropic/src/{reasoning,request}.rs、tests/{reasoning.rs,http/compiled.rs}。[CI 37610039312](https://github.com/bboytang/CAIdex/actions/runs/37610039312) 对应 SHA 024b211bbd6ae31ff0160ca3995ed75a4eadae5d，待核验最终结论。
 
 ## 测试结果
 
@@ -82,7 +82,7 @@
 - 结构化输出官方契约已查：output_config.format 与 effort 同对象，下一步须合并而非覆盖；不要静默删减 schema 约束。资料 https://platform.claude.com/docs/en/build-with-claude/structured-outputs；已实现 strict:true 的请求转换，完整验证与其余语义待继续。
 
 
-- 本次恢复点：strict:true 已验；summary/context 已实现未提交，先完成本轮测试/提交/CI，再继续其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
+- 本次恢复点：strict:true 已验；summary/context 已提交并通过本地验证，先验收 CI 37610039312，再继续其他 Runtime 参数及完整 Provider/Gateway。strict:false/缺省、JSON mode、wrapper description/verbosity 暂不支持，不标为完整结构化输出能力。
 
 - 结构化转换 [CI 37583615309](https://github.com/bboytang/CAIdex/actions/runs/37583615309)，源码 SHA 9796682e13cb50e7bf52f3581b543b240eacdbd0：Windows/Linux/macOS 全部 completed/success，逐平台日志核对新增 4 项通过；本地 workspace/Clippy/fmt/diff 通过。日志 /tmp/caidex-structured-workspace.log、/tmp/caidex-ci-37583615309.log。strict:true 阶段源码与验收文档均已提交/push。
 
