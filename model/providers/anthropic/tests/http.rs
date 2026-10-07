@@ -81,6 +81,22 @@ fn client_with_context(
     }
     (AnthropicClient::new(config, broker, limits).unwrap(), reads)
 }
+fn binding_client(base: &str, limits: Limits) -> (AnthropicClient<Store>, Arc<AtomicUsize>) {
+    let reads = Arc::new(AtomicUsize::new(0));
+    let broker = Arc::new(Broker::new(
+        Id::new("executor").unwrap(),
+        Store {
+            reads: reads.clone(),
+            key: Some(KEY),
+        },
+    ));
+    let config = AnthropicConfig::new(reference())
+        .unwrap()
+        .with_base_url(base)
+        .unwrap()
+        .with_thinking_binding_controls();
+    (AnthropicClient::new(config, broker, limits).unwrap(), reads)
+}
 fn page(id: &str, more: bool) -> Value {
     json!({"data":[{"id":id,"type":"model","created_at":"2026-01-01T00:00:00Z",
         "display_name":id}],"has_more":more,"first_id":id,"last_id":id})
@@ -246,6 +262,7 @@ async fn native_message_posts_once_and_replays_signed_content_without_translatio
         .unwrap();
     let (head, body) = received(&mut requests).await;
     assert!(head.starts_with("POST /proxy/v1/messages "));
+    assert!(!head.to_ascii_lowercase().contains("anthropic-beta:"));
     let wire: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(wire["model"], "native");
     assert_eq!(wire["stream"], false);
@@ -412,4 +429,115 @@ fn endpoint_scope_and_credential_types_are_executor_validated() {
     wrong.kind = SecretKind::AccessToken;
     assert!(AnthropicConfig::new(wrong).is_err());
     assert!(!format!("{:?}", AnthropicConfig::new(reference()).unwrap()).contains("executor"));
+}
+
+#[tokio::test]
+async fn binding_beta_requires_executor_opt_in_before_broker_or_network() {
+    use caidex_provider_anthropic::{AnthropicProvider, ReasoningMapping};
+    let (client, reads) = client("http://127.0.0.1:1/v1", Some(KEY), Limits::default());
+    let mut native = request();
+    native["thinking"] =
+        json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}});
+    assert_eq!(
+        client
+            .create_message("native", native.clone(), RequestContext::default())
+            .await
+            .unwrap_err()
+            .code,
+        "anthropic_thinking_binding_beta_required"
+    );
+    assert_eq!(
+        client
+            .stream_message("native", native, RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "anthropic_thinking_binding_beta_required"
+    );
+    let mut profile = provider::profile();
+    profile.reasoning_mappings = vec![
+        ReasoningMapping::new(
+            "high".into(),
+            None,
+            Some(json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}})),
+        )
+        .unwrap(),
+    ];
+    assert_eq!(
+        AnthropicProvider::new(client, vec![profile], 10)
+            .err()
+            .unwrap()
+            .code,
+        "anthropic_thinking_binding_beta_required"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn binding_beta_json_requires_reports_preserves_unknowns_and_never_retries() {
+    for report in [
+        None,
+        Some(Value::Null),
+        Some(json!([])),
+        Some(json!([{"type":"future_transform","opaque":"PRIVATE_REPORT"}])),
+    ] {
+        let mut native = reply();
+        if let Some(report) = &report {
+            native["input_transformations"] = report.clone();
+        }
+        let (base, mut requests, _, task) = fixture(vec![(200, native.to_string())], false).await;
+        let (client, reads) = binding_client(&base, Limits::default());
+        let result = client
+            .create_message("native", request(), RequestContext::default())
+            .await;
+        if report.as_ref().is_some_and(Value::is_array) {
+            assert_eq!(result.unwrap().wire(), &native);
+        } else {
+            let error = result.unwrap_err();
+            assert_eq!(error.http_status, 502);
+            assert_eq!(error.code, "anthropic_binding_report_missing");
+            assert!(!format!("{error:?}").contains("PRIVATE_REPORT"));
+        }
+        let (head, _) = received(&mut requests).await;
+        assert!(
+            head.to_ascii_lowercase()
+                .contains("anthropic-beta: thinking-binding-controls-2026-08-01")
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        task.await.unwrap();
+        assert!(requests.try_recv().is_err());
+    }
+    let (base, mut requests, _, task) =
+        fixture(vec![(400, format!("PRIVATE_DIAGNOSTIC {KEY}"))], false).await;
+    let (client, reads) = binding_client(&base, Limits::default());
+    let error = client
+        .create_message("native", request(), RequestContext::default())
+        .await
+        .unwrap_err();
+    assert_eq!(error.code, "provider_request_rejected");
+    assert!(!format!("{error:?}").contains("PRIVATE_DIAGNOSTIC"));
+    received(&mut requests).await;
+    task.await.unwrap();
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    assert!(requests.try_recv().is_err());
+    // Catalogue responses are not Messages and have no thinking report contract.
+    let (base, mut requests, _, task) =
+        fixture(vec![(200, page("native", false).to_string())], false).await;
+    let (client, reads) = binding_client(&base, Limits::default());
+    assert_eq!(
+        client
+            .discover_models(10, RequestContext::default())
+            .await
+            .unwrap()[0]
+            .id(),
+        "native"
+    );
+    let (head, _) = received(&mut requests).await;
+    assert!(
+        head.to_ascii_lowercase()
+            .contains("anthropic-beta: thinking-binding-controls-2026-08-01")
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    task.await.unwrap();
 }

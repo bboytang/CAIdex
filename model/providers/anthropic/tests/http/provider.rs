@@ -455,3 +455,63 @@ fn provider_profiles_reject_duplicate_ids_invalid_budgets_and_false_full_reports
         assert_eq!(reads.load(Ordering::SeqCst), 0);
     }
 }
+
+#[tokio::test]
+async fn provider_binding_mapping_and_beta_are_paired_for_classic_and_lite() {
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for report in [
+            None,
+            Some(Value::Null),
+            Some(json!([])),
+            Some(
+                json!([{"type":"thinking_dropped","reason":"organization_binding_mismatch","path":"messages.1.content.0","private":"PRIVATE_REPORT"}]),
+            ),
+        ] {
+            let mut native = reply();
+            if let Some(report) = &report {
+                native["input_transformations"] = report.clone();
+            }
+            let (base, mut requests, _, task) =
+                fixture(vec![(200, native.to_string())], false).await;
+            let (client, reads) = binding_client(&base, Limits::default());
+            let mut profile = profile();
+            profile.reasoning_mappings = vec![ReasoningMapping::new("high".into(),None,Some(json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}}))).unwrap()];
+            let provider = AnthropicProvider::new(client, vec![profile], 10).unwrap();
+            let mut wire = canonical(dialect, &[], false).wire().clone();
+            wire["reasoning"] = json!({"effort":"high"});
+            let result = provider
+                .create_response(
+                    CanonicalRequest::new(wire, dialect).unwrap(),
+                    RequestContext::default(),
+                )
+                .await;
+            match report.as_ref().and_then(Value::as_array) {
+                Some(entries) if entries.is_empty() => {
+                    assert_eq!(result.unwrap().response.wire()["status"], "completed")
+                }
+                Some(_) => assert_eq!(
+                    result.err().unwrap().code,
+                    "anthropic_input_thinking_dropped"
+                ),
+                None => assert_eq!(
+                    result.err().unwrap().code,
+                    "anthropic_binding_report_missing"
+                ),
+            }
+            let (head, body) = received(&mut requests).await;
+            assert!(
+                head.to_ascii_lowercase()
+                    .contains("anthropic-beta: thinking-binding-controls-2026-08-01")
+            );
+            let sent: Value = serde_json::from_slice(&body).unwrap();
+            assert_eq!(
+                sent["thinking"],
+                json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}})
+            );
+            assert!(!head.contains("drop_block"));
+            assert_eq!(reads.load(Ordering::SeqCst), 1);
+            task.await.unwrap();
+            assert!(requests.try_recv().is_err());
+        }
+    }
+}

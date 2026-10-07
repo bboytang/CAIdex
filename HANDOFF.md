@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 下一阶段：Anthropic 执行端 beta opt-in、实际组织身份与 compiled 请求前缀历史绑定（mode/tool/trim/resume）；尚未开始源码修改。恢复按下方顺序继续，不重做已验模块。
+- 当前：Anthropic 执行端 thinking-binding beta 与显式 error 映射已实现，验收中。开启后 JSON/SSE 必须提供对应 serving report；缺省/null 报静态错误且无完成/重试。输出前交接保留首帧接替模型报告，中途/多跳交接要求新报告。新增 5 项回归通过（HTTP 34/推理 9）；最终 workspace/Clippy/fmt/diff 本地通过，三平台 CI 待验。实际组织身份与 compiled 前缀快照仍未接入。
 - Fallback 身份/回放已三平台验收：源码 1f5e022，CI 37621255255 completed/success，新增 6 项逐平台日志通过。原生 SSE 更新实际 serving model、校验交接链和无 delta，换模型后已知 token 计数重新归属，iterations/raw wire 保留；echo 按末次交接过滤，投影只执行最终模型客户端调用。固定 Provider 对未配置实际模型报错并关闭，无 done/重试。
 - Anthropic input_transformations、上下文头、六方法/SSE、请求参数、summary/context、strict:true 结构化输出已三平台验收；源码/CI/范围见测试结果及 Anthropic 设计文档。上轮 Lite-only/Lite-first 初始化错误已修正，恢复不再重做；完整历史绑定与 Gateway/实际 Runtime 工具执行仍未验。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体及 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
@@ -32,7 +32,7 @@
 
 ## 下一步顺序
 
-1. 实现执行端 beta opt-in（thinking-binding-controls-2026-08-01）、实际组织身份与请求前缀历史校验，覆盖 mode/tool/trim/resume。保留 compiled system/tools/messages；不能用 CredentialRef 代替账户身份或自动 drop/retry，缺省报告不能证明没丢块。原生交接的 echo 过滤由提供商契约规定，与不匹配后的 drop_block/retry 不同；原 wire 保留。显式 fallback 请求/跨模型兼容组合仍待后续门控。已验模块不重做；生产 Host 尚待 canonical 请求与本地归属持久化。
+1. 验收本轮 beta opt-in / error 映射，再实现实际组织身份与请求前缀历史校验，覆盖 mode/tool/trim/resume。保留 compiled system/tools/messages；不能用 CredentialRef 代替账户身份或自动 drop/retry，缺省报告不能证明没丢块。原生交接的 echo 过滤由提供商契约规定，与不匹配后的 drop_block/retry 不同；原 wire 保留。显式 fallback 请求/跨模型兼容组合仍待后续门控。已验模块不重做；生产 Host 尚待 canonical 请求与本地归属持久化。
 2. 接 Gateway 及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。HTTP fixture 通过不等于完整 Adapter/商业模型支持；custom grammar 仅提示，未建立硬约束等价。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
@@ -57,7 +57,7 @@
 - `.git` 普通执行只读，提交/push 用 require_escalated。GitHub CLI 2.45.0 已核验登录 `bboytang`、scope repo/workflow；普通沙箱网络受限时 auth status 的 invalid 提示不能作为凭据失效证据。
 - 旧 Git helper 缺 workflow scope。发布使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不输出凭据或修改用户全局配置。
 - 本机没有 Windows/Xcode/gnome-keyring-daemon，相关验证转 GitHub。无真实模型、客户端逐状态截图/真机验证；按计划保留明确验收项。
-- Anthropic v2 载体仍未绑定 compiled system/tools/messages 和实际组织身份，须补 mode/tool/trim/resume。input_transformations 已验；fallback 原生身份/echo/usage 修正已三平台验收。尚无报告 beta header opt-in，缺省/空报告不能授予兼容性证据；CredentialRef 是本地引用、同一引用可换 Key，不能当组织身份。原生 fallback 许可/跨模型思考兼容策略与真实调用未验，固定 Provider 保持显式配置边界。依据见 Anthropic Provider 文档，不自动 drop_block/retry。
+- Anthropic v2 载体仍未绑定 compiled system/tools/messages 和实际组织身份，须补 mode/tool/trim/resume。input_transformations 已验；fallback 原生身份/echo/usage 修正已三平台验收。报告 beta opt-in 本轮已实现待验；未开启时缺省/空报告不能授予兼容性证据，开启时要求数组但仍不等于原始前缀/账户校验；CredentialRef 是本地引用、同一引用可换 Key，不能当组织身份。原生 fallback 许可/跨模型思考兼容策略与真实调用未验，固定 Provider 保持显式配置边界。依据见 Anthropic Provider 文档，不自动 drop_block/retry。
 
 ## 文件与 Git 状态
 
@@ -67,7 +67,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，fallback 源码 1f5e022942f1eab8153d4410dfb18ba6fb580533 与 checkpoint 258be8f 已提交/push；当前仅 HANDOFF.md 和 Anthropic 设计文档验收记录，随本次验收提交/push。源码无未提交修改，CI 37621255255 已验收，不重复执行。恢复先查 Git，再继续 beta opt-in、实际账户及请求前缀绑定。
+- branch `main` 跟踪 `origin/main`，上轮验收 825efb5 已提交/push；本轮未提交 Anthropic client/message/provider/reasoning/transfer、对应 HTTP/推理测试及 HANDOFF/设计文档。beta opt-in 和报告门控已实现，本地完整验收通过，三平台 CI 待完成。恢复先完成当前验收，再继续实际账户及请求前缀绑定。
 
 ## 测试结果
 
@@ -92,3 +92,5 @@
 - Input transformations [CI 37618365350](https://github.com/bboytang/CAIdex/actions/runs/37618365350)，源码 SHA b4d05fdfc623343992fdb5592456b03718dd247d：三平台 completed/success，新增 5 项逐平台日志核对通过（协议 13/投影 8/增量投影 5/HTTP 28）。workspace/fmt/Clippy/native keyring/schema/doctor 及既有真实 Runtime Linux 25、Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过，最终 null 保留初始报告修正后已完整复验；日志 /tmp/caidex-anthropic-input-bindings-workspace.log、/tmp/caidex-ci-37618365350.log。未调用商业 API，完整前缀/账户绑定与 Anthropic Gateway/Runtime 工具执行未验。
 
 - Fallback 身份/回放：新增 6 项回归、本地完整 workspace/Clippy/fmt/diff 通过（协议 15/投影 9/增量投影 6/HTTP 30）。日志 /tmp/caidex-anthropic-fallback-workspace.log；源码 SHA 1f5e022942f1eab8153d4410dfb18ba6fb580533 已提交/push；[CI 37621255255](https://github.com/bboytang/CAIdex/actions/runs/37621255255) 三平台 completed/success，新增 6 项逐平台日志核对通过。workspace/fmt/Clippy/native keyring/schema/doctor 与既有真实 Runtime Linux 25、Windows/macOS 24 项通过；日志 /tmp/caidex-ci-37621255255.log。未调用商业 API；完整前缀/账户绑定、显式 fallback 配置/兼容组合和 Anthropic Gateway/实际 Runtime 工具执行未验。
+
+- Thinking binding beta：新增 5 项回归及既有默认不发送 beta 的 HTTP 检查通过（HTTP 34/推理 9）。输出前单/多跳与中途换回同名模型的报告归属、Models 清单无需 Messages 报告及实际 JSON/SSE header 已验。本地完整 workspace/Clippy/fmt/diff 通过，最终增强测试后 HTTP/Clippy 复验通过；日志 /tmp/caidex-anthropic-binding-beta-workspace.log。源码提交及三平台 CI 待完成。

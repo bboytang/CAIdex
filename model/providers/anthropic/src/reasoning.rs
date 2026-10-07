@@ -60,10 +60,12 @@ impl ReasoningMapping {
         }
         if let Some(thinking) = thinking {
             let object = thinking.as_object().ok_or_else(invalid)?;
-            if object
-                .keys()
-                .any(|key| !matches!(key.as_str(), "type" | "budget_tokens" | "display"))
-            {
+            if object.keys().any(|key| {
+                !matches!(
+                    key.as_str(),
+                    "type" | "budget_tokens" | "display" | "block_binding"
+                )
+            }) {
                 return Err(invalid());
             }
             match thinking["type"].as_str() {
@@ -84,6 +86,13 @@ impl ReasoningMapping {
                     thinking["type"].as_str(),
                     Some("disabled" | "between_tools")
                 ) || !matches!(display.as_str(), Some("summarized" | "omitted")))
+            {
+                return Err(invalid());
+            }
+            if let Some(binding) = object.get("block_binding")
+                && (!matches!(thinking["type"].as_str(), Some("adaptive" | "enabled"))
+                    || binding.as_object().is_none_or(|fields| fields.len() != 1)
+                    || binding["prefix_mismatch_behavior"] != "error")
             {
                 return Err(invalid());
             }

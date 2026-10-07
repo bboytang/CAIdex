@@ -5,6 +5,7 @@ use futures_util::StreamExt;
 struct Fixture {
     base: String,
     requests: mpsc::UnboundedReceiver<Value>,
+    request_headers: mpsc::UnboundedReceiver<String>,
     closed: mpsc::UnboundedReceiver<()>,
     task: tokio::task::JoinHandle<()>,
 }
@@ -16,6 +17,7 @@ impl Fixture {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let base = format!("http://{}/v1", listener.local_addr().unwrap());
         let (tx, requests) = mpsc::unbounded_channel();
+        let (headers_tx, request_headers) = mpsc::unbounded_channel();
         let (closed_tx, closed) = mpsc::unbounded_channel();
         let content_type = content_type.to_owned();
         let headers = headers.to_owned();
@@ -49,6 +51,7 @@ impl Fixture {
                                 .then(|| value.trim().parse::<usize>().unwrap())
                         })
                         .unwrap();
+                    headers_tx.send(head).unwrap();
                     break (offset + 4, length);
                 }
             };
@@ -81,6 +84,7 @@ impl Fixture {
         Self {
             base,
             requests,
+            request_headers,
             closed,
             task,
         }
@@ -829,4 +833,216 @@ async fn projected_http_complete_signed_function_history_preserves_raw_arguments
     drop(stream);
     received(&mut fixture.closed).await;
     released(&client).await;
+}
+
+#[tokio::test]
+async fn binding_beta_stream_requires_start_and_serving_reports_without_done_or_retry() {
+    use caidex_model_core::{
+        CanonicalRequest, ModelProvider, ProviderStreamEvent, ResponsesDialect,
+    };
+    use caidex_provider_anthropic::{AnthropicProvider, NativeMessage, ReasoningMapping, ToolMap};
+    let tools = [json!({"type":"function","name":"data_only","parameters":{"type":"object"}})];
+    let map = ToolMap::new(&tools, 10).unwrap();
+    for (handoff, initial, final_report, valid) in [
+        (0, None, None, false),
+        (0, Some(Value::Null), None, false),
+        (0, Some(json!([])), None, true),
+        (1, Some(json!([])), None, true),
+        (1, Some(json!([])), Some(Value::Null), true),
+        (1, Some(json!([])), Some(json!([])), true),
+        (2, Some(json!([])), None, false),
+        (2, Some(json!([])), Some(Value::Null), false),
+        (2, Some(json!([])), Some(json!([])), true),
+        (3, Some(json!([])), None, false),
+        (3, Some(json!([])), Some(json!([])), true),
+        (4, Some(json!([])), None, true),
+        (4, Some(json!([])), Some(Value::Null), true),
+        (5, Some(json!([])), None, false),
+        (5, Some(json!([])), Some(json!([])), true),
+    ] {
+        let mut frames: Vec<Value> = complete()
+            .split("\n\n")
+            .filter_map(|frame| frame.lines().find_map(|line| line.strip_prefix("data: ")))
+            .map(|data| serde_json::from_str(data).unwrap())
+            .collect();
+        if let Some(report) = initial {
+            frames[0]["message"]["input_transformations"] = report;
+        }
+        if handoff != 0 {
+            let insertion = if matches!(handoff, 1 | 4) {
+                1
+            } else {
+                frames[0]["message"]["model"] =
+                    if handoff == 5 { "native" } else { "primary" }.into();
+                frames
+                    .iter()
+                    .position(|frame| frame["type"] == "content_block_start" && frame["index"] == 1)
+                    .unwrap()
+            };
+            let index = if matches!(handoff, 1 | 4) { 0 } else { 1 };
+            let mut hops = vec![
+                json!({"type":"content_block_start","index":index,"content_block":{"type":"fallback","from":{"model":"primary"},"to":{"model":"native"}}}),
+                json!({"type":"content_block_stop","index":index}),
+            ];
+            if handoff == 5 {
+                hops[0]["content_block"]["from"]["model"] = "native".into();
+            }
+            if handoff >= 3 {
+                hops[0]["content_block"]["to"]["model"] = "middle".into();
+                hops.extend([
+                    json!({"type":"content_block_start","index":index+1,"content_block":{"type":"fallback","from":{"model":"middle"},"to":{"model":"native"}}}),
+                    json!({"type":"content_block_stop","index":index+1}),
+                ]);
+            }
+            for frame in &mut frames[insertion..] {
+                if let Some(index) = frame["index"].as_u64() {
+                    frame["index"] = (index + if handoff >= 3 { 2 } else { 1 }).into();
+                }
+            }
+            frames.splice(insertion..insertion, hops);
+        }
+        if let Some(report) = final_report {
+            frames
+                .iter_mut()
+                .rev()
+                .find(|frame| frame["type"] == "message_delta")
+                .unwrap()["input_transformations"] = report;
+        }
+        let body = frames.into_iter().map(event).collect::<String>();
+        let mut fixture = Fixture::start(body.clone(), false, "text/event-stream").await;
+        let (client, reads) = binding_client(
+            &fixture.base,
+            Limits {
+                in_flight: 1,
+                ..Default::default()
+            },
+        );
+        let mut stream = client
+            .stream_message("native", request(), RequestContext::default())
+            .await
+            .unwrap();
+        let mut native = None;
+        let mut failure = None;
+        while let Some(event) = next(&mut stream).await {
+            match event {
+                Ok(NativeStreamEvent::Completed(message)) => native = Some(message),
+                Ok(NativeStreamEvent::Event(_)) => (),
+                Err(error) => {
+                    failure = Some(error);
+                    break;
+                }
+            }
+        }
+        if valid {
+            assert!(failure.is_none());
+            assert_eq!(native.unwrap().input_transformations(), Some([].as_slice()));
+        } else {
+            assert!(native.is_none());
+            assert_eq!(failure.unwrap().code, "anthropic_binding_report_missing");
+        }
+        assert!(stream.next().await.is_none());
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        assert!(
+            received(&mut fixture.request_headers)
+                .await
+                .to_ascii_lowercase()
+                .contains("anthropic-beta: thinking-binding-controls-2026-08-01")
+        );
+        received(&mut fixture.requests).await;
+        received(&mut fixture.closed).await;
+        released(&client).await;
+
+        // Fixed Provider rejects unconfigured primary/intermediate identities;
+        // these native multi-model cases do not authorize cross-model routing.
+        if handoff >= 2 {
+            continue;
+        }
+        for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+            let body = body.replace("\"data_only\"", &map.native_tools()[0]["name"].to_string());
+            let mut fixture = Fixture::start(body, false, "text/event-stream").await;
+            let (client, reads) = binding_client(
+                &fixture.base,
+                Limits {
+                    in_flight: 1,
+                    ..Default::default()
+                },
+            );
+            let mut profile = super::provider::profile();
+            profile.reasoning_mappings = vec![ReasoningMapping::new("high".into(),None,Some(json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}}))).unwrap()];
+            let provider = AnthropicProvider::new(client, vec![profile], 10).unwrap();
+            let input = json!({"role":"user","content":"hello"});
+            let wire = if dialect == ResponsesDialect::Classic {
+                json!({"model":"alias","input":[input],"tools":tools,"stream":true,"reasoning":{"effort":"high"}})
+            } else {
+                json!({"model":"alias","input":[{"type":"additional_tools","role":"developer","tools":tools},input],"stream":true,"reasoning":{"effort":"high"}})
+            };
+            let mut stream = provider
+                .stream_response(
+                    CanonicalRequest::new(wire, dialect).unwrap(),
+                    RequestContext::default(),
+                )
+                .await
+                .unwrap()
+                .events;
+            let mut completed = None;
+            let mut failure = None;
+            while let Some(event) = tokio::time::timeout(Duration::from_secs(5), stream.next())
+                .await
+                .unwrap()
+            {
+                match event {
+                    Ok(ProviderStreamEvent::Model(event)) => {
+                        if !valid {
+                            assert!(event.response.terminal().is_none());
+                            assert_ne!(event.response.kind(), "response.output_item.done");
+                        }
+                        if event.response.terminal().is_some() {
+                            completed = Some(event.response.wire()["response"].clone());
+                        }
+                    }
+                    Ok(ProviderStreamEvent::Heartbeat) => (),
+                    Err(error) => {
+                        failure = Some(error);
+                        break;
+                    }
+                }
+            }
+            if valid {
+                assert!(failure.is_none());
+                let response = completed.unwrap();
+                let restored = NativeMessage::from_responses_output(
+                    response["output"].as_array().unwrap(),
+                    "native",
+                    128 * 1024,
+                )
+                .unwrap();
+                assert_eq!(restored.input_transformations(), Some([].as_slice()));
+            } else {
+                assert!(completed.is_none());
+                assert_eq!(failure.unwrap().code, "anthropic_binding_report_missing");
+            }
+            assert!(stream.next().await.is_none());
+            assert_eq!(reads.load(Ordering::SeqCst), 1);
+            assert!(
+                received(&mut fixture.request_headers)
+                    .await
+                    .to_ascii_lowercase()
+                    .contains("anthropic-beta: thinking-binding-controls-2026-08-01")
+            );
+            let sent = received(&mut fixture.requests).await;
+            assert_eq!(
+                sent["thinking"]["block_binding"]["prefix_mismatch_behavior"],
+                "error"
+            );
+            received(&mut fixture.closed).await;
+            assert_ne!(
+                provider
+                    .discover_models(RequestContext::default())
+                    .await
+                    .unwrap_err()
+                    .code,
+                "provider_busy"
+            );
+        }
+    }
 }

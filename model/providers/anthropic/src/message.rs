@@ -161,6 +161,14 @@ pub(crate) fn validate_input_transformations(wire: &Value) -> ProviderResult<()>
     Ok(())
 }
 
+pub(crate) fn require_binding_report(wire: &Value) -> ProviderResult<()> {
+    validate_input_transformations(wire)?;
+    if !wire["input_transformations"].is_array() {
+        return Err(ProviderError::new(502, "anthropic_binding_report_missing"));
+    }
+    Ok(())
+}
+
 /// A successful native generation may still report dropped or unbound input.
 /// The Responses adapter must not release executable done/history as if that
 /// input had been preserved. Raw native APIs retain the reports for the caller.

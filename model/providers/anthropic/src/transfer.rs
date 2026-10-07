@@ -81,6 +81,7 @@ pub(crate) fn stream(
     deadline: Instant,
     limits: Limits,
     permit: OwnedSemaphorePermit,
+    require_binding_report: bool,
 ) -> ProviderResult<NativeStreamingResponse> {
     let headers = crate::client::response_headers(upstream.headers())?;
     let (sender, receiver) = mpsc::channel(1);
@@ -90,7 +91,15 @@ pub(crate) fn stream(
         // The worker owns the permit: timeout/cancellation also releases it when
         // delivery remains unpolled, rather than blocking a subsequent request.
         let _permit = permit;
-        if let Err(error) = pump(upstream, &context, deadline, limits, &sender).await
+        if let Err(error) = pump(
+            upstream,
+            &context,
+            deadline,
+            limits,
+            &sender,
+            require_binding_report,
+        )
+        .await
             && let Ok(mut failure) = worker_failure.lock()
         {
             *failure = Some(error);
@@ -112,8 +121,12 @@ async fn pump(
     deadline: Instant,
     limits: Limits,
     sender: &mpsc::Sender<NativeStreamEvent>,
+    require_binding_report: bool,
 ) -> ProviderResult<()> {
     let mut parser = MessageStream::new(limits.frame_bytes, limits.response_bytes)?;
+    let mut serving_report_pending = false;
+    let mut initial_model = serde_json::Value::Null;
+    let mut content_started = false;
     loop {
         let chunk = guard(
             upstream.chunk(),
@@ -131,6 +144,30 @@ async fn pump(
                 if event.kind() == "error" {
                     return Err(native_error(event.wire()));
                 }
+                if require_binding_report {
+                    match event.kind() {
+                        "message_start" => {
+                            crate::message::require_binding_report(&event.wire()["message"])?;
+                            initial_model = event.wire()["message"]["model"].clone();
+                        }
+                        "content_block_start" => {
+                            if event.wire()["content_block"]["type"] == "fallback" {
+                                // Pre-output hops can already have the final
+                                // model's report at message_start. Mid-output
+                                // hops always need a new serving report.
+                                serving_report_pending = content_started
+                                    || event.wire()["content_block"]["to"]["model"]
+                                        != initial_model;
+                            } else {
+                                content_started = true;
+                            }
+                        }
+                        "message_delta" if event.wire()["input_transformations"].is_array() => {
+                            serving_report_pending = false;
+                        }
+                        _ => (),
+                    }
+                }
                 guard(
                     sender.send(NativeStreamEvent::Event(event)),
                     context,
@@ -141,6 +178,9 @@ async fn pump(
             }
         }
         if parser.state() == NativeStreamState::Completed {
+            if serving_report_pending {
+                return Err(ProviderError::new(502, "anthropic_binding_report_missing"));
+            }
             let message = parser
                 .completed_message()
                 .expect("completed message")

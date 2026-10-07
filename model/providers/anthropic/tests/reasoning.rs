@@ -341,3 +341,57 @@ fn current_turn_policy_accepts_only_its_declared_context_without_stripping_histo
         .is_err()
     );
 }
+
+#[test]
+fn binding_mappings_enforce_errors_only_in_explicit_adaptive_or_enabled_profiles() {
+    for thinking in [
+        json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error"}}),
+        json!({"type":"enabled","budget_tokens":1024,"block_binding":{"prefix_mismatch_behavior":"error"}}),
+    ] {
+        let mappings =
+            [ReasoningMapping::new("high".into(), None, Some(thinking.clone())).unwrap()];
+        for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+            let request = CanonicalRequest::new(json!({"model":"alias","input":[{"role":"user","content":"q"}],"reasoning":{"effort":"high"}}), dialect).unwrap();
+            let compiled = MessagesRequest::from_responses_with_reasoning(
+                &request,
+                "native",
+                4096,
+                128 * 1024,
+                10,
+                false,
+                &mappings,
+            )
+            .unwrap();
+            assert_eq!(compiled.wire()["thinking"], thinking);
+            assert!(
+                compiled.source()["reasoning"]
+                    .get("block_binding")
+                    .is_none()
+            );
+            let mut bad = request.wire().clone();
+            bad["reasoning"]["block_binding"] = json!({"prefix_mismatch_behavior":"drop_block"});
+            assert!(
+                MessagesRequest::from_responses_with_reasoning(
+                    &CanonicalRequest::new(bad, dialect).unwrap(),
+                    "native",
+                    4096,
+                    128 * 1024,
+                    10,
+                    false,
+                    &mappings
+                )
+                .is_err()
+            );
+        }
+    }
+    for thinking in [
+        json!({"type":"adaptive","block_binding":null}),
+        json!({"type":"adaptive","block_binding":{}}),
+        json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"drop_block"}}),
+        json!({"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"error","future":true}}),
+        json!({"type":"between_tools","block_binding":{"prefix_mismatch_behavior":"error"}}),
+        json!({"type":"disabled","block_binding":{"prefix_mismatch_behavior":"error"}}),
+    ] {
+        assert!(ReasoningMapping::new("high".into(), None, Some(thinking)).is_err());
+    }
+}

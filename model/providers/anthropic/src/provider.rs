@@ -89,6 +89,18 @@ impl<S: SecretStore + 'static> AnthropicProvider<S> {
         }
         let mut profiles = BTreeMap::new();
         for model in models {
+            if !client.thinking_binding_controls()
+                && model.reasoning_mappings.iter().any(|mapping| {
+                    mapping.native_parameters()["thinking"]
+                        .get("block_binding")
+                        .is_some()
+                })
+            {
+                return Err(ProviderError::new(
+                    400,
+                    "anthropic_thinking_binding_beta_required",
+                ));
+            }
             if model.metadata.validate().is_err()
                 || model.max_tokens == 0
                 || model

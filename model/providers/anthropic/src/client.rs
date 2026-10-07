@@ -16,6 +16,7 @@ pub struct AnthropicConfig {
     credential: CredentialRef,
     workspace: Option<HeaderValue>,
     local_runtime_context: bool,
+    thinking_binding_controls: bool,
 }
 impl AnthropicConfig {
     pub fn new(credential: CredentialRef) -> Result<Self, Error> {
@@ -27,6 +28,7 @@ impl AnthropicConfig {
             credential,
             workspace: None,
             local_runtime_context: false,
+            thinking_binding_controls: false,
         })
     }
     pub fn with_base_url(mut self, base: &str) -> Result<Self, Error> {
@@ -55,6 +57,13 @@ impl AnthropicConfig {
         self.local_runtime_context = true;
         self
     }
+    /// Opt into the fixed thinking-binding beta and require its reports.
+    /// Prefix enforcement still requires an explicit reasoning mapping with
+    /// block_binding.prefix_mismatch_behavior = "error"; no drop/retry is added.
+    pub fn with_thinking_binding_controls(mut self) -> Self {
+        self.thinking_binding_controls = true;
+        self
+    }
 }
 impl fmt::Debug for AnthropicConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -75,6 +84,9 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
     }
     pub(crate) fn limits(&self) -> &Limits {
         &self.limits
+    }
+    pub(crate) fn thinking_binding_controls(&self) -> bool {
+        self.config.thinking_binding_controls
     }
     pub fn new(
         config: AnthropicConfig,
@@ -182,6 +194,9 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         let (wire, headers) = self
             .json(outgoing, &context, deadline, &mut remaining)
             .await?;
+        if self.config.thinking_binding_controls {
+            crate::message::require_binding_report(&wire)?;
+        }
         Ok((NativeMessage::parse(wire)?, headers))
     }
     /// Foreground native SSE. Dropping the delivery cancels its I/O worker.
@@ -211,7 +226,14 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         let response = self
             .execute(outgoing, &context, deadline, "text/event-stream")
             .await?;
-        crate::transfer::stream(response, context, deadline, self.limits.clone(), permit)
+        crate::transfer::stream(
+            response,
+            context,
+            deadline,
+            self.limits.clone(),
+            permit,
+            self.config.thinking_binding_controls,
+        )
     }
     fn message_body(&self, model: &str, wire: &mut Value, stream: bool) -> ProviderResult<Vec<u8>> {
         if model.trim().is_empty()
@@ -224,6 +246,13 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
                 .is_some_and(|v| !v.is_null() && v != stream)
         {
             return Err(ProviderError::new(400, "invalid_native_message_request"));
+        }
+        if wire["thinking"].get("block_binding").is_some() && !self.config.thinking_binding_controls
+        {
+            return Err(ProviderError::new(
+                400,
+                "anthropic_thinking_binding_beta_required",
+            ));
         }
         wire["model"] = model.into();
         wire["stream"] = stream.into();
@@ -290,6 +319,9 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
             .header("accept", media_type);
         if let Some(workspace) = &self.config.workspace {
             outgoing = outgoing.header("anthropic-workspace-id", workspace.clone());
+        }
+        if self.config.thinking_binding_controls {
+            outgoing = outgoing.header("anthropic-beta", "thinking-binding-controls-2026-08-01");
         }
         let response = guard(outgoing.send(), context, header_deadline)
             .await?

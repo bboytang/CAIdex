@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。本轮接入执行端本地上下文策略和原生响应关联头，验证状态见 HANDOFF.md。Gateway、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
+`model/providers/anthropic` 已实现原生 Messages/Models、HTTP/SSE client、Responses 请求转换、回复增量投影和版本化历史回放；AnthropicProvider 六方法承接现有推理/结构化输出/Runtime 字段门控。已接入执行端本地上下文策略、原生响应关联头、fallback 身份/echo 和 thinking-binding beta；本轮 beta 的验证状态见 HANDOFF.md。Gateway、请求前缀/账户绑定及完整 Runtime 互操作尚未完成。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -168,7 +168,7 @@ Responses 投影及历史恢复共用检查：已知 thinking_dropped 的 prefix
 
 新增 5 项回归覆盖报告形状、逐字节 SSE、缺省/null/空与最终数组替换、未知字段/大整数、两种已知 type 与四种 drop reason、旧载体防绕过、经典/Lite 实际 JSON/SSE、首帧/末帧失败后的无工具 done/完成/socket 关闭/slot 释放与单次 Key 读取。源码 b4d05fd（完整 SHA b4d05fdfc623343992fdb5592456b03718dd247d）的 [CI 37618365350](https://github.com/bboytang/CAIdex/actions/runs/37618365350) 三平台 completed/success，新增 5 项逐平台日志核对通过，协议 13/投影 8/增量投影 5/HTTP 28 及 workspace/fmt/Clippy/native keyring/schema/doctor、既有真实 Runtime Linux 25/Windows/macOS 24 项通过。本地完整 workspace/Clippy/fmt/diff 通过。
 
-尚未接入 thinking-binding-controls-2026-08-01 执行端 beta opt-in、前缀快照和真实组织作用域；缺省报告无法发现静默 drop，不宣称完整历史绑定或商业模型验收。fallback 身份/echo 修正见下节，仍不能据此宣称已验证跨模型兼容。上述工作完成后再接 Gateway/实际 Runtime。
+thinking-binding-controls-2026-08-01 执行端 beta opt-in 见下节；前缀快照和真实组织作用域仍未接入。未开启时缺省报告无法发现静默 drop，不宣称完整历史绑定或商业模型验收。fallback 身份/echo 修正见下节，仍不能据此宣称已验证跨模型兼容。上述工作完成后再接 Gateway/实际 Runtime。
 
 依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)、[Beta Messages API](https://platform.claude.com/docs/en/api/typescript/beta/messages/create)、[官方 SDK message_delta 定义](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/types/beta/beta_raw_message_delta_event.py)、[官方 SDK 累积逻辑](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/streaming/_beta_messages.py)。未调用商业 API。
 
@@ -185,3 +185,17 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 新增 6 项回归：输出前/中途/多跳/sticky 身份、逐字节 SSE、错误 shape/chain/最终身份/非法 delta/开放工具、不同 attempt 计数下降/缺失/同模型仍单调、完整 raw 历史与合法 echo、已退出调用不可执行、经典/Lite 请求编译及 JSON/SSE socket/permit/no retry。源码 1f5e022（完整 SHA 1f5e022942f1eab8153d4410dfb18ba6fb580533）的 [CI 37621255255](https://github.com/bboytang/CAIdex/actions/runs/37621255255) 三平台 completed/success，新增 6 项逐平台日志核对通过（协议 15/投影 9/增量投影 6/HTTP 30）。本地完整 workspace/Clippy/fmt/diff 通过；CI workspace/fmt/Clippy/native keyring/schema/doctor 与既有真实 Runtime Linux 25、Windows/macOS 24 项通过。所有 Key/数据为合成 fixture，未调用商业 API。
 
 依据：[Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback)、[官方 SDK fallback block](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/types/beta/beta_fallback_block.py)、[官方 SDK 累积逻辑](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/streaming/_beta_messages.py)。
+
+## 执行端 thinking-binding beta 与显式 error 映射
+
+`AnthropicConfig::with_thinking_binding_controls()` 显式发送固定 `anthropic-beta: thinking-binding-controls-2026-08-01` 并要求 Messages JSON/SSE 的报告；默认不启用，不从请求 JSON 或 Runtime context headers 接受 beta 列表。Models 分页复用同一执行端 header，清单不要求 Messages 报告。不新增依赖、传输、推理请求或重试。
+
+`ReasoningMapping` 允许 adaptive/enabled 的 `block_binding: {"prefix_mismatch_behavior":"error"}`，仅此字段和值；disabled/between_tools、drop_block、空对象/null/未知字段拒绝。固定 profile 只是模式契约，不根据模型名猜支持（如 Sonnet 5.5 的 enabled 不受支持需在具体 profile 验收）。Provider 构造与原生 request 发送前校验 beta 耦合，不读 Key 即拒绝未开启的 binding 配置。原生 API 的显式 body 仍原样保留，不自动添加 thinking、删除签名或请求 drop_block；Responses 只能使用执行端映射，调用端不能设置 block_binding。
+
+开启配置后，JSON 回复和 SSE message_start 的 `input_transformations` 必须是合法数组，缺省/null 报静态 502 `anthropic_binding_report_missing`。输出前交接且首帧已命名接替模型时，首帧报告已属于该模型；中途及其后多跳交接使上一 attempt 的报告失效，必须在交接后收到 message_delta 新数组才能提供 Completed。不能用初始空数组遮盖最后模型未知状态。原生完整报告保留，已知 drop/mismatch 继续由既有 Responses 门控拒绝；未知项遵守原生规则保留而不猜语义。失败关闭 socket/释放 slot，投影不提供工具 done、完成或新载体。
+
+发送 header 本身是报告 opt-in；旧账户的前缀 enforcement 仍须 profile 明确提供 error 映射。空报告不等于已实现本地请求快照/账户绑定，也不证明商业模型能力。当前 v1/v2 仍没有 compiled system/tools/messages 或实际组织身份；这些及 mode/tool/trim/resume、Gateway/真实 Runtime 工具执行继续按 HANDOFF.md 开发。
+
+新增 5 项回归覆盖配置/mode/shape/请求字段门控、发送前零 Key 读取、经典/Lite 实际 JSON/SSE、缺省/null/数组/未来报告、合法输出前及中途/多跳报告归属、无 done/重试/socket/slot 与原生 400 静态分类。HTTP 34/推理 9、本地完整 workspace/Clippy/fmt/diff 通过；最终测试增强后 HTTP/Clippy 复验通过。三平台 CI 状态见 HANDOFF.md。所有数据为合成 fixture，未调用商业 API。
+
+依据：[Preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)、[Beta headers](https://platform.claude.com/docs/en/api/beta-headers)。后续真实账户身份来源为认证 API 返回值，而非 CredentialRef；官方 [API overview](https://platform.claude.com/docs/en/api/overview)、[Workspaces](https://platform.claude.com/docs/en/manage-claude/workspaces) 和 [Get Current Organization](https://platform.claude.com/docs/en/api/http/organization) 给出响应组织/工作区头和读取当前组织的契约，尚未在本地历史绑定中接入。
