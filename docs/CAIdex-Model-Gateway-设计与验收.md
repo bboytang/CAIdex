@@ -1,6 +1,6 @@
 # CAIdex 模型核心与 Gateway：设计和验收
 
-阶段 F/G，依 V3 顺序推进。F 第一/二步已有三平台验收；第三步已实现 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client，本机通过，正在三平台验收。其他原生 Provider 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
+阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。其他原生 Provider 和实际模型兼容性尚未实现，不能将本轮当作 F/G 全部验收。
 
 ## 固定协议依据
 
@@ -74,7 +74,7 @@ HTTP 库依据：[reqwest 0.13.5 禁重试](https://docs.rs/reqwest/0.13.5/reqwe
 
 这些是固定 [client.rs](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs) 和 [Responses SSE](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/codex-api/src/sse/responses.rs) 中核对的当前契约，未宣称覆盖所有上游 header。重复、非可见 ASCII 或超过 8192 bytes 的 context 值拒绝；opaque turn-state 的 Debug 省略值，不实现 Serialize/Display。其他头不透传；上游非法 context 返回安全 502，客户端重复 context 为 400。认证头始终由 Broker 构造。
 
-ClientOptions 允许为该独立 client 显式添加公共信任根，不提供跳过 TLS 验证选项。fixture 在内存生成 CA/叶证书/私钥：可信有效证书成功，未信任 CA、主机名不符、过期证书均失败；负例服务器未收到 HTTP 请求，证明 Bearer 不穿过失败握手。私钥不落盘/入日志。额外公共根接入最终设置及真实服务链兼容性仍待相应阶段。
+ClientOptions 允许为该独立 client 显式添加公共信任根，不提供跳过 TLS 验证选项。fixture 在内存生成 CA/叶证书/私钥，明确不同的 issuer/subject、用途/AKI/有效期以支持原生证书链验证：可信有效证书成功，未信任 CA、主机名不符、过期证书均失败；负例服务器未收到 HTTP 请求，证明 Bearer 不穿过失败握手。私钥不落盘/入日志。额外公共根接入最终设置及真实服务链兼容性仍待相应阶段。
 
 实现依据：[add_root_certificate](https://docs.rs/reqwest/0.13.5/reqwest/struct.ClientBuilder.html#method.add_root_certificate)、[HTTP-date parser](https://docs.rs/httpdate/1.0.3/httpdate/fn.parse_http_date.html)、[rcgen 0.14.10](https://docs.rs/rcgen/0.14.10/rcgen/)。
 
@@ -91,11 +91,12 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 - 本地 fmt、Clippy -D warnings、workspace tests 通过；新增核心回归 15 项，包含每个字节分割点/逐字节、多种换行、未知数据/工具/用量、取消/EOF/乱序/身份混合/终态冲突。
 - [三平台 CI 37550000148](https://github.com/bboytang/CAIdex/actions/runs/37550000148) 全部通过，源码 `ea7d902`：核心 15 项和 Gateway 16 项在 Linux/Windows/macOS 通过；真实 Runtime Linux 20 项、Windows/macOS 各 19 项通过，含新增 Gateway 经典/Lite 两轮/Broker 认证和两条路径 interrupt 后实际 EOF/reset、无重放。既有协议/凭据/schema/doctor 继续通过，HTTP/TLS 依赖三平台构建通过。
 - 本机 workspace/fmt/Clippy、Gateway 16 项、真实 Runtime Linux 20 项通过；最终大整数/高精度小数 wire 和 EOF/reset 判据分别定向复验通过。全部使用本地合成推理数据，不代表真实商业模型兼容性。
-- F 第三步本机 fmt、Clippy -D warnings、workspace tests 和真实 Runtime 20 项通过；核心 20 项、独立 provider 7 项、Gateway 18 项。新增验证包含独立 client 六方法/经典与 Lite、配置能力与未验证标记、完整同步 response、header 双向筛选、HTTP-date、单并发 slot 释放、未消费流取消/超时、TLS 正/负证书。三平台本轮源码验收待 GitHub CI 结果。
+- F 第三步 [三平台 CI 37552752561](https://github.com/bboytang/CAIdex/actions/runs/37552752561) 全部 success，源码 `42fdaa3`（接口源码 e834549 + 证书 fixture 修正）：核心 20、独立 provider 7、Gateway 18 项各平台通过，真实 Runtime Linux 20、Windows/macOS 各 19 项通过。新增验证包含独立 client 六方法/经典与 Lite、配置能力与未验证标记、完整同步 response、header 双向筛选、HTTP-date、单并发 slot 释放、未消费流取消/超时、TLS 正/负证书；fmt/Clippy/workspace/schema/doctor 及既有凭据回归保持通过。
+- 本机 workspace/fmt/Clippy/真实 Runtime 20 项通过，单并发 slot/TLS 定向复验通过。首轮 Windows TLS 正例被拒绝，以明确 CA/leaf identity、用途/AKI/有效期的 fixture 修正后全部通过，未放宽生产 TLS。日志 `/tmp/caidex-ci-37552752561.log` 供本机复查，跨机器以 CI 链接为准。
 - 未实现/未验证：其他原生 Provider、原生 opaque history 重建、真实 Provider TLS/商业推理、Lite Code Mode 工具执行、远端 opaque compaction、其他 provider-specific headers。E 原生 keyring 回归继续由 CI 保持。
 
 ## 下一步顺序
 
-1. F 第三步源码推送/三平台 CI，结果记录 HANDOFF；未通过时按具体失败修复，不以旧 CI 代替新验收。
-2. 按 V3/原 V2 第 14–22 节依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，使用六方法接口与 Registry，补原生请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility。不要把 Responses pass-through 当作最终跨提供商 Gateway。
+1. 按 V3/原 V2 第 14–22 节依次适配 OpenAI、Anthropic、Gemini、兼容 API/Ollama，使用已验六方法接口与 Registry，先以本地合成 fixture 验证原生 Adapter/模型清单。
+2. 补各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility；不要把 Responses pass-through 当作最终跨提供商 Gateway。
 3. 原生 opaque history、经典/Code Mode、多轮签名/模型切换分别验收并生成实际证据报告。实际用户凭据复用/创建及付费调用前明确授权；已授权离线协议工作继续。
