@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP/SSE client。它是完整 Adapter 的基础，已有原生回复→Responses 投影和版本化原生回放，固定 Runtime 经典/Lite 两轮载体测试本机通过；尚未实现 Responses 请求→Messages、ModelProvider 六方法、Gateway 注入和完整 Runtime 互操作。
+`model/providers/anthropic` 已实现原生 Messages/Models 数据结构、SSE 重建，以及独立原生 HTTP/SSE client。它是完整 Adapter 的基础，已有原生回复→Responses 投影和版本化原生回放，固定 Runtime 经典/Lite 两轮载体测试三平台通过；尚未实现 Responses 请求→Messages、ModelProvider 六方法、Gateway 注入和完整 Runtime 互操作。
 
 `AnthropicConfig` 固定执行端 API Key 引用（provider=anthropic、kind=ApiKey）、基址和可选 workspace。默认 HTTPS；显式代理/本地 fixture 复用既有 endpoint 安全策略，仅 literal loopback 允许 HTTP，不接受 URL 用户密码/query/fragment。HTTP client 保持 TLS 验证、禁用代理自动发现、重定向和自动重试；支持显式额外信任根。
 
@@ -32,9 +32,11 @@ Broker 只在发送时解析指定引用，不自动读取环境密钥。发送 
 
 新增 6 项原生 SSE socket 测试：签名/工具/累计 usage、完成后主动关闭、静态错误分类、EOF/大小上限、Drop/取消、满队列 deadline/错误保存/许可释放、idle timeout/content-type。源码 `4b856b8` 的 [CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343) 三平台全部成功，逐平台确认协议 12/HTTP 13 项通过；既有 Runtime Linux 23、Windows/macOS 各 22 项回归通过。尚不验证 Anthropic Runtime 互操作。
 
+回复投影/回放新增 7 项测试与固定 Runtime 经典/Lite 各一项：[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 三平台全部成功（回复源码 a0de05f、fixture 修正 1fc0d3c）。每个平台协议 12/HTTP 13/投影 7 项通过，Runtime 累计 Linux 25、Windows/macOS 各 24 项。首轮 Linux native keyring 就绪检查触发 D-Bus 自动激活，已改为不激活的 owner 查询及 unlocked collection 门槛；新 CI 原生 keyring 通过，未改生产凭据逻辑。载体测试不是完整 Anthropic 请求/Gateway 互操作、商业模型或 Code Mode 工具验收。
+
 ## 后续顺序
 
-1. 原生 HTTP SSE 三平台已验；本轮回复投影/回放新增 7 项测试、经典/Lite 真实 Runtime 载体各一项本机通过，完成本轮 workspace 与 CI 验证。
+1. 原生 HTTP SSE 与回复投影/回放三平台已验，继续下一项请求转换与接口接入。
 2. 实现 Responses→Messages、工具/图片/推理/结构化输出映射和执行端原生 history；经典与 Lite 分别验收，不将未知字段静默丢弃。
 3. 完成 ModelProvider 六方法、原生认证需求元数据、Gateway 注入及固定 Runtime 多轮/工具/interrupt 离线验收；必要的 Runtime 修改保持最小范围。
 4. 再进入 Gemini。真实提供商兼容性与付费调用须另行明确授权，离线成功不授予 Full 标签。

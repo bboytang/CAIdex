@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，首轮 CI 37577688434 的 Linux native keyring fixture 失败，已定位并修正脚本启动竞态，新 CI 37578134958 正在运行；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
+- A–E 与 F 第一至第三步当前范围已验收；OpenAI 离线 Adapter 三平台已验。当前继续 Anthropic：原生协议/HTTP/SSE 已三平台验收（源码 `4b856b8`，CI 37576472343）；本轮新增回复投影/原生回放与经典/Lite 真实 Runtime 载体测试。本机新增 7 项投影、2 项实际 Runtime 回放通过，本机 workspace/Clippy/fmt/diff 已通过，源码 `a0de05f` 已提交/push，首轮 Linux native keyring fixture 竞态已修正（`1fc0d3c`），[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 三平台全部 success；Responses 请求转换、ModelProvider/Gateway 尚未完成。F/G 整体与 H–R 未完成。沿 V3 离线授权，不读取/创建真实模型 Key。
 - 用户已允许完整项目、原始方案、HANDOFF、UI/架构/实施文档公开到 `bboytang/CAIdex`；提交、push、CI 继续沿用授权。
 
 ## 已完成
@@ -30,7 +30,7 @@
 
 ## 下一步顺序
 
-1. Anthropic：本轮原生回复投影/回放已实现，先完成检查、提交和三平台 CI；随后实现 Responses 请求→Messages、工具 namespace/custom 与结果、图片/结构化输出/context/模型别名版本契约，经典/Lite 分别验收，再完成 ModelProvider 六方法、原生认证需求、Gateway 注入及真实 Runtime 多轮/工具/interrupt。载体回放通过不代表完整 Adapter 可用，不重做已有传输。
+1. Anthropic：本轮原生回复投影/回放已实现，本轮检查、提交和三平台 CI 已完成；下一步实现 Responses 请求→Messages、工具 namespace/custom 与结果、图片/结构化输出/context/模型别名版本契约，经典/Lite 分别验收，再完成 ModelProvider 六方法、原生认证需求、Gateway 注入及真实 Runtime 多轮/工具/interrupt。载体回放通过不代表完整 Adapter 可用，不重做已有传输。
 2. 随后 Gemini→兼容 API/Ollama。Models 清单不提供 Codex 兼容性，不由可用模型名称猜 Full 或 capabilities。OpenAI 官方依据与验收限制在独立 Provider 文档。
 3. 各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/prompt compatibility 与兼容性报告逐项落实；经典与 Code Mode/opaque 多轮/切换分别验收。真实 API/用户 Key 前明确授权；不重做 A–E 或重复请求公开授权。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator 测试及无签名 archive 在 GitHub macOS runner。离线开发已授权，真实 Key/付费调用仍须另行授权。
@@ -64,7 +64,7 @@
 - `model/core/`、`model/providers/custom/`、`model/gateway/`、`docs/CAIdex-Model-Gateway-设计与验收.md`：F 协议/模型接口/Registry/共享 HTTP client；Runtime dev-dependency 接入 Gateway 两轮/取消回归，生产 Runtime 未改。
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`，回复投影/回放源码 `a0de05f`、keyring fixture 修正 `1fc0d3c` 已提交/push，工作区无未提交源码。首轮 CI 37577688434 已结束：Windows/macOS success，Linux native keyring fixture failure。新 [CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 与 SHA `1fc0d3cdfff52285c4f91720141432130c847a25` 匹配，in_progress；恢复先核对该具体运行。脚本仅修正非激活的就绪检查；生产 Runtime/凭据逻辑未改。
+- branch `main` 跟踪 `origin/main`，回复投影/回放源码 `a0de05f`、keyring fixture 修正 `1fc0d3c` 和 checkpoint `ddda037` 已提交/push，无未提交源码。[CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958) 对应 SHA `1fc0d3cdfff52285c4f91720141432130c847a25`，三平台全部 success；本次仅补最终验收文档，提交后以实际 Git 状态续接。生产 Runtime/凭据逻辑未改。
 
 ## 测试结果
 
@@ -80,8 +80,7 @@
 - iOS、商业模型/其他 Provider、Windows Shell 批准后实际执行、真机/UAC/签名尚未执行；macOS Rust 验证不代表 iOS 构建。
 
 - Anthropic 既有原生协议/HTTP/SSE：[CI 37576472343](https://github.com/bboytang/CAIdex/actions/runs/37576472343)，源码 `4b856b8`，三平台 fmt/Clippy/workspace、native keyring、schema/doctor 全部通过；协议 12/HTTP 13 项各平台通过，既有 Runtime Linux 23、Windows/macOS 各 22 项。日志 `/tmp/caidex-ci-37576472343.log`。本机文件凭据回归使用 TMPDIR=/var/tmp，保留 Git 存储拒绝检查。
-- 本轮投影/回放：新增 7 项验证完整原生字段、签名/opaque、模型/版本/大小、展示与工具一致性、stop reason 与缓存 usage；固定 Runtime 经典/Lite 两轮各一项通过，包含未来块/大整数。workspace Clippy 通过，完整 workspace/fmt/diff 已通过，本机真实 Runtime 全部 25 项通过，三平台 CI 待核验。未调用商业模型/用户 Key、未执行 Code Mode 工具；尚未接入 Anthropic Gateway/ModelProvider。
+- 本轮投影/回放：新增 7 项验证完整原生字段、签名/opaque、模型/版本/大小、展示与工具一致性、stop reason 与缓存 usage；固定 Runtime 经典/Lite 两轮各一项通过，包含未来块/大整数。workspace Clippy 通过，完整 workspace/fmt/diff 已通过，本机真实 Runtime 全部 25 项与三平台 CI 均已通过。未调用商业模型/用户 Key、未执行 Code Mode 工具；尚未接入 Anthropic Gateway/ModelProvider。
 
-- 首轮 CI 37577688434：Linux 新增投影/既有协议测试通过，但 native keyring fixture 的 Broker status 返回 StorageAccessDenied。日志显示 readiness Ping 自动启动另一个 Secret Service；修正 `scripts/test-linux-secret-service.sh`，先对总线 NameHasOwner 查询，再等待 default collection Locked=false，不自动激活、不重试凭据操作或削弱检查。本机无 gnome-keyring-daemon，仅 bash -n/diff 通过；新 CI 必须验证该修正及 Linux 真实 Runtime。失败日志 `/tmp/caidex-ci-37577688434-linux.log`。
-
-- 首轮失败运行的 Windows/macOS 全部通过，新增回复投影 7 项与原生载体 Runtime 两项通过，累计 Runtime 两平台各 24 项。Linux 的完整 Runtime 验收因前序 native keyring failure 未执行；新运行 37578134958 正在验证修正及全部三平台。
+- 首轮 CI 37577688434：Windows/macOS success，Linux native keyring fixture 的 readiness Ping 自动激活另一 Secret Service，Broker status 返回 StorageAccessDenied；未执行 Linux 后续 Runtime。修正脚本为总线 NameHasOwner 查询+default collection Locked=false，避免自动激活；不重试凭据操作、不修改生产逻辑/安全检查。日志 `/tmp/caidex-ci-37577688434-linux.log`，修正后的实际 native keyring 已在新 CI 通过。
+- 最新 [CI 37578134958](https://github.com/bboytang/CAIdex/actions/runs/37578134958)，源码/fixture 修正 `1fc0d3c`：三平台 fmt/Clippy/workspace、native keyring、schema/doctor 全部 success；Anthropic 协议 12/HTTP 13/投影 7 项各平台通过。真实 Runtime 经典/Lite 两项新回放各平台通过，累计 Linux 25、Windows/macOS 24 项。日志 `/tmp/caidex-ci-37578134958.log`；跨机器以 GitHub 链接为准。该测试只验证版本化原生载体穿过固定 Runtime，不代表完整 Anthropic Gateway、请求转换、Code Mode 工具执行或商业模型已验。
