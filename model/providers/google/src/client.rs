@@ -1,4 +1,4 @@
-use crate::{ClientOptions, Error, Limits, ModelCatalog, ModelsPage, NativeModel};
+use crate::{ClientOptions, Error, Limits, ModelCatalog, ModelsPage, NativeModel, NativeResponse};
 use caidex_credentials::{Broker, CredentialRef, SecretKind, SecretStore};
 use caidex_model_core::{ProviderError, ProviderResult, RequestContext};
 use caidex_provider_custom::{CustomResponses, retry_after};
@@ -107,12 +107,63 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             if url.as_str().len() > self.limits.request_bytes {
                 return Err(ProviderError::new(413, "invalid_or_oversized_body"));
             }
-            let wire = self.json(url, &context, deadline, &mut remaining).await?;
+            let wire = self
+                .json(self.http.get(url), &context, deadline, &mut remaining)
+                .await?;
             cursor = catalog.append(ModelsPage::parse(wire)?)?;
             if cursor.is_none() {
                 return catalog.finish();
             }
         }
+    }
+    /// Native generation only. The executor selects the resource path; the
+    /// response remains raw provider data and never executes a predicted tool.
+    pub async fn generate_content(
+        &self,
+        model: &str,
+        wire: Value,
+        context: RequestContext,
+    ) -> ProviderResult<NativeResponse> {
+        let deadline = self.deadline(&context)?;
+        let invalid = || ProviderError::new(400, "google_invalid_request");
+        if !crate::catalog::resource_name(model) || !wire.is_object() || wire.get("model").is_some()
+        {
+            return Err(invalid());
+        }
+        let contents = wire["contents"]
+            .as_array()
+            .filter(|v| !v.is_empty())
+            .ok_or_else(invalid)?;
+        for content in contents {
+            crate::content::validate_content(content, false)?;
+        }
+        let body = serde_json::to_vec(&wire).map_err(|_| invalid())?;
+        let url = self
+            .config
+            .base
+            .join(&format!("{model}:generateContent"))
+            .map_err(|_| invalid())?;
+        if body.len() > self.limits.request_bytes || url.as_str().len() > self.limits.request_bytes
+        {
+            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
+        let _permit = self
+            .permits
+            .try_acquire()
+            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
+        let mut remaining = self.limits.response_bytes;
+        let response = self
+            .json(
+                self.http
+                    .post(url)
+                    .header("content-type", "application/json")
+                    .body(body),
+                &context,
+                deadline,
+                &mut remaining,
+            )
+            .await?;
+        NativeResponse::parse(response)
     }
     fn deadline(&self, context: &RequestContext) -> ProviderResult<Instant> {
         if context.cancellation.is_cancelled() {
@@ -133,7 +184,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
     }
     async fn json(
         &self,
-        url: Url,
+        request: reqwest::RequestBuilder,
         context: &RequestContext,
         deadline: Instant,
         remaining: &mut usize,
@@ -154,8 +205,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
             .map_err(|_| ProviderError::new(503, "credential_invalid_header"))?;
         key.set_sensitive(true);
         let mut response = guard(
-            self.http
-                .get(url)
+            request
                 .header("x-goog-api-key", key)
                 .header("accept", "application/json")
                 .send(),

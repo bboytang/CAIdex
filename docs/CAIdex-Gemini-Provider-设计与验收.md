@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。生成、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
+阶段 F/G，执行基准为 V3。当前实现原生 Models/catalog 和 HTTP 基础，代码在原方案的 `model/providers/google`，包名 `caidex-provider-google`。本轮原生非流式 generateContent/NativeResponse 已本地实现并验证，提交/三平台新CI待完成；SSE、Responses 转换、ModelProvider 六方法、Gateway/实际 Runtime 接线尚未实现；本阶段不授予 Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -52,3 +52,22 @@
 - 已开始同步 SecretStore 读无法强停，沿 Broker 现有边界；只保证取消后无迟到 GET。成本是后台读取仍占资源，不宣称强制中止。
 - 本模块不是通用 ProtoJSON codec；未来字段原样保留，替代字段拼写等完整 codec 语义未承诺。成本是非 canonical 兼容服务可能被拒绝，具体整数边界见 Minor1。
 - Windows/macOS 不以旧 Anthropic CI 代验；本阶段新 CI 已核对精确源码并三平台通过。若误用旧证据，成本是未发现新增平台问题，后续阶段继续各自验收。
+
+## 原生 generateContent JSON（本轮待三平台验收）
+
+`GeminiClient::generate_content(model, native_json, context)` 使用安全 `models/<id>:generateContent` 路径，保留代理前缀；输入不能包含另一个 body model、改变 endpoint 或认证。非空 contents/parts及已知 role/Part/function call/result 形状校验；原生其余字段原样发送，实际模型对媒体/schema/参数的支持由原生服务判定，不冒称完整请求 schema 校验。[原生请求与 Part reference](https://ai.google.dev/api/generate-content)
+
+POST 与已验 Models GET 共用本模块 JSON/auth/status/media/预算/取消实现，不复制 HTTP 栈。请求 JSON与URL分别受request_bytes限制，回复受response_bytes；Key/header/deadline/slot/TLS/无重试政策沿用。完整 JSON正文才解析为 NativeResponse，不提供提前可执行调用。
+
+NativeResponse 保留所有 candidates/content/Part/thoughtSignature/usage/未来字段和数值精度，Debug省略wire；已知字段坏形状、重复index、缺finishReason/未停止、error envelope、prompt阻断与非空候选冲突报静态502。未知finishReason保留并标Unknown；STOP/客户端ToolCall、MaxTokens、Filtered、InvalidToolCall分别展示，生成结束不代表任务成功。缺省候选index按Proto默认0，缺省/null repeated候选在明确promptFeedback阻断时允许。服务端tool/code/媒体只为数据，不执行、不抓取、不删除。签名仅保留类型/原值，不做真实性校验，不宣称生产历史访问控制完成。
+
+原始usage保留，不相加cached/thought计数、不把未知补0；模型实际modelVersion/responseId缺失保持原义，不由请求名称伪造。后续Responses投影与版本化历史需要单独建立归属、展示一致性/完整回放及Runtime证据，当前仅native内容直接回传和下一请求原文回放。
+
+本地回复3与新增HTTP4（Google合计20）通过：原文/签名/function/tool/未来Part/大数字字面值、终态/阻断/坏结构；真实POST精确body、两轮内容/工具结果原文、输入/route/预算前置零Key/网络、静态错误/429/redirect/不完整body无重试，以及取消POST真实socket关闭/共享Models slot释放。RED→GREEN日志 `/tmp/caidex-google-content-{red,green}.log`、`/tmp/caidex-google-generate-{red,green}.log`；商业调用、SSE、六方法/Gateway/Runtime未验收。本轮完整workspace242passed/0failed、Clippy -D warnings、fmt/diff通过；唯一fresh-context只读审查无Critical/Important，三平台新CI待完成。/tmp/caidex-google-generate-{workspace,clippy}.log。
+
+本轮JSON审查Minor2暂缓：
+
+- 可选 functionCall.id/functionResponse.id 显式空字符串目前按非法身份拒绝；默认字段序列化兼容端点可能因此拒绝整个有效回复/回放输入。当前 canonical 服务通常省略缺省ID，不冒称支持完整ProtoJSON默认表示。
+- distinct多候选正例/第二候选未停止的专门测试缺失；当前代码逐候选校验，已有重复index负例，不冒称覆盖上述两项。
+
+本轮审查排除项裁定：SSE/投影/历史/六方法/Registry/Gateway/Runtime仍需后续实现，误判会漏功能，保持未完成；商业/签名真实性/Full无真实证据，误判会错误授权能力，不授予；生产历史访问控制留H/I，误判会泄漏敏感历史，raw不作为公共日志；完整schema/媒体/参数由原生服务判定，误判成本是原生请求拒绝，不把结构检查当完整能力验收；非通用ProtoJSON（替代字段/数值/枚举）保持canonical范围，成本是兼容端点被拒绝；同步存储读不可强停，成本是后台资源占用，只保证取消后无迟到POST；Windows/macOS须本轮精确源码新CI，旧目录CI不能代验，成本是漏新增平台问题。以上均沿现有阶段边界，未改架构。

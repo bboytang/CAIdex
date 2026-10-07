@@ -17,7 +17,7 @@ fn nonempty(value: &Value) -> Option<&str> {
         .as_str()
         .filter(|s| !s.trim().is_empty() && !s.chars().any(char::is_control))
 }
-fn resource_name(name: &str) -> bool {
+pub(crate) fn resource_name(name: &str) -> bool {
     name.strip_prefix("models/").is_some_and(|id| {
         !id.is_empty()
             && !matches!(id, "." | "..")

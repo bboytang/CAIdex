@@ -107,8 +107,19 @@ impl Fixture {
                         break;
                     }
                     bytes.extend_from_slice(&buffer[..n]);
-                    if bytes.windows(4).any(|v| v == b"\r\n\r\n") {
-                        break;
+                    if let Some(end) = bytes.windows(4).position(|v| v == b"\r\n\r\n") {
+                        let head = std::str::from_utf8(&bytes[..end]).unwrap();
+                        let length = head
+                            .lines()
+                            .find_map(|line| {
+                                let (key, value) = line.split_once(':')?;
+                                key.eq_ignore_ascii_case("content-length")
+                                    .then(|| value.trim().parse::<usize>().unwrap())
+                            })
+                            .unwrap_or(0);
+                        if bytes.len() >= end + 4 + length {
+                            break;
+                        }
                     }
                 }
                 if bytes.is_empty() {
@@ -766,4 +777,281 @@ async fn native_api_key_only_crosses_a_trusted_valid_hostname_tls_connection() {
             );
         }
     }
+}
+
+fn native_reply(reason: &str) -> Value {
+    json!({"responseId":"native-fixture","modelVersion":"fixture-001",
+        "candidates":[{"content":{"role":"model","parts":[{"text":"回复"}]},"finishReason":reason}],
+        "usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":2,"thoughtsTokenCount":4,"totalTokenCount":9}})
+}
+fn native_input() -> Value {
+    json!({"contents":[{"role":"user","parts":[{"text":"你好"}]}],
+        "generationConfig":{"maxOutputTokens":128,"future":true}})
+}
+fn request_body(request: &str) -> Value {
+    serde_json::from_str(request.split_once("\r\n\r\n").unwrap().1).unwrap()
+}
+
+#[tokio::test]
+async fn native_generation_posts_exact_wire_and_replays_signed_tool_parts_without_executing() {
+    let mut first = native_reply("STOP");
+    first["candidates"][0]["content"]["parts"] = json!([
+        {"text":"原生思考","thought":true,"thoughtSignature":"c2ln"},
+        {"functionCall":{"name":"echo","id":"native-call","args":{"text":"参数原文"}},"thoughtSignature":"c2lnbmVk"},
+        {"futurePart":{"future":true}}
+    ]);
+    first["future"] = serde_json::from_str("{\"number\":18446744073709551616}").unwrap();
+    let mut fixture = Fixture::start(vec![
+        Reply::json(first.clone()),
+        Reply::json(native_reply("STOP")),
+    ])
+    .await;
+    let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+    let mut input = native_input();
+    input["systemInstruction"] = json!({"parts":[{"text":"固定指令"}]});
+    input["tools"] =
+        json!([{"functionDeclarations":[{"name":"echo","parameters":{"type":"object"}}]}]);
+    input["contents"][0]["parts"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"inlineData":{"mimeType":"image/png","data":"AA=="}}));
+    input["future"] = first["future"].clone();
+    let response = client
+        .generate_content(
+            "models/fixture-001",
+            input.clone(),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.wire(), &first);
+    assert_eq!(
+        response.wire()["future"]["number"].to_string(),
+        "18446744073709551616"
+    );
+    assert_eq!(
+        response.outcome(0),
+        Some(caidex_provider_google::CandidateOutcome::ToolCall)
+    );
+    let first_request = fixture.request().await;
+    assert!(
+        first_request
+            .starts_with("POST /proxy/v1beta/models/fixture-001:generateContent HTTP/1.1\r\n")
+    );
+    assert_eq!(request_body(&first_request), input);
+    assert!(
+        first_request
+            .to_ascii_lowercase()
+            .contains("x-goog-api-key: caidex_synthetic_google_key\r\n")
+    );
+    assert!(
+        !first_request
+            .to_ascii_lowercase()
+            .contains("authorization:")
+    );
+    let second = json!({"contents":[input["contents"][0],response.candidates()[0]["content"],
+        {"role":"user","parts":[{"functionResponse":{"name":"echo","id":"native-call","response":{"result":"工具结果原文"}}}]}]});
+    client
+        .generate_content(
+            "models/fixture-001",
+            second.clone(),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(request_body(&fixture.request().await), second);
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn native_generation_rejects_bad_routes_bodies_and_budgets_before_authentication() {
+    let mut fixture = Fixture::start(vec![Reply::json(native_reply("STOP"))]).await;
+    let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+    for name in [
+        "fixture",
+        "models/../other",
+        "models/a/b",
+        "models/a?key=x",
+        "models/a%2Fb",
+        "https://example.invalid/",
+    ] {
+        assert_eq!(
+            client
+                .generate_content(name, native_input(), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "google_invalid_request"
+        );
+    }
+    for body in [
+        json!([]),
+        json!({}),
+        json!({"contents":[]}),
+        json!({"contents":[{"parts":[]}]}),
+        json!({"contents":[{"role":"system","parts":[{"text":"x"}]}]}),
+        json!({"model":"models/other","contents":[{"parts":[{"text":"x"}]}]}),
+        json!({"contents":[{"parts":[{"functionCall":{"name":"echo","args":"{}"}}]}]}),
+    ] {
+        assert_eq!(
+            client
+                .generate_content("models/fixture", body, RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "google_invalid_request"
+        );
+    }
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    assert_eq!(
+        client
+            .generate_content(
+                "models/fixture",
+                native_input(),
+                RequestContext {
+                    cancellation: cancel,
+                    ..Default::default()
+                }
+            )
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "provider_cancelled"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    let (small, small_reads) = self::client(
+        &fixture.base,
+        Some(KEY),
+        Limits {
+            request_bytes: 128,
+            ..Default::default()
+        },
+    );
+    let huge = json!({"contents":[{"parts":[{"text":"x".repeat(256)}]}]});
+    assert_eq!(
+        small
+            .generate_content("models/fixture", huge, RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "invalid_or_oversized_body"
+    );
+    assert_eq!(small_reads.load(Ordering::SeqCst), 0);
+    assert!(fixture.requests.try_recv().is_err());
+}
+
+#[tokio::test]
+async fn native_generation_classifies_errors_and_rejects_incomplete_json_without_retry() {
+    for (status, wire, code) in [
+        (
+            429,
+            json!({"error":{"message":KEY}}),
+            "provider_rate_limited",
+        ),
+        (
+            302,
+            json!({"error":{"message":KEY}}),
+            "provider_redirect_blocked",
+        ),
+        (
+            200,
+            json!({"error":{"message":KEY}}),
+            "google_invalid_response",
+        ),
+        (
+            200,
+            json!({"candidates":[{"content":{"parts":[{"text":"partial"}]}}]}),
+            "google_invalid_response",
+        ),
+    ] {
+        let mut reply = Reply::json(wire);
+        reply.status = status;
+        reply.headers = "retry-after: 5\r\nlocation: https://example.invalid/\r\n".into();
+        let mut fixture = Fixture::start(vec![reply]).await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let error = client
+            .generate_content("models/fixture", native_input(), RequestContext::default())
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.code, code);
+        assert!(!format!("{error:?}").contains(KEY));
+        if status == 429 {
+            assert_eq!(error.retry_after_seconds, Some(5));
+        }
+        assert!(fixture.request().await.starts_with("POST "));
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+    }
+    let fixture = Fixture::start(vec![Reply::json(native_reply("MAX_TOKENS"))]).await;
+    let (client, _) = client(&fixture.base, Some(KEY), Limits::default());
+    assert_eq!(
+        client
+            .generate_content("models/fixture", native_input(), RequestContext::default())
+            .await
+            .unwrap()
+            .outcome(0),
+        Some(caidex_provider_google::CandidateOutcome::MaxTokens)
+    );
+}
+
+#[tokio::test]
+async fn native_generation_cancel_closes_post_and_releases_shared_discovery_permit() {
+    let mut stalled = Reply::json(native_reply("STOP"));
+    stalled.stall = 2;
+    let mut fixture = Fixture::start(vec![stalled, Reply::json(json!({}))]).await;
+    let (client, reads) = client(
+        &fixture.base,
+        Some(KEY),
+        Limits {
+            in_flight: 1,
+            ..Default::default()
+        },
+    );
+    let client = Arc::new(client);
+    let cancellation = CancellationToken::new();
+    let work = tokio::spawn({
+        let client = client.clone();
+        let cancellation = cancellation.clone();
+        async move {
+            client
+                .generate_content(
+                    "models/fixture",
+                    native_input(),
+                    RequestContext {
+                        cancellation,
+                        ..Default::default()
+                    },
+                )
+                .await
+        }
+    });
+    assert!(fixture.request().await.starts_with("POST "));
+    assert_eq!(
+        client
+            .discover_models(1, RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "provider_busy"
+    );
+    cancellation.cancel();
+    assert_eq!(
+        work.await.unwrap().err().unwrap().code,
+        "provider_cancelled"
+    );
+    fixture.disconnected().await;
+    assert!(
+        client
+            .discover_models(1, RequestContext::default())
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
 }
