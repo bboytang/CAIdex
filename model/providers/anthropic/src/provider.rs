@@ -43,6 +43,7 @@ impl AnthropicModel {
         &self,
         request: &CanonicalRequest,
         max_bytes: usize,
+        organization: Option<&str>,
     ) -> ProviderResult<MessagesRequest> {
         if !self.metadata.dialects.contains(&request.dialect()) {
             return Err(ProviderError::new(400, "unsupported_dialect"));
@@ -59,6 +60,7 @@ impl AnthropicModel {
             max_bytes,
             self.max_tools,
             &RequestOptions {
+                expected_organization: organization,
                 retain_runtime_metadata: self.retain_runtime_metadata,
                 service_tier_mappings: &self.service_tier_mappings,
                 supports_system_messages: self.supports_system_messages,
@@ -118,7 +120,11 @@ impl<S: SecretStore + 'static> AnthropicProvider<S> {
                 model.metadata.dialects[0],
             )
             .map_err(|_| ProviderError::new(400, "invalid_anthropic_profile"))?;
-            model.compile(&request, client.limits().request_bytes)?;
+            model.compile(
+                &request,
+                client.limits().request_bytes,
+                client.expected_organization(),
+            )?;
             if profiles.insert(model.metadata.id.clone(), model).is_some() {
                 return Err(ProviderError::new(400, "invalid_anthropic_profile"));
             }
@@ -184,8 +190,12 @@ impl<S: SecretStore + 'static> ModelProvider for AnthropicProvider<S> {
                 return Err(ProviderError::new(400, "invalid_model_request"));
             }
             let model = self.model(request.model())?;
-            let compiled = model.compile(&request, self.client.limits().request_bytes)?;
-            let (wire, tools) = compiled.into_parts();
+            let compiled = model.compile(
+                &request,
+                self.client.limits().request_bytes,
+                self.client.expected_organization(),
+            )?;
+            let (wire, tools, binding) = compiled.into_parts();
             let (native, headers) = self
                 .client
                 .create_message_with_headers(&model.metadata.native_model, wire, context)
@@ -193,8 +203,11 @@ impl<S: SecretStore + 'static> ModelProvider for AnthropicProvider<S> {
             if native.model() != model.metadata.native_model {
                 return Err(ProviderError::new(502, "anthropic_response_model_mismatch"));
             }
-            let response =
-                native.to_responses_with_tools(&tools, self.client.limits().response_bytes)?;
+            let response = native.to_responses_with_binding(
+                &tools,
+                binding.as_ref(),
+                self.client.limits().response_bytes,
+            )?;
             if response.wire().to_string().len() > self.client.limits().response_bytes {
                 return Err(ProviderError::new(502, "anthropic_projection_too_large"));
             }
@@ -211,13 +224,18 @@ impl<S: SecretStore + 'static> ModelProvider for AnthropicProvider<S> {
                 return Err(ProviderError::new(400, "invalid_model_request"));
             }
             let model = self.model(request.model())?;
-            let compiled = model.compile(&request, self.client.limits().request_bytes)?;
-            let (wire, tools) = compiled.into_parts();
+            let compiled = model.compile(
+                &request,
+                self.client.limits().request_bytes,
+                self.client.expected_organization(),
+            )?;
+            let (wire, tools, binding) = compiled.into_parts();
             let projection = ResponsesProjection::new(
                 model.metadata.native_model.clone(),
                 tools,
                 self.client.limits().response_bytes,
-            )?;
+            )?
+            .with_binding(binding);
             let native = self
                 .client
                 .stream_message(&model.metadata.native_model, wire, context)

@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-- 当前：Anthropic 实际组织身份来源与执行端发送前校验已三平台验收。预检和实际请求共用一次 Key 读取；组织不符不发历史，JSON/SSE/Models 回应在交付前校验组织头。源码 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d，CI 37632569624 completed/success，新增 4 项逐平台日志通过（HTTP 38）；本地 workspace/Clippy/fmt/diff 通过。下一恢复点：将实际组织归属和 compiled 前缀快照接入历史载体；尚未实现。
+- 当前：Anthropic v3 组织/compiled 前缀历史绑定已接入 JSON/SSE Provider；新增 6 项及完整 workspace/Clippy/fmt/diff 最终复验通过。独立审查工具声明与 native 快照一致性缺口已修复，回归 RED→GREEN 及最终完整测试通过。当前准备提交/push，三平台 CI 尚待验收。恢复点：检查本阶段源码精确 SHA 的 CI，核对新增 6 项逐平台日志；通过后接 Gateway/固定 Runtime，不重做已验模块。既有组织 guard 源码 7869359、CI 37632569624 已三平台验收。
 - Fallback 身份/回放已三平台验收：源码 1f5e022，CI 37621255255 completed/success，新增 6 项逐平台日志通过。原生 SSE 更新实际 serving model、校验交接链和无 delta，换模型后已知 token 计数重新归属，iterations/raw wire 保留；echo 按末次交接过滤，投影只执行最终模型客户端调用。固定 Provider 对未配置实际模型报错并关闭，无 done/重试。
 - Anthropic input_transformations、上下文头、六方法/SSE、请求参数、summary/context、strict:true 结构化输出已三平台验收；源码/CI/范围见测试结果及 Anthropic 设计文档。上轮 Lite-only/Lite-first 初始化错误已修正，恢复不再重做；完整历史绑定与 Gateway/实际 Runtime 工具执行仍未验。
 - A–E、F 当前范围与 OpenAI 离线 Adapter 已验收；F/G 整体及 H–R 尚未完成。沿 V3 离线 fixture 授权，不读取/创建真实模型 Key。完整项目及文档公开、提交/push/CI 均沿用用户授权。
@@ -32,7 +32,7 @@
 
 ## 下一步顺序
 
-1. Beta 与组织身份来源/发送前校验已三平台验收；下一步把已验证身份与 compiled 请求前缀绑定到版本化历史载体，覆盖 mode/tool/trim/resume。当前 MessagesRequest::into_parts 只返回 wire/tools；Provider 和增量 ResponsesProjection 仍产生 v2，须在此链路保留 compiled 快照并接入新载体，不能从展示历史重建。保留 compiled system/tools/messages；不能用 CredentialRef 代替账户身份或自动 drop/retry，缺省报告不能证明没丢块。原生交接的 echo 过滤由提供商契约规定，与不匹配后的 drop_block/retry 不同；原 wire 保留。显式 fallback 请求/跨模型兼容组合仍待后续门控。已验模块不重做；生产 Host 尚待 canonical 请求与本地归属持久化。
+1. 完成当前 v3 组织/compiled 前缀绑定阶段验收：本地定向 6 项、workspace/Clippy/fmt/diff 和独立审查问题修复已完成；提交/push 与三平台 CI 尚待完成。compiled 快照从 into_parts 传 Provider/ResponsesProjection，配置组织且认证回应通过才产生 v3；未配置保持 v2，绑定模式不自动认领 v1/v2。前缀/组织不符在 Key/network 前失败，工具重排/前缀外合法参数可变，mode 只能追加，trim 连续后缀及 resume 已有 fixture。不存在商业模型/Full 验收；H 生产持久化仍待实现。
 2. 接 Gateway 及固定 Runtime 经典/Lite 多轮/工具/interrupt 验收。HTTP fixture 通过不等于完整 Adapter/商业模型支持；custom grammar 仅提示，未建立硬约束等价。
 3. Gemini→兼容 API/Ollama，逐项验证原生请求/响应/工具/usage/reasoning/images/context/结构化输出与兼容性报告。Models 可用清单不能证明 Codex 兼容性，不猜 Full。
 4. H/I→Windows→SSH/iOS→CLI→Relay→R，按 V3 验收；iOS simulator/无签名 archive 用 GitHub macOS runner。真实 Key/付费调用须明确授权；不重做 A–E 或重复请求公开授权。
@@ -57,7 +57,7 @@
 - `.git` 普通执行只读，提交/push 用 require_escalated。GitHub CLI 2.45.0 已核验登录 `bboytang`、scope repo/workflow；普通沙箱网络受限时 auth status 的 invalid 提示不能作为凭据失效证据。
 - 旧 Git helper 缺 workflow scope。发布使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不输出凭据或修改用户全局配置。
 - 本机没有 Windows/Xcode/gnome-keyring-daemon，相关验证转 GitHub。无真实模型、客户端逐状态截图/真机验证；按计划保留明确验收项。
-- Anthropic v2 载体仍未绑定 compiled system/tools/messages 和实际组织身份，须补 mode/tool/trim/resume。认证组织 GET/执行端 guard 已三平台验收，不能当作历史已绑定。input_transformations 已验；fallback 原生身份/echo/usage 修正已三平台验收。报告 beta opt-in 已三平台验收；未开启时缺省/空报告不能授予兼容性证据，开启时要求数组但仍不等于原始前缀/账户校验；CredentialRef 是本地引用、同一引用可换 Key，不能当组织身份。原生 fallback 许可/跨模型思考兼容策略与真实调用未验，固定 Provider 保持显式配置边界。依据见 Anthropic Provider 文档，不自动 drop_block/retry。
+- Anthropic v3 载体已接组织/compiled 前缀并有 mode/tool/trim/resume fixture，尚待三平台 CI验收；旧 v1/v2 不自动补造归属。认证组织 GET/执行端 guard 已三平台验收，不能当作历史已绑定。input_transformations 已验；fallback 原生身份/echo/usage 修正已三平台验收。报告 beta opt-in 已三平台验收；未开启时缺省/空报告不能授予兼容性证据，开启时要求数组但仍不等于原始前缀/账户校验；CredentialRef 是本地引用、同一引用可换 Key，不能当组织身份。原生 fallback 许可/跨模型思考兼容策略与真实调用未验，固定 Provider 保持显式配置边界。依据见 Anthropic Provider 文档，不自动 drop_block/retry。
 
 ## 文件与 Git 状态
 
@@ -68,7 +68,7 @@
 - `model/providers/openai/`、`model/gateway/tests/injected.rs`、`docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生 Models/Responses、scope/store/前台限制、Gateway 注入的当前恢复点。
 - `model/providers/anthropic/src/client.rs`、`model/providers/anthropic/tests/http/organization.rs`、`docs/CAIdex-Anthropic-Provider-设计与验收.md`：本轮组织来源/guard；下一步关联 `request.rs`、`provider.rs`、`projection.rs`、`response_stream.rs`，实现载体组织归属与 compiled 前缀绑定。
 - `runtime/bridge/`、`upstream/codex/`：固定 Runtime/协议/回归；本轮新增经典/Lite wire 回归/fixture，生产 Runtime 未改；`assets/brand/`：四份原始品牌资产未改。
-- branch `main` 跟踪 `origin/main`；组织身份来源/guard 源码 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d 已提交/push，CI 37632569624 completed/success，精确 SHA 及新增 4 项三平台日志已核对。最终阶段验收记录随本次提交/push，无未完成源码修改；完成后工作区应干净。继续载体组织归属及 compiled 前缀绑定，不重做已验模块。
+- branch `main` 跟踪 `origin/main`，基线 57f5672。本阶段修改：Anthropic binding.rs、client/lib/request/projection/provider/response_stream、HTTP binding.rs、组织 helper/compiled 配置接线、本文及 Anthropic 设计文档；随当前阶段提交/push。完整本地回归/审查修复已完成，CI 待执行；提交后工作区应干净。未改依赖、Runtime 或品牌。
 
 ## 测试结果
 
@@ -97,3 +97,5 @@
 - Thinking binding beta：新增 5 项回归及既有默认不发送 beta 的 HTTP 检查通过（HTTP 34/推理 9）。输出前单/多跳与中途换回同名模型的报告归属、Models 清单无需 Messages 报告及实际 JSON/SSE header 已验。本地完整 workspace/Clippy/fmt/diff 通过，最终增强测试后 HTTP/Clippy 复验通过；日志 /tmp/caidex-anthropic-binding-beta-workspace.log。源码 SHA 4c6da57680b09183d7d35342fa5ed426205bdb63 已提交/push；[CI 37624001219](https://github.com/bboytang/CAIdex/actions/runs/37624001219) 三平台 completed/success，新增 5 项逐平台日志通过；workspace/fmt/Clippy/native keyring/schema/doctor 和既有真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-ci-37624001219.log。
 
 - 组织身份来源/发送前校验：新增 HTTP 4 项（累计 38）及原配置负例通过，含 Key 同一引用更换、同一次 GET/POST 只读一次 Key、缺省/重复/非 ASCII/超长/不匹配组织头、JSON/SSE 无交付、Models 两页预检、公开只读 lookup、取消/socket/slot、header/total deadline、字节预算和原生 HTTP 分类无重试。本地 workspace/Clippy/fmt/diff 通过，最后增强 Models 用例后定向测试/Clippy/fmt/diff 复验通过；日志 /tmp/caidex-anthropic-organization-workspace.log。源码 SHA 7869359a9ac26f106d3cc2fe1f9a1df3efe1e09d、[CI 37632569624](https://github.com/bboytang/CAIdex/actions/runs/37632569624) 三平台 completed/success，新增 4 项逐平台日志通过；workspace/fmt/Clippy/native keyring/schema/doctor 与既有真实 Runtime Linux 25、Windows/macOS 24 项通过。日志 /tmp/caidex-ci-37632569624.log。未调用商业 API；历史载体组织/前缀绑定未完成。
+
+- v3 历史绑定：HTTP 新增 6 项（累计 44）、完整 workspace/Clippy/fmt/diff 最终通过；只读审查发现旧工具声明可与 native 快照不一致，已在共享读取路径修复，用例已观测 RED→GREEN，修复后完整回归通过。三平台 CI 未完成。日志 /tmp/caidex-anthropic-bound-workspace.log。首次 JSON v3 用例已观测旧实现 RED（原载体 v2），新实现 GREEN。验证范围含 JSON/SSE、模式参数/追加指令、工具集/旧结果、旧历史裁剪、恢复、chain gap/reinsert、legacy/降级、未知块/大整数和快照预算无 done；所有 Key/账户/回复为合成 fixture。真实 Gateway/Anthropic Runtime 工具执行留下一步。

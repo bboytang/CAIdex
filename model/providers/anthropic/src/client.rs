@@ -96,6 +96,9 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
     pub(crate) fn limits(&self) -> &Limits {
         &self.limits
     }
+    pub(crate) fn expected_organization(&self) -> Option<&str> {
+        self.config.expected_organization.as_deref()
+    }
     pub(crate) fn thinking_binding_controls(&self) -> bool {
         self.config.thinking_binding_controls
     }
@@ -522,7 +525,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         Ok(wire)
     }
 }
-fn valid_organization_id(id: &str) -> bool {
+pub(crate) fn valid_organization_id(id: &str) -> bool {
     !id.is_empty() && id.len() <= 1024 && id.bytes().all(|byte| (33..=126).contains(&byte))
 }
 fn organization_header(headers: &reqwest::header::HeaderMap) -> ProviderResult<Option<String>> {

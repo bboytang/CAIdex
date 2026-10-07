@@ -26,10 +26,12 @@ pub struct MessagesRequest {
     wire: Value,
     source: Value,
     tools: ToolMap,
+    binding: Option<crate::binding::ReplayBinding>,
 }
 /// Capabilities and mappings fixed by the execution-side model profile.
 #[derive(Default)]
 pub struct RequestOptions<'a> {
+    pub expected_organization: Option<&'a str>,
     pub retain_runtime_metadata: bool,
     pub service_tier_mappings: &'a [crate::ServiceTierMapping],
     pub supports_system_messages: bool,
@@ -108,6 +110,12 @@ impl MessagesRequest {
         options: &RequestOptions<'_>,
     ) -> ProviderResult<Self> {
         let source = request.wire();
+        if options
+            .expected_organization
+            .is_some_and(|id| !crate::client::valid_organization_id(id))
+        {
+            return Err(invalid());
+        }
         if native_model.trim().is_empty()
             || max_tokens == 0
             || max_bytes == 0
@@ -185,6 +193,7 @@ impl MessagesRequest {
             }
         }
         let mut messages: Vec<Value> = Vec::new();
+        let mut replays = Vec::new();
         let mut pending: BTreeMap<String, Pending> = BTreeMap::new();
         let mut ids = BTreeSet::new();
         let mut index = 0;
@@ -211,6 +220,10 @@ impl MessagesRequest {
                 for call in &group[1..] {
                     register(call, &mut pending, &mut ids)?;
                 }
+                replays.push((
+                    messages.len(),
+                    crate::projection::replay_binding_for_item(item, max_bytes)?,
+                ));
                 // Keep signed content and unknown native blocks in original order.
                 messages.push(native.replay_message());
                 index = end;
@@ -340,7 +353,18 @@ impl MessagesRequest {
         if wire.to_string().len() > max_bytes {
             return Err(invalid());
         }
+        for (end, binding) in replays {
+            if let Some(binding) = binding {
+                binding.check(&wire, end, options.expected_organization)?;
+            } else if options.expected_organization.is_some() {
+                return Err(ProviderError::new(400, "anthropic_replay_binding_missing"));
+            }
+        }
+        let binding = options
+            .expected_organization
+            .map(|organization| crate::binding::ReplayBinding::new(organization, &wire));
         Ok(Self {
+            binding,
             wire,
             source: source.clone(),
             tools,
@@ -355,8 +379,8 @@ impl MessagesRequest {
     pub fn tools(&self) -> &ToolMap {
         &self.tools
     }
-    pub(crate) fn into_parts(self) -> (Value, ToolMap) {
-        (self.wire, self.tools)
+    pub(crate) fn into_parts(self) -> (Value, ToolMap, Option<crate::binding::ReplayBinding>) {
+        (self.wire, self.tools, self.binding)
     }
 }
 fn register(
@@ -403,7 +427,7 @@ fn content(value: &Value, assistant: bool) -> ProviderResult<Vec<Value>> {
     }
     Ok(blocks)
 }
-fn append(messages: &mut Vec<Value>, role: &str, blocks: Vec<Value>) {
+pub(crate) fn append(messages: &mut Vec<Value>, role: &str, blocks: Vec<Value>) {
     if let Some(last) = messages.last_mut().filter(|v| v["role"] == role) {
         last["content"].as_array_mut().unwrap().extend(blocks);
     } else {

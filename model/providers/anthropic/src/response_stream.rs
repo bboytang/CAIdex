@@ -21,6 +21,7 @@ struct Block {
 pub struct ResponsesProjection {
     model: String,
     tools: ToolMap,
+    binding: Option<crate::binding::ReplayBinding>,
     max_bytes: usize,
     remaining: usize,
     id: Option<String>,
@@ -46,6 +47,7 @@ impl ResponsesProjection {
         Ok(Self {
             model,
             tools,
+            binding: None,
             max_bytes,
             remaining: max_bytes,
             id: None,
@@ -56,6 +58,10 @@ impl ResponsesProjection {
             stopped: false,
             terminal: false,
         })
+    }
+    pub(crate) fn with_binding(mut self, binding: Option<crate::binding::ReplayBinding>) -> Self {
+        self.binding = binding;
+        self
     }
     pub fn push(&mut self, native: NativeStreamEvent) -> ProviderResult<Vec<StreamEvent>> {
         if self.terminal {
@@ -283,7 +289,7 @@ impl ResponsesProjection {
                     return Err(invalid());
                 }
                 let mut response = message
-                    .to_responses_with_tools(&self.tools, self.max_bytes)?
+                    .to_responses_with_binding(&self.tools, self.binding.as_ref(), self.max_bytes)?
                     .wire()
                     .clone();
                 if response["output"].as_array().unwrap().len() != self.output_count {

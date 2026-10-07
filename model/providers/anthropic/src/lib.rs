@@ -1,5 +1,6 @@
 //! Native Anthropic inference and Responses projection. No tool executor,
 //! implicit credentials, model-name capability guesses or inference retries.
+mod binding;
 mod catalog;
 mod client;
 mod message;

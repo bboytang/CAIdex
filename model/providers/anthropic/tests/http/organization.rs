@@ -2,7 +2,7 @@ use super::*;
 use caidex_provider_anthropic::NativeStreamEvent;
 use futures_util::StreamExt;
 
-const ORGANIZATION: &str = "11111111-2222-3333-4444-555555555555";
+pub(super) const ORGANIZATION: &str = "11111111-2222-3333-4444-555555555555";
 const OTHER_ORGANIZATION: &str = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 const REPLACEMENT_KEY: &str = "SYNTHETIC_REPLACEMENT_KEY";
 struct RotatingStore(Arc<AtomicUsize>);
@@ -18,10 +18,13 @@ impl SecretStore for RotatingStore {
         unreachable!()
     }
 }
-fn organization(id: &str) -> String {
+pub(super) fn organization(id: &str) -> String {
     json!({"type":"organization","id":id,"name":"fixture", "future":{"keep":true}}).to_string()
 }
-fn scoped_client(base: &str, limits: Limits) -> (AnthropicClient<Store>, Arc<AtomicUsize>) {
+pub(super) fn scoped_client(
+    base: &str,
+    limits: Limits,
+) -> (AnthropicClient<Store>, Arc<AtomicUsize>) {
     let reads = Arc::new(AtomicUsize::new(0));
     let broker = Arc::new(Broker::new(
         Id::new("executor").unwrap(),

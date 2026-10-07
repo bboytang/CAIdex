@@ -15,6 +15,8 @@ use tokio::{
     sync::mpsc,
 };
 
+#[path = "http/binding.rs"]
+mod binding;
 #[path = "http/compiled.rs"]
 mod compiled;
 #[path = "http/context.rs"]

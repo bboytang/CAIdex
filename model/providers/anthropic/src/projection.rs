@@ -3,6 +3,7 @@ use caidex_model_core::{CanonicalResponse, ProviderError, ProviderResult};
 use serde_json::{Value, json};
 
 const PREFIX: &str = "caidex.anthropic.native-message.v1:";
+const BOUND_PREFIX: &str = "caidex.anthropic.native-message.v3:";
 const TOOLS_PREFIX: &str = "caidex.anthropic.native-message.v2:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "invalid_anthropic_replay")
@@ -13,7 +14,7 @@ impl NativeMessage {
     /// carrier, not a claim that this JSON is encrypted or an OpenAI ciphertext.
     /// The original native message is authoritative; display items are views.
     pub fn to_responses(&self, max_replay_bytes: usize) -> ProviderResult<CanonicalResponse> {
-        self.project_response(None, max_replay_bytes)
+        self.project_response(None, None, max_replay_bytes)
     }
     /// Bind tools to the declarations that produced this reply, rather than
     /// reinterpret old native aliases using the next request's tools.
@@ -22,23 +23,37 @@ impl NativeMessage {
         tools: &ToolMap,
         max_replay_bytes: usize,
     ) -> ProviderResult<CanonicalResponse> {
-        self.project_response(Some(tools), max_replay_bytes)
+        self.project_response(Some(tools), None, max_replay_bytes)
+    }
+    pub(crate) fn to_responses_with_binding(
+        &self,
+        tools: &ToolMap,
+        binding: Option<&crate::binding::ReplayBinding>,
+        max_replay_bytes: usize,
+    ) -> ProviderResult<CanonicalResponse> {
+        self.project_response(Some(tools), binding, max_replay_bytes)
     }
     fn project_response(
         &self,
         tools: Option<&ToolMap>,
+        binding: Option<&crate::binding::ReplayBinding>,
         max_replay_bytes: usize,
     ) -> ProviderResult<CanonicalResponse> {
         crate::message::check_input_bindings(self.wire())?;
-        let (prefix, envelope) = match tools {
-            Some(tools) => (
+        let (prefix, envelope) = match (tools, binding) {
+            (Some(tools), Some(binding)) => (
+                BOUND_PREFIX,
+                json!({"provider":"anthropic","version":3,"message":self.wire(),"tools":tools.source(),"binding":binding.wire()}),
+            ),
+            (Some(tools), None) => (
                 TOOLS_PREFIX,
                 json!({"provider":"anthropic","version":2,"message":self.wire(),"tools":tools.source()}),
             ),
-            None => (
+            (None, None) => (
                 PREFIX,
                 json!({"provider":"anthropic","version":1,"message":self.wire()}),
             ),
+            (None, Some(_)) => unreachable!("bound projection includes tools"),
         };
         let capsule = format!("{prefix}{envelope}");
         if max_replay_bytes == 0 || capsule.len() > max_replay_bytes {
@@ -83,21 +98,8 @@ impl NativeMessage {
         if item["type"] != "reasoning" {
             return Err(invalid());
         }
-        let capsule = item["encrypted_content"].as_str().ok_or_else(invalid)?;
-        if max_replay_bytes == 0 || capsule.len() > max_replay_bytes {
-            return Err(invalid());
-        }
-        let (text, version) = if let Some(text) = capsule.strip_prefix(PREFIX) {
-            (text, 1)
-        } else if let Some(text) = capsule.strip_prefix(TOOLS_PREFIX) {
-            (text, 2)
-        } else {
-            return Err(invalid());
-        };
-        let envelope: Value = serde_json::from_str(text).map_err(|_| invalid())?;
-        if envelope["provider"] != "anthropic" || envelope["version"] != version {
-            return Err(invalid());
-        }
+        let (envelope, version) = replay_envelope(item, max_replay_bytes)?;
+        let binding = replay_binding(&envelope, version)?;
         let message = Self::parse(envelope["message"].clone()).map_err(|_| invalid())?;
         crate::message::check_input_bindings(message.wire()).map_err(|_| invalid())?;
         if message.model() != expected_model {
@@ -106,7 +108,7 @@ impl NativeMessage {
         if item["summary"] != message.reasoning_summary() {
             return Err(invalid());
         }
-        let tools = if version == 2 {
+        let tools = if version >= 2 {
             Some(
                 ToolMap::new(
                     envelope["tools"].as_array().ok_or_else(invalid)?,
@@ -120,6 +122,9 @@ impl NativeMessage {
             }
             None
         };
+        if let Some(binding) = binding {
+            binding.check_tools(tools.as_ref().expect("v3 includes tools"))?;
+        }
         let projected = message
             .projected_items(tools.as_ref())
             .map_err(|_| invalid())?;
@@ -248,15 +253,49 @@ impl NativeMessage {
 
 /// Determine the contiguous display group length before full coherence checking.
 pub(crate) fn replay_group_len(item: &Value, max_bytes: usize) -> ProviderResult<usize> {
+    let (envelope, _) = replay_envelope(item, max_bytes)?;
+    let native = NativeMessage::parse(envelope["message"].clone()).map_err(|_| invalid())?;
+    Ok(1 + native.projected_blocks().count())
+}
+
+pub(crate) fn replay_binding_for_item(
+    item: &Value,
+    max_bytes: usize,
+) -> ProviderResult<Option<crate::binding::ReplayBinding>> {
+    let (envelope, version) = replay_envelope(item, max_bytes)?;
+    replay_binding(&envelope, version)
+}
+fn replay_binding(
+    envelope: &Value,
+    version: u64,
+) -> ProviderResult<Option<crate::binding::ReplayBinding>> {
+    if version == 3 {
+        Ok(Some(crate::binding::ReplayBinding::parse(
+            envelope["binding"].clone(),
+        )?))
+    } else if envelope.get("binding").is_some() {
+        Err(invalid())
+    } else {
+        Ok(None)
+    }
+}
+fn replay_envelope(item: &Value, max_bytes: usize) -> ProviderResult<(Value, u64)> {
     let capsule = item["encrypted_content"].as_str().ok_or_else(invalid)?;
     if max_bytes == 0 || capsule.len() > max_bytes {
         return Err(invalid());
     }
-    let text = capsule
-        .strip_prefix(PREFIX)
-        .or_else(|| capsule.strip_prefix(TOOLS_PREFIX))
-        .ok_or_else(invalid)?;
+    let (text, version) = if let Some(text) = capsule.strip_prefix(PREFIX) {
+        (text, 1)
+    } else if let Some(text) = capsule.strip_prefix(TOOLS_PREFIX) {
+        (text, 2)
+    } else if let Some(text) = capsule.strip_prefix(BOUND_PREFIX) {
+        (text, 3)
+    } else {
+        return Err(invalid());
+    };
     let envelope: Value = serde_json::from_str(text).map_err(|_| invalid())?;
-    let native = NativeMessage::parse(envelope["message"].clone()).map_err(|_| invalid())?;
-    Ok(1 + native.projected_blocks().count())
+    if envelope["provider"] != "anthropic" || envelope["version"] != version {
+        return Err(invalid());
+    }
+    Ok((envelope, version))
 }
