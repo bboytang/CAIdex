@@ -165,4 +165,7 @@ DeepSeek续接新增范围：显式Classic函数/namespace编译及完整明文r
 后续DeepSeek effort配置本地通过：执行端显式source→native等级、单次映射与历史保留，畸形/未配置/Unsupported和预算Key/POST前门控；新增4项/共29项、workspace410/0/45、Clippy/fmt/diff通过。该后续范围已以精确32a9f3f/CI37851939704独立三平台验收：3job各17steps、完整raw逐名集合454/447/451，workspace410/405/409及旧Runtime43/42/42均0failed，DeepSeek29每名一次；不能由dba1c90的25项范围代验；summary/context/include与custom/Lite/实际DeepSeek Runtime等仍待，恢复点见HANDOFF和DeepSeek文档。
 
 
-DeepSeek新增独立with_native_apply_patch：原生唯一custom名称与类型/成对结果严格校验，grammar仅作显式生成指导，固定Runtime负责补丁解析/审批；v2绑定启用策略/原声明/native前缀，旧v1不升级。custom SSE只在完整终态校验后交付，原socket/slot/预算/取消保持；新增8项/共37项本地workspace418/0/45、DeepSeek37、Clippy/fmt/diff通过，三平台待验。无新HTTP栈/执行器/依赖/其他Provider或Runtime生产改动；剩余控制、Lite及实际DeepSeek Runtime/Live仍待，详DeepSeek文档/HANDOFF。
+DeepSeek新增独立with_native_apply_patch：原生唯一custom名称与类型/成对结果严格校验，grammar仅作显式生成指导，固定Runtime负责补丁解析/审批；v2绑定启用策略/原声明/native前缀，旧v1不升级。custom SSE只在完整终态校验后交付，原socket/slot/预算/取消保持；新增8项/共37项、workspace418/0/45、Clippy/fmt/diff本地通过，独立df98a54/CI37854138352三平台已完整逐名验收，workspace418/413/417、旧Runtime43/42/42均0failed。无新HTTP栈/执行器/依赖/其他Provider或Runtime生产改动；剩余控制、Lite及实际DeepSeek Runtime/Live仍待，详DeepSeek文档/HANDOFF。
+
+
+DeepSeek apply_patch独立三平台收尾：df98a54/[CI37854138352](https://github.com/bboytang/CAIdex/actions/runs/37854138352)，3job各17steps成功或条件跳过，完整raw1989/1676/1687行；workspace418/413/417、DeepSeek37及旧Runtime43/42/42通过，全workspace/credentials/Runtime/doc-test通过名集合462/455/459与6742b15加21新名一致，无遗漏或重复。完整检查均exit0；日志、范围限制和恢复点见DeepSeek文档/HANDOFF。旧Runtime回归不代验DeepSeek实际Runtime，summary/context/include、复杂reasoning流、Lite/单调用及Live仍待。
