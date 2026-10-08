@@ -38,3 +38,5 @@
 `with_verbosity_instruction`由执行端为low/medium/high配置非空指令，重复映射拒绝；请求的verbosity必须已映射，移除原生无效果字段并追加到原instructions，原文/中文文本/已有system不改。null选项仅无意义值允许。原始body与扩展后body均检查预算。请求和响应的未绑定x-codex-turn-state分别400/502拒绝，SSE关闭真实socket并释放slot。默认构造仍拒绝这些Runtime参数；tools/reasoning输入/summary/context/include/Lite仍拒绝，不能据此认领完整固定Runtime。
 
 新增6项离线回归：JSON/SSE优先指令与verbosity/nullable精确native wire，本地控制畸形/后置developer/未实现history拒绝且零Key/POST，执行端映射校验，原始及扩展预算，目录归属/取消/deadline及native turn-state断连/slot复用，实际Gateway原instructions/本地token隔离。共16项定向通过，日志 `/tmp/caidex-deepseek-context-green.log`；有效RED临时禁用本地编译，测试编译成功并运行400失败，正确源码finally恢复（同前缀red.log）。正确源码finally恢复后完整workspace397/0/45（DeepSeek16每名一次）、Clippy全workspace/all-targets-D warnings/fmt/diff通过，日志同前缀{workspace,clippy}.log；新精确提交三平台待验。无新依赖/共享生产源码/Runtime/workflow修改。
+
+上下文源码已提交/push：`6742b151b225bb695c673331ead808ecbdbc61e9`；[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)进行中，不借基础2967f56的CI代验。预期workspace397/392/396、旧Runtime43/42/42、DeepSeek16逐名一次；校验脚本 `/tmp/caidex-deepseek-context-ci-{normalize,check,available}.py`在精确6742b15归档上执行。
