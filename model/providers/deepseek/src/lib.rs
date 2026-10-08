@@ -2,11 +2,15 @@
 //! No implicit keys, model-name capability inference or tool executor.
 mod catalog;
 mod config;
+mod history;
+mod history_stream;
 mod request;
+mod tools;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::NativeModel;
 pub use config::DeepSeekConfig;
+pub use history::NativeHistory;
 
 use caidex_credentials::{Broker, SecretStore};
 use caidex_model_core::{
@@ -24,11 +28,15 @@ use std::{
 };
 
 pub struct DeepSeekProvider<S: SecretStore> {
+    config: DeepSeekConfig,
     responses: CustomResponsesProvider<S>,
     models_endpoint: CustomResponses,
     request_bytes: usize,
     runtime_context: bool,
     verbosity_instructions: HashMap<String, String>,
+    limits: Limits,
+    native_history: bool,
+    native_tools: bool,
 }
 impl<S: SecretStore + 'static> DeepSeekProvider<S> {
     pub fn new(
@@ -64,11 +72,20 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             .collect::<Result<Vec<_>, Error>>()?;
         let request_bytes = limits.request_bytes;
         Ok(Self {
-            responses: CustomResponsesProvider::with_options(routes, broker, limits, options)?,
+            responses: CustomResponsesProvider::with_options(
+                routes,
+                broker,
+                limits.clone(),
+                options,
+            )?,
+            config,
             models_endpoint,
             request_bytes,
             runtime_context: false,
             verbosity_instructions: HashMap::new(),
+            limits,
+            native_history: false,
+            native_tools: false,
         })
     }
     /// Explicit local attribution and leading developer-to-system policy.
@@ -76,6 +93,18 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
     pub fn with_runtime_context(mut self) -> Self {
         self.runtime_context = true;
         self
+    }
+    /// Bind complete native reasoning/output to the execution scope and prefix.
+    /// Sensitive JSON carrier; does not implement provider-side persistence.
+    pub fn with_native_history(mut self) -> Self {
+        self.native_history = true;
+        self
+    }
+    /// Classic function/namespace compilation plus terminal-only tool delivery.
+    /// Custom tools, deferred search and Lite are not enabled by this policy.
+    pub fn with_native_tools(mut self) -> Self {
+        self.native_tools = true;
+        self.with_native_history()
     }
     /// Executor-owned guidance, not a native verbosity scale guarantee.
     pub fn with_verbosity_instruction(
@@ -119,7 +148,10 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
                 .await?,
         )
     }
-    fn prepare(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
+    fn prepare(
+        &self,
+        request: CanonicalRequest,
+    ) -> ProviderResult<(CanonicalRequest, Option<tools::ToolMap>)> {
         let model = self.responses.metadata(request.model())?;
         if !model.dialects.contains(&request.dialect()) {
             return Err(ProviderError::new(400, "unsupported_dialect"));
@@ -127,12 +159,47 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         if model.capabilities.text == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_text"));
         }
-        request::compile(
+        if self.native_tools && model.capabilities.native_tools == CapabilitySupport::Unsupported {
+            return Err(ProviderError::new(400, "unsupported_tools"));
+        }
+        let route = request.model().to_owned();
+        let request = request::compile(
             request,
             self.request_bytes,
             self.runtime_context,
             &self.verbosity_instructions,
-        )
+            self.native_history,
+            self.native_tools,
+        )?;
+        if !self.native_history {
+            return Ok((request, None));
+        }
+        let tools = tools::ToolMap::from_request(&request)?;
+        let mut request = tools.compile(request)?;
+        let mut wire = request.wire().clone();
+        wire["model"] = model.native_model.into();
+        request = CanonicalRequest::new(wire, request.dialect())
+            .map_err(|_| ProviderError::new(400, "deepseek_invalid_request"))?;
+        request = history::expand(
+            request,
+            &self.config,
+            &tools,
+            self.limits.request_bytes.min(self.limits.response_bytes),
+        )?;
+        request = request::compile(
+            request,
+            self.request_bytes,
+            self.runtime_context,
+            &self.verbosity_instructions,
+            self.native_history,
+            self.native_tools,
+        )?;
+        tools::validate_input(&request)?;
+        let mut wire = request.wire().clone();
+        wire["model"] = route.into();
+        request = CanonicalRequest::new(wire, request.dialect())
+            .map_err(|_| ProviderError::new(400, "deepseek_invalid_request"))?;
+        Ok((request, Some(tools)))
     }
 }
 fn response_headers(headers: &ContextHeaders) -> ProviderResult<()> {
@@ -206,12 +273,31 @@ impl<S: SecretStore + 'static> ModelProvider for DeepSeekProvider<S> {
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
-            let response = self
+            let (request, tools) = self.prepare(request)?;
+            let native_request = history::native_request(
+                &request,
+                &self.responses.metadata(request.model())?.native_model,
+            )?;
+            let mut response = self
                 .responses
-                .create_response(self.prepare(request)?, context)
+                .create_response(request.clone(), context)
                 .await?;
             response_headers(&response.headers)?;
-            output(response.response.wire())?;
+            if let Some(tools) = tools {
+                response.response = NativeHistory::record(
+                    &self.config.replay_scope(),
+                    &native_request,
+                    &response.response,
+                    &tools,
+                    None,
+                    self.limits.request_bytes.min(self.limits.response_bytes),
+                )
+                .map_err(history::native_error)?
+                .to_responses(self.limits.request_bytes.min(self.limits.response_bytes))
+                .map_err(history::native_error)?;
+            } else {
+                output(response.response.wire())?;
+            }
             Ok(response)
         })
     }
@@ -222,11 +308,32 @@ impl<S: SecretStore + 'static> ModelProvider for DeepSeekProvider<S> {
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
+            let history_context = RequestContext {
+                cancellation: context.cancellation.clone(),
+                deadline: context.deadline,
+                headers: ContextHeaders::default(),
+            };
+            let (request, tools) = self.prepare(request)?;
+            let native_request = history::native_request(
+                &request,
+                &self.responses.metadata(request.model())?.native_model,
+            )?;
             let mut response = self
                 .responses
-                .stream_response(self.prepare(request)?, context)
+                .stream_response(request.clone(), context)
                 .await?;
             response_headers(&response.headers)?;
+            if let Some(tools) = tools {
+                response.events = Box::pin(history_stream::HistoryStream::new(
+                    response.events,
+                    self.config.replay_scope(),
+                    native_request,
+                    history_context,
+                    self.limits.clone(),
+                    tools,
+                ));
+                return Ok(response);
+            }
             response.events = Box::pin(stream::unfold(Some(response.events), |state| async move {
                 let mut events = state?;
                 match events.next().await? {

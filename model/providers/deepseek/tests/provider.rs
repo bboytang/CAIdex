@@ -1434,3 +1434,724 @@ async fn gateway_runtime_context_is_consumed_locally_and_preserves_original_inst
     assert_eq!(reads.load(Ordering::SeqCst), 1);
     gateway.shutdown().await.unwrap();
 }
+
+fn tool_wire(streaming: bool) -> Value {
+    json!({"model":"fixture", "input":[{"role":"user", "content":"读取中文项目"}], "stream":streaming,
+        "tools":[{"type":"namespace", "name":"workspace", "description":"只读项目工具", "tools":[{"type":"function", "name":"read", "description":"读取文件", "parameters":{"type":"object", "properties":{"path":{"type":"string"}}, "required":["path"]}, "strict":false}]}],
+        "tool_choice":"auto", "parallel_tool_calls":true})
+}
+fn history_text() -> Value {
+    let mut wire = native();
+    wire["output"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|item| item["type"] != "future_item");
+    wire
+}
+fn tool_native(alias: &str) -> Value {
+    let mut wire = history_text();
+    wire["output"].as_array_mut().unwrap().push(json!({"type":"function_call", "id":"fc_one", "status":"completed", "call_id":"call-one", "name":alias, "arguments":"{ \"path\": \"中文🙂\", \"n\": 18446744073709551616 }", "future":{"n":18446744073709551616_u128}}));
+    wire
+}
+fn followup(original: &Value, output: &[Value]) -> Value {
+    let mut wire = original.clone();
+    let input = wire["input"].as_array_mut().unwrap();
+    input.extend(output.iter().cloned());
+    input.push(json!({"type":"function_call_output", "call_id":"call-one", "output":[{"type":"input_text", "text":"实际工具结果🙂"}]}));
+    input.push(json!({"role":"user", "content":"继续"}));
+    wire["stream"] = false.into();
+    wire
+}
+fn capsule(item: &Value) -> Value {
+    serde_json::from_str(
+        item["encrypted_content"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("caidex.deepseek.native-history.v1:")
+            .unwrap(),
+    )
+    .unwrap()
+}
+fn native_chunks(wire: &Value) -> Vec<Value> {
+    let mut chunks = vec![
+        json!({"type":"response.created", "response":{"id":wire["id"], "status":"in_progress", "output":[]}}),
+    ];
+    for (index, item) in wire["output"].as_array().unwrap().iter().enumerate() {
+        let mut start = item.clone();
+        start["status"] = "in_progress".into();
+        if item["type"] == "function_call" {
+            start["arguments"] = "".into();
+        } else {
+            start["content"] = json!([]);
+        }
+        chunks
+            .push(json!({"type":"response.output_item.added", "output_index":index, "item":start}));
+        if item["type"] == "function_call" {
+            chunks.push(json!({"type":"response.function_call_arguments.delta", "output_index":index, "item_id":item["id"], "delta":item["arguments"]}));
+            chunks.push(json!({"type":"response.function_call_arguments.done", "output_index":index, "item_id":item["id"], "arguments":item["arguments"]}));
+        } else {
+            let kind = if item["type"] == "reasoning" {
+                "response.reasoning_text.delta"
+            } else {
+                "response.output_text.delta"
+            };
+            chunks.push(json!({"type":kind, "output_index":index, "content_index":0, "item_id":item["id"], "delta":item["content"][0]["text"]}));
+        }
+        chunks.push(json!({"type":"response.output_item.done", "output_index":index, "item":item}));
+    }
+    chunks.push(json!({"type":"response.completed", "response":wire}));
+    for (sequence, chunk) in chunks.iter_mut().enumerate() {
+        chunk["sequence_number"] = sequence.into();
+    }
+    chunks
+}
+
+#[tokio::test]
+async fn classic_tools_compile_namespaces_and_replay_complete_bound_native_history() {
+    let first = tool_native("caidex_ns_0");
+    let mut fixture = Fixture::start(vec![
+        Reply::json(first.clone()),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    let original = tool_wire(false);
+    let response = provider
+        .create_response(request(original.clone()), RequestContext::default())
+        .await
+        .unwrap()
+        .response;
+    let sent = fixture.captured().await;
+    assert_eq!(
+        sent.header("authorization"),
+        Some(format!("Bearer {KEY}").as_str())
+    );
+    let sent = sent.body.unwrap();
+    assert_eq!(sent["model"], "native-fixture");
+    assert_eq!(sent["tools"][0]["type"], "function");
+    assert_eq!(sent["tools"][0]["name"], "caidex_ns_0");
+    assert_eq!(
+        sent["tools"][0]["description"],
+        "Namespace description: 只读项目工具\n读取文件"
+    );
+    assert!(sent.get("parallel_tool_calls").is_none());
+    assert!(sent["tools"][0].get("strict").is_none());
+    let history = capsule(&response.output()[0]);
+    assert_eq!(history["request"], sent);
+    assert_eq!(history["response"], first);
+    assert_eq!(history["tool_mapping"]["tools"], original["tools"]);
+    assert_eq!(
+        history["scope"]["credential"],
+        serde_json::to_value(reference()).unwrap()
+    );
+    assert!(!history.to_string().contains(KEY));
+    assert_eq!(
+        response.output()[0]["summary"][0]["text"],
+        "Native thinking"
+    );
+    assert_eq!(response.output()[2]["name"], "read");
+    assert_eq!(response.output()[2]["namespace"], "workspace");
+    assert_eq!(
+        response.output()[2]["arguments"],
+        first["output"][2]["arguments"]
+    );
+    let mut next = followup(&original, response.output());
+    for item in next["input"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .skip(1)
+        .take(response.output().len())
+    {
+        item.as_object_mut().unwrap().remove("id");
+        item.as_object_mut().unwrap().remove("status");
+    }
+    provider
+        .create_response(request(next), RequestContext::default())
+        .await
+        .unwrap();
+    let next = fixture.captured().await.body.unwrap();
+    assert_eq!(next["input"][1], first["output"][0]);
+    assert_eq!(next["input"][3], first["output"][2]);
+    assert_eq!(next["input"][4]["output"][0]["text"], "实际工具结果🙂");
+    assert!(!next.to_string().contains("caidex.deepseek.native-history"));
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn tool_declaration_choice_and_unbound_reasoning_errors_never_read_key_or_post() {
+    let fixture = Fixture::start(vec![Reply::json(history_text())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    let function = json!({"type":"function", "name":"read", "parameters":{}});
+    let mut bad = Vec::new();
+    for declaration in [
+        json!([function.clone(), function.clone()]),
+        json!([{"type":"function", "name":"bad.name", "parameters":{}}]),
+        json!([{"type":"function", "name":"a".repeat(129), "parameters":{}}]),
+        json!([{"type":"function", "name":"中文", "parameters":{}}]),
+        json!([{"type":"function", "name":"read", "strict":true, "parameters":{}}]),
+        json!([{"type":"function", "name":"read", "defer_loading":true, "parameters":{}}]),
+        json!([{"type":"web_search"}]),
+        json!([{"type":"custom", "name":"apply_patch"}]),
+        json!([{"type":"namespace", "name":"ns", "tools":[function.clone()]}, {"type":"function", "name":"caidex_ns_0", "parameters":{}}]),
+    ] {
+        let mut wire = tool_wire(false);
+        wire["tools"] = declaration;
+        bad.push(wire);
+    }
+    for choice in [
+        json!("invalid"),
+        json!({"type":"function", "name":"absent"}),
+        json!({"type":"allowed_tools", "tools":[]}),
+    ] {
+        let mut wire = tool_wire(false);
+        wire["tool_choice"] = choice;
+        bad.push(wire);
+    }
+    let mut wire = tool_wire(false);
+    wire["parallel_tool_calls"] = false.into();
+    bad.push(wire);
+    for item in [
+        json!({"type":"reasoning", "content":[{"type":"reasoning_text", "text":"caller plaintext"}]}),
+        json!({"type":"reasoning", "summary":[{"type":"summary_text", "text":"caller summary"}], "encrypted_content":"foreign"}),
+        json!({"type":"function_call_output", "call_id":"orphan", "output":"text"}),
+    ] {
+        let mut wire = tool_wire(false);
+        wire["input"].as_array_mut().unwrap().push(item);
+        bad.push(wire);
+    }
+    for wire in bad {
+        assert_eq!(
+            provider
+                .create_response(request(wire), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let mut model = metadata("fixture", "native-fixture");
+    model.capabilities.native_tools = CapabilitySupport::Unsupported;
+    let provider = fixture
+        .provider(broker, vec![model], limits())
+        .with_native_tools();
+    assert_eq!(
+        provider
+            .create_response(request(tool_wire(false)), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "unsupported_tools"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn bound_history_rejects_display_prefix_source_declarations_and_execution_scope_changes() {
+    let mut fixture = Fixture::start(vec![
+        Reply::json(tool_native("caidex_ns_0")),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    let original = tool_wire(false);
+    let response = provider
+        .create_response(request(original.clone()), RequestContext::default())
+        .await
+        .unwrap()
+        .response;
+    fixture.captured().await;
+    let next = followup(&original, response.output());
+    let mut bad = Vec::new();
+    let mut wire = next.clone();
+    wire["input"][0]["content"] = "different prefix".into();
+    bad.push(wire);
+    let mut wire = next.clone();
+    wire["input"][3]["arguments"] = "{}".into();
+    bad.push(wire);
+    let mut wire = next.clone();
+    wire["input"][3]["namespace"] = "other".into();
+    bad.push(wire);
+    let mut wire = next.clone();
+    wire["input"][1]["summary"][0]["text"] = "forged".into();
+    bad.push(wire);
+    let mut wire = next.clone();
+    wire["tools"][0]["tools"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("strict");
+    bad.push(wire);
+    let mut wire = next.clone();
+    wire["input"][4]["call_id"] = "wrong".into();
+    bad.push(wire);
+    let mut wire = next.clone();
+    wire["input"][2] = Value::Null;
+    bad.push(wire);
+    for wire in bad {
+        assert_eq!(
+            provider
+                .create_response(request(wire), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    let other_model = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "other-native")],
+            limits(),
+        )
+        .with_native_tools();
+    assert_eq!(
+        other_model
+            .create_response(request(next.clone()), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "deepseek_history_model_mismatch"
+    );
+    let mut credential = reference();
+    credential.profile = Id::new("other-profile").unwrap();
+    let other_profile = DeepSeekProvider::new(
+        DeepSeekConfig::new(credential)
+            .unwrap()
+            .with_base_url(&fixture.base)
+            .unwrap(),
+        vec![metadata("fixture", "native-fixture")],
+        broker.clone(),
+        limits(),
+    )
+    .unwrap()
+    .with_native_tools();
+    assert_eq!(
+        other_profile
+            .create_response(request(next.clone()), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "deepseek_history_model_mismatch"
+    );
+    let other_endpoint = DeepSeekProvider::new(
+        DeepSeekConfig::new(reference())
+            .unwrap()
+            .with_base_url(&format!("{}/other", fixture.base))
+            .unwrap(),
+        vec![metadata("fixture", "native-fixture")],
+        broker,
+        limits(),
+    )
+    .unwrap()
+    .with_native_tools();
+    assert_eq!(
+        other_endpoint
+            .create_response(request(next.clone()), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "deepseek_history_model_mismatch"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    provider
+        .create_response(request(next), RequestContext::default())
+        .await
+        .unwrap();
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn native_tool_json_requires_declared_names_valid_arguments_ids_choice_and_completed_turn() {
+    let good = tool_native("caidex_ns_0");
+    let mut bad = Vec::new();
+    let mut wire = good.clone();
+    wire["output"][2]["name"] = "absent".into();
+    bad.push((wire, tool_wire(false)));
+    let mut wire = good.clone();
+    wire["output"][2]["arguments"] = "[]".into();
+    bad.push((wire, tool_wire(false)));
+    let mut wire = good.clone();
+    let duplicate = wire["output"][2].clone();
+    wire["output"].as_array_mut().unwrap().push(duplicate);
+    bad.push((wire, tool_wire(false)));
+    let mut wire = good.clone();
+    wire["status"] = "incomplete".into();
+    wire["incomplete_details"] = json!({"reason":"max_output_tokens"});
+    bad.push((wire, tool_wire(false)));
+    let mut wire = good.clone();
+    wire["output"][2]["namespace"] = "workspace".into();
+    bad.push((wire, tool_wire(false)));
+    let mut choice = tool_wire(false);
+    choice["tool_choice"] = "none".into();
+    bad.push((good.clone(), choice));
+    let mut choice = tool_wire(false);
+    choice["tool_choice"] = "required".into();
+    bad.push((history_text(), choice));
+    let mut choice = tool_wire(false);
+    choice["tool_choice"] = json!({"type":"function", "namespace":"workspace", "name":"read"});
+    bad.push((tool_native("read"), choice));
+    for (wire, input) in bad {
+        let mut fixture = Fixture::start(vec![Reply::json(wire), Reply::json(good.clone())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_tools();
+        assert_eq!(
+            provider
+                .create_response(request(input), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            502
+        );
+        provider
+            .create_response(request(tool_wire(false)), RequestContext::default())
+            .await
+            .unwrap();
+        assert_eq!(fixture.accepted.load(Ordering::SeqCst), 2);
+        fixture.captured().await;
+    }
+}
+
+#[tokio::test]
+async fn native_history_sse_keeps_incremental_text_validates_raw_chunks_and_delays_tool_delivery() {
+    let wire = tool_native("caidex_ns_0");
+    let chunks = native_chunks(&wire);
+    let mut fixture = Fixture::start(vec![
+        Reply::stream(chunks.iter().cloned().map(event).collect()),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    let mut response = provider
+        .stream_response(request(tool_wire(true)), RequestContext::default())
+        .await
+        .unwrap();
+    let mut parser = caidex_model_core::ResponsesStream::new(limits().frame_bytes).unwrap();
+    let mut final_wire = None;
+    let mut text = String::new();
+    let mut reasoning = String::new();
+    let mut function_events = 0;
+    while let Some(item) = response.events.next().await {
+        if let ProviderStreamEvent::Model(event) = item.unwrap() {
+            parser
+                .push(format!("data: {}\n\n", event.frame.data).as_bytes())
+                .unwrap();
+            match event.response.kind() {
+                "response.output_text.delta" => {
+                    assert_eq!(event.response.wire()["output_index"], 1);
+                    text.push_str(event.response.wire()["delta"].as_str().unwrap());
+                }
+                "response.reasoning_summary_text.delta" => {
+                    reasoning.push_str(event.response.wire()["delta"].as_str().unwrap())
+                }
+                "response.output_item.added"
+                    if event.response.wire()["item"]["type"] == "function_call" =>
+                {
+                    function_events += 1;
+                    assert_eq!(event.response.wire()["item"]["name"], "read");
+                    assert_eq!(event.response.wire()["item"]["namespace"], "workspace");
+                }
+                "response.completed" => {
+                    final_wire = Some(event.response.wire()["response"].clone())
+                }
+                _ => (),
+            }
+        }
+    }
+    parser.finish().unwrap();
+    assert_eq!(text, "中文🙂");
+    assert_eq!(reasoning, "Native thinking");
+    assert_eq!(function_events, 1);
+    let final_wire = final_wire.unwrap();
+    assert_eq!(capsule(&final_wire["output"][0])["chunks"], json!(chunks));
+    fixture.captured().await;
+    let output = final_wire["output"].as_array().unwrap();
+    let next = followup(&tool_wire(false), output);
+    provider
+        .create_response(request(next), RequestContext::default())
+        .await
+        .unwrap();
+    assert_eq!(
+        fixture.captured().await.body.unwrap()["input"][3],
+        wire["output"][2]
+    );
+}
+
+#[tokio::test]
+async fn invalid_native_tool_stream_never_delivers_calls_closes_io_and_releases_slot() {
+    for corrupt in 0..3 {
+        let mut wire = tool_native("caidex_ns_0");
+        if corrupt == 0 {
+            wire["output"][2]["name"] = "undeclared".into();
+        }
+        if corrupt == 2 {
+            let mut reasoning = wire["output"][0].clone();
+            reasoning["id"] = "rs_second".into();
+            wire["output"].as_array_mut().unwrap().insert(1, reasoning);
+        }
+        let mut chunks = native_chunks(&wire);
+        if corrupt == 1 {
+            chunks
+                .iter_mut()
+                .find(|chunk| chunk["type"] == "response.function_call_arguments.delta")
+                .unwrap()["delta"] = "{}".into();
+        }
+        let mut reply = Reply::stream(chunks.into_iter().map(event).collect());
+        reply.stall = 2;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_tools();
+        let mut response = provider
+            .stream_response(request(tool_wire(true)), RequestContext::default())
+            .await
+            .unwrap();
+        let mut failed = false;
+        while let Some(item) = response.events.next().await {
+            match item {
+                Err(error) => {
+                    assert_eq!(error.http_status, 502);
+                    assert!(!failed);
+                    failed = true;
+                }
+                Ok(ProviderStreamEvent::Model(event)) => assert!(
+                    !event.response.kind().starts_with("response.function_call")
+                        && event.response.wire()["item"]["type"] != "function_call"
+                ),
+                Ok(ProviderStreamEvent::Heartbeat) => (),
+            }
+        }
+        assert!(failed);
+        fixture.disconnected().await;
+        provider
+            .create_response(request(tool_wire(false)), RequestContext::default())
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn native_history_budget_cancellation_and_drop_preserve_transport_limits() {
+    let wire = history_text();
+    let fixture = Fixture::start(vec![Reply::json(wire.clone())]).await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let mut small = limits();
+    small.request_bytes = 800;
+    let provider = fixture
+        .provider(broker, vec![metadata("fixture", "native-fixture")], small)
+        .with_native_history();
+    assert_eq!(
+        provider
+            .create_response(request(basic(false)), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "deepseek_history_too_large"
+    );
+    for cancel in [false, true] {
+        let mut reply = Reply::stream(created());
+        reply.stall = 2;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(wire.clone())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_history();
+        let context = RequestContext::default();
+        let cancellation = context.cancellation.clone();
+        let mut response = provider
+            .stream_response(request(basic(true)), context)
+            .await
+            .unwrap();
+        response.events.next().await.unwrap().unwrap();
+        if cancel {
+            cancellation.cancel();
+            assert_eq!(
+                response.events.next().await.unwrap().err().unwrap().code,
+                "provider_cancelled"
+            );
+            assert!(response.events.next().await.is_none());
+        }
+        drop(response);
+        fixture.disconnected().await;
+        provider
+            .create_response(request(basic(false)), RequestContext::default())
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn distinct_namespace_members_and_named_choice_retain_source_identity_through_gateway() {
+    let mut fixture = Fixture::start(vec![Reply::json(tool_native("caidex_ns_1"))]).await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools()
+        .with_runtime_context();
+    let gateway =
+        caidex_model_gateway::start_with_provider(Arc::new(provider), broker.redactor(), limits())
+            .await
+            .unwrap();
+    let mut wire = tool_wire(false);
+    let mut second_namespace = wire["tools"][0].clone();
+    second_namespace["name"] = "other_workspace".into();
+    wire["tools"].as_array_mut().unwrap().push(second_namespace);
+    wire["tools"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"type":"function", "name":"read", "parameters":{}}));
+    wire["tool_choice"] = json!({"type":"function", "namespace":"other_workspace", "name":"read"});
+    let client = reqwest::Client::builder().no_proxy().build().unwrap();
+    let result = client
+        .post(format!("http://{}/v1/responses", gateway.address()))
+        .bearer_auth(gateway.token().expose())
+        .header("session_id", "LOCAL_SESSION")
+        .header("content-type", "application/json")
+        .body(wire.to_string())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(result.status(), 200);
+    let result: Value = serde_json::from_slice(&result.bytes().await.unwrap()).unwrap();
+    assert_eq!(result["output"][2]["namespace"], "other_workspace");
+    assert_eq!(result["output"][2]["name"], "read");
+    let captured = fixture.captured().await;
+    assert!(
+        !captured.headers.contains(gateway.token().expose())
+            && !captured.headers.contains("LOCAL_SESSION")
+    );
+    let native = captured.body.unwrap();
+    assert_eq!(native["tools"][0]["name"], "caidex_ns_0");
+    assert_eq!(native["tools"][1]["name"], "caidex_ns_1");
+    assert_eq!(native["tools"][2]["name"], "read");
+    assert_eq!(
+        native["tool_choice"],
+        json!({"type":"function", "name":"caidex_ns_1"})
+    );
+    gateway.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn serialized_three_turn_history_replays_exact_native_prefix_and_rejects_reused_call_ids() {
+    let first = tool_native("caidex_ns_0");
+    let second = history_text();
+    let mut fixture = Fixture::start(vec![
+        Reply::json(first.clone()),
+        Reply::json(second.clone()),
+        Reply::json(first.clone()),
+        Reply::json(second.clone()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    let original = tool_wire(false);
+    let response = provider
+        .create_response(request(original.clone()), RequestContext::default())
+        .await
+        .unwrap()
+        .response;
+    fixture.captured().await;
+    let first_display: Vec<Value> =
+        serde_json::from_slice(&serde_json::to_vec(response.output()).unwrap()).unwrap();
+    let next = followup(&original, &first_display);
+    let response = provider
+        .create_response(request(next.clone()), RequestContext::default())
+        .await
+        .unwrap()
+        .response;
+    let sent_second = fixture.captured().await.body.unwrap();
+    let second_display: Vec<Value> =
+        serde_json::from_slice(&serde_json::to_vec(response.output()).unwrap()).unwrap();
+    let mut third = next;
+    third["input"]
+        .as_array_mut()
+        .unwrap()
+        .extend(second_display);
+    third["input"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"role":"user", "content":"第三轮"}));
+    assert_eq!(
+        provider
+            .create_response(request(third.clone()), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "deepseek_invalid_native_tools"
+    );
+    let sent_third = fixture.captured().await.body.unwrap();
+    let mut expected = sent_second["input"].as_array().unwrap().clone();
+    expected.extend(second["output"].as_array().unwrap().iter().cloned());
+    expected.push(json!({"role":"user", "content":"第三轮"}));
+    assert_eq!(sent_third["input"], json!(expected));
+    provider
+        .create_response(request(third), RequestContext::default())
+        .await
+        .unwrap();
+    assert_eq!(reads.load(Ordering::SeqCst), 4);
+}

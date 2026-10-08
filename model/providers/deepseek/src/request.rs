@@ -50,6 +50,8 @@ pub(crate) fn compile(
     max_bytes: usize,
     runtime_context: bool,
     verbosity_instructions: &HashMap<String, String>,
+    native_history: bool,
+    native_tools: bool,
 ) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
     if wire.to_string().len() > max_bytes {
@@ -121,8 +123,18 @@ pub(crate) fn compile(
             "background",
             "max_output_tokens",
             "text",
+            "tools",
+            "tool_choice",
+            "parallel_tool_calls",
         ],
     )?;
+    if !native_tools
+        && ["tools", "tool_choice", "parallel_tool_calls"]
+            .iter()
+            .any(|key| wire.get(*key).is_some())
+    {
+        return Err(unsupported());
+    }
     if wire
         .get("instructions")
         .is_some_and(|v| !v.is_null() && !v.is_string())
@@ -151,6 +163,19 @@ pub(crate) fn compile(
     }
     if let Some(input) = wire["input"].as_array() {
         for item in input {
+            if native_history && item["type"] == "reasoning" {
+                // Expansion verifies complete executor-bound native capsules;
+                // arbitrary reasoning cannot pass through history::expand.
+                continue;
+            }
+            if native_tools
+                && matches!(
+                    item["type"].as_str(),
+                    Some("function_call" | "function_call_output")
+                )
+            {
+                continue;
+            }
             fields(item, &["type", "role", "content", "id", "status"])?;
             if item.get("type").is_some_and(|v| v != "message")
                 || !matches!(item["role"].as_str(), Some("user" | "assistant" | "system"))

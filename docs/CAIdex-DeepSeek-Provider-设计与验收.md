@@ -1,6 +1,6 @@
 # CAIdex DeepSeek Provider：协议基线与验收
 
-2026-10-08核对官方文档；经典基础Adapter和10项离线回归已三平台通过；新增上下文适配及6项回归亦已精确三平台通过，实际DeepSeek Runtime/真实模型未验。继续V3的共享Custom transport/Broker与固定Runtime，不运行官方安装脚本或改写用户Codex配置。
+2026-10-08核对官方文档；经典基础Adapter和10项离线回归已三平台通过；新增上下文适配及6项回归亦已精确三平台通过。随后加入显式Classic函数/namespace与完整native历史，新增9项回归/共25项及完整workspace本地通过；其三平台CI、实际DeepSeek Runtime/真实模型未验。继续V3的共享Custom transport/Broker与固定Runtime，不运行官方安装脚本或改写用户Codex配置。
 
 ## 已核对的原生契约
 
@@ -23,11 +23,11 @@
 
 ## 下一步
 
-基础与上下文适配三平台已收尾；下一步按真实固定Runtime请求逐项接工具/namespace、明文reasoning和绑定历史、Lite custom Code Mode/单调用策略。对原生忽略但用户依赖的字段明确拒绝或以显式策略编译，源声明与编译历史继续绑定；实际Runtime/Live证据分别记录。Qwen/OpenRouter随后按各自原生契约核对，不从“OpenAI-compatible”标签推定相同能力。
+基础与上下文适配三平台已收尾；Classic函数/namespace、明文reasoning与绑定历史已有本地实现（见末节）。下一步先收尾该范围的精确三平台CI，再按真实固定Runtime请求补齐custom apply_patch、推理控制、Lite custom Code Mode/单调用策略及实际Runtime接线。对原生忽略但用户依赖的字段明确拒绝或以显式策略编译，源声明与编译历史继续绑定；实际Runtime/Live证据分别记录。Qwen/OpenRouter随后按各自原生契约核对，不从“OpenAI-compatible”标签推定相同能力。
 
 ## 验证状态
 
-上述经典基础目录/JSON/SSE/Gateway范围三平台通过；新增上下文适配亦三平台通过。工具/其他高级参数/媒体/推理控制与history/Lite/实际DeepSeek Runtime/Live/Full仍待。整体F/G与H–R未完成，测试fixture不证明真实模型能力。
+上述经典基础目录/JSON/SSE/Gateway范围三平台通过；新增上下文适配亦三平台通过。Classic函数/namespace与history新范围见末节，不借旧CI认领新范围。custom工具/其他高级参数/媒体/推理控制/Lite/实际DeepSeek Runtime/Live/Full仍待。整体F/G与H–R未完成，测试fixture不证明真实模型能力。
 
 基础源码`2967f56a7788ee90375f1e970e4500567a61cfd3`/[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)整体completed/success，各3job/17steps成功或条件跳过。完整raw Linux1962/Windows1649/macOS1660行，workspace391/386/390（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored），Linux native credentials1；DeepSeek10/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每名每平台一次。watch77797、下载98157及normalize/check/available均exit0；原始/标注日志 `/tmp/caidex-ci-37824041219-{linux,windows,macos}-raw.log`及同前缀.log/status.json/watch.log，校验脚本 `/tmp/caidex-deepseek-basic-ci-{normalize,check,available}.py`在精确2967f56归档执行。这不验证后续上下文适配或DeepSeek实际Runtime/Live。
 
@@ -41,7 +41,7 @@
 
 上下文源码`6742b151b225bb695c673331ead808ecbdbc61e9`/[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)整体completed/success，3job/17steps均成功或条件跳过。Linux113477961713/Windows113477962030/macOS113477961883完整raw1968/1655/1666行；workspace397/392/396（0failed，ignored45/43/43）、旧Runtime43/42/42（0failed/ignored）、Linux native credentials1。DeepSeek16/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每平台每名一次；watch53780、最终下载13789及normalize/check/available均exit0。原始/标注日志 `/tmp/caidex-ci-37825726756-{linux,windows,macos}-raw.log`及同前缀.log/status.json/watch.log；脚本 `/tmp/caidex-deepseek-context-ci-{normalize,check,available}.py`在精确6742b15归档执行，未借基础CI代验。实际DeepSeek Runtime/Live及完整F/G仍未验。
 
-## 下一阶段已核对边界（尚未实现）
+## 已核对的接入边界（实现范围见末节）
 
 2026-10-08再次核对官方[Responses请求定义](https://api-docs.deepseek.com/api/create-response/)、[Thinking说明](https://api-docs.deepseek.com/guides/thinking_mode/)和Models声明；不运行安装脚本、不访问模型服务。实现继续复用现有transport/Broker/codec模式，不增加另一Provider依赖或执行器。
 
@@ -50,4 +50,20 @@
 - temperature在thinking开启时无效果；top_p只在thinking开启时有效且下限0.95，低值会被原生钳制，关闭thinking时固定1.0。不能因成功响应把忽略/钳制当作按原值执行；后续必须按明确原生thinking选择门控，拒绝不等价组合而不悄改用户值。top_logprobs原生0–20，具体输出及strict结构交付还须独立验证。
 - reasoning input仅明文content进入原生上下文；summary/encrypted_content不支持。沿用已确定的完整native wire载体/前缀绑定：包含执行端profile/端点/model、编译请求、原响应及SSE chunks；canonical显示/工具组须与native输出一致，未知字段/大数/中文/原始arguments保持。不得把本地敏感JSON载体称作真实加密/来源认证，不删除真实推理以假装Runtime回放成功。
 
-以上为接入约束，不是已实现/已验证能力。优先工具映射与绑定历史，再Classic/Lite实际固定Runtime审批、执行、取消及磁盘恢复；每一步独立测试、精确CI和交接。
+以上是接入约束；函数/namespace与绑定历史的本地实现见下节，其余不标为已实现/已验证。随后Classic/Lite实际固定Runtime审批、执行、取消及磁盘恢复；每一步独立测试、精确CI和交接。
+
+## Classic函数与绑定native历史（新增本地范围，未提交/CI待验）
+
+构造策略保持显式：`with_native_history()`启用原生历史载体，`with_native_tools()`同时启用Classic函数/namespace和历史。未启用时保留原16项测试验证的严格拒绝行为，不提升metadata/Registry的兼容性等级，不改变其他Provider、共享transport或固定Runtime。
+
+- 函数名遵守原生ASCII/128字符/全局唯一约束；namespace扁平编译为确定的`caidex_ns_<声明索引>`，保留namespace描述并可逆恢复源name/namespace，拒绝别名碰撞及重复源身份。源声明（含strict/defer的false/null）、源choice/parallel与native声明同时绑定；不静默丢弃重要控制。支持auto/none/required及具namespace的指定function；strict/defer true、custom/内置工具/未知字段拒绝。parallel true表示允许并行，去掉原生忽略的flag；false拒绝，尚未宣称本地单调用策略。
+- 输入函数调用/结果校验call_id、原始JSON-object arguments、完整结果配对与文本结果。响应工具只允许已声明alias、有唯一id/call_id且未重复使用历史call_id的completed调用，遵守choice；保留中文、原始arguments及未知输出字段/大数。
+- `caidex.deepseek.native-history.v1:`载体保留完整编译native request、native response、源映射、执行端CredentialRef归属（不含Secret）、端点/model；流式同时保留解码后的原生SSE JSON事件。绑定调用方实际编译的前缀，不采信载体自行声明的前缀；验证整组显示/工具语义一致，再恢复原生明文reasoning及完整输出。允许Runtime省略/改变有效显示id/status，不放松语义/arguments/未知字段。任意调用方明文reasoning、外来载体、改前缀/源声明/summary/工具/执行端scope均Key/POST前拒绝。
+- 流式文本与单native reasoning item的摘要增量交付；工具等完整terminal、声明/参数/状态校验和原生事件重建一致后才交付。SSE delta的item_id、终态内容及added/done身份一致性校验；多个reasoning added或未对应已added reasoning索引的delta明确失败，复杂reasoning/content-part序列还须单独映射与验证。取消/Drop/deadline/坏流关闭原I/O并释放slot；仍无新worker、工具执行器或模型HTTP框架。
+- 原始/展开请求、原生历史、投影事件和pending队列均有预算；满预算报明确错误，不删除推理/工具历史。载体是敏感JSON，不是加密、来源认证或Host journal。完整前缀有增长上限（源码shortcut已记录），未来H持久化可去重；不能把序列化回放测试称为实际Host落盘/重启验收。
+
+新增9项离线测试（总25）：JSON两轮namespace/原始大数arguments回放；坏声明/choice/未绑定reasoning零Key/POST；完整组/实际前缀/原始声明/端点/profile/model篡改拒绝；响应名称/参数/id/状态/choice及slot复用；原生SSE文本/摘要增量与chunks核对及回放；坏工具delta/未知工具/多reasoning流零工具交付、真实断连和slot复用；历史预算与实际取消/Drop；不同namespace同名函数/指定choice经真实Gateway与本地token隔离；序列化后三轮准确native前缀与重复call_id拒绝。均为合成Key/loopback，不访问商业API。
+
+本轮本地定向25/0/0（`/tmp/caidex-deepseek-tools-green.log`）；有效RED临时破坏namespace别名，测试编译成功并运行失败，finally逐字节恢复tools源码（同前缀red.log及tools-green.rs）。最终源码完整workspace406/0/45（含25项DeepSeek每名一次），既有固定Codex0.160.1 Runtime43/0/0，Clippy全workspace/all-targets-D warnings、fmt及diff检查通过；日志同前缀{workspace,runtime-regression,clippy}.log。多reasoning added拒绝纳入既有坏流测试；初次沙箱禁止loopback的PermissionDenied不是代码RED，使用授权离线执行环境后通过。Runtime43仅旧回归，不是新DeepSeek实际Runtime正例。当前源码仅DeepSeek的config/lib/request、tools/history/history_stream和tests/provider；无新依赖、Cargo.lock、共享生产源码、其他Provider、Runtime或workflow变更。此前账户/记忆架构文档原样保留，不实现其功能；2026-10-08用户已授权本地检查通过后直接commit/push并三平台CI。旧6742b15的CI只验原16项，本新增范围三平台CI尚未执行。
+
+尚未实现/验证：custom apply_patch与Lite exec、deferred/search、parallel false本地策略、reasoning effort/summary/context/include控制、媒体/结构输出/采样、固定DeepSeek Classic/Lite实际Runtime审批/执行/取消/磁盘恢复、真实模型Live/Full。保持V3顺序，继续本Provider后再Qwen/OpenRouter，不能用Adapter/Gateway fixture代替实际Runtime证据。
