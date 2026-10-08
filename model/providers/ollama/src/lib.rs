@@ -29,6 +29,8 @@ pub struct OllamaProvider<S: SecretStore> {
     model_details: HashMap<String, ModelDetails>,
     config: OllamaConfig,
     native_history: bool,
+    images: bool,
+    structured_output: bool,
     history_bytes: usize,
     limits: Limits,
 }
@@ -78,6 +80,8 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             model_details: HashMap::new(),
             config,
             native_history: false,
+            images: false,
+            structured_output: false,
             history_bytes,
             limits,
         })
@@ -86,6 +90,18 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
     /// plaintext JSON, not encryption or a live model compatibility claim.
     pub fn with_native_history(mut self) -> Self {
         self.native_history = true;
+        self
+    }
+    /// Opt in to bounded inline image inputs and image tool results. Model
+    /// declarations still apply; this does not prove live vision compatibility.
+    pub fn with_images(mut self) -> Self {
+        self.images = true;
+        self
+    }
+    /// Opt in to native non-strict JSON Schema output. The native decoder
+    /// ignores `strict`, so hard strict guarantees are not advertised.
+    pub fn with_structured_output(mut self) -> Self {
+        self.structured_output = true;
         self
     }
     /// Install a fixed executor-owned snapshot; does not fetch automatically or
@@ -171,8 +187,11 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         request::compile(
             request,
             details,
-            metadata.capabilities.reasoning,
+            &metadata.capabilities,
             self.native_history,
+            self.images,
+            self.structured_output,
+            self.limits.request_bytes,
         )
     }
 }

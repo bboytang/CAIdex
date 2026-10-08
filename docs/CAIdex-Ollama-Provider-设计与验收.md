@@ -25,7 +25,7 @@
 
 明确 false/null 的 store/background 删除为原生前台无存储默认；显式 tool_choice=auto、parallel_tool_calls=true 删除为原生默认允许。这几项是语义等价的已知缺省控制，不处理任意未知字段。true storage/background、required/none tool choice、parallel=false、previous_response_id/conversation 在 Key/POST 前拒绝。
 
-同样拒绝未编译的 reasoning summary、include、metadata/cache/service tier/text formatting、truncation、developer role、custom/namespace/web/tool_search、strict/defer=true、媒体/附件、未知 input/嵌套字段。thinking控制与显式native history的新范围见后续节；默认仍不接受reasoning历史。收到无法回放的 output 仍完整保留给调用方；下一请求明确报错，不能偷偷删 history 继续。既有 ModelCapabilities 中明确 Unsupported 的 text/native_tools/streaming 拦在网络前，Unknown 不自动转 Supported。
+同样拒绝未编译的 reasoning summary、include、metadata/cache/service tier、truncation、developer role、custom/namespace/web/tool_search、strict/defer=true、未映射附件、未知 input/嵌套字段。thinking控制、显式native history及媒体/格式的新范围见后续节；默认仍不接受reasoning历史。收到无法回放的 output 仍完整保留给调用方；下一请求明确报错，不能偷偷删 history 继续。既有 ModelCapabilities 中明确 Unsupported 的 text/native_tools/streaming 拦在网络前，Unknown 不自动转 Supported。
 
 非空 RequestContext headers 当前全部拒绝，包括实际 Runtime 的本地 headers；服务端 x-codex-turn-state 亦在交付前拒绝，不假造 native session/state。context/header 放置、developer/system 语义和实际 Runtime 支持是下阶段需验证的接线，当前 Gateway 协议 fixture 不能代替它。
 
@@ -94,3 +94,16 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 本轮CI收尾：精确源码head `ad3a49176b4dc6044454d800a09b4c7131dc9d86`，三个job均completed/success、全部step成功或条件跳过；watch exit0、日志下载exit0、逐名脚本exit0。Ollama26/OpenAI11/Custom7/Google90及旧实际Runtime每名逐平台各一次。workspace Linux338/Windows333/macOS337，0失败、ignored39/37/37；旧实际Runtime37/36/36，0失败/0ignored；Linux native凭据1与fmt/Clippy/schema/doctor通过。仍不是本Adapter新Runtime、真实daemon或Full证据。
 
 日志`/tmp/caidex-ci-37728309340-{status.json,watch.log,linux.log,windows.log,macos.log}`及逐名脚本`/tmp/caidex-ollama-history-ci-check.py`。第一次逐名检查发现macOS CLI缓存protocol段提前截断；直接下载job113151419136完整原始日志，保留`macos-{raw,cli-truncated}.log`，仅以原始完整protocol段替换对应段后重验成功，不把首次不完整检查计为通过。本次收尾仅文档，代码验收对应上述源码head。
+
+
+## 内联图片与非严格结构输出（本轮本地通过，待提交/CI）
+
+- 依据固定官方e3cddc3e的[Responses转换器](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/openai/responses.go)及[图片解码器](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/openai/openai.go)：图片只支持内联Base64，FileID无映射，远程URL拒绝，detail不参与转换；native text.format仅json_schema.schema进入ChatRequest.Format，json_object和strict不会实施。官方[兼容说明](https://docs.ollama.com/api/openai-compatibility)/[结构输出](https://docs.ollama.com/capabilities/structured-outputs)辅助核对；不以文档能力清单代替固定源码或真实模型证据。
+- `with_images()`显式启用message content/function_call_output内的input_image；PNG/JPEG/JPG/WebP及native空MIME的data URI仅校验标准Base64和非空/字节预算，不重编码/改写原文、字段、文本/图片次序。不是图像解码/真实模型识别验收，MIME/实际像素格式仍由native image processor处理。外部URL、file_id、其他媒体类型、未知字段、low/high/original detail拒绝，auto/省略/null为已知原生默认。Adapter不抓取远端图片或读取本机路径，不新增上传服务。
+- `with_structured_output()`显式启用原生非严格json_schema；name按canonical名称形状校验，schema须object，schema/约束/引用/未知注释/精确数值原文保留；严格Schema语义验证和生成后的强校验未完成，nonstrict仅原生best-effort，不宣称所有约束被模型执行。strict=true拒绝，false/省略/null允许；wrapper description非null、verbosity/未知text字段拒绝，schema内description不变。Plain text格式及空/null text为已知默认，不要求opt-in。
+- `json_object`编为`json_schema` + object schema，使格式实际进入原生grammar而不是被Responses转换器忽略；本地请求/载体记录此实际compiled wire。显式vision/structured_output Unsupported不被opt-in放松，Unknown不伪改Supported；catalog/fixtures不授予Full。
+- JSON/SSE共用compiler及Custom HTTP；完整body含所有encoded图片/schema在Broker前受request_bytes限制，Base64单项亦有上限，因此累计decoded数据受同一预算封顶。回放恢复原始图片/工具结果，既有v1载体仍保存完整actual native request/response；text.format是可逐轮改变的生成控制，不强绑旧轮输出格式为新轮。响应格式/真实终态不变，没有执行器、第二HTTP栈或新第三方版本；仅关联已存在的base64=0.22.1。
+
+复用loopback harness新增6项（Ollama共32）：5种native MIME输入在JSON/SSE完整POST保留；带图工具结果与格式改变的绑定回放；18组source/detail/Base64/格式拒绝分别JSON/SSE且Key/POST计数零；opt-in与明确Unsupported独立；有效大图片/schema的body预算前置；plaintext/空/null格式默认。有效RED（原compiler拒绝合法图片/格式）→GREEN，`/tmp/caidex-ollama-content-{red,green}.log`。初次锁关联遗漏已有base64多版本标识，通过Cargo --offline纠正为base64 0.22.1；该失败不计通过。
+
+本地Ollama32/0/0、workspace344/0/39、旧固定Runtime37/0/0、Clippy -D warnings/fmt/diff通过；Ollama32每名在workspace各一次。日志`/tmp/caidex-ollama-content-{provider-final,workspace-final,all-real-final,clippy-final}.log`；源码待提交/新精确CI，前一阶段CI不代证本轮。未做实际Ollama Runtime/daemon/模型下载/商业推理，未派新agent独立审查。严格输出、其余工具、context/developer及Lite按交接顺序继续，整体F/G及H–R未完成。

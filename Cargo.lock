@@ -441,6 +441,7 @@ dependencies = [
 name = "caidex-provider-ollama"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "caidex-credentials",
  "caidex-model-core",
  "caidex-model-gateway",

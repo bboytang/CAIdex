@@ -1,6 +1,9 @@
 use crate::ModelDetails;
-use caidex_model_core::{CanonicalRequest, CapabilitySupport, ProviderError, ProviderResult};
-use serde_json::Value;
+use base64::Engine;
+use caidex_model_core::{
+    CanonicalRequest, CapabilitySupport, ModelCapabilities, ProviderError, ProviderResult,
+};
+use serde_json::{Value, json};
 use std::collections::HashSet;
 
 fn invalid() -> ProviderError {
@@ -29,11 +32,15 @@ fn string(wire: &Value, key: &str) -> ProviderResult<()> {
     }
     Ok(())
 }
-fn text(content: &Value, assistant: bool) -> ProviderResult<()> {
+fn text(content: &Value, assistant: bool, images: bool, max_bytes: usize) -> ProviderResult<()> {
     if content.is_string() {
         return Ok(());
     }
     for part in content.as_array().ok_or_else(invalid)? {
+        if part["type"] == "input_image" {
+            image(part, images, max_bytes)?;
+            continue;
+        }
         fields(part, &["type", "text", "annotations", "logprobs"])?;
         if part["type"] != "input_text" && !(assistant && part["type"] == "output_text") {
             return Err(unsupported());
@@ -58,10 +65,16 @@ fn text(content: &Value, assistant: bool) -> ProviderResult<()> {
 pub(crate) fn compile(
     request: CanonicalRequest,
     details: Option<&ModelDetails>,
-    reasoning: CapabilitySupport,
+    capabilities: &ModelCapabilities,
     native_history: bool,
+    images: bool,
+    structured_output: bool,
+    max_bytes: usize,
 ) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
+    if wire.to_string().len() > max_bytes {
+        return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+    }
     fields(
         &wire,
         &[
@@ -79,9 +92,15 @@ pub(crate) fn compile(
             "tool_choice",
             "think",
             "reasoning",
+            "text",
         ],
     )?;
-    thinking(&mut wire, details, reasoning)?;
+    thinking(&mut wire, details, capabilities.reasoning)?;
+    output_format(
+        &mut wire,
+        structured_output && capabilities.structured_output != CapabilitySupport::Unsupported,
+    )?;
+    let images = images && capabilities.vision != CapabilitySupport::Unsupported;
     for key in ["store", "background"] {
         if let Some(value) = wire.get(key) {
             if !value.is_null() && value != &Value::Bool(false) {
@@ -203,7 +222,12 @@ pub(crate) fn compile(
                     if item["role"] == "assistant" {
                         pending_thinking = false;
                     }
-                    text(&item["content"], item["role"] == "assistant")?;
+                    text(
+                        &item["content"],
+                        item["role"] == "assistant",
+                        images,
+                        max_bytes,
+                    )?;
                 }
                 "function_call" => {
                     pending_thinking = false;
@@ -232,7 +256,7 @@ pub(crate) fn compile(
                     if !pending.remove(id) {
                         return Err(invalid());
                     }
-                    text(&item["output"], true)?;
+                    text(&item["output"], true, images, max_bytes)?;
                 }
                 _ => return Err(unsupported()),
             }
@@ -242,6 +266,98 @@ pub(crate) fn compile(
         }
     }
     CanonicalRequest::new(wire, request.dialect()).map_err(|_| invalid())
+}
+
+fn image(part: &Value, enabled: bool, max_bytes: usize) -> ProviderResult<()> {
+    if !enabled {
+        return Err(unsupported());
+    }
+    fields(part, &["type", "image_url", "detail"])?;
+    if part
+        .get("detail")
+        .is_some_and(|detail| !detail.is_null() && detail != "auto")
+    {
+        // Native decoding ignores detail; never pretend low/high is applied.
+        return Err(unsupported());
+    }
+    let url = part["image_url"].as_str().ok_or_else(invalid)?;
+    if url.len() > max_bytes {
+        return Err(invalid());
+    }
+    let data = url.strip_prefix("data:").ok_or_else(unsupported)?;
+    let (header, data) = data.split_once(',').ok_or_else(invalid)?;
+    let mime = header.strip_suffix(";base64").ok_or_else(invalid)?;
+    if !matches!(
+        mime,
+        "" | "image/png" | "image/jpeg" | "image/jpg" | "image/webp"
+    ) {
+        return Err(unsupported());
+    }
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(data)
+        .map_err(|_| invalid())?;
+    if decoded.is_empty() || decoded.len() > max_bytes {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
+fn output_format(wire: &mut Value, enabled: bool) -> ProviderResult<()> {
+    let Some(text) = wire.get("text").filter(|value| !value.is_null()) else {
+        wire.as_object_mut()
+            .expect("validated object")
+            .remove("text");
+        return Ok(());
+    };
+    fields(text, &["format"])?;
+    let Some(format) = text.get("format").filter(|value| !value.is_null()) else {
+        wire.as_object_mut()
+            .expect("validated object")
+            .remove("text");
+        return Ok(());
+    };
+    if format["type"] == "text" {
+        return fields(format, &["type"]);
+    }
+    if !enabled {
+        return Err(unsupported());
+    }
+    match format["type"].as_str() {
+        Some("json_object") => {
+            fields(format, &["type"])?;
+            // The native Responses decoder ignores json_object. An object
+            // schema reaches the same native JSON grammar without that loss.
+            wire["text"] = json!({"format":{"type":"json_schema","name":"caidex_json_object","schema":{"type":"object"}}});
+        }
+        Some("json_schema") => {
+            fields(format, &["type", "name", "schema", "strict", "description"])?;
+            let name = format["name"].as_str().ok_or_else(invalid)?;
+            if name.is_empty()
+                || name.len() > 64
+                || !name
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-'))
+                || !format["schema"].is_object()
+                || format
+                    .get("strict")
+                    .is_some_and(|strict| !strict.is_null() && !strict.is_boolean())
+            {
+                return Err(invalid());
+            }
+            // Native forwards schema but ignores strict and wrapper guidance.
+            // Preserve the schema verbatim; hard strict semantics need their
+            // own grammar/output validation before enabling them.
+            if format["strict"] == true
+                || format
+                    .get("description")
+                    .is_some_and(|description| !description.is_null())
+            {
+                return Err(unsupported());
+            }
+        }
+        _ => return Err(unsupported()),
+    }
+    Ok(())
 }
 
 fn thinking(
