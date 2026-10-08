@@ -1,5 +1,5 @@
 [package]
-name = "caidex-provider-openai"
+name = "caidex-provider-ollama"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

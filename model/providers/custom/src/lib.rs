@@ -1,9 +1,11 @@
 //! Custom Responses inference client shared by Gateway and ordinary Chat.
 //! No server, shell, tool executor or implicit credential discovery.
+mod catalog;
 mod config;
 mod limits;
 mod transfer;
 
+pub use catalog::{NativeModel, parse_model_catalog};
 pub use config::{ConfiguredModel, CustomResponses};
 pub use limits::Limits;
 

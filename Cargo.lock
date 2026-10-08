@@ -407,6 +407,7 @@ dependencies = [
  "rcgen",
  "reqwest",
  "rustls",
+ "serde",
  "serde_json",
  "thiserror",
  "time",
@@ -437,6 +438,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-provider-ollama"
+version = "0.1.0"
+dependencies = [
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-model-gateway",
+ "caidex-provider-custom",
+ "futures-util",
+ "reqwest",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "caidex-provider-openai"
 version = "0.1.0"
 dependencies = [
@@ -446,7 +461,6 @@ dependencies = [
  "caidex-provider-custom",
  "futures-util",
  "reqwest",
- "serde",
  "serde_json",
  "tokio",
 ]

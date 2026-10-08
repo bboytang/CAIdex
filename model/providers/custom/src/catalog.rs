@@ -29,7 +29,8 @@ impl fmt::Debug for NativeModel {
         f.write_str("NativeModel([WIRE OMITTED])")
     }
 }
-pub(crate) fn parse(wire: Value) -> ProviderResult<Vec<NativeModel>> {
+/// Validate the standard OpenAI-compatible model inventory without guessing capabilities.
+pub fn parse_model_catalog(wire: Value) -> ProviderResult<Vec<NativeModel>> {
     let invalid = || ProviderError::new(502, "provider_invalid_model_catalog");
     if wire["object"] != "list" {
         return Err(invalid());

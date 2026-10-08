@@ -1,27 +1,26 @@
-//! OpenAI Models and Responses adapter. No implicit environment credentials,
-//! hosted agent executor, model-name capability guesses or inference retries.
+//! Stateless Ollama Responses. Inference only, with the existing bounded client.
 mod config;
+mod request;
 
-pub use caidex_provider_custom::NativeModel;
-pub use caidex_provider_custom::{ClientOptions, Error, Limits};
-pub use config::OpenAiConfig;
+pub use caidex_provider_custom::{ClientOptions, Error, Limits, NativeModel};
+pub use config::OllamaConfig;
 
 use caidex_credentials::{Broker, SecretStore};
 use caidex_model_core::{
-    CanonicalRequest, CredentialRequirement, EvidenceSource, ModelCapabilities, ModelMetadata,
-    ModelProvider, ProviderError, ProviderFuture, ProviderResponse, ProviderResult, RequestContext,
-    StreamingResponse,
+    CanonicalRequest, CapabilitySupport, ContextHeaders, CredentialRequirement, EvidenceSource,
+    ModelCapabilities, ModelMetadata, ModelProvider, ProviderError, ProviderFuture,
+    ProviderResponse, ProviderResult, RequestContext, ResponsesDialect, StreamingResponse,
 };
 use caidex_provider_custom::{ConfiguredModel, CustomResponses, CustomResponsesProvider};
 use std::{collections::HashSet, sync::Arc};
 
-pub struct OpenAiProvider<S: SecretStore> {
+pub struct OllamaProvider<S: SecretStore> {
     responses: CustomResponsesProvider<S>,
     models_endpoint: CustomResponses,
 }
-impl<S: SecretStore + 'static> OpenAiProvider<S> {
+impl<S: SecretStore + 'static> OllamaProvider<S> {
     pub fn new(
-        config: OpenAiConfig,
+        config: OllamaConfig,
         models: Vec<ModelMetadata>,
         broker: Arc<Broker<S>>,
         limits: Limits,
@@ -29,7 +28,7 @@ impl<S: SecretStore + 'static> OpenAiProvider<S> {
         Self::with_options(config, models, broker, limits, ClientOptions::default())
     }
     pub fn with_options(
-        config: OpenAiConfig,
+        config: OllamaConfig,
         models: Vec<ModelMetadata>,
         broker: Arc<Broker<S>>,
         limits: Limits,
@@ -39,6 +38,9 @@ impl<S: SecretStore + 'static> OpenAiProvider<S> {
         let routes = models
             .into_iter()
             .map(|model| {
+                if model.dialects != [ResponsesDialect::Classic] {
+                    return Err(Error::InvalidRoute);
+                }
                 ConfiguredModel::new(
                     model.id.clone(),
                     model.native_model.clone(),
@@ -53,20 +55,40 @@ impl<S: SecretStore + 'static> OpenAiProvider<S> {
             models_endpoint,
         })
     }
-    /// Complete native model inventory, including non-Responses models. It is
-    /// availability metadata, never a Codex compatibility or capability test.
+    /// Inventory is availability evidence, never a model compatibility report.
     pub async fn discover_models(
         &self,
         context: RequestContext,
     ) -> ProviderResult<Vec<NativeModel>> {
+        context_guard(&context)?;
         caidex_provider_custom::parse_model_catalog(
             self.responses
                 .get_json(&self.models_endpoint, context)
                 .await?,
         )
     }
+    fn prepare(
+        &self,
+        request: CanonicalRequest,
+        context: &RequestContext,
+    ) -> ProviderResult<CanonicalRequest> {
+        context_guard(context)?;
+        let metadata = self.metadata(request.model())?;
+        if request.dialect() != ResponsesDialect::Classic {
+            return Err(ProviderError::new(400, "unsupported_dialect"));
+        }
+        if metadata.capabilities.text == CapabilitySupport::Unsupported
+            || metadata.capabilities.native_tools == CapabilitySupport::Unsupported
+                && request.wire()["tools"]
+                    .as_array()
+                    .is_some_and(|tools| !tools.is_empty())
+        {
+            return Err(ProviderError::new(400, "ollama_unsupported_capability"));
+        }
+        request::compile(request)
+    }
 }
-impl<S: SecretStore + 'static> ModelProvider for OpenAiProvider<S> {
+impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
     fn list_models(&self) -> ProviderFuture<'_, Vec<ModelMetadata>> {
         Box::pin(async {
             let available: HashSet<_> = self
@@ -105,9 +127,12 @@ impl<S: SecretStore + 'static> ModelProvider for OpenAiProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
-            self.responses
-                .create_response(stateless_request(request)?, context)
-                .await
+            let response = self
+                .responses
+                .create_response(self.prepare(request, &context)?, context)
+                .await?;
+            response_headers_guard(&response.headers)?;
+            Ok(response)
         })
     }
     fn stream_response(
@@ -116,34 +141,37 @@ impl<S: SecretStore + 'static> ModelProvider for OpenAiProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
-            self.responses
-                .stream_response(stateless_request(request)?, context)
-                .await
+            let response = self
+                .responses
+                .stream_response(self.prepare(request, &context)?, context)
+                .await?;
+            response_headers_guard(&response.headers)?;
+            Ok(response)
         })
     }
 }
 
-fn stateless_request(request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
-    let mut wire = request.wire().clone();
-    // Server background generation survives an HTTP disconnect and requires a
-    // separate cancel API; it is outside this foreground inference contract.
-    if wire["background"] == true {
-        return Err(ProviderError::new(400, "unsupported_background_generation"));
+fn context_guard(context: &RequestContext) -> ProviderResult<()> {
+    if context.cancellation.is_cancelled() {
+        return Err(ProviderError::new(503, "provider_cancelled"));
     }
-    if wire
-        .get("background")
-        .is_some_and(|value| !value.is_null() && !value.is_boolean())
-        || wire
-            .get("store")
-            .is_some_and(|value| !value.is_null() && !value.is_boolean())
+    if context
+        .deadline
+        .is_some_and(|deadline| deadline <= std::time::Instant::now())
     {
-        return Err(ProviderError::new(400, "invalid_model_request"));
+        return Err(ProviderError::new(504, "provider_timeout"));
     }
-    // Explicit true remains an opt-in. Absent/null never silently enables the
-    // API's stored-response default; opaque reasoning remains caller-owned.
-    if wire.get("store").is_none_or(serde_json::Value::is_null) {
-        wire["store"] = false.into();
+    if context.headers.iter().next().is_some() {
+        return Err(ProviderError::new(
+            400,
+            "ollama_unsupported_context_headers",
+        ));
     }
-    CanonicalRequest::new(wire, request.dialect())
-        .map_err(|_| ProviderError::new(400, "invalid_model_request"))
+    Ok(())
+}
+fn response_headers_guard(headers: &ContextHeaders) -> ProviderResult<()> {
+    if headers.get("x-codex-turn-state").is_some() {
+        return Err(ProviderError::new(502, "ollama_unsupported_turn_state"));
+    }
+    Ok(())
 }

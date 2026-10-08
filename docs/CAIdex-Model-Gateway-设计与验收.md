@@ -122,3 +122,6 @@ Gemini六方法/Profile、增量Responses JSON/SSE及真实Registry/Gateway离�
 Gemini实际Runtime本轮已按显式执行端catalog/本地context与Lite单调用交付策略接线，本地Google7实际测试覆盖默认拒绝、经典/Lite历史与落盘重启、Lite审批Code Mode、静态MCP/恢复、双调用拒绝、两路径interrupt。源码56f9789/[CI37717424972](https://github.com/bboytang/CAIdex/actions/runs/37717424972)三平台success：Google90及新增实际Google7各一次；workspace Linux312/Windows307/macOS311，实际Runtime Linux37/WindowsmacOS36，均0失败。唯一审查无Critical/Important，1覆盖Minor暂缓，非商业Full。
 
 共享Gateway仅对本地ProviderError/guard failure生成response.failed/response.error（静态安全code），替代被固定Codex忽略的通用error；HTTP错误格式不变，第三方原始诊断仍不传播。既有坏流/timeout断连回归已适配，实际双调用失败显示安全code且不重试/执行。消费者读取response.error；不会生成成功终态、工具或完整签名历史。详Gemini本轮记录，精确源码三平台CI已通过，下一步兼容API/Ollama。
+
+
+Ollama独立经典stateless Responses Adapter本地协议范围已实现：六方法/原生Models目录、无认证或ollama归属Bearer、文本/扁平function三轮HTTP精确回放、typed SSE/失败终态与Gateway隔离，本地新增10项通过。复用已有Custom transport及移入共用的OpenAI Models parser；无新HTTP栈/工具执行器/第三方版本升级。当前明确拒绝未编译控制、native reasoning历史、developer/context headers与Lite；固定Runtime/真实Ollama模型未验。完整workspace322/0/39、旧实际Runtime37/0/0、Clippy/fmt/diff通过，精确源码三平台CI待收尾，详[Ollama当前范围](CAIdex-Ollama-Provider-设计与验收.md)。

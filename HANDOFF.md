@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-F/G：Gemini实际Runtime离线阶段已验收。源码56f9789e133d94b657b950405ddbf50214afd56b已提交/push，[CI37717424972](https://github.com/bboytang/CAIdex/actions/runs/37717424972)精确head三平台completed/success。本次提交补齐收尾文档，下一步接兼容API/Ollama；商业Full、完整F/G及H–R未完成。
+F/G：Gemini源码56f9789/CI37717424972三平台验收已收尾，文档60e4dd2已push。当前新增Ollama经典stateless Responses离线Adapter，本地10项通过；完整本地复验已通过（workspace322/0/39、实际Runtime37/0/0、Clippy/fmt/diff），正在提交/push及精确源码三平台CI。只覆盖文本/扁平function，不代表固定Runtime或真实模型Full。完整F/G及H–R未完成。
 
 ## 已完成
 
@@ -14,10 +14,12 @@ F/G：Gemini实际Runtime离线阶段已验收。源码56f9789e133d94b657b950405
 - Gemini：Models、native JSON/SSE/HTTP、完整Part/签名/未知字段/大数/v1v2载体、工具映射、请求/媒体/推理/结构/参数、六方法/Profile/Registry/Gateway已三平台验。本轮真实Runtime新增7测试：默认拒绝4路径、经典/Lite各3轮签名含磁盘重启、Lite批准后实际marker/custom结果原文回放且重启不重复、经典静态MCP结果/重启零重跑、Lite双调用拒绝无审批/执行/载体、两路径interrupt关闭native socket。
 - 本轮context显式opt-in允许3头只留本地；Lite单调用策略显式opt-in在正常EOF交付前校验，超限整轮失败，不承诺Google生成控制。共享Gateway本地流错误改response.failed/response.error，固定Runtime显示安全code，HTTP错误格式不变，无重试。
 
+- Ollama：六方法/原生目录与配置交集、独立无认证或正确ollama Bearer、经典文本/function历史、typed JSON/SSE/失败终态/Gateway隔离、本地取消/Drop/slot均已有10项离线通过；未支持控制在Key/POST前拒绝。OpenAI Models parser移到Custom共用，不改原校验或公开类型。
+
 ## 下一步顺序
 
-1. 先核对实际HEAD/main与origin及工作区状态；本次提交为Gemini收尾文档，不重跑已通过CI或派Gemini复审。
-2. 兼容API/Ollama：核对官方支持范围及现有Custom/OpenAI代码，先离线协议fixture与最小Adapter。2026-10-08核对DeepSeek Responses（https://api-docs.deepseek.com/api/create-response/）：developer按user处理、未知input类型忽略，不能直接认领完整Codex透传；Ollama（https://docs.ollama.com/api/openai-compatibility）：Responses仅无状态，custom/freeform回放受限。有等价路径复用已有transport，有语义差异明确编译/拒绝；Provider凭据归属不伪装成OpenAI。不据URL/目录/fixture授予Lite/Full，不下载大模型/调用商业API。后续Chat Completions和其他兼容厂商按实际范围逐项接入。
+1. 本轮本地完整复验已通过；提交/push后核对精确源码三平台CI；Ollama10个名字和旧Google/Runtime不得漏跑。不再派Gemini复审/重做旧阶段。
+2. Ollama其余范围：/api/show声明能力/推理映射、native历史与媒体/结构/工具路径及固定Runtime。随后兼容API（DeepSeek/Qwen/OpenRouter等）；DeepSeek Responses官方developer按user、未知input忽略，不能直接透传。其models不保证created，不能直接复用OpenAI/Ollama严格catalog。等价路径复用transport，差异明确编译/拒绝，凭据归属不伪装OpenAI。不据URL/目录/fixture授予Lite/Full；不下载大模型/调用商业API。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
 ## 重要架构决定
@@ -40,8 +42,12 @@ F/G：Gemini实际Runtime离线阶段已验收。源码56f9789e133d94b657b950405
 
 ## Git / 文件 / 验证
 
-- branch main跟踪origin/main，源码56f9789已同步；本次仅提交HANDOFF及docs/Gemini、Runtime、Model-Gateway四份阶段收尾文档，无新增源码。新google_model_catalog.json已纳入Git。下一会话按实际HEAD/状态核对同步结果。
+- branch main跟踪origin/main，开始时两端60e4dd2且干净；本次提交包含Cargo.toml/lock、Custom共享catalog及serde归属/OpenAI重导出、model/providers/ollama新crate与10测试、Ollama/Model-Gateway文档及HANDOFF。新文件均应纳入Git；源码CI尚未运行，下次读实际HEAD/状态。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/google、model/gateway、model/core、runtime/bridge/tests/{real_runtime.rs,fixtures}；其他模块credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
-- 本地完整workspace312passed/0failed/39ignored；实际Runtime37/0/0；Clippy -D warnings/fmt/diff通过。Google context/数量guard、Lite profile、共享Gateway错误均有有效RED→GREEN；其余集成不夸大独立RED。
+- Gemini阶段本地完整workspace312passed/0failed/39ignored；实际Runtime37/0/0；Clippy -D warnings/fmt/diff通过。Google context/数量guard、Lite profile、共享Gateway错误均有有效RED→GREEN；其余集成不夸大独立RED。
 - CI37717424972：head56f9789、3job与所有step终态核对；Google90和新增实际Google7逐平台各一次。workspace Linux312/Windows307/macOS311，0失败、ignored39/37/37；实际Runtime Linux37/其他36，0失败/0ignored。Linux隔离native凭据1、fmt/Clippy/schema/doctor通过；watch和三日志下载及逐名脚本均exit0。
 - 本轮日志/tmp/caidex-google-runtime-{workspace-final,all-real-final,clippy-final}.log，唯一审查/tmp/caidex-google-runtime-review.md；CI日志/tmp/caidex-ci-37717424972-{status.json,watch.log,linux.log,windows.log,macos.log}及逐名脚本/tmp/caidex-google-request-ci-check.py。跨机器以已提交文档和GitHub CI为准，/tmp日志不保证保留。
+
+- Ollama本地10/0/0、workspace322/0/39、实际Runtime37/0/0、Clippy/fmt/diff通过；guard及后续轮次call_id复用有有效RED→GREEN。新CI待收集。docs/CAIdex-Ollama-Provider-设计与验收.md记录范围/官方固定源码e3cddc3e、后续顺序；原生encrypted_content是明文，不宣称加密/跨Provider回放。
+
+- 环境恢复：39G磁盘满导致实际Runtime构建失败，并截断新Ollama测试文件；仅cargo clean本项目可再生target缓存释放16.9GiB，测试已恢复且10项名字核对（备份/tmp/caidex-ollama-provider-restored.rs）。恢复后完整复验已通过；不拿中断结果当通过。pending配对修复合法复用误拒绝已有RED→GREEN。最终日志/tmp/caidex-ollama-{provider-final,workspace-final,all-real-final,clippy-final}.log。
