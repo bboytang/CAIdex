@@ -172,14 +172,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def native_ollama(self, body):
         assert self.path == "/v1/responses"
-        assert self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
+        trace["gatewayCredentialMatched"] = self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
+        assert trace["gatewayCredentialMatched"]
         trace.setdefault("nativeRequests", []).append(body)
         trace.setdefault("liteHeaders", []).append(self.headers.get("x-openai-internal-codex-responses-lite"))
         identity = f"native-{trace['requests']}"
         thinking = {"type": "reasoning", "id": f"rs_{identity}", "status": "completed", "encrypted_content": "Native fixture thinking", "summary": [{"type": "summary_text", "text": "Native fixture thinking"}], "future": {"n": 18446744073709551616}}
-        if trace["requests"] == 1:
+        if mode != "native-ollama-discovery" and trace["requests"] == 1:
+            namespace = next(tool for tool in body["tools"] if tool["type"] == "namespace" and tool["name"] == "functions")
+            tool = next(tool for tool in namespace["tools"] if tool["type"] == "function" and tool["name"] == "exec")
+            command = {"cmd": "echo CAIDEX_NATIVE_CODE_MODE > caidex-native-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated CAIdex native fixture marker only", "yield_time_ms": 1000}
+            script = "const result = await tools.exec_command(" + json.dumps(command) + "); text(result); text('CAIDEX_NATIVE_CODE_MODE');"
+            item = {"type": "function_call", "id": f"fc_{identity}", "status": "completed", "namespace": namespace["name"], "name": tool["name"], "call_id": "ollama-code-mode-one", "arguments": " { \"input\" : " + json.dumps(script) + " } "}
+        elif trace["requests"] == 1:
             item = {"type": "tool_search_call", "id": f"ts_{identity}", "status": "completed", "execution": "client", "call_id": "native-discovery-search", "arguments": {"query": "fixture echo", "limit": 1}}
-        elif trace["requests"] == 2:
+        elif mode == "native-ollama-discovery" and trace["requests"] == 2:
             loaded = [tool for result in body["input"] if result.get("type") == "tool_search_output" for tool in result["tools"]]
             namespace = next(tool for tool in loaded if tool.get("type") == "namespace" and tool["name"] == "mcp__fixture")
             member = next(tool for tool in namespace["tools"] if tool["name"] == "echo")
@@ -187,9 +194,31 @@ class Handler(BaseHTTPRequestHandler):
         else:
             item = {"type": "message", "id": f"msg_{identity}", "status": "completed", "role": "assistant", "content": [{"type": "output_text", "text": "CAIdex local fixture complete"}]}
         native = {"id": identity, "object": "response", "model": "native-fixture", "status": "completed", "output": [thinking, item], "future": {"n": 18446744073709551616}, "usage": {"input_tokens": 2, "output_tokens": 3, "total_tokens": 5}}
+        if mode == "native-ollama-multi-lite":
+            native["output"].append({**item, "id": "fc_ollama_two", "call_id": "ollama-code-mode-two"})
         events = [event("response.created", response={"id": identity, "status": "in_progress", "output": []}), event("response.output_item.added", output_index=0, item={**thinking, "summary": [], "encrypted_content": ""}), event("response.reasoning_summary_text.delta", output_index=0, item_id=thinking["id"], summary_index=0, delta="Native fixture thinking")]
         if item["type"] == "message":
             events.extend([event("response.output_item.added", output_index=1, item={**item, "content": []}), event("response.content_part.added", output_index=1, item_id=item["id"], content_index=0, part={"type": "output_text", "text": ""}), event("response.output_text.delta", output_index=1, item_id=item["id"], content_index=0, delta=item["content"][0]["text"])])
+        if mode == "native-ollama-stall-lite":
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            self.protocol_version = "HTTP/1.1"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
+            self.wfile.write(f"{len(data):x}\r\n".encode() + data + b"\r\n")
+            self.wfile.flush()
+            Path(trace_path).with_name("gateway-streaming").touch()
+            try:
+                disconnected = self.connection.recv(1) == b""
+            except OSError:
+                disconnected = True
+            trace["gatewayDisconnected"] = disconnected
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            Path(trace_path).with_name("gateway-disconnected").touch()
+            self.close_connection = True
+            return
         events.append(event("response.completed", response=native))
         trace.setdefault("nativeResponses", []).append(native)
         Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
@@ -204,7 +233,7 @@ class Handler(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         trace["requests"] += 1
         trace["authorizationSeen"] |= "Authorization" in self.headers
-        if mode == "native-ollama-discovery":
+        if mode in ["native-ollama-discovery", "native-ollama-tools-lite", "native-ollama-multi-lite", "native-ollama-stall-lite"]:
             self.native_ollama(body)
             return
         if mode.startswith("native-google-"):

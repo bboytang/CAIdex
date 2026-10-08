@@ -90,6 +90,9 @@ impl Harness {
             | "gateway-ollama-native-tools-classic" => "native-ollama-classic",
             "gateway-ollama-lite" => "native-ollama-lite",
             "gateway-ollama-discovery-classic" => "native-ollama-discovery",
+            "gateway-ollama-tools-lite" => "native-ollama-tools-lite",
+            "gateway-ollama-multi-lite" => "native-ollama-multi-lite",
+            "gateway-ollama-stall-lite" => "native-ollama-stall-lite",
             "gateway-google-basic-classic" => "native-google-basic-classic",
             "gateway-google-basic-lite" => "native-google-basic-lite",
             "gateway-google-classic" => "native-google-classic",
@@ -172,12 +175,18 @@ impl Harness {
                 | "gateway-google-stall-lite"
                 | "gateway-google-stall-classic"
         );
+        let ollama_lite = matches!(
+            mode,
+            "gateway-ollama-tools-lite" | "gateway-ollama-multi-lite" | "gateway-ollama-stall-lite"
+        );
         let model = if google_catalog {
             if mode.ends_with("-lite") {
                 "caidex-google-lite-fixture"
             } else {
                 "caidex-google-classic-fixture"
             }
+        } else if ollama_lite {
+            "gpt-6.1-sol"
         } else {
             match (fixture_mode, mode) {
                 (
@@ -243,24 +252,38 @@ impl Harness {
             ));
             if native_ollama {
                 use caidex_provider_ollama::{ModelDetails, OllamaConfig, OllamaProvider};
-                let mut provider = OllamaProvider::new(
+                let config =
                     OllamaConfig::new(&format!("http://127.0.0.1:{port}/v1"), Some(credential))
-                        .unwrap(),
-                    vec![caidex_model_core::ModelMetadata::configured(
-                        model.into(),
-                        "native-fixture".into(),
-                        vec![ResponsesDialect::Classic],
-                    )],
-                    broker.clone(),
-                    Limits::default(),
-                )
+                        .unwrap();
+                let models = vec![caidex_model_core::ModelMetadata::configured(
+                    model.into(),
+                    "native-fixture".into(),
+                    vec![if ollama_lite {
+                        ResponsesDialect::Lite
+                    } else {
+                        ResponsesDialect::Classic
+                    }],
+                )];
+                let mut provider = if ollama_lite {
+                    OllamaProvider::with_lite_options(
+                        config,
+                        models,
+                        broker.clone(),
+                        Limits::default(),
+                        Default::default(),
+                    )
+                } else {
+                    OllamaProvider::new(config, models, broker.clone(), Limits::default())
+                }
                 .unwrap();
-                if matches!(
-                    mode,
-                    "gateway-ollama-context-classic"
-                        | "gateway-ollama-native-tools-classic"
-                        | "gateway-ollama-discovery-classic"
-                ) {
+                if ollama_lite
+                    || matches!(
+                        mode,
+                        "gateway-ollama-context-classic"
+                            | "gateway-ollama-native-tools-classic"
+                            | "gateway-ollama-discovery-classic"
+                    )
+                {
                     provider = provider.with_runtime_context().with_native_history()
                         .with_verbosity_instruction("low".into(), "Keep user-facing answers concise while preserving required detail.".into()).unwrap()
                         .with_model_details(vec![(model.into(), ModelDetails::parse("native-fixture".into(),json!({"thinking":{"values":[false,"low","medium","high"],"default":"medium"}})).unwrap())]).unwrap();
@@ -452,25 +475,27 @@ impl Harness {
         };
         // Explicit fixture scope: native Anthropic has no verified equivalent
         // for Codex cached web search. Never filter it inside the Gateway.
-        let web_search = if matches!(
-            mode,
-            "gateway-anthropic-discovery-classic"
-                | "gateway-ollama-discovery-classic"
-                | "gateway-google-history-classic"
-                | "gateway-google-history-lite"
-                | "gateway-google-tools-lite"
-                | "gateway-google-multi-lite"
-                | "gateway-google-mcp-classic"
-                | "gateway-google-stall-lite"
-                | "gateway-google-stall-classic"
-        ) {
+        let web_search = if ollama_lite
+            || matches!(
+                mode,
+                "gateway-anthropic-discovery-classic"
+                    | "gateway-ollama-discovery-classic"
+                    | "gateway-google-history-classic"
+                    | "gateway-google-history-lite"
+                    | "gateway-google-tools-lite"
+                    | "gateway-google-multi-lite"
+                    | "gateway-google-mcp-classic"
+                    | "gateway-google-stall-lite"
+                    | "gateway-google-stall-classic"
+            ) {
             "web_search = \"disabled\"\n"
         } else {
             ""
         };
         // Executor-owned catalog declares unsupported client tool search. This
         // uses the fixed Runtime's public config, never strips Gateway tools.
-        let google_summary = if mode.starts_with("gateway-google-")
+        let google_summary = if ollama_lite
+            || mode.starts_with("gateway-google-")
             || matches!(
                 mode,
                 "gateway-ollama-context-classic"
@@ -3048,5 +3073,309 @@ async fn real_classic_native_ollama_discovers_executes_mcp_and_replays_after_res
         .next()
         .unwrap();
     assert_eq!(saved, result["output"]);
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Ollama Lite Code Mode, approved isolated marker and disk resume"]
+async fn real_lite_native_ollama_code_mode_executes_tool_and_replays_after_restart() {
+    let mut harness = Harness::start("gateway-ollama-tools-lite").await;
+    let thread = harness.create_thread().await;
+    let marker = harness.directory.0.join("project/caidex-native-marker.txt");
+    let mut approved = false;
+    for turn in 0..2 {
+        if turn == 1 {
+            // This existing helper only restarts/resumes the isolated app-server.
+            restart_google_runtime(&mut harness, &thread).await;
+        }
+        let client = harness.runtime.client();
+        client.start_turn(&thread,vec![json!({"type":"text","text":"Offline Ollama Code Mode fixture; resume exact disk history on second turn"})],json!({}),DEADLINE).await.unwrap();
+        let mut visible = String::new();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Interaction(request) => {
+                    assert!(
+                        turn == 0 && !approved,
+                        "unexpected/repeated execution: {}",
+                        request.event.raw
+                    );
+                    assert_eq!(request.kind, InteractionKind::CommandApproval);
+                    assert!(!marker.exists(), "command executed before approval");
+                    client
+                        .decide_approval(&request.id, ApprovalDecision::Accept)
+                        .await
+                        .unwrap();
+                    approved = true;
+                }
+                RuntimeEvent::Notification(event) if event.method == "item/agentMessage/delta" => {
+                    visible.push_str(event.raw["params"]["delta"].as_str().unwrap());
+                }
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                _ => (),
+            }
+        }
+        assert!(approved, "must reach the actual Runtime approval");
+        assert_eq!(visible, "CAIdex local fixture complete");
+        if turn == 0 {
+            assert_eq!(
+                std::fs::read_to_string(&marker).unwrap().trim(),
+                "CAIDEX_NATIVE_CODE_MODE"
+            );
+            std::fs::remove_file(&marker).unwrap();
+        } else {
+            assert!(!marker.exists(), "resume repeated the completed write");
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 3);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+    assert_eq!(trace["gatewayCredentialMatched"], true);
+    assert_eq!(trace["liteHeaders"], json!([null, null, null]));
+    let requests = trace["nativeRequests"].as_array().unwrap();
+    for request in requests {
+        assert_eq!(request["model"], "native-fixture");
+        assert_eq!(request["tools"], requests[0]["tools"]);
+        assert_eq!(request["instructions"], requests[0]["instructions"]);
+        for key in [
+            "client_metadata",
+            "prompt_cache_key",
+            "include",
+            "parallel_tool_calls",
+        ] {
+            assert!(request.get(key).is_none());
+        }
+        assert!(
+            !request
+                .to_string()
+                .contains("caidex.ollama.native-history.v2:")
+        );
+        assert!(
+            request["input"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|item| item["type"] != "additional_tools")
+        );
+    }
+    for turn in 0..2 {
+        let previous = requests[turn]["input"].as_array().unwrap();
+        let next = requests[turn + 1]["input"].as_array().unwrap();
+        assert_eq!(&next[..previous.len()], previous);
+        let raw = trace["nativeResponses"][turn]["output"].as_array().unwrap();
+        assert_eq!(&next[previous.len()..previous.len() + raw.len()], raw);
+    }
+    let raw_call = &trace["nativeResponses"][0]["output"][1];
+    let arguments: Value = serde_json::from_str(raw_call["arguments"].as_str().unwrap()).unwrap();
+    let result = requests[1]["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|item| {
+            item["type"] == "function_call_output" && item["call_id"] == "ollama-code-mode-one"
+        })
+        .unwrap();
+    assert!(
+        result["output"]
+            .to_string()
+            .contains("CAIDEX_NATIVE_CODE_MODE")
+    );
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    let items: Vec<Value> = rollout
+        .lines()
+        .filter_map(|line| {
+            let e: Value = serde_json::from_str(line).unwrap();
+            (e["type"] == "response_item").then(|| e["payload"].clone())
+        })
+        .collect();
+    let call = items
+        .iter()
+        .find(|item| {
+            item["type"] == "custom_tool_call" && item["call_id"] == "ollama-code-mode-one"
+        })
+        .unwrap();
+    assert_eq!(call["namespace"], "functions");
+    assert_eq!(call["name"], "exec");
+    assert_eq!(call["input"], arguments["input"]);
+    let saved = items
+        .iter()
+        .find(|item| {
+            item["type"] == "custom_tool_call_output" && item["call_id"] == "ollama-code-mode-one"
+        })
+        .unwrap();
+    assert_eq!(saved["output"], result["output"]);
+    let records: Vec<Value> = items
+        .iter()
+        .filter_map(|item| {
+            let c = item["encrypted_content"]
+                .as_str()?
+                .strip_prefix("caidex.ollama.native-history.v2:")?;
+            Some(serde_json::from_str(c).unwrap())
+        })
+        .collect();
+    assert_eq!(records.len(), 3);
+    for (record, native) in records
+        .iter()
+        .zip(trace["nativeResponses"].as_array().unwrap())
+    {
+        assert_eq!(record["response"], *native);
+        assert_eq!(record["tool_mapping"]["lite_single_tool_call"], true);
+    }
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Ollama Lite multi-call rejection before approval/execution/history"]
+async fn real_lite_native_ollama_rejects_multiple_calls_before_execution() {
+    let mut harness = Harness::start("gateway-ollama-multi-lite").await;
+    let thread = harness.create_thread().await;
+    harness
+        .runtime
+        .client()
+        .start_turn(
+            &thread,
+            vec![json!({"type":"text","text":"Offline Ollama multiple-call rejection fixture"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        match harness.next().await {
+            RuntimeEvent::Interaction(request) => panic!(
+                "rejected native generation requested approval: {}",
+                request.event.raw
+            ),
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                assert_eq!(event.raw["params"]["turn"]["status"], "failed");
+                assert!(
+                    event.raw["params"]["turn"]["error"]["message"]
+                        .as_str()
+                        .unwrap()
+                        .contains("ollama_invalid_native_tools"),
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+            _ => (),
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 1);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 1);
+    let calls: Vec<_> = trace["nativeResponses"][0]["output"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|item| item["type"] == "function_call")
+        .collect();
+    assert_eq!(calls.len(), 2);
+    assert_ne!(calls[0]["call_id"], calls[1]["call_id"]);
+    assert!(
+        !harness
+            .directory
+            .0
+            .join("project/caidex-native-marker.txt")
+            .exists()
+    );
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    for line in rollout.lines() {
+        let entry: Value = serde_json::from_str(line).unwrap();
+        if entry["type"] == "response_item" {
+            assert!(!matches!(
+                entry["payload"]["type"].as_str(),
+                Some("custom_tool_call" | "function_call" | "reasoning")
+            ));
+        }
+    }
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Ollama Lite interruption closes actual native streaming socket"]
+async fn real_lite_native_ollama_interrupt_closes_provider_socket() {
+    interrupt_gateway(&["gateway-ollama-stall-lite"]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Ollama Lite interruption revokes an actual pending approval"]
+async fn real_lite_native_ollama_interrupt_waiting_approval_prevents_execution() {
+    let mut harness = Harness::start("gateway-ollama-tools-lite").await;
+    let thread = harness.create_thread().await;
+    let client = harness.runtime.client();
+    let turn = client
+        .start_turn(
+            &thread,
+            vec![json!({"type":"text","text":"Offline Ollama cancel pending approval fixture"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    let request_id = loop {
+        match harness.next().await {
+            RuntimeEvent::Interaction(request) => {
+                assert_eq!(request.kind, InteractionKind::CommandApproval);
+                break request.id;
+            }
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                panic!("turn ended before actual approval: {}", event.raw)
+            }
+            _ => (),
+        }
+    };
+    assert!(
+        !harness
+            .directory
+            .0
+            .join("project/caidex-native-marker.txt")
+            .exists()
+    );
+    client
+        .interrupt_turn(&thread, turn["turn"]["id"].as_str().unwrap(), DEADLINE)
+        .await
+        .unwrap();
+    loop {
+        if let RuntimeEvent::Notification(event) = harness.next().await
+            && event.method == "turn/completed"
+        {
+            assert_eq!(event.raw["params"]["turn"]["status"], "interrupted");
+            break;
+        }
+    }
+    assert!(matches!(
+        client
+            .decide_approval(&request_id, ApprovalDecision::Accept)
+            .await,
+        Err(Error::NotPending)
+    ));
+    assert!(
+        !harness
+            .directory
+            .0
+            .join("project/caidex-native-marker.txt")
+            .exists()
+    );
+    assert_eq!(harness.trace()["requests"], 1);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 1);
     harness.shutdown().await;
 }
