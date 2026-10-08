@@ -170,7 +170,7 @@ JSON/SSE 在 typed terminal 前校验 custom arguments 为且仅为 `{input:stri
 
 修正版三平台收尾：精确源码f481fc8f94a746a27f0cbb7f05227cfa43f1abbb/CI37787010246三个job均completed/success，所有step成功或条件跳过，watch/下载/逐名脚本exit0。完整raw逐名Ollama58/OpenAI11/Custom7/Google90及固定Runtime各一次；workspace Linux370/Windows365/macOS369（0failed，ignored40/38/38），固定Runtime38/37/37（0failed/ignored），Linux native credentials1及fmt/Clippy/schema/doctor通过。raw日志 `/tmp/caidex-ci-37787010246-{linux,windows,macos}-raw.log` 共1911/1598/1609行，另有status.json/watch.log与step标注日志，脚本 `/tmp/caidex-ollama-custom-ci-{normalize,check}.py`。macOS排队后正常完成，未用未修复首版CI代验；未派新子agent审查。下一步deferred/Lite及本Adapter固定Runtime工具正例，真实daemon/Live/Full及整体F/G与H–R未完成。
 
-## Deferred 可见性与固定 Classic Runtime MCP（本地通过，三平台待验）
+## Deferred 可见性与固定 Classic Runtime MCP（三平台离线通过，累计证据见收尾）
 
 `with_deferred_tool_search()` 显式启用 custom mapping/native_tools/native_history，并将policy保存到v2 source。复用既有编译器先验证完整catalog的parameters对象、strict和别名（隐藏声明也不能绕过）；root defer_loading=true成员从实际native清单移出，须有client tool_search，原生namespace可保留空成员。只有按序匹配的client搜索结果才开放工具；原生忽略的defer flag不透传。重复声明可改变此加载标记，其余kind/schema/description必须相同；original root和每个original search result分别保存、回放仍精确绑定原始flags。未启用policy继续拒绝defer=true；新policy不能与旧v2 profile互换，不自动升级v1。Web/strict/Lite范围未放松，无新依赖、HTTP栈、模型下载或执行器。
 
@@ -181,7 +181,7 @@ JSON/SSE 在 typed terminal 前校验 custom arguments 为且仅为 `{input:stri
 本地Ollama63逐名一次、workspace375/0/41、固定Runtime39/0/0、Clippy全targets-D warnings/fmt/Python compile/diff通过。日志 `/tmp/caidex-ollama-deferred-{red,green,canonical-red,canonical-green,real-first,real-green,workspace-final,all-real-final,clippy-final}.log`。首次真实Runtime在null差异处失败后修复重验，失败不计通过。源码1a2668fc2f7688b316d8a4b361b22123c19089d2已提交/push；[CI37809165149](https://github.com/bboytang/CAIdex/actions/runs/37809165149)精确head的Linux/Windows全部17steps及完整日志已核对通过，workspace375/370、固定Runtime39/38（均0failed）；macOS三次均因hosted runner容量不足零steps取消，CI终态failure（基础设施问题），三平台验收未完成；下一步Lite additional_tools/parallel=false与实际Code Mode执行/审批/取消，整体F/G、daemon/Live/Full及H–R未完成。
 
 
-## Lite Adapter 请求转换与单调用交付（本地及Linux/Windows通过，macOS待验）
+## Lite Adapter 请求转换与单调用交付（三平台离线通过，累计证据见收尾）
 
 `with_lite_options(config, models, broker, limits, client_options)` 是显式入口，启用 custom/native tools 与 v2 history；默认 `new/with_options` 仍拒绝 Lite route。原 metadata 先完整验证，保存公开声明的 dialects；共享 Custom client 内部仅配置 Classic native route，所以 Lite-only 配置也不必虚假声明 Classic 支持。六方法保持原 dialects 和证据等级，不自动授予兼容性。
 
@@ -193,7 +193,7 @@ v2 source 新增可选 `lite_single_tool_call` 布尔：缺省为 Classic profil
 
 本地完整 workspace381/0/41，Ollama69每名一次；既有固定Codex0.160.1 Runtime39/0/0，Clippy全targets-D warnings/fmt/diff通过，日志同前缀 `{workspace-final,all-real-final,clippy-final}.log`。该Adapter提交未修改依赖、workflow、Runtime executor 或 Harness，39项为已有回归；实际Lite测试在下一节单独记录。源码8ef915d77ed4331b8bfb94e83f6b809d31da7fb4已提交/push，[CI37816328543](https://github.com/bboytang/CAIdex/actions/runs/37816328543)Linux/Windows completed/success、全部17steps成功或条件跳过，完整raw1924/1611行逐名Ollama69/OpenAI11/Custom7/Google90和全部旧Runtime各一次。workspace381/376（ignored41/39）、固定Runtime39/38均0failed，Linux native credentials1；macOS因hosted runner容量不足零steps取消，CI整体failure，三平台仍未验收。原始日志 `/tmp/caidex-ci-37816328543-{linux,windows}-raw.log`，旧CI容量失败不代证本轮。真实daemon/Live/Full及完整F/G、H–R仍未完成。
 
-## 固定 Lite Runtime Code Mode（本地通过，新增测试三平台待验）
+## 固定 Lite Runtime Code Mode（三平台离线通过）
 
 复用已有隔离Harness，显式以Lite-only metadata构造Adapter；固定Codex0.160.1使用其真实gpt-6.1-sol Code Mode模板，执行端明确禁用web并配置runtime context/verbosity/thinking snapshot。模型服务由已有本地Responses fixture模拟，合成凭据独立归属Ollama；没有真实Ollama daemon、用户Key或付费API。Gateway仅编译和校验，工具始终由固定Runtime执行，没有新执行器或HTTP栈。
 
@@ -204,3 +204,5 @@ v2 source 新增可选 `lite_single_tool_call` 布尔：缺省为 Classic profil
 固定Lite Runtime测试源码`f25179bf6e5446735b2323fc5169007ecfea947a`已提交/push，[CI37818503514](https://github.com/bboytang/CAIdex/actions/runs/37818503514)已建立：Linux113453190593成功，Windows113453190663/macOS113453190281运行，尚未跨平台验收。前一Adapter CI37816328543的macOS于17:39:38 UTC因hosted runner容量不足取消、零steps，整体failure；Linux/Windows成功事实保留，不重跑原job、不代证本轮新测试。完整raw逐名核对尚待，预期workspace381/376/380（ignored45/43/43）、实际Runtime43/42/42。
 
 新CI Linux完整raw1932行已逐名核对：workspace381/0/45、固定Runtime43/0/0，Ollama69/OpenAI11/Custom7/Google90及全部Runtime各一次；17steps成功或条件跳过，native credentials1。日志 `/tmp/caidex-ci-37818503514-linux-raw.log`，其余job运行，不以Linux代证三平台。
+
+三平台收尾：精确源码`f25179bf6e5446735b2323fc5169007ecfea947a`/[CI37818503514](https://github.com/bboytang/CAIdex/actions/runs/37818503514)整体completed/success，3job各17steps均成功或条件跳过。完整raw Linux1932/Windows1619/macOS1630行，Ollama69/OpenAI11/Custom7/Google90及全部固定Runtime每名各平台各一次；workspace381/376/380（0failed，ignored45/43/43）、固定Runtime43/42/42（0failed/ignored），Linux native credentials1，fmt/Clippy/schema/doctor均通过。watch/下载/normalize/check全部exit0；原始日志 `/tmp/caidex-ci-37818503514-{linux,windows,macos}-raw.log`、status.json/watch.log及step标注日志，脚本 `/tmp/caidex-ollama-lite-runtime-ci-{normalize,check,available}.py`。此提交完整继承deferred/Classic MCP与Lite Adapter回归，补齐这些范围的macOS证据；先前独立CI的runner失败保留，不将其重写为成功。跨机器以已提交文档与原CI为准。真实Ollama daemon/模型/Live/Full及整体F/G、H–R仍未完成；下一步DeepSeek兼容API，复用既定transport/Runtime。
