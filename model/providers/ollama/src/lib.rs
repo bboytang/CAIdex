@@ -31,6 +31,7 @@ pub struct OllamaProvider<S: SecretStore> {
     models_endpoint: CustomResponses,
     show_endpoint: Option<CustomResponses>,
     model_details: HashMap<String, ModelDetails>,
+    model_dialects: HashMap<String, Vec<ResponsesDialect>>,
     config: OllamaConfig,
     options: request::Options,
     history_bytes: usize,
@@ -46,20 +47,50 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         Self::with_options(config, models, broker, limits, ClientOptions::default())
     }
     pub fn with_options(
-        mut config: OllamaConfig,
+        config: OllamaConfig,
         models: Vec<ModelMetadata>,
         broker: Arc<Broker<S>>,
         limits: Limits,
         options: ClientOptions,
     ) -> Result<Self, Error> {
+        Self::build(config, models, broker, limits, options, false)
+    }
+    /// Opt in to Lite item conversion, custom function mapping and bound v2
+    /// history. Runtime attribution/verbosity still require explicit policy.
+    /// A single-call request is enforced at delivery, not native generation.
+    pub fn with_lite_options(
+        config: OllamaConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+    ) -> Result<Self, Error> {
+        let mut provider = Self::build(config, models, broker, limits, options, true)?;
+        provider.options.lite = true;
+        Ok(provider.with_custom_tools_as_functions())
+    }
+    fn build(
+        mut config: OllamaConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+        lite: bool,
+    ) -> Result<Self, Error> {
         let models_endpoint = config.endpoint("models")?;
         let show_endpoint = config.take_show_endpoint();
+        let mut model_dialects = HashMap::new();
         let routes = models
             .into_iter()
-            .map(|model| {
-                if model.dialects != [ResponsesDialect::Classic] {
+            .map(|mut model| {
+                model.validate().map_err(|_| Error::InvalidRoute)?;
+                if !lite && model.dialects != [ResponsesDialect::Classic] {
                     return Err(Error::InvalidRoute);
                 }
+                model_dialects.insert(model.id.clone(), model.dialects.clone());
+                // The shared HTTP client sees only native Classic requests.
+                // Public metadata keeps the executor's original dialects.
+                model.dialects = vec![ResponsesDialect::Classic];
                 ConfiguredModel::new(
                     model.id.clone(),
                     model.native_model.clone(),
@@ -80,6 +111,7 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             models_endpoint,
             show_endpoint,
             model_details: HashMap::new(),
+            model_dialects,
             config,
             options: request::Options::default(),
             history_bytes,
@@ -221,9 +253,11 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
     ) -> ProviderResult<(CanonicalRequest, Option<tools::NativeTools>)> {
         context_guard(context)?;
         let metadata = self.metadata(request.model())?;
-        if request.dialect() != ResponsesDialect::Classic {
+        if !metadata.dialects.contains(&request.dialect()) {
             return Err(ProviderError::new(400, "unsupported_dialect"));
         }
+        let (request, lite_single) =
+            runtime::classic(request, self.options.lite, self.limits.request_bytes)?;
         if metadata.capabilities.text == CapabilitySupport::Unsupported
             || metadata.capabilities.native_tools == CapabilitySupport::Unsupported
                 && request.wire()["tools"]
@@ -242,7 +276,11 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             .options
             .custom_tools
             .then(|| {
-                mapped_tools::MappedTools::from_request(&request, self.options.deferred_tool_search)
+                mapped_tools::MappedTools::from_request(
+                    &request,
+                    self.options.deferred_tool_search,
+                    lite_single,
+                )
             })
             .transpose()?;
         let request = if let Some(mapping) = &mapping {
@@ -305,6 +343,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
     }
     fn metadata(&self, model: &str) -> ProviderResult<ModelMetadata> {
         let mut metadata = self.responses.metadata(model)?;
+        metadata.dialects = self.model_dialects[model].clone();
         if let Some(details) = self.model_details.get(model) {
             let declared = details.declared_capabilities();
             for (configured, native) in [

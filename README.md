@@ -33,7 +33,7 @@ node scripts/codex-binary.mjs
 - `model/providers/openai`：原生 Models 发现/Responses 适配器，显式执行端组织/项目与凭据引用；复用共享传输，默认无服务端历史存储。当前使用合成协议服务验证，真实 API 兼容性待验。
 - `model/providers/anthropic`：原生 Messages/Models/SSE、Responses 转换和绑定历史；Gateway、经典 MCP 发现/执行/重启和 Lite Code Mode 审批/执行/取消已三平台离线验收，默认缓存网页搜索及商业模型兼容性待验。
 - `model/providers/google`：Gemini 原生 Models/generateContent、媒体/推理/结构输出和绑定历史；Gateway 与固定经典/Lite Runtime 离线接线已三平台验收，商业模型兼容性待验。
-- `model/providers/ollama`：复用共享传输的原生 Responses 适配，六方法、能力/推理、媒体/结构输出及绑定历史已有三平台离线证据；deferred 工具发现和固定经典 Runtime MCP 执行/重启已本地、Linux、Windows 验证，macOS 待验，Lite 和真实 daemon/模型待续。
+- `model/providers/ollama`：复用共享传输的原生 Responses 适配，六方法、能力/推理、媒体/结构输出及绑定历史已有三平台离线证据；deferred 工具发现和固定经典 Runtime MCP 执行/重启已本地、Linux、Windows 验证，macOS 因 runner 容量不足待验；Lite Adapter 本地回归已过，固定 Runtime Lite 接线及真实 daemon/模型待续。
 - `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和剩余兼容 API 接入待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。

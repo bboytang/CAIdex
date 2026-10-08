@@ -36,7 +36,11 @@ pub(crate) struct MappedTools {
     bindings: HashMap<Identity, (Value, bool)>,
 }
 impl MappedTools {
-    pub(crate) fn from_request(request: &CanonicalRequest, deferred: bool) -> ProviderResult<Self> {
+    pub(crate) fn from_request(
+        request: &CanonicalRequest,
+        deferred: bool,
+        lite_single: Option<bool>,
+    ) -> ProviderResult<Self> {
         let results: Vec<_> = request.wire()["input"]
             .as_array()
             .into_iter()
@@ -48,16 +52,30 @@ impl MappedTools {
         if deferred {
             source["deferred_tool_search"] = true.into();
         }
+        if let Some(single) = lite_single {
+            source["lite_single_tool_call"] = single.into();
+        }
         Self::from_source(source)
     }
     pub(crate) fn from_source(source: Value) -> ProviderResult<Self> {
         fields(
             &source,
-            &["tools", "search_results", "deferred_tool_search"],
+            &[
+                "tools",
+                "search_results",
+                "deferred_tool_search",
+                "lite_single_tool_call",
+            ],
         )?;
         if source
             .get("deferred_tool_search")
             .is_some_and(|v| v != true)
+        {
+            return Err(invalid());
+        }
+        if source
+            .get("lite_single_tool_call")
+            .is_some_and(|v| !v.is_boolean())
         {
             return Err(invalid());
         }

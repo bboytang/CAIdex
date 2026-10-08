@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub(crate) struct Options {
+    pub lite: bool,
     pub native_history: bool,
     pub native_tools: bool,
     pub custom_tools: bool,

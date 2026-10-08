@@ -1,6 +1,7 @@
 use crate::request::Options;
 use caidex_model_core::{
     CanonicalRequest, CapabilitySupport, ModelCapabilities, ProviderError, ProviderResult,
+    ResponsesDialect,
 };
 use serde_json::Value;
 use std::collections::HashSet;
@@ -10,6 +11,64 @@ fn invalid() -> ProviderError {
 }
 fn unsupported() -> ProviderError {
     ProviderError::new(400, "ollama_unsupported_runtime_parameter")
+}
+
+/// Consume Lite transport items locally. The native client still receives the
+/// Classic wire; original declarations and this delivery policy go into v2.
+pub(crate) fn classic(
+    request: CanonicalRequest,
+    enabled: bool,
+    max_bytes: usize,
+) -> ProviderResult<(CanonicalRequest, Option<bool>)> {
+    if request.dialect() == ResponsesDialect::Classic {
+        return Ok((request, None));
+    }
+    if !enabled {
+        return Err(ProviderError::new(400, "unsupported_dialect"));
+    }
+    let mut wire = request.wire().clone();
+    if wire.to_string().len() > max_bytes {
+        return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+    }
+    let single = match wire.get("parallel_tool_calls") {
+        None | Some(Value::Bool(true)) => false,
+        Some(Value::Bool(false)) => true,
+        _ => return Err(invalid()),
+    };
+    wire.as_object_mut().unwrap().remove("parallel_tool_calls");
+    let mut declarations = Vec::new();
+    let input = wire["input"].as_array_mut().ok_or_else(invalid)?;
+    for (index, item) in input.iter().enumerate() {
+        if item["type"] != "additional_tools" {
+            continue;
+        }
+        if index != 0
+            || item["role"] != "developer"
+            || item.as_object().is_none_or(|object| {
+                object
+                    .keys()
+                    .any(|key| !matches!(key.as_str(), "type" | "id" | "role" | "tools"))
+            })
+            || item.get("id").is_some_and(|id| {
+                id.as_str()
+                    .is_none_or(|id| id.trim().is_empty() || id.chars().any(char::is_control))
+            })
+        {
+            return Err(invalid());
+        }
+        declarations = item["tools"].as_array().ok_or_else(invalid)?.clone();
+    }
+    if input
+        .first()
+        .is_some_and(|item| item["type"] == "additional_tools")
+    {
+        input.remove(0);
+    }
+    wire["tools"] = declarations.into();
+    Ok((
+        CanonicalRequest::new(wire, ResponsesDialect::Classic).map_err(|_| invalid())?,
+        Some(single),
+    ))
 }
 
 /// Normalize execution-owned Runtime policy before native prefix binding. Local

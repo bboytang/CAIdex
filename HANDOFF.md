@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 17:06 UTC（断开后核对）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
+更新：2026-10-08 17:23 UTC（Ollama Lite Adapter本地回归通过）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
 
 ## 当前任务
 
-F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑定已三平台离线验收，源码f481fc8f94a746a27f0cbb7f05227cfa43f1abbb已push，[CI37787010246](https://github.com/bboytang/CAIdex/actions/runs/37787010246)精确head全部job/step及完整逐名日志通过。断点草稿的多行grammar误拒绝与native custom输入事件提前转发已修复。本轮deferred客户端可见性已定向通过，固定Classic Runtime发现/执行/磁盘重启正例已通过；最终本地workspace375/0/41、固定Runtime39/0/0及Clippy/fmt/diff已通过，源码1a2668fc2f7688b316d8a4b361b22123c19089d2已push，[CI37809165149](https://github.com/bboytang/CAIdex/actions/runs/37809165149)Linux/Windows已成功并核对完整raw计数；macOS前两次均因GitHub hosted runner容量不足未获分配而cancelled（零steps），已仅重跑macOS，REST确认同一head/run_attempt=3且queued，待终态；Lite随后；整体F/G及H–R未完成。
+F/G：当前开发Ollama Lite Adapter。显式with_lite_options保持对外dialects、内部共享Classic transport；additional_tools本地编译、custom/function沿用v2，新增Lite单调用交付策略绑定。三轮JSON/SSE已有效RED→GREEN，6项定向回归、完整workspace381/0/41、既有固定Runtime39/0/0、Clippy/fmt/diff均通过；本轮三平台及实际Lite Runtime尚待。先前deferred/Classic MCP源码1a2668f已push，CI37809165149 Linux/Windows完整日志已过，macOS前三次均因无runner零steps取消，不能认领三平台；整体F/G及H–R未完成。
 
 ## 已完成
 
@@ -18,7 +18,7 @@ F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑�
 
 ## 下一步顺序
 
-1. 先核对CI37809165149 attempt3；成功后收尾deferred/Classic MCP三平台文档。排队期间可先核对Lite入口并编写定向回归，随后继续Lite item转换及固定Runtime工具正例，复用已验custom/freeform→function与v2、native namespace/function/search、共享transport和现有codec，不重做已验范围。strict已由本地交付校验兑现，不重做；原生生成质量留Live验收。Custom在typed terminal后停止读取native，不保证HTTP clean EOF；不冒用Google EOF承诺。caller reasoning仅过codec，未映射native output保留但下轮显式拒绝；不要重做已验图片/格式/history/show/Gemini。
+1. 完成Lite Adapter最终diff/源码提交与新CI；随后固定Runtime Lite Code Mode审批/真实执行/取消/磁盘重启。复用Custom transport及已验codec，不另造执行器。旧CI37809165149已基础设施失败，不循环重试；新源码三平台回归不得借旧CI代证，Lite fixture不冒充Runtime/Live。strict仍是本地交付校验，不承诺native生成控制或HTTP clean EOF；媒体/history/show/Gemini已验范围不重做。
 2. 随后DeepSeek/Qwen/OpenRouter等兼容API；DeepSeek Responses developer按user、未知input忽略，其models不保证created，不能直接透传/照搬严格catalog。等价路径复用transport，差异明确编译/拒绝；不据URL/目录/fixture授予Lite/Full，不下载大模型/调用商业API。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
@@ -34,7 +34,7 @@ F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑�
 
 ## 问题 / 暂缓项
 
-- Ollama尚无真实daemon/模型/Live；本轮新增固定Classic Runtime MCP发现/执行/磁盘重启本地正例，三平台待验；Lite仍无正例。show/精确think已有三平台证据，native history显式opt-in三平台已验；默认developer/context/Lite及其他高级控制明确拒绝；本轮runtime context及显式verbosity映射已三平台验收。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不自动开启Adapter媒体；显式images/非严格格式/严格交付校验均三平台已验，生成grammar/实际daemon/Lite Runtime仍未验，详docs/Ollama。README已补Anthropic/Gemini/Ollama实际进度及文档入口，以各阶段证据为准，不据旧简介重做已完成阶段。
+- Ollama尚无真实daemon/模型/Live；本轮新增固定Classic Runtime MCP发现/执行/磁盘重启本地正例，三平台待验；Lite Adapter本轮6项定向通过，固定Runtime Lite仍无正例。show/精确think已有三平台证据，native history显式opt-in三平台已验；默认developer/context/Lite及其他高级控制明确拒绝；本轮runtime context及显式verbosity映射已三平台验收。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不自动开启Adapter媒体；显式images/非严格格式/严格交付校验均三平台已验，生成grammar/实际daemon/Lite Runtime仍未验，详docs/Ollama。README已补Anthropic/Gemini/Ollama实际进度及文档入口，以各阶段证据为准，不据旧简介重做已完成阶段。
 
 - Gemini实际Runtime阶段唯一独立审查无Critical/Important，1覆盖Minor暂缓：thought-call豁免、无tools、未opt-in none缺直接专项。14排除项裁定/成本留Gemini文档；不派复审。
 - 旧Minor：prefix-only v1v2完整组互换、非空projection pending取消/Drop、满槽取消/Drop、ProtoJSON替代整数/空ID表示、部分usage下界矛盾、thought-only phase；Anthropic重启第三轮/完整Lite custom结果覆盖等，详Provider文档，未认领修复。
@@ -44,21 +44,21 @@ F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑�
 
 ## Git / 文件 / 验证
 
-- 既有Ollama show/thinking、v1历史、图片/非严格格式、offline严格输出、runtime context/verbosity、namespace/search、custom→function/v2均已有精确三平台证据，包含在本轮63项回归，不重做。v1不自动升级/混用，grammar仅指导；历史源码/RED/GREEN/完整CI日志索引留docs/Ollama。
+- 既有Ollama show/thinking、v1历史、图片/非严格格式、offline严格输出、runtime context/verbosity、namespace/search、custom→function/v2均已有精确三平台证据，包含在本轮69项回归，不重做。v1不自动升级/混用，grammar仅指导；历史源码/RED/GREEN/完整CI日志索引留docs/Ollama。
 
-- branch main跟踪origin/main；最近源码1a2668fc2f7688b316d8a4b361b22123c19089d2已push。本次检查前HEAD/origin main为7c3f93a且工作区干净；本轮仅HANDOFF、README及Ollama/Model-Gateway验收状态修正，随文档提交，无未完成源码修改；下次核对实际HEAD与Git状态。最终本地workspace375/0/41、固定Runtime39/0/0、Clippy/fmt/diff已过，CI37809165149 Linux/Windows已过，macOS attempt1/2基础设施取消、已成功仅重跑macOS attempt3待验，无新依赖。
+- branch main跟踪origin/main，本轮开始HEAD/origin main a867c95、干净；当前未提交Ollama lib/mapped_tools/request/runtime/tools、tests/tools/mod及新lite.rs、HANDOFF。6项定向、workspace381/0/41、既有Runtime39/0/0、Clippy/fmt/diff已过，等待本轮源码提交/新CI；无依赖、workflow或Runtime源码改动。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama/src/{tools,mapped_tools,runtime,structured,request,history,history_stream,lib}、tests/{tools,runtime,structured,content,history}；其他模块model/providers/custom、model/core、model/gateway、runtime/bridge/tests/{real_runtime.rs,fixtures}、credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
 - jsonschema固定0.58.6、只开arbitrary-precision、强制Offline retriever，无HTTP/file解析；新增41依赖，无既有包升级/删除，hashbrown启用依赖、bit-vec/r-efi更新多版本标识，base64保持0.22.1。标准Schema按库draft/约束校验，未知format拒绝，未知注释保留。同步求值有字节/Regex回溯限制，不承诺硬CPU抢占，留Host隔离；不重试或修补坏回答。
 - 旧磁盘满已解除，只清本项目可再生target；本次df约4.8G可用，下轮先查df。完整测试TMPDIR=/var/tmp，保留/tmp/.git保护，不清源码/凭据/保护目录。本机缺Windows/Xcode/gnome-keyring-daemon，对应CI检查；iOS未建立，不以Rust macOS CI冒充iOS。
 
 - 本轮先完成真实Codex0.160.1/direct loopback wire捕获（非Ollama Adapter正例）：/tmp/caidex-ollama-runtime-{classic,lite}-wire.json及probe.log（exit0）。经典含developer/cache/client_metadata/include/text.verbosity与custom apply_patch、tool_search/web_search；Lite含additional_tools、namespaced custom exec、parallel=false、reasoning.context=all_turns。接入前据实际字段逐项编译/拒绝，不能用伪造Core fixture冒充完整Runtime。
 
-- 下步事实已只读核对：固定Ollama responses.go仅声明DeferLoading、不实施延迟可见性，custom/freeform不原生支持；转换后需同时绑定原始声明/kind与actual native tools，不能把只绑定native编译前缀的v1当作已绑定custom。保留v1，不自动升级/松绑；参考现有Provider codec、不引入另一Provider依赖或执行器。Custom ConfiguredModel::with_metadata要求dialects完全一致，Lite转换须检查metadata/route；Core已有custom input delta。后置developer/unknown phase仍未支持。
+- 下步事实已只读核对：固定Ollama responses.go仅声明DeferLoading、不实施延迟可见性，custom/freeform不原生支持；转换后需同时绑定原始声明/kind与actual native tools，不能把只绑定native编译前缀的v1当作已绑定custom。保留v1，不自动升级/松绑；参考现有Provider codec、不引入另一Provider依赖或执行器。Custom ConfiguredModel::with_metadata要求dialects完全一致；Lite当前以公开原dialects/内部Classic路由处理，已验证；Core已有custom input delta。后置developer/unknown phase仍未支持。
 
-- 当前恢复点：with_deferred_tool_search启用custom/v2并绑定policy；完整catalog先验parameters对象/strict/alias，再隐藏root defer=true成员，client结果后开放，原生忽略的flag不透传。重复声明只允许defer加载标记变化，其余kind/schema保持，原始root/results分别绑定。4项deferred+1项codec新增共Ollama63；deferred旧400及Runtime补reasoning.content=null旧400均effective RED→GREEN，只允许synthetic reasoning carrier缺省/null等价，数组/其他item与payload仍拒绝，临时诊断已移除。固定Runtime新增1项Classic MCP发现/执行/落盘重启，执行端显式禁用web，4次真实POST/Key，按client搜索实际返回的namespace/function调用，raw native items/落盘response与原始结果保持，重启MCP echo不重跑。最终workspace375/0/41、固定Runtime39/0/0、Clippy全targets-D warnings/fmt/Python compile/diff通过，日志/tmp/caidex-ollama-deferred-{red,green,canonical-red,canonical-green,real-first,real-green,workspace-final,all-real-final,clippy-final}.log；首次Runtime失败仅为null差异，不计通过。源码1a2668f已提交/push，CI37809165149待终态；恢复先核对Git→gh run view 37809165149→完整raw日志及/tmp/caidex-ollama-deferred-ci-{normalize,check}.py逐名验证→成功后HANDOFF/Ollama/Model-Gateway三文档收尾提交/push；Lite尚未改、实际daemon/Full未验，无新依赖。
+- 前阶段deferred/Classic MCP：源码1a2668f已push，Ollama63、本地workspace375/0/41与真实Runtime39/0/0通过；JSON/SSE客户端可见性、null carrier精确codec、MCP发现/执行/落盘重启已验，重启不重跑。完整日志/tmp/caidex-ollama-deferred-{workspace-final,all-real-final,clippy-final}.log，详细契约/RED-GREEN在docs/Ollama。Linux/Windows完整raw已验；macOS无runner，不认领三平台。
 
-- CI37809165149：首轮Linux/Windows完整raw 1918/1605行已核对，workspace375/370（0failed，ignored41/39）、Runtime39/38（0failed/ignored），Linux native credentials1。macOS attempt1/2均零steps、未分配runner；两次annotations均明确hosted runner容量不足，非源码错误。仅重跑macOS，REST确认attempt3同一head已queued，不据两平台认领阶段通过。
+- CI37809165149：首轮Linux/Windows完整raw 1918/1605行已核对，workspace375/370（0failed，ignored41/39）、Runtime39/38（0failed/ignored），Linux native credentials1。macOS attempt1/2/3均零steps、未分配runner；三次annotations均明确hosted runner容量不足，非源码错误。仅重跑macOS，REST确认attempt3同一head已cancelled、零steps，不据两平台认领阶段通过。
 
-- macOS CI恢复：attempt3 job113436013980 queued；Linux113436015643/Windows113436077634为原成功步骤的保留记录（17steps），无需重跑。先查run_attempt/latest jobs；mac成功后下载新job完整raw，沿用同一源码首轮Linux/Windows完整日志并逐名核对。未调换runner/架构；若再次无runner取消，保留缺口，继续独立Lite工作，勿靠循环重试冒充通过。
+- 原macOS job113436013980 completed/cancelled，17:17:35 UTC、零steps，官方annotations为未获hosted runner与arm64 capacity；原CI已终态，不再重启。新Lite源码CI需独立核对精确head/所有job-step/完整逐名日志，不借旧两平台结论；若新CI仍无runner，记录缺口并继续固定Runtime接线，不循环等待。
 
-- 额度检查：远端main已确认含源码1a2668f与交接7c3f93a，无丢失/未提交源码。重新逐名核对既有local/Linux/Windows日志：Ollama63/OpenAI11/Custom7每名一次，本地workspace375/0/41、实际Runtime39个不同名字均通过；未重复运行测试，既有CI全17steps仍已核实；临时CI逐名脚本保留关键step校验。修正文档仍写“源码待提交”及README未列Gemini/旧接线状态，保留macOS未验/商业模型未验边界。attempt3仍queued（零steps），未再发起重试或开展新功能。
+- Lite当前恢复点：with_lite_options为显式构造入口，默认new/with_options继续拒绝Lite路由；original metadata先验证，内部Classic路由与公开原dialects分开。首个developer additional_tools仅接受type/id/role/tools，id只消费运输身份，原工具声明进v2；未知/错位/重复/畸形声明及原始body超限在Key/POST前拒绝。Lite-only与两dialect声明逐请求门控；native不携Lite头、additional_tools或parallel flag。v2 source另存lite_single_tool_call布尔，None代表Classic，false/true分别为Lite无约束/本地单调用，原始声明及策略不能改写旧组。NativeTools共享终态校验在JSON/SSE工具/完整history交付前拒绝多调用，failed/incomplete也检查，slot可复用；无native生成约束承诺。定向6/0/0，日志/tmp/caidex-ollama-lite-{red,green,focused}.log；RED是旧mapping400，非编译失败。完整本地workspace381/0/41、Ollama69逐名一次、既有固定Runtime39/0/0、Clippy全targets-D warnings/fmt/diff已过；日志同前缀{workspace-final,all-real-final,clippy-final}.log。实际Lite Runtime/三平台/Live未验；当前通过的39项仍为已有回归，不能冒充Lite正例。全局codex-cli 0.160.1可用；本机没有CI专用.tools/codex目录，定位脚本ENOENT不影响本轮实际Runtime运行。下步diff/源码提交与新CI，再实际Code Mode审批/执行/取消/重启。

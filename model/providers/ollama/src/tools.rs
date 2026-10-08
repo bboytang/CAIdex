@@ -363,6 +363,24 @@ impl NativeTools {
         let mut ids = self.call_ids.clone();
         let mut item_ids = HashSet::new();
         (|| -> ProviderResult<()> {
+            if self
+                .mapping
+                .as_ref()
+                .is_some_and(|mapping| mapping.source()["lite_single_tool_call"] == true)
+                && response
+                    .output()
+                    .iter()
+                    .filter(|item| {
+                        matches!(
+                            item["type"].as_str(),
+                            Some("function_call" | "tool_search_call")
+                        )
+                    })
+                    .count()
+                    > 1
+            {
+                return Err(invalid());
+            }
             for item in response.output() {
                 if let Some(id) = item.get("id").and_then(Value::as_str)
                     && !item_ids.insert(id.to_owned())

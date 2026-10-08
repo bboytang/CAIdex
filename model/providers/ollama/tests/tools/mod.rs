@@ -1,6 +1,7 @@
 use super::*;
 use caidex_model_core::CanonicalResponse;
 mod deferred;
+mod lite;
 mod mapped;
 
 fn namespace() -> Value {
@@ -43,14 +44,20 @@ async fn deliver(
     stream: bool,
 ) -> caidex_model_core::ProviderResult<CanonicalResponse> {
     wire["stream"] = stream.into();
-    if !stream {
+    deliver_request(provider, request(wire)).await
+}
+async fn deliver_request(
+    provider: &OllamaProvider<Store>,
+    request: CanonicalRequest,
+) -> caidex_model_core::ProviderResult<CanonicalResponse> {
+    if !request.is_streaming() {
         return provider
-            .create_response(request(wire), RequestContext::default())
+            .create_response(request, RequestContext::default())
             .await
             .map(|v| v.response);
     }
     let mut events = provider
-        .stream_response(request(wire), RequestContext::default())
+        .stream_response(request, RequestContext::default())
         .await?
         .events;
     let mut terminal = None;
