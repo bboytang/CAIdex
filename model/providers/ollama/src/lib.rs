@@ -4,6 +4,7 @@ mod history;
 mod history_stream;
 mod models;
 mod request;
+mod runtime;
 mod structured;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits, NativeModel};
@@ -29,9 +30,7 @@ pub struct OllamaProvider<S: SecretStore> {
     show_endpoint: Option<CustomResponses>,
     model_details: HashMap<String, ModelDetails>,
     config: OllamaConfig,
-    native_history: bool,
-    images: bool,
-    structured_output: bool,
+    options: request::Options,
     history_bytes: usize,
     limits: Limits,
 }
@@ -80,9 +79,7 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             show_endpoint,
             model_details: HashMap::new(),
             config,
-            native_history: false,
-            images: false,
-            structured_output: false,
+            options: request::Options::default(),
             history_bytes,
             limits,
         })
@@ -90,20 +87,43 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
     /// Opt in to model/profile/prefix-bound native history. It is sensitive
     /// plaintext JSON, not encryption or a live model compatibility claim.
     pub fn with_native_history(mut self) -> Self {
-        self.native_history = true;
+        self.options.native_history = true;
         self
     }
     /// Opt in to bounded inline image inputs and image tool results. Model
     /// declarations still apply; this does not prove live vision compatibility.
     pub fn with_images(mut self) -> Self {
-        self.images = true;
+        self.options.images = true;
         self
     }
     /// Opt in to native JSON Schema output. For strict requests, validate the
     /// completed answer locally before releasing terminal output or tools.
     pub fn with_structured_output(mut self) -> Self {
-        self.structured_output = true;
+        self.options.structured_output = true;
         self
+    }
+    /// Opt in to local Runtime attribution and leading developer messages.
+    /// This consumes routing hints locally, not native caching or persistence.
+    pub fn with_runtime_context(mut self) -> Self {
+        self.options.runtime_context = true;
+        self
+    }
+    /// Executor-owned instruction mapping; no native verbosity scale promise.
+    pub fn with_verbosity_instruction(
+        mut self,
+        verbosity: String,
+        instruction: String,
+    ) -> ProviderResult<Self> {
+        if !matches!(verbosity.as_str(), "low" | "medium" | "high")
+            || instruction.trim().is_empty()
+            || self.options.verbosity_instructions.contains_key(&verbosity)
+        {
+            return Err(ProviderError::new(400, "ollama_invalid_verbosity_mapping"));
+        }
+        self.options
+            .verbosity_instructions
+            .insert(verbosity, instruction);
+        Ok(self)
     }
     /// Install a fixed executor-owned snapshot; does not fetch automatically or
     /// turn catalog/fixture success into a live compatibility report.
@@ -127,7 +147,7 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         model: &str,
         context: RequestContext,
     ) -> ProviderResult<ModelDetails> {
-        context_guard(&context)?;
+        let context = self.native_context(context)?;
         let metadata = self.responses.metadata(model)?;
         let endpoint = self
             .show_endpoint
@@ -149,12 +169,29 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         &self,
         context: RequestContext,
     ) -> ProviderResult<Vec<NativeModel>> {
-        context_guard(&context)?;
+        let context = self.native_context(context)?;
         caidex_provider_custom::parse_model_catalog(
             self.responses
                 .get_json(&self.models_endpoint, context)
                 .await?,
         )
+    }
+    fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
+        context_guard(&context)?;
+        if context.headers.iter().any(|(name, _)| {
+            !self.options.runtime_context
+                || !matches!(
+                    name,
+                    "session_id" | "x-client-request-id" | "x-codex-turn-metadata"
+                )
+        }) {
+            return Err(ProviderError::new(
+                400,
+                "ollama_unsupported_context_headers",
+            ));
+        }
+        context.headers = ContextHeaders::default();
+        Ok(context)
     }
     fn prepare(
         &self,
@@ -174,7 +211,13 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         {
             return Err(ProviderError::new(400, "ollama_unsupported_capability"));
         }
-        let request = if self.native_history {
+        let request = runtime::compile(
+            request,
+            &self.options,
+            &metadata.capabilities,
+            self.limits.request_bytes,
+        )?;
+        let request = if self.options.native_history {
             history::expand(
                 request,
                 &self.config,
@@ -189,9 +232,7 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             request,
             details,
             &metadata.capabilities,
-            self.native_history,
-            self.images,
-            self.structured_output,
+            &self.options,
             self.limits.request_bytes,
         )
     }
@@ -252,6 +293,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
+            let context = self.native_context(context)?;
             let request = self.prepare(request, &context)?;
             let strict = structured::StrictOutput::compile(&request)?;
             let native_model = self.metadata(request.model())?.native_model;
@@ -266,7 +308,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
             if let Some(strict) = &strict {
                 strict.validate(&response.response)?;
             }
-            if self.native_history {
+            if self.options.native_history {
                 response.response = NativeHistory::from_response(
                     &self.config,
                     &native_model,
@@ -290,6 +332,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
+            let context = self.native_context(context)?;
             let request = self.prepare(request, &context)?;
             let strict = structured::StrictOutput::compile(&request)?;
             let native_model = self.metadata(request.model())?.native_model;
@@ -302,10 +345,12 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
             };
             let mut response = self.responses.stream_response(request, context).await?;
             response_headers_guard(&response.headers)?;
-            if self.native_history || strict.is_some() {
+            if self.options.native_history || strict.is_some() {
                 response.events = Box::pin(history_stream::HistoryStream::new(
                     response.events,
-                    self.native_history.then(|| self.config.replay_scope()),
+                    self.options
+                        .native_history
+                        .then(|| self.config.replay_scope()),
                     native_model,
                     native_request,
                     history_context,
@@ -327,12 +372,6 @@ fn context_guard(context: &RequestContext) -> ProviderResult<()> {
         .is_some_and(|deadline| deadline <= std::time::Instant::now())
     {
         return Err(ProviderError::new(504, "provider_timeout"));
-    }
-    if context.headers.iter().next().is_some() {
-        return Err(ProviderError::new(
-            400,
-            "ollama_unsupported_context_headers",
-        ));
     }
     Ok(())
 }

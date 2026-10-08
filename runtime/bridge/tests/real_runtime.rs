@@ -85,6 +85,8 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-ollama-classic" | "gateway-ollama-context-classic" => "native-ollama-classic",
+            "gateway-ollama-lite" => "native-ollama-lite",
             "gateway-google-basic-classic" => "native-google-basic-classic",
             "gateway-google-basic-lite" => "native-google-basic-lite",
             "gateway-google-classic" => "native-google-classic",
@@ -180,7 +182,8 @@ impl Harness {
                     | "wire-anthropic-lite"
                     | "native-anthropic-lite"
                     | "native-anthropic-tools-lite"
-                    | "native-google-lite",
+                    | "native-google-lite"
+                    | "native-ollama-lite",
                     _,
                 )
                 | (
@@ -196,7 +199,8 @@ impl Harness {
                     | "native-anthropic-classic"
                     | "native-anthropic-discovery"
                     | "native-anthropic-stall"
-                    | "native-google-classic",
+                    | "native-google-classic"
+                    | "native-ollama-classic",
                     _,
                 ) => "gpt-5.5",
                 _ => "gpt-5.1-codex",
@@ -210,6 +214,7 @@ impl Harness {
             let native_openai = mode.starts_with("gateway-openai-");
             let native_anthropic = mode.starts_with("gateway-anthropic-");
             let native_google = mode.starts_with("gateway-google-");
+            let native_ollama = mode.starts_with("gateway-ollama-");
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
@@ -217,6 +222,8 @@ impl Harness {
                     "openai"
                 } else if native_anthropic {
                     "anthropic"
+                } else if native_ollama {
+                    "ollama"
                 } else if native_google {
                     "google"
                 } else {
@@ -230,7 +237,35 @@ impl Harness {
                 owner,
                 GatewayFixtureStore(credential_reads.clone()),
             ));
-            if native_google {
+            if native_ollama {
+                use caidex_provider_ollama::{ModelDetails, OllamaConfig, OllamaProvider};
+                let mut provider = OllamaProvider::new(
+                    OllamaConfig::new(&format!("http://127.0.0.1:{port}/v1"), Some(credential))
+                        .unwrap(),
+                    vec![caidex_model_core::ModelMetadata::configured(
+                        model.into(),
+                        "native-fixture".into(),
+                        vec![ResponsesDialect::Classic],
+                    )],
+                    broker.clone(),
+                    Limits::default(),
+                )
+                .unwrap();
+                if mode == "gateway-ollama-context-classic" {
+                    provider = provider.with_runtime_context().with_native_history()
+                        .with_verbosity_instruction("low".into(), "Keep user-facing answers concise while preserving required detail.".into()).unwrap()
+                        .with_model_details(vec![(model.into(), ModelDetails::parse("native-fixture".into(),json!({"thinking":{"values":[false,"low","medium","high"],"default":"medium"}})).unwrap())]).unwrap();
+                }
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        Arc::new(provider),
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if native_google {
                 use caidex_provider_google::{
                     GeminiClient, GeminiConfig, GeminiModel, GeminiProvider, ReasoningMapping,
                     SummaryMapping, ThinkingContext, VerbosityMapping,
@@ -419,11 +454,12 @@ impl Harness {
         };
         // Executor-owned catalog declares unsupported client tool search. This
         // uses the fixed Runtime's public config, never strips Gateway tools.
-        let google_summary = if mode.starts_with("gateway-google-") {
-            "model_reasoning_summary = \"auto\"\n"
-        } else {
-            ""
-        };
+        let google_summary =
+            if mode.starts_with("gateway-google-") || mode == "gateway-ollama-context-classic" {
+                "model_reasoning_summary = \"auto\"\n"
+            } else {
+                ""
+            };
         let catalog = if google_catalog {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures/google_model_catalog.json");
@@ -2787,4 +2823,64 @@ async fn real_lite_native_google_rejects_multiple_calls_before_execution() {
 #[ignore = "requires pinned Codex; Gemini classic/Lite interrupt closes actual native streaming socket"]
 async fn real_runtime_interrupt_via_native_google_closes_socket() {
     interrupt_gateway(&["gateway-google-stall-classic", "gateway-google-stall-lite"]).await;
+}
+
+// Real request modes, not a handcrafted CanonicalRequest: the context profile
+// still must not grant missing custom/Lite/default web/tool-discovery support.
+#[tokio::test]
+#[ignore = "requires pinned Codex; Ollama unsupported classic/Lite/context requests reject before Key"]
+async fn real_ollama_runtime_defaults_and_partial_context_refuse_tools_before_authentication() {
+    for (mode, code) in [
+        (
+            "gateway-ollama-classic",
+            "ollama_unsupported_context_headers",
+        ),
+        ("gateway-ollama-lite", "unsupported_dialect"),
+        (
+            "gateway-ollama-context-classic",
+            "ollama_unsupported_request",
+        ),
+    ] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":"Offline Ollama adapter boundary fixture"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Interaction(request) => panic!(
+                    "unsupported request reached approval: {}",
+                    request.event.raw
+                ),
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "failed",
+                        "{}",
+                        event.raw
+                    );
+                    assert!(
+                        event.raw["params"]["turn"]["error"]["message"]
+                            .as_str()
+                            .unwrap()
+                            .contains(code),
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                _ => (),
+            }
+        }
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 0);
+        assert_eq!(harness.trace()["requests"], 0);
+        harness.shutdown().await;
+    }
 }

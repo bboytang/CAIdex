@@ -533,6 +533,7 @@ dependencies = [
  "caidex-model-gateway",
  "caidex-provider-anthropic",
  "caidex-provider-google",
+ "caidex-provider-ollama",
  "caidex-provider-openai",
  "serde",
  "serde_json",

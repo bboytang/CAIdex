@@ -4,7 +4,16 @@ use caidex_model_core::{
     CanonicalRequest, CapabilitySupport, ModelCapabilities, ProviderError, ProviderResult,
 };
 use serde_json::{Value, json};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+
+#[derive(Default)]
+pub(crate) struct Options {
+    pub native_history: bool,
+    pub images: bool,
+    pub structured_output: bool,
+    pub runtime_context: bool,
+    pub verbosity_instructions: HashMap<String, String>,
+}
 
 fn invalid() -> ProviderError {
     ProviderError::new(400, "ollama_invalid_request")
@@ -66,9 +75,7 @@ pub(crate) fn compile(
     request: CanonicalRequest,
     details: Option<&ModelDetails>,
     capabilities: &ModelCapabilities,
-    native_history: bool,
-    images: bool,
-    structured_output: bool,
+    options: &Options,
     max_bytes: usize,
 ) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
@@ -98,9 +105,10 @@ pub(crate) fn compile(
     thinking(&mut wire, details, capabilities.reasoning)?;
     output_format(
         &mut wire,
-        structured_output && capabilities.structured_output != CapabilitySupport::Unsupported,
+        options.structured_output
+            && capabilities.structured_output != CapabilitySupport::Unsupported,
     )?;
-    let images = images && capabilities.vision != CapabilitySupport::Unsupported;
+    let images = options.images && capabilities.vision != CapabilitySupport::Unsupported;
     for key in ["store", "background"] {
         if let Some(value) = wire.get(key) {
             if !value.is_null() && value != &Value::Bool(false) {
@@ -200,7 +208,7 @@ pub(crate) fn compile(
                 Some(value) => value.as_str().ok_or_else(invalid)?,
             };
             match kind {
-                "reasoning" if native_history => {
+                "reasoning" if options.native_history => {
                     // Only verified capsules are expanded by the provider;
                     // arbitrary caller reasoning never reaches this branch.
                     if pending_thinking

@@ -135,3 +135,6 @@ Ollama图片/非严格格式本轮显式opt-in：内联Base64 message/工具结�
 
 
 Ollama严格结构输出当前本地实现：既有structured opt-in接受strict=true，原生不实施的约束通过固定offline jsonschema实例校验兑现；坏Schema在Key/POST前拒绝，坏Completed JSON在终态/工具完成交付前拒绝，临时文本保持增量。共享history stream在history关闭时不造载体，保持native indices；calls/refusal/failed/incomplete单独处理。新增7项、本地Ollama39及workspace351/0/39、旧Runtime37/0/0；源码bd3995e已提交/push，[CI37770508610](https://github.com/bboytang/CAIdex/actions/runs/37770508610)精确head三平台全部job/step成功或条件跳过；Ollama39/OpenAI11/Custom7/Google90及旧Runtime每名逐平台一次，workspace351/346/350、旧Runtime37/36/36均零失败。仍不认领Ollama真实daemon/新Runtime或Full，详Ollama文档。
+
+
+Ollama固定Runtime请求入口本轮新增显式本地归属/leading developer策略、native history下include/auto summary/all_turns及执行端verbosity指令映射，编译后前缀绑定和双层预算保持；header/metadata不转发给native，不承诺持久化/cache或verbosity生成刻度。新增6项定向通过；真实固定Runtime新增1项三模式拒绝，零Key/POST/审批，非正例或Full。Runtime dev依赖只关联已有Ollama，无新第三方版本。完整本地workspace357/0/40、固定Runtime38/0/0、Clippy/fmt/diff通过；三平台回归待验，恢复点为其余custom/namespace/discovery/Lite路径及正例，详Ollama文档/HANDOFF。
