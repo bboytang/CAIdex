@@ -1,6 +1,6 @@
 # CAIdex Ollama Provider：设计与验收
 
-阶段 F/G，沿 V3；本轮是经典 stateless Responses 的离线协议阶段。代码在 `model/providers/ollama`，stateless/show/thinking/native history累计26项及完整回归通过，最新源码ad3a491/[CI37728309340](https://github.com/bboytang/CAIdex/actions/runs/37728309340)三平台已验收，各阶段范围/证据见后续节。尚未连接真实 Ollama daemon/模型，也未验证固定 Runtime 使用本 Adapter，不授予任何模型 Codex Full/Compatible。
+阶段 F/G，沿 V3；本轮是经典 stateless Responses 的离线协议阶段。代码在 `model/providers/ollama`，stateless/show/thinking/native history/图片/非严格格式累计32项及完整回归通过，最新源码ad86a34/[CI37767000333](https://github.com/bboytang/CAIdex/actions/runs/37767000333)三平台已验收，各阶段范围/证据见后续节。尚未连接真实 Ollama daemon/模型，也未验证固定 Runtime 使用本 Adapter，不授予任何模型 Codex Full/Compatible。
 
 ## 原生依据与当前范围
 
@@ -96,7 +96,7 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 日志`/tmp/caidex-ci-37728309340-{status.json,watch.log,linux.log,windows.log,macos.log}`及逐名脚本`/tmp/caidex-ollama-history-ci-check.py`。第一次逐名检查发现macOS CLI缓存protocol段提前截断；直接下载job113151419136完整原始日志，保留`macos-{raw,cli-truncated}.log`，仅以原始完整protocol段替换对应段后重验成功，不把首次不完整检查计为通过。本次收尾仅文档，代码验收对应上述源码head。
 
 
-## 内联图片与非严格结构输出（本轮本地通过，待提交/CI）
+## 内联图片与非严格结构输出（三平台离线通过）
 
 - 依据固定官方e3cddc3e的[Responses转换器](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/openai/responses.go)及[图片解码器](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/openai/openai.go)：图片只支持内联Base64，FileID无映射，远程URL拒绝，detail不参与转换；native text.format仅json_schema.schema进入ChatRequest.Format，json_object和strict不会实施。官方[兼容说明](https://docs.ollama.com/api/openai-compatibility)/[结构输出](https://docs.ollama.com/capabilities/structured-outputs)辅助核对；不以文档能力清单代替固定源码或真实模型证据。
 - `with_images()`显式启用message content/function_call_output内的input_image；PNG/JPEG/JPG/WebP及native空MIME的data URI仅校验标准Base64和非空/字节预算，不重编码/改写原文、字段、文本/图片次序。不是图像解码/真实模型识别验收，MIME/实际像素格式仍由native image processor处理。外部URL、file_id、其他媒体类型、未知字段、low/high/original detail拒绝，auto/省略/null为已知原生默认。Adapter不抓取远端图片或读取本机路径，不新增上传服务。
@@ -106,4 +106,9 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 
 复用loopback harness新增6项（Ollama共32）：5种native MIME输入在JSON/SSE完整POST保留；带图工具结果与格式改变的绑定回放；18组source/detail/Base64/格式拒绝分别JSON/SSE且Key/POST计数零；opt-in与明确Unsupported独立；有效大图片/schema的body预算前置；plaintext/空/null格式默认。有效RED（原compiler拒绝合法图片/格式）→GREEN，`/tmp/caidex-ollama-content-{red,green}.log`。初次锁关联遗漏已有base64多版本标识，通过Cargo --offline纠正为base64 0.22.1；该失败不计通过。
 
-本地Ollama32/0/0、workspace344/0/39、旧固定Runtime37/0/0、Clippy -D warnings/fmt/diff通过；Ollama32每名在workspace各一次。日志`/tmp/caidex-ollama-content-{provider-final,workspace-final,all-real-final,clippy-final}.log`；源码待提交/新精确CI，前一阶段CI不代证本轮。未做实际Ollama Runtime/daemon/模型下载/商业推理，未派新agent独立审查。严格输出、其余工具、context/developer及Lite按交接顺序继续，整体F/G及H–R未完成。
+本地Ollama32/0/0、workspace344/0/39、旧固定Runtime37/0/0、Clippy -D warnings/fmt/diff通过；Ollama32每名在workspace各一次。日志`/tmp/caidex-ollama-content-{provider-final,workspace-final,all-real-final,clippy-final}.log`；源码ad86a343a9c5adf5cd2ab0f52065a780fcc8b714已提交/push，[CI37767000333](https://github.com/bboytang/CAIdex/actions/runs/37767000333)精确head三平台已通过，前一阶段CI不代证本轮。未做实际Ollama Runtime/daemon/模型下载/商业推理，未派新agent独立审查。严格输出、其余工具、context/developer及Lite按交接顺序继续，整体F/G及H–R未完成。
+
+
+本轮CI收尾：源码`ad86a343a9c5adf5cd2ab0f52065a780fcc8b714`，Linux/Windows/macOS三个job均completed/success、全部step成功或条件跳过。逐名核对Ollama32/OpenAI11/Custom7/Google90及旧Runtime各平台每名一次；workspace344/339/343，0失败、ignored39/37/37；旧Runtime37/36/36，0失败/0ignored；Linux native credentials1、fmt/Clippy/schema/doctor通过。不是本Adapter新Runtime或真实模型证据，严格Schema与其余工具/实际Runtime仍待。
+
+日志`/tmp/caidex-ci-37767000333-{status.json,watch.log,linux.log,windows.log,macos.log}`。三平台直接取job API完整`*-raw.log`、保留原文；`/tmp/caidex-ollama-content-ci-normalize.py`仅按实际Run命令添加step标签，`/tmp/caidex-ollama-content-ci-check.py`核对精确SHA/全部终态/逐名/数量，均exit0，watch和三日志下载exit0。本轮断开前git add因额度限制审核无法完成；恢复后先读HANDOFF/Git/完整差异与原始验证证据，修正交接中过时的阻塞解除状态，再经原审批链提交/push/CI，无绕过审批。收尾仅文档，代码对应上述SHA。
