@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-07。先读本文件，再检查 Git/AGENTS.md；沿 V3 恢复点继续，不重新规划已确认架构。
+更新：2026-10-08。先读本文件，再检查 Git/AGENTS.md；沿 V3 恢复点继续，不重新规划已确认架构。
 
 ## 当前任务与恢复点
 
-F/G：Gemini六方法/Profile与增量JSON/SSE投影、Registry/Gateway本阶段已验收。源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台通过；Google88逐名通过，唯一审查无Critical/Important、1覆盖Minor暂缓。下一步固定实际Gemini Runtime接线；不重做已验参数/投影，不改V3。完整F/G及H–R仍未完成。
+F/G：固定Gemini Runtime接线已实现，基线main f43b5f7，尚未提交/新CI；唯一审查已完成无Critical/Important，1覆盖Minor暂缓（thought豁免/无tools/未opt-in none）。经典/Lite三轮签名历史含实际app-server重启、Lite审批Code Mode marker执行/原样result及重启不重复、经典静态MCP调用/结果及重启不重复、classic/Lite interrupt socket关闭均已有本地通过；双调用负例暴露共享Gateway SSE错误被固定Runtime忽略，已最小response.failed修复并有效RED→GREEN。本地完整workspace312passed/0failed/39ignored、完整实际Runtime37passed/0failed/0ignored与Clippy/fmt/diff已过。最终复验已过；唯一审查已结束，裁定14项及成本在Gemini文档；正在续接提交/push/精确源码三平台CI。上次git add因额度用尽导致自动审批审核无法完成而未执行，并非不安全裁定；本轮重试已授权操作。保持V3；商业Full/F/G全部与H–R未完成。
 
 完整项目/文档公开、提交/push/CI及离线合成fixture已获授权，不重复询问。不读取用户模型Key，不调用商业API；合成fixture不授予商业Full。
 
@@ -18,9 +18,9 @@ F/G：Gemini六方法/Profile与增量JSON/SSE投影、Registry/Gateway本阶段
 
 ## 未完成与下一步顺序
 
-1. 固定Gemini Runtime接线：先检查runtime/bridge/tests/real_runtime.rs与fixtures/responses_server.py的Anthropic/Gateway既有模式；扩展合成原生Google fixture及执行端Gemini Profile，不造第二Runtime/HTTP栈。先实际RED确定请求字段与失败点，再做最小接线/正例。
-2. 运行门控：context headers当前全部非空在Key前拒绝；实际Runtime接入按执行端显式本地归属验证逐项允许，不能直接转发OpenAI专有头/捏造native cache或sticky routing。完整v1/v2原请求绑定含budget/toolConfig/thinkingConfig/responseFormat/serviceTier/systemInstruction，参数改变拒绝旧历史，不自动松绑。纯SSE comment不向下游转发；Gateway仅绝对deadline，native每个网络chunk重设idle，固定Runtime下游idle待实际验证。
-3. 已知unsupported：parallel_tool_calls=false且启用工具（固定Lite默认false）、发现/tool_search/web_search/strict/defer_loading/后置system；grammar仅指导。保持明确拒绝，不能删工具、提示词冒充硬约束或把true fixture当Lite真实通过。经典/Lite分别验证实际请求的支持范围、Key/POST前拒绝、审批/工具/取消/落盘重启；每阶段唯一审查与新精确源码三平台CI。其他Provider Runtime绿结果不证明Gemini成功，fixture/目录/profile不授予LiveRuntime/Full。
+1. 提交/push当前源码与文档，启动新精确SHA CI；核对三个job/所有step终态、Google90及实际Google7测试逐名各一次、全部Runtime与workspace。唯一审查已完成无Critical/Important，1覆盖Minor暂缓；14排除项逐项裁定/成本留Gemini文档，不派复审。最终本地workspace312/0/39、实际Runtime37/0/0、Clippy/fmt/diff已验。Google新context/单调用2回归与实际Gemini7测试要逐名核对，不能以局部绿代完整套件。
+2. 已验范围使用固定公开model_catalog_json配置复用gpt-5.5/gpt-6.1-sol模板（来源已精确固定commit核对；仅alias/展示描述/supports_search_tool=false），web_search=disabled。高级默认经典/Lite、basic经典web、basic Lite默认parallelfalse仍Key/POST前拒绝，不使用未知模型fallback/过滤Gateway工具。
+3. 新context opt-in3头只留本地，turn-state拒绝；单调用交付策略opt-in与0调用限制，无Google生成硬承诺/自动重试。共享Gateway本地流错误改response.failed/response.error，固定Runtime才显示safe error code；经典/Lite工具/恢复/取消验收不是商业Full，发现/网页/strict/deferred/后置system仍unsupported。完成唯一审查、裁定与精确源码三平台CI后补文档收尾。Gateway绝对deadline/native网络chunk刷新idle，实际Runtime comment-only idle独立待验。
 4. Gemini → 兼容API/Ollama → V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验收。
 
 ## 重要架构决定
@@ -37,7 +37,7 @@ F/G：Gemini六方法/Profile与增量JSON/SSE投影、Registry/Gateway本阶段
 ## 问题 / 环境 / 暂缓项
 
 - Gemini工具映射审查无Critical/Important，1项覆盖Minor暂缓：完整有效v1/v2组的prefix-only互换尚无专项回归，现有显式版本核对正确，不能夸大覆盖。上轮history2项代码Minor暂缓：缺prompt的部分usage已知下界与total矛盾仍返回usage=null；只有thought函数调用的STOP可能令可见text phase为commentary。旧满槽取消/Drop直接专项覆盖、ProtoJSON替代整数表示等Minor详见Gemini文档；重复/部分usage更新专项已由新history回归补齐，不重复列为未补。
-- 本轮新增覆盖Minor：wrapper取消回归在text delta后队列已空，非空投影pending队列取消/Drop尚无专项；原生连接/slot释放与无terminal/history已验，不夸大立即丢弃已缓冲进度。
+- 上阶段覆盖Minor：wrapper取消回归在text delta后队列已空，非空投影pending队列取消/Drop尚无专项；原生连接/slot释放与无terminal/history已验，不夸大立即丢弃已缓冲进度。
 - Anthropic cached网页/grammar硬约束仍无等价证据；重启第三轮回复精确比较、Lite落盘custom result完整比较两项覆盖Minor暂缓，详见Anthropic文档。
 - 未配置真实模型Key；商业推理/签名真实性/Full、生产Host权限、客户端UI/iOS/真机/签名未验。macOS Rust CI不是iOS应用构建。
 - .git普通沙箱只读，提交/push用require_escalated。gh为bboytang；旧helper缺workflow scope，发布用git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main，不改全局或输出凭据。
@@ -46,15 +46,14 @@ F/G：Gemini六方法/Profile与增量JSON/SSE投影、Registry/Gateway本阶段
 
 ## 文件与 Git 状态
 
-- branch main跟踪origin/main，源码530ead5535b6bc6cd8896317b7360c7872a98571已提交/push及CI通过，无遗留未完成源码。收尾仅HANDOFF/Gemini/Model-Gateway三份文档；恢复时若仍有未提交文档，先完成文档收尾commit/push再按上面顺序继续；最终HEAD与同步/干净状态以Git核对。
+- branch main跟踪origin/main，HEAD f43b5f7；本轮未提交：Cargo.lock、runtime/bridge/Cargo.toml及Google actual harness/HTTP fixture、新google_model_catalog.json、Google client/provider/request/response_stream和http/provider.rs门控及2回归、共享Gateway transfer/http错误事件修复、HANDOFF/Gemini/Runtime/Gateway文档。无本轮提交/CI。
 - 执行基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅背景，冲突以V3为准。详细历史证据留Runtime-能力对照及各Provider/Credentials/Model-Gateway验收文档。
-- 本轮日志/tmp/caidex-google-projection-{red,green}.log、/tmp/caidex-google-provider-{red,green,boundaries-red,boundaries-green,workspace,clippy,projection-final}.log；唯一审查/tmp/caidex-google-provider-review.md。CI status/watch/linux/windows/macos日志/tmp/caidex-ci-37696809902-*，逐名脚本/tmp/caidex-google-request-ci-check.py已递归识别http/provider.rs前缀。跨机器以提交文档/GitHub为准。
-- 首次边界编译因磁盘满失败，不是有效RED；仅清理本项目target/debug/incremental约6.3G后重跑复现。未删源码/用户文件、未改保护。当前本机codex-cli0.160.1可用；实际Gemini Runtime仍未跑。
+- 上阶段日志/tmp/caidex-google-projection-{red,green}.log、/tmp/caidex-google-provider-{red,green,boundaries-red,boundaries-green,workspace,clippy,projection-final}.log；唯一审查/tmp/caidex-google-provider-review.md。CI status/watch/linux/windows/macos日志/tmp/caidex-ci-37696809902-*，逐名脚本/tmp/caidex-google-request-ci-check.py已递归识别http/provider.rs前缀。跨机器以提交文档/GitHub为准。
+- 首次边界编译因磁盘满失败，不是有效RED；仅清理本项目target/debug/incremental约6.3G后重跑复现。未删源码/用户文件、未改保护。当前本机codex-cli0.160.1可用；本轮历史正例已有实际RED日志/tmp/caidex-google-runtime-history-red.log。
 - 当前相关：model/providers/google/src/{provider,response_stream,runtime_parameters,structured,reasoning,media,request,history,tools,client,content,stream,transfer}.rs、tests/{http/provider.rs,response_stream,runtime_parameters,structured,reasoning,media,request,http,history,tools}.rs；下一步参考Anthropic provider/projection/response_stream、model/core/provider.rs及registry、model/gateway，不复制传输栈。
 - 代码边界：credentials/core、apps/cli、model/core/providers/gateway、runtime/bridge、upstream/codex、.github/workflows/ci.yml、scripts；assets/brand四份原件未改。
 
 ## 最近验证
 
-- 本轮投影4及Provider3均有效RED→GREEN；响应头负例1有效RED→GREEN修复空ID接受，Gateway经典/Lite及wrapper取消/Drop/截断2为集成验收（无独立RED）。完整workspace310passed/0failed/32ignored，Google88名字各通过一次；Clippy -D warnings/fmt/diff通过，lint修正后投影4复验通过。
-- 唯一独立审查无Critical/Important，1覆盖Minor见上；10项排除裁定/成本在Gemini文档。不派复审，不调用商业API。源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台completed/success，精确head、三job、所有步骤均核对；watch终态0、三日志下载0。Google88名字逐平台各一次；workspace Linux310/Windows305/macOS309，0失败，ignored32/30/30；既有实际Runtime Linux30/其他29，0失败/ignored；fmt/Clippy/native credentials/schema/doctor通过。Rust macOS不是iOS应用验收，新Google Runtime没有证据。
-- 前轮参数源码05f6f9182c101c16fd67565b9c4fa7136c4c294e/[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)三平台通过：Google78，workspace Linux300/Windows295/macOS299，既有Runtime Linux30/其他29。具体逐项证据及更早阶段见各Provider文档；这些不是新增Gemini Runtime/商业Full或iOS证据。
+- 当前本轮：context1（有效RED→GREEN，/tmp/caidex-google-runtime-context-{red,green}.log）；单调用1含JSON/SSE×4场景（有效RED→GREEN，/tmp/caidex-google-runtime-cardinality-{red,green}.log）。实际默认拒绝1测试/4模式（/tmp/caidex-google-runtime-defaults.log）、经典两轮签名/磁盘载体1（/tmp/caidex-google-runtime-history-green.log）均exit0。此前默认模式错误期望及includeThoughts缺省none是fixture修正，不算生产RED；真正context RED见history-profile-red.log。后续新增Lite历史有效RED parallelfalse→显式profile GREEN。经典/Lite三轮+重启2测试通过history-restart-green.log；工具集成首次4绿/2红（Lite重复读已删除marker的测试错误已修），Lite执行精确结果/恢复已通过tools-check.log；双调用实际safe错误RED→GREEN multi-green.log，共享Gateway6坏流场景有效RED→GREEN gateway-error-{red,green}.log。MCP静态工具/恢复与两模式interrupt已局部绿。本轮完整workspace312passed/0failed/39ignored（普通workspace不执行37项ignored实际Runtime/native服务）；另完整实际Runtime37passed/0failed/0ignored，新Google7名字各一次；Clippy -D warnings/fmt/diff通过。移除无用fixture模式后最终workspace-final/all-real-final日志同数通过；唯一审查已完成无Critical/Important，1覆盖Minor暂缓（thought调用豁免/无tools/未opt-in none）；14排除项/成本见Gemini文档。新CI尚未运行。
+- 上阶段源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台completed/success：Google88逐名一次；workspace Linux310/Windows305/macOS309，0失败，ignored32/30/30；旧实际Runtime Linux30/其他29。唯一审查无Critical/Important，pending队列覆盖Minor暂缓，裁定详Gemini文档。这些不是新增Gemini Runtime/商业Full/iOS证据。

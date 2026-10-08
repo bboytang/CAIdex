@@ -391,3 +391,12 @@ cargo test -p caidex-runtime --test real_runtime --locked -- --ignored
 ```
 
 本机 Node spawn/loopback 受沙箱限制时需相应执行权限；GitHub runner 直接运行。真实模型、签名、Windows GUI/UAC 和 iOS 真机仍待具备条件验收。
+
+
+## Gemini实际Runtime（本地通过，三平台CI待验）
+
+固定0.160.1的经典/Lite各三轮实际原生Google→Gateway→Runtime历史已本地通过，第三轮重启app-server从磁盘恢复完整signed Parts/v2 request/chunks/大数。执行端公共model_catalog_json声明不支持client tool_search，正例显式禁用web；默认高级经典/Lite与basic经典web/basic Lite默认parallelfalse另4负例全部Key/POST为0。只在显式Lite profile启用本地EOF前交付数量校验，不承诺Google原生单调用生成约束。
+
+实际Lite Code Mode自带函数执行经真实审批，批准前无临时marker，结果精确保存/回放；移除marker后重启不重复执行。经典静态MCP echo实际调用/结果原文，重启新MCP进程零重跑。Lite双调用整轮失败，无审批/执行/历史载体且1Key/1POST；共享Gateway失败SSE改response.failed，固定Runtime显示静态安全code。classic/Lite interrupt均实际关闭原生未完成socket。
+
+本轮完整实际Runtime37passed/0failed/0ignored，新增Google7各一次；完整workspace312/0/39、Clippy/fmt/diff通过。尚未新CI，精确源码与验收状态见HANDOFF/Gemini文档。非商业Full、不证明动态发现/网页/所有原生能力；运行状态真源和V3 H–R顺序不变，Rust macOS也不代表iOS应用构建。

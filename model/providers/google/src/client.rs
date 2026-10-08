@@ -14,6 +14,7 @@ use tokio::{sync::Semaphore, time::Instant};
 pub struct GeminiConfig {
     base: Url,
     credential: CredentialRef,
+    local_runtime_context: bool,
 }
 impl GeminiConfig {
     pub fn new(credential: CredentialRef) -> Result<Self, Error> {
@@ -24,6 +25,7 @@ impl GeminiConfig {
             base: Url::parse("https://generativelanguage.googleapis.com/v1beta/")
                 .expect("fixed URL"),
             credential,
+            local_runtime_context: false,
         })
     }
     pub fn with_base_url(mut self, base: &str) -> Result<Self, Error> {
@@ -33,6 +35,11 @@ impl GeminiConfig {
             self.base.set_path(&format!("{}/", self.base.path()));
         }
         Ok(self)
+    }
+    /// Opt into local-only fixed Runtime context; no native routing equivalence.
+    pub fn with_local_runtime_context(mut self) -> Self {
+        self.local_runtime_context = true;
+        self
     }
 }
 impl fmt::Debug for GeminiConfig {
@@ -233,7 +240,13 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         if deadline <= Instant::now() {
             return Err(ProviderError::new(504, "provider_timeout"));
         }
-        if context.headers.iter().next().is_some() {
+        if context.headers.iter().any(|(name, _)| {
+            !self.config.local_runtime_context
+                || !matches!(
+                    name,
+                    "session_id" | "x-client-request-id" | "x-codex-turn-metadata"
+                )
+        }) {
             return Err(ProviderError::new(400, "unsupported_native_context_header"));
         }
         Ok(deadline)

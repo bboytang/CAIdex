@@ -111,10 +111,72 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def native_google(self, body):
+        assert self.path == "/v1beta/models/native-fixture:streamGenerateContent?alt=sse"
+        trace["gatewayCredentialMatched"] = self.headers.get("x-goog-api-key") == "CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
+        assert trace["gatewayCredentialMatched"]
+        assert all(name not in self.headers for name in ["Authorization", "session_id", "x-client-request-id", "x-codex-turn-metadata", "x-codex-turn-state"])
+        trace.setdefault("nativeRequests", []).append(body)
+        parts = [{"thought": True, "text": "Native fixture thinking", "thoughtSignature": "signed+/==\n", "future": "retain"},
+                 {"text": "CAIdex local ", "thoughtSignature": "text-a"},
+                 {"text": "fixture complete", "thoughtSignature": "text-b"},
+                 {"futurePart": {"number": 18446744073709551616, "opaque": "retain"}}]
+        if mode in ["native-google-tools-lite", "native-google-multi-lite", "native-google-mcp"] and trace["requests"] == 1:
+            declarations = body["tools"][0]["functionDeclarations"]
+            if mode == "native-google-mcp":
+                tool = next(tool for tool in declarations if "Tool identity: mcp__fixture::echo." in tool["description"])
+                arguments = {}
+            else:
+                tool = next(tool for tool in declarations if "Tool identity: functions::exec." in tool["description"])
+                command = {"cmd": "echo CAIDEX_NATIVE_CODE_MODE > caidex-native-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated CAIdex native fixture marker only", "yield_time_ms": 1000}
+                script = "const result = await tools.exec_command(" + json.dumps(command) + "); text(result); text('CAIDEX_NATIVE_CODE_MODE');"
+                arguments = {"input": script}
+            call = {"functionCall": {"id": "google-tool-one", "name": tool["name"], "args": arguments}, "thoughtSignature": "tool-signed+/==\n", "future": "keep-call"}
+            parts[1:3] = [call]
+            if mode == "native-google-multi-lite":
+                parts.insert(2, {**call, "functionCall": {**call["functionCall"], "id": "google-tool-two"}})
+        content = {"role": "model", "parts": parts}
+        metadata = {"responseId": "reused-native-id", "modelVersion": "native-serving-version",
+                    "usageMetadata": {"promptTokenCount": 3, "candidatesTokenCount": 2, "thoughtsTokenCount": 4, "totalTokenCount": 9}}
+        chunks = [{"candidates": [{"index": 0, "content": {"role": "model", "parts": parts[:2]}}]},
+                  {"candidates": [{"index": 0, "content": {"role": "model", "parts": parts[2:]}, "finishReason": "STOP"}]}, metadata]
+        if mode == "native-google-stall":
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            self.protocol_version = "HTTP/1.1"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            data = f"data: {json.dumps(chunks[0])}\n\n".encode()
+            self.wfile.write(f"{len(data):x}\r\n".encode() + data + b"\r\n")
+            self.wfile.flush()
+            Path(trace_path).with_name("gateway-streaming").touch()
+            try:
+                disconnected = self.connection.recv(1) == b""
+            except OSError:
+                disconnected = True
+            trace["gatewayDisconnected"] = disconnected
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            Path(trace_path).with_name("gateway-disconnected").touch()
+            self.close_connection = True
+            return
+        trace.setdefault("nativeResponses", []).append({"candidates": [{"index": 0, "content": content, "finishReason": "STOP"}], **metadata})
+        trace.setdefault("nativeChunks", []).append(chunks)
+        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+        data = "".join(f"data: {json.dumps(chunk)}\n\n" for chunk in chunks).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         trace["requests"] += 1
         trace["authorizationSeen"] |= "Authorization" in self.headers
+        if mode.startswith("native-google-"):
+            self.native_google(body)
+            return
         if mode.startswith("native-anthropic-"):
             self.native_anthropic(body)
             return

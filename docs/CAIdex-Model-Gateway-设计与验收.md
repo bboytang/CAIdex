@@ -95,7 +95,7 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 - 本机 workspace/fmt/Clippy、Gateway 16 项、真实 Runtime Linux 20 项通过；最终大整数/高精度小数 wire 和 EOF/reset 判据分别定向复验通过。全部使用本地合成推理数据，不代表真实商业模型兼容性。
 - F 第三步 [三平台 CI 37552752561](https://github.com/bboytang/CAIdex/actions/runs/37552752561) 全部 success，源码 `42fdaa3`（接口源码 e834549 + 证书 fixture 修正）：核心 20、独立 provider 7、Gateway 18 项各平台通过，真实 Runtime Linux 20、Windows/macOS 各 19 项通过。新增验证包含独立 client 六方法/经典与 Lite、配置能力与未验证标记、完整同步 response、header 双向筛选、HTTP-date、单并发 slot 释放、未消费流取消/超时、TLS 正/负证书；fmt/Clippy/workspace/schema/doctor 及既有凭据回归保持通过。
 - 本机 workspace/fmt/Clippy/真实 Runtime 20 项通过，单并发 slot/TLS 定向复验通过。首轮 Windows TLS 正例被拒绝，以明确 CA/leaf identity、用途/AKI/有效期的 fixture 修正后全部通过，未放宽生产 TLS。日志 `/tmp/caidex-ci-37552752561.log` 供本机复查，跨机器以 CI 链接为准。
-- 后续范围：Gemini图片/参数转换/六方法/实际Runtime、兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
+- 后续范围：Gemini实际Runtime新三平台CI、兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
 
 ## 下一步顺序
 
@@ -117,3 +117,8 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 Gemini最新恢复点：GenerateContentRequest经典/Lite、完整native历史组/实际前缀、function/custom配对及原调用序、用户图片/工具结果媒体已三平台验收；源码cf8c2c942c593858b3a2b775b3ea94c5510a9877，[CI37684084386](https://github.com/bboytang/CAIdex/actions/runs/37684084386)completed/success，Google60个名字逐平台各通过一次，workspace Linux282/Windows277/macOS281，0失败。媒体能力由执行端显式给定，data URL有界、detail意图per-Part映射、结果inlineData/displayName单次引用；实际JSON/SSE/落盘三轮保持签名、原序和native缺省ID。本轮唯一独立审查无Critical/Important/新增Minor，细节及Ruling见Gemini文档。下一步推理/结构输出/Runtime参数，再六方法/Registry/Gateway/固定Runtime；parallel_tool_calls=false且启用工具仍unsupported，未实际执行Gemini Runtime工具或调用商业API，不授予Full。
 
 Gemini六方法/Profile、增量Responses JSON/SSE及真实Registry/Gateway离线范围已三平台验收：源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)，Google88个名字逐平台各一次；workspace Linux310/Windows305/macOS309，0失败；既有实际Runtime Linux30/其他29通过。Gateway验证经典/Lite token隔离/原生历史，不执行工具；文本/摘要先流出，工具和完整签名载体等STOP且正常EOF验证。唯一审查无Critical/Important，1项非空投影pending队列取消专项覆盖Minor暂缓。下一步实际Gemini Runtime，现有true Lite fixture不证明固定Lite parallelfalse支持；其余unsupported/native绑定、商业Full/H–R范围不变。当前Gateway仅绝对deadline，native按收到网络chunk重设idle，纯comment不转发；下游实际Runtime idle仍待验。详细恢复点见HANDOFF/Gemini文档。
+
+
+Gemini实际Runtime本轮已按显式执行端catalog/本地context与Lite单调用交付策略接线，本地Google7实际测试覆盖默认拒绝、经典/Lite历史与落盘重启、Lite审批Code Mode、静态MCP/恢复、双调用拒绝、两路径interrupt。完整workspace312/0/39、实际Runtime37/0/0通过，唯一审查已完成无Critical/Important、新CI待验，非商业Full。
+
+共享Gateway仅对本地ProviderError/guard failure生成response.failed/response.error（静态安全code），替代被固定Codex忽略的通用error；HTTP错误格式不变，第三方原始诊断仍不传播。既有坏流/timeout断连回归已适配，实际双调用失败显示安全code且不重试/执行。消费者读取response.error；不会生成成功终态、工具或完整签名历史。详Gemini本轮记录，下一步精确源码三平台CI后推进兼容API/Ollama。

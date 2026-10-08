@@ -27,6 +27,7 @@ pub struct GenerateContentRequest {
     wire: Value,
     source: Value,
     tools: ToolMap,
+    tool_call_limit: Option<usize>,
 }
 /// Fixed execution-side capabilities. Empty mappings mean unsupported,
 /// not model-name inference or proof of live service compatibility.
@@ -34,6 +35,8 @@ pub struct GenerateContentRequest {
 pub struct RequestOptions<'a> {
     /// Retain routing hints locally; no native cache/metadata promise.
     pub retain_runtime_metadata: bool,
+    /// Opt into validating a single executable call at the Responses boundary.
+    pub enforce_single_tool_call: bool,
     pub service_tier_mappings: &'a [crate::ServiceTierMapping],
     pub verbosity_mappings: &'a [crate::VerbosityMapping],
     pub image_mime_types: &'a [&'a str],
@@ -149,6 +152,7 @@ impl GenerateContentRequest {
         }
         if !tools.native_tools().is_empty()
             && choice != "none"
+            && !options.enforce_single_tool_call
             && source
                 .get("parallel_tool_calls")
                 .is_some_and(|v| v == false)
@@ -159,6 +163,16 @@ impl GenerateContentRequest {
                 "unsupported_google_parallel_tool_calls",
             ));
         }
+        let tool_call_limit = if tools.native_tools().is_empty() || choice == "none" {
+            Some(0)
+        } else if source
+            .get("parallel_tool_calls")
+            .is_some_and(|v| v == false)
+        {
+            Some(1)
+        } else {
+            None
+        };
         let mut wire = json!({"generationConfig":{"maxOutputTokens":max_tokens},"contents":[]});
         crate::runtime_parameters::apply(&mut wire, source, options)?;
         // The actual thinking settings are part of every replay prefix.
@@ -396,7 +410,13 @@ impl GenerateContentRequest {
             wire,
             source: source.clone(),
             tools,
+            tool_call_limit,
         })
+    }
+    /// The Responses consumer must validate this limit before releasing calls.
+    /// It is a local delivery policy, never a native generation parameter.
+    pub fn tool_call_limit(&self) -> Option<usize> {
+        self.tool_call_limit
     }
     pub fn wire(&self) -> &Value {
         &self.wire

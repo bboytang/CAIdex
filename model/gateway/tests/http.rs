@@ -644,7 +644,9 @@ async fn malformed_truncated_oversized_and_mixed_streams_fail_without_success() 
         )
         .await;
         assert_eq!(state, StreamState::Failed);
-        assert_eq!(events.last().unwrap()["error"]["code"], code);
+        assert_eq!(events.last().unwrap()["type"], "response.failed");
+        assert_eq!(events.last().unwrap()["response"]["status"], "failed");
+        assert_eq!(events.last().unwrap()["response"]["error"]["code"], code);
         assert!(
             !events
                 .iter()
@@ -799,7 +801,10 @@ async fn header_idle_and_total_timeouts_close_real_socket_without_retry() {
         } else {
             let (state, events) = wire(response).await;
             assert_eq!(state, StreamState::Failed);
-            assert_eq!(events.last().unwrap()["error"]["code"], "provider_timeout");
+            assert_eq!(
+                events.last().unwrap()["response"]["error"]["code"],
+                "provider_timeout"
+            );
         }
         fixture.disconnected().await;
         assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
@@ -857,7 +862,7 @@ async fn heartbeat_activity_reaches_client_without_creating_model_events_or_succ
     let (state, events) = wire(response).await;
     assert_eq!(state, StreamState::Failed);
     assert_eq!(events.len(), 1);
-    assert_eq!(events[0]["error"]["code"], "provider_timeout");
+    assert_eq!(events[0]["response"]["error"]["code"], "provider_timeout");
     fixture.disconnected().await;
     gateway.shutdown().await.unwrap();
 }

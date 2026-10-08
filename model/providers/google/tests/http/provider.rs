@@ -659,3 +659,260 @@ async fn gateway_with_gemini_preserves_auth_dialect_headers_and_sse_history() {
         gateway.shutdown().await.unwrap();
     }
 }
+
+// Catches opt-in context being sent to Google, default/turn-state acceptance,
+// or context handling bypassing cancellation/deadline before credentials.
+#[tokio::test]
+async fn explicit_runtime_context_stays_local_and_rejects_native_routing_state() {
+    let mut fixture = Fixture::start(vec![
+        Reply::json(json!({"models":[]})),
+        Reply::json(native_reply("STOP")),
+        Reply::sse(&[native_reply("STOP")]),
+    ])
+    .await;
+    let reads = Arc::new(AtomicUsize::new(0));
+    let broker = Arc::new(Broker::new(
+        Id::new("executor").unwrap(),
+        Store {
+            reads: reads.clone(),
+            key: Some(KEY),
+        },
+    ));
+    let config = GeminiConfig::new(reference())
+        .unwrap()
+        .with_base_url(&fixture.base)
+        .unwrap()
+        .with_local_runtime_context();
+    let client = GeminiClient::new(config, broker, Limits::default()).unwrap();
+    let context = || {
+        let mut context = RequestContext::default();
+        for (key, value) in [
+            ("session_id", "local-session"),
+            ("x-client-request-id", "local-request"),
+            ("x-codex-turn-metadata", "local-turn"),
+        ] {
+            context
+                .headers
+                .insert(key, value.into(), REQUEST_HEADERS)
+                .unwrap();
+        }
+        context
+    };
+    assert!(
+        client
+            .discover_models(8, context())
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        client
+            .generate_content(MODEL, native_input(), context())
+            .await
+            .unwrap()
+            .wire(),
+        &native_reply("STOP")
+    );
+    let mut stream = client
+        .stream_content(MODEL, native_input(), context())
+        .await
+        .unwrap();
+    let mut completed = false;
+    while let Some(event) = stream.next().await {
+        completed |= matches!(event.unwrap(), NativeStreamEvent::Completed(_));
+    }
+    assert!(completed);
+    for _ in 0..3 {
+        let request = fixture.request().await.to_ascii_lowercase();
+        assert!(request.contains("x-goog-api-key: caidex_synthetic_google_key"));
+        for key in [
+            "session_id:",
+            "x-client-request-id:",
+            "x-codex-turn-metadata:",
+            "x-codex-turn-state:",
+            "authorization:",
+        ] {
+            assert!(!request.contains(key));
+        }
+        for value in ["local-session", "local-request", "local-turn"] {
+            assert!(!request.contains(value));
+        }
+    }
+    for state in ["x-codex-turn-state", "x-request-id"] {
+        let mut context = context();
+        context
+            .headers
+            .insert(
+                state,
+                "private-state".into(),
+                caidex_model_core::RESPONSE_HEADERS,
+            )
+            .unwrap();
+        assert_eq!(
+            client
+                .generate_content(MODEL, native_input(), context)
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "unsupported_native_context_header"
+        );
+    }
+    let cancelled = context();
+    cancelled.cancellation.cancel();
+    assert_eq!(
+        client
+            .generate_content(MODEL, native_input(), cancelled)
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "provider_cancelled"
+    );
+    let mut expired = context();
+    expired.deadline = Some(std::time::Instant::now() - Duration::from_secs(1));
+    assert_eq!(
+        client
+            .generate_content(MODEL, native_input(), expired)
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "provider_timeout"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 3);
+}
+
+// Catches treating parallel=false as a prompt, delivering multiple executable
+// calls/opaque history before cardinality validation, or accepting calls for none.
+#[tokio::test]
+async fn explicit_single_call_policy_validates_json_and_sse_before_tool_delivery() {
+    let declarations = json!([{ "type":"function","name":"echo","parameters":{"type":"object"}}]);
+    let tools = ToolMap::new(declarations.as_array().unwrap(), 8).unwrap();
+    for stream in [false, true] {
+        for (count, choice, reason, want) in [
+            (1, "auto", "STOP", "completed"),
+            (2, "auto", "STOP", "google_tool_call_limit_exceeded"),
+            (1, "none", "STOP", "google_tool_call_limit_exceeded"),
+            (2, "auto", "MAX_TOKENS", "incomplete"),
+        ] {
+            let mut native = native_reply(reason);
+            native["candidates"][0]["content"]["parts"]=Value::Array((0..count).map(|i|json!({"functionCall":{"name":tools.native_tools()[0]["name"],"id":format!("call-{i}"),"args":{"n":i}},"thoughtSignature":"PRIVATE_SIGNED_CALL"})).collect());
+            let mut fixture = Fixture::start(vec![if stream {
+                Reply::sse(std::slice::from_ref(&native))
+            } else {
+                Reply::json(native.clone())
+            }])
+            .await;
+            let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+            let mut p = profile();
+            p.enforce_single_tool_call = true;
+            let provider = GeminiProvider::new(client, vec![p], 8).unwrap();
+            let mut wire = canonical(
+                ResponsesDialect::Classic,
+                vec![json!({"role":"user","content":"q"})],
+                &declarations,
+                stream,
+            )
+            .wire()
+            .clone();
+            wire["parallel_tool_calls"] = false.into();
+            wire["tool_choice"] = choice.into();
+            let request = CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap();
+            if stream {
+                let mut stream = provider
+                    .stream_response(request, RequestContext::default())
+                    .await
+                    .unwrap();
+                let mut events = Vec::new();
+                let mut error = None;
+                while let Some(event) = stream.events.next().await {
+                    match event {
+                        Ok(ProviderStreamEvent::Model(event)) => events.push(event),
+                        Err(e) => error = Some(e),
+                        _ => {}
+                    }
+                }
+                if want.starts_with("google_") {
+                    let error = error.unwrap();
+                    assert_eq!(error.http_status, 502);
+                    assert_eq!(error.code, want);
+                    assert!(!format!("{error:?}").contains("PRIVATE_SIGNED_CALL"));
+                    assert!(events.iter().all(|e| e.response.terminal().is_none()
+                        && e.response.kind() != "response.output_item.done"
+                        && !e.frame.data.contains("encrypted_content")
+                        && !e.frame.data.contains("function_call")));
+                } else {
+                    assert!(error.is_none());
+                    let final_response = &events.last().unwrap().response.wire()["response"];
+                    assert_eq!(final_response["status"], want);
+                    assert_eq!(
+                        final_response["output"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .filter(|i| i["type"] == "function_call")
+                            .count(),
+                        usize::from(want == "completed")
+                    );
+                    assert_eq!(
+                        events
+                            .iter()
+                            .filter(|e| e.response.kind() == "response.output_item.done"
+                                && e.response.wire()["item"]["type"] == "function_call")
+                            .count(),
+                        usize::from(want == "completed")
+                    );
+                    assert_eq!(
+                        NativeHistory::from_responses_output(
+                            final_response["output"].as_array().unwrap(),
+                            MODEL,
+                            &request_body(&fixture.request().await),
+                            LIMIT
+                        )
+                        .unwrap()
+                        .native_response(),
+                        &native
+                    );
+                }
+            } else {
+                let response = provider
+                    .create_response(request, RequestContext::default())
+                    .await;
+                if want.starts_with("google_") {
+                    let error = response.err().unwrap();
+                    assert_eq!(error.http_status, 502);
+                    assert_eq!(error.code, want);
+                    assert!(!format!("{error:?}").contains("PRIVATE_SIGNED_CALL"));
+                } else {
+                    let response = response.unwrap();
+                    assert_eq!(response.response.wire()["status"], want);
+                    assert_eq!(
+                        response
+                            .response
+                            .output()
+                            .iter()
+                            .filter(|i| i["type"] == "function_call")
+                            .count(),
+                        usize::from(want == "completed")
+                    );
+                    assert_eq!(
+                        NativeHistory::from_responses_output(
+                            response.response.output(),
+                            MODEL,
+                            &request_body(&fixture.request().await),
+                            LIMIT
+                        )
+                        .unwrap()
+                        .native_response(),
+                        &native
+                    );
+                }
+            }
+            if want.starts_with("google_") {
+                fixture.request().await;
+            }
+            assert_eq!(reads.load(Ordering::SeqCst), 1);
+        }
+    }
+}

@@ -1,13 +1,13 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准为V3，代码在model/providers/google，包名caidex-provider-google。Models/catalog、generateContent JSON/SSE/HTTP、v1原生历史/输出投影、ToolMap/v2声明绑定、Responses请求编译、图片/工具结果媒体、推理、结构输出及其余Runtime参数转换已三平台验收；最新源码05f6f9182c101c16fd67565b9c4fa7136c4c294e，[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)completed/success，Google78项逐平台通过。六方法/Registry/Gateway/实际Gemini Runtime尚未接；本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准V3，代码在model/providers/google。原生Models/JSON/SSE/历史/工具/图片/推理/结构输出/Runtime参数与六方法/Profile、Registry/Gateway已三平台验收；上阶段源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)，Google88逐平台通过。当前实际Gemini Runtime接线本地已验，唯一审查已完成；提交与新精确源码三平台CI待收尾，见末节与HANDOFF。本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
 - `GeminiConfig` 固定默认 `https://generativelanguage.googleapis.com/v1beta/`；高级地址沿用现有 endpoint 验证：HTTPS 或 literal loopback HTTP，拒绝 userinfo/query/fragment，保留代理路径前缀。
 - 执行端 `CredentialRef` 必须为 `google`/`ApiKey`，经 owner 固定的 Broker 解析。认证只用 sensitive `x-goog-api-key`，不放 URL，不探测用户环境，不向手机返回保存的 Host Key。[官方认证](https://ai.google.dev/gemini-api/docs/api-key)
 - `GeminiClient::discover_models(max_models, RequestContext)` 请求原生 `models`，稳定 `pageSize=1000`，仅将原样 `nextPageToken` 编码为后续 `pageToken`。页 token 不选择 endpoint；失败不返回部分列表。[Models reference](https://ai.google.dev/api/models)
-- 当前拒绝所有非空 Runtime context headers，在凭据读取前返回 `unsupported_native_context_header`；后续生成接线时按已验证映射开放，不把 OpenAI 专有头直接送给 Google。
+- 默认拒绝所有非空 Runtime context headers，Key前报unsupported_native_context_header；本轮显式本地归属opt-in只允许3头且不外发，详后节。
 - 复用 Custom 的 Limits、ClientOptions、endpoint 验证和 Retry-After 解析；原生 HTTP 用本模块私有实现，沿 Anthropic 模式，不为不同认证方式增加通用传输抽象。Cargo.lock 只新增 workspace 包，第三方版本未变。
 
 ## 模型目录与证据边界
@@ -31,7 +31,7 @@
 - TLS fixture 在内存生成 CA/leaf/私钥：可信且 hostname/expiry 有效时 GET 成功；未信任 CA、hostname 不符、过期均失败且服务器未收到认证 HTTP。所有 Key/模型/响应为合成 fixture，不调用商业 API。
 - 独立只读审查无 Critical/Important；源码 `d5a1132b449cae28923e2da7f2349e72b12696eb` 已提交/push，[CI 37657922506](https://github.com/bboytang/CAIdex/actions/runs/37657922506) 三平台 completed/success。逐平台核对新增 catalog4+HTTP9 全部13个测试名各通过一次；workspace/fmt/Clippy/native credentials/schema/doctor 均通过，既有真实 Runtime Linux30/WindowsmacOS29通过。普通 workspace 不执行 ignored Runtime/原生服务，CI已显式验证；macOS stdout/stderr标记有交错，按具体测试名和终态核对，不以 marker 顺序代替结果。日志 `/tmp/caidex-ci-37657922506{,-linux,-macos,-windows}.log`，跨机器以 CI 为准。
 
-## 下一步
+## 目录基础阶段的下一步（历史记录，当前恢复点见末节与HANDOFF）
 
 1. 本阶段独立审查及精确源码三平台验收已完成；沿以下顺序继续，不重复目录基础。
 2. generateContent JSON、原生SSE解析和streamGenerateContent?alt=sse真实HTTP/单槽背压/取消、Drop、deadline与socket/slot生命周期已三平台验收，继续第3步；保留完整 Part/thoughtSignature/functionCall/functionResponse wire 和 usage，不混用 Interactions 的 signature/事件结构。[GenerateContent reference](https://ai.google.dev/api/generate-content)
@@ -272,3 +272,40 @@ Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG�
 源码530ead5535b6bc6cd8896317b7360c7872a98571已提交/push；[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)三平台completed/success，精确head、三job及所有步骤结论已核对，watch终态0、三job完整日志下载0。Google原78+投影4+HTTP/Provider6共88个名字逐平台各通过一次（嵌套http/provider.rs使用provider::前缀，核验脚本已递归）；workspace Linux310/Windows305/macOS309，0失败、ignored32/30/30；既有实际Runtime Linux30/WindowsmacOS29，0失败/0ignored；fmt/Clippy/native credentials/schema/doctor通过。日志/tmp/caidex-ci-37696809902-{status.json,watch.log,linux.log,windows.log,macos.log}。无新增商业或实际Gemini Runtime证据，Rust macOS不等于iOS应用构建。
 
 本阶段六方法/投影/Registry/Gateway离线范围已验收；下一步固定Runtime的实际请求、显式本地context归属、已知unsupported前Key拒绝、支持范围内审批/工具/取消/落盘重启。保持Lite parallelfalse、发现/网页/strict/deferred/后置system门控和完整native request绑定，不改架构，不重做本阶段。
+
+
+## 固定Runtime接线（进行中，未提交/未CI）
+
+- 固定Codex公开model_catalog_json配置复用gpt-5.5/gpt-6.1-sol模板，仅fixture别名/展示描述和supports_search_tool=false；默认高级工具拒绝仍单独实际验证，非Full。显式web_search=disabled范围避免尚无native等价的网页，不在Gateway过滤声明。
+- GeminiConfig::with_local_runtime_context仅允许3个固定Runtime header留本地，不映射native路由/cache；默认非空与turn-state拒绝保持。GET/JSON/SSE实际HTTP正例与负例1项有效RED→GREEN。
+- 执行端GeminiModel.enforce_single_tool_call默认false；opt-in才允许parallel_tool_calls=false。成功交付前在JSON或SSE正常EOF校验STOP非thought调用数量，超限整轮google_tool_call_limit_exceeded，工具/完整载体/terminal均不发布，无自动重试。tool_choice=none/无tools上限0。裁定：这是本地交付保证，不是Google生成约束；错误成本为原生生成已消耗但整轮报错，不截断/删调用/伪改签名/提示词冒充硬保证。前缀绑定不松动，native wire与历史仍原样。
+- context1、单调用1（JSON/SSE×单调用、双调用、none、MAX_TOKENS）有效RED→GREEN；实际Runtime默认拒绝4模式、经典/Lite三轮签名/落盘重启、Lite执行/MCP/取消与完整套件均已本地通过，唯一审查已完成，待提交与新三平台CI。准确恢复点与日志见HANDOFF.md。
+
+- 增补本地实际证据：经典/Lite三轮含重启后磁盘恢复；Lite Code Mode审批前无marker，批准后实际生成marker，精确canonical custom call/input/result与native functionResponse、签名content逐值匹配，移除marker后重启不重复执行。经典静态MCP明确禁用发现，echo实际调用/result逐字保留，重启后新MCP进程toolCalls=[]；不宣称Gemini动态发现。classic/Lite interrupt实际socket关闭。新Lite profile实际有效RED→GREEN。
+- 实际双调用负例暴露共享Gateway通用SSE error只被固定Codex用于flex-unavailable，安全code被忽略变成generic断流。固定源码sse/responses.rs/responses_error.rs已核对；共享出口改response.failed/response.error，无成功终态，更新既有坏流/timeout测试；坏流有效RED→GREEN与实际双调用safe code、无审批/执行/载体且1Key/1POST已绿。裁定：共享修复适用于各Adapter，HTTP错误格式不变；新的SSE消费者读取response.error，成本为旧消费者只认error事件时需迁移。完整本地回归及唯一审查已通过，三平台CI尚待，不把本地证据当三平台验收。
+
+本轮最终本地完整workspace312passed/0failed/39ignored；另完整实际Runtime37passed/0failed/0ignored，Google7各一次，新增Google离线测试合计90。Clippy -D warnings/fmt/diff通过；Python fixture语法解析通过。唯一独立审查已完成，新精确源码三平台CI尚未运行；实际服务与凭据都是合成，固定Runtime证据不授予商业模型Full。
+
+
+### 本轮唯一独立审查与裁定
+
+唯一fresh-context审查/tmp/caidex-google-runtime-review.md，无Critical/Important；1项Minor暂缓：单调用新回归未专项覆盖thought调用豁免、无tools分支及未opt-in时none。现有共用guard/映射检查正确，无观察到执行缺陷；不可夸大覆盖。不派复审。
+
+以下按审查所有排除项逐项裁定，并记录错误成本：
+
+1. 商业Gemini/账户/签名真实性/计费/native tier-cache/Full：没有真实Key/API证据，保持未验。误判成本是商业能力与费用承诺错误。
+2. Google原生单调用生成：仅交付前计数保证；多预测整轮失败，无裁剪/重试/签名重写。成本是已消耗生成与失败轮次。
+3. discovery/web/strict/deferred/后置system/硬grammar：门控及显式opt-out保留；正例不是不限范围的默认Codex兼容。成本是对应请求明确拒绝，不能标Full。
+4. 3个context原生routing/cache/session：仅本地归属，不转发；新增消费者需验证自己的策略。成本是无原生缓存/会话路由收益。
+5. 整组history伪造/密码学认证：结构与原请求归属校验不认证载体/签名，生产访问控制留H/I。成本是权限被绕过时可整体替换有效结构历史。
+6. 历史生成受新local policy追溯：限制本次新generation交付，不伪改旧signed wire或放松v1/v2绑定。成本是过去多调用仍是有效过去记录，不提供策略迁移保证。
+7. 低层编译/投影消费者：getter明确消费方负责数量校验，ModelProvider两路径已执行；原生client不执行工具。成本是绕过该入口的自建消费者要自行正确门控。
+8. comment-only实际Runtime idle：native网络chunk刷新idle、comment不转发，实际下游idle未单独验；interrupt不代证。成本是只有comment时可能触发下游idle。
+9. 旧pending/full-slot/usage/ProtoJSON/thought-phase/prefix-swap/Anthropic Minor：本轮未改变相关覆盖，不重开已记录范围。成本是这些极端/兼容表示仍可能拒绝或展示不准，详前节。
+10. SSE旧error消费者：本地错误现在response.failed/response.error，HTTP格式不变，不加双事件迁移层。成本是只识别旧error的调用方需迁移；固定Runtime/core已验新格式。
+11. 每Provider每种实际timeout/坏流矩阵：共用出口HTTP/parser测试及实际双调用错误证明当前公共路径，不声称全部组合实际运行。成本是仍可能有未覆盖组合，出现具体失败再定位。
+12. 生产Host/ACL/网络/外部exactly-once/UI/SSH/Relay/iOS/真机/UAC/签名/H–R：沿V3顺序未完成；这些重启fixture只证明已完成历史的具体恢复。成本是产品级恢复/平台功能仍不可发布认领。
+13. 本源码Windows/macOS：提交后新精确源码三平台CI是前置，不能用旧CI/Linux代证；Rust macOS不等于iOS。成本是未验新增平台差异，收集新CI后再认领。
+14. 穷举fuzz/极端负载/全坏输入/全部时序：有限回归与已存预算/slot/deadline是现有证据，不声称形式证明。成本是未测边界仍可能拒绝或失败，实际异常再补回归。
+
+最终本地复验日志workspace-final/all-real-final分别312/0/39与37/0/0；Clippy-final exit0，fmt/diff通过。源码准备提交，新CI待收集。

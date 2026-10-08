@@ -85,6 +85,17 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-google-basic-classic" => "native-google-basic-classic",
+            "gateway-google-basic-lite" => "native-google-basic-lite",
+            "gateway-google-classic" => "native-google-classic",
+            "gateway-google-history-classic" | "gateway-google-history-lite" => {
+                "native-google-history"
+            }
+            "gateway-google-tools-lite" => "native-google-tools-lite",
+            "gateway-google-multi-lite" => "native-google-multi-lite",
+            "gateway-google-mcp-classic" => "native-google-mcp",
+            "gateway-google-lite" => "native-google-lite",
+            "gateway-google-stall-classic" | "gateway-google-stall-lite" => "native-google-stall",
             "gateway-anthropic-classic" => "native-anthropic-classic",
             "gateway-anthropic-discovery-classic" => "native-anthropic-discovery",
             "gateway-anthropic-lite" => "native-anthropic-lite",
@@ -144,28 +155,52 @@ impl Harness {
         let port = serde_json::from_str::<Value>(&line).unwrap()["port"]
             .as_u64()
             .unwrap();
-        let model = match (fixture_mode, mode) {
-            (
-                "wire-lite"
-                | "wire-anthropic-lite"
-                | "native-anthropic-lite"
-                | "native-anthropic-tools-lite",
-                _,
-            )
-            | (
-                _,
-                "gateway-stall-lite" | "gateway-openai-stall-lite" | "gateway-anthropic-stall-lite",
-            ) => "gpt-6.1-sol",
-            (
-                "wire-classic"
-                | "wire-stall"
-                | "wire-anthropic-classic"
-                | "native-anthropic-classic"
-                | "native-anthropic-discovery"
-                | "native-anthropic-stall",
-                _,
-            ) => "gpt-5.5",
-            _ => "gpt-5.1-codex",
+        let google_catalog = matches!(
+            mode,
+            "gateway-google-basic-classic"
+                | "gateway-google-basic-lite"
+                | "gateway-google-history-classic"
+                | "gateway-google-history-lite"
+                | "gateway-google-tools-lite"
+                | "gateway-google-multi-lite"
+                | "gateway-google-mcp-classic"
+                | "gateway-google-stall-lite"
+                | "gateway-google-stall-classic"
+        );
+        let model = if google_catalog {
+            if mode.ends_with("-lite") {
+                "caidex-google-lite-fixture"
+            } else {
+                "caidex-google-classic-fixture"
+            }
+        } else {
+            match (fixture_mode, mode) {
+                (
+                    "wire-lite"
+                    | "wire-anthropic-lite"
+                    | "native-anthropic-lite"
+                    | "native-anthropic-tools-lite"
+                    | "native-google-lite",
+                    _,
+                )
+                | (
+                    _,
+                    "gateway-stall-lite"
+                    | "gateway-openai-stall-lite"
+                    | "gateway-anthropic-stall-lite",
+                ) => "gpt-6.1-sol",
+                (
+                    "wire-classic"
+                    | "wire-stall"
+                    | "wire-anthropic-classic"
+                    | "native-anthropic-classic"
+                    | "native-anthropic-discovery"
+                    | "native-anthropic-stall"
+                    | "native-google-classic",
+                    _,
+                ) => "gpt-5.5",
+                _ => "gpt-5.1-codex",
+            }
         };
         let credential_reads = Arc::new(AtomicU64::new(0));
         let gateway = if through_gateway {
@@ -174,6 +209,7 @@ impl Harness {
             use caidex_model_gateway::{CustomResponses, Limits, ModelRoute};
             let native_openai = mode.starts_with("gateway-openai-");
             let native_anthropic = mode.starts_with("gateway-anthropic-");
+            let native_google = mode.starts_with("gateway-google-");
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
@@ -181,6 +217,8 @@ impl Harness {
                     "openai"
                 } else if native_anthropic {
                     "anthropic"
+                } else if native_google {
+                    "google"
                 } else {
                     "custom"
                 })
@@ -192,7 +230,61 @@ impl Harness {
                 owner,
                 GatewayFixtureStore(credential_reads.clone()),
             ));
-            if native_anthropic {
+            if native_google {
+                use caidex_provider_google::{
+                    GeminiClient, GeminiConfig, GeminiModel, GeminiProvider, ReasoningMapping,
+                    SummaryMapping, ThinkingContext, VerbosityMapping,
+                };
+                let config = GeminiConfig::new(credential)
+                    .unwrap()
+                    .with_base_url(&format!("http://127.0.0.1:{port}/v1beta"))
+                    .unwrap()
+                    .with_local_runtime_context();
+                let client = GeminiClient::new(config, broker.clone(), Limits::default()).unwrap();
+                let mut profile = GeminiModel::new(
+                    caidex_model_core::ModelMetadata::configured(
+                        model.into(),
+                        "models/native-fixture".into(),
+                        vec![ResponsesDialect::Classic, ResponsesDialect::Lite],
+                    ),
+                    4096,
+                    100,
+                );
+                profile.retain_runtime_metadata = true;
+                profile.enforce_single_tool_call = matches!(
+                    mode,
+                    "gateway-google-history-lite"
+                        | "gateway-google-tools-lite"
+                        | "gateway-google-multi-lite"
+                        | "gateway-google-stall-lite"
+                );
+                profile.verbosity_mappings = vec![
+                    VerbosityMapping::new(
+                        "low".into(),
+                        "Keep user-facing answers concise while preserving required detail.".into(),
+                    )
+                    .unwrap(),
+                ];
+                profile.thinking_context = Some(ThinkingContext::AllTurns);
+                profile.summary_mappings = vec![SummaryMapping::new("auto".into(), true).unwrap()];
+                profile.reasoning_mappings = ["low", "medium", "high", "xhigh"]
+                    .into_iter()
+                    .map(|effort| {
+                        ReasoningMapping::new(effort.into(), json!({"thinkingBudget":1024}))
+                            .unwrap()
+                    })
+                    .collect();
+                let provider = Arc::new(GeminiProvider::new(client, vec![profile], 10).unwrap());
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        provider,
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if native_anthropic {
                 use caidex_provider_anthropic::{
                     AnthropicClient, AnthropicConfig, AnthropicModel, AnthropicProvider,
                     ReasoningMapping, SummaryMapping, ThinkingContext, VerbosityMapping,
@@ -310,13 +402,37 @@ impl Harness {
         };
         // Explicit fixture scope: native Anthropic has no verified equivalent
         // for Codex cached web search. Never filter it inside the Gateway.
-        let web_search = if mode == "gateway-anthropic-discovery-classic" {
+        let web_search = if matches!(
+            mode,
+            "gateway-anthropic-discovery-classic"
+                | "gateway-google-history-classic"
+                | "gateway-google-history-lite"
+                | "gateway-google-tools-lite"
+                | "gateway-google-multi-lite"
+                | "gateway-google-mcp-classic"
+                | "gateway-google-stall-lite"
+                | "gateway-google-stall-classic"
+        ) {
             "web_search = \"disabled\"\n"
         } else {
             ""
         };
+        // Executor-owned catalog declares unsupported client tool search. This
+        // uses the fixed Runtime's public config, never strips Gateway tools.
+        let google_summary = if mode.starts_with("gateway-google-") {
+            "model_reasoning_summary = \"auto\"\n"
+        } else {
+            ""
+        };
+        let catalog = if google_catalog {
+            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/google_model_catalog.json");
+            format!("model_catalog_json = {}\n", json!(path))
+        } else {
+            String::new()
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
+            "{catalog}{google_summary}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -327,7 +443,10 @@ impl Harness {
                 .write_all(b"\n[features]\ngoals = true\n")
                 .unwrap();
         }
-        if matches!(mode, "mcp" | "gateway-anthropic-discovery-classic") {
+        if matches!(
+            mode,
+            "mcp" | "gateway-anthropic-discovery-classic" | "gateway-google-mcp-classic"
+        ) {
             let fixture =
                 PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mcp_server.py");
             let trace = directory.0.join("mcp-trace.json");
@@ -2160,4 +2279,512 @@ async fn real_lite_native_anthropic_code_mode_executes_tool_and_replays_result()
 #[ignore = "requires pinned Codex; native Anthropic Lite interrupt closes actual upstream socket"]
 async fn real_lite_native_anthropic_interrupt_closes_provider_socket() {
     interrupt_gateway(&["gateway-anthropic-stall-lite"]).await;
+}
+
+// Catches accepting fixed Runtime defaults that the native compiler cannot
+// represent, or reading credentials/POSTing before rejecting those defaults.
+#[tokio::test]
+#[ignore = "requires pinned Codex; unsupported Gemini classic/Lite defaults reject before Key"]
+async fn real_google_runtime_rejects_unsupported_defaults_before_authentication() {
+    for (mode, code) in [
+        (
+            "gateway-google-classic",
+            "unsupported_google_tool_discovery",
+        ),
+        (
+            "gateway-google-lite",
+            "unsupported_google_parallel_tool_calls",
+        ),
+        (
+            "gateway-google-basic-classic",
+            "unsupported_google_web_search",
+        ),
+        (
+            "gateway-google-basic-lite",
+            "unsupported_google_parallel_tool_calls",
+        ),
+    ] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":"Offline native Gemini defaults fixture"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(event.raw["params"]["turn"]["status"], "failed");
+                    assert!(
+                        event.raw["params"]["turn"]["error"]["message"]
+                            .as_str()
+                            .unwrap()
+                            .contains(code),
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                RuntimeEvent::Interaction(request) => panic!(
+                    "unsupported native request executed a tool: {}",
+                    request.event.raw
+                ),
+                _ => {}
+            }
+        }
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 0);
+        assert_eq!(harness.trace()["requests"], 0);
+        harness.shutdown().await;
+    }
+}
+
+// Catches missing actual Runtime adapter/context integration, native signed
+// Parts reconstructed from visible text, or a lost persisted v2 capsule.
+#[tokio::test]
+#[ignore = "requires pinned Codex; explicit web_search disabled, synthetic Gemini signed history"]
+async fn real_classic_runtime_via_native_google_preserves_signed_history() {
+    real_google_history("gateway-google-history-classic").await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; explicit Gemini single-call profile, Lite signed history and restart"]
+async fn real_lite_runtime_via_native_google_preserves_signed_history() {
+    real_google_history("gateway-google-history-lite").await;
+}
+
+async fn restart_google_runtime(harness: &mut Harness, thread: &str) {
+    harness.runtime.shutdown().await.unwrap();
+    let binary = std::env::var_os("CAIDEX_CODEX_BIN").unwrap_or_else(|| "codex".into());
+    let mut command = isolated_command(&binary);
+    command
+        .env("CODEX_HOME", harness.directory.0.join("data"))
+        .env(
+            "CAIDEX_GATEWAY_TEST_TOKEN",
+            harness.gateway.as_ref().unwrap().token().expose(),
+        )
+        .current_dir(harness.directory.0.join("project"))
+        .args(["app-server", "--listen", "stdio://"]);
+    harness.runtime = Runtime::connect(
+        AppServer::spawn(command, 1024).unwrap(),
+        ClientOptions {
+            capabilities: json!({"experimentalApi":true}),
+            ..Default::default()
+        },
+        DEADLINE,
+        1024,
+    )
+    .await
+    .unwrap();
+    let resumed = harness
+        .runtime
+        .client()
+        .resume_thread(thread, json!({}), DEADLINE)
+        .await
+        .unwrap();
+    assert_eq!(resumed["thread"]["id"], thread);
+}
+
+async fn real_google_history(mode: &str) {
+    let mut harness = Harness::start(mode).await;
+    let thread = harness.create_thread().await;
+    for (i, text) in [
+        "Offline native Gemini fixture",
+        "Continue exact native history",
+        "Continue from disk after app-server restart",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if i == 2 {
+            restart_google_runtime(&mut harness, &thread).await;
+        }
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":text})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        let mut visible = String::new();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Notification(event) if event.method == "item/agentMessage/delta" => {
+                    visible.push_str(event.raw["params"]["delta"].as_str().unwrap());
+                }
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                RuntimeEvent::Interaction(request) => panic!(
+                    "history fixture has no executable tools: {}",
+                    request.event.raw
+                ),
+                _ => {}
+            }
+        }
+        assert_eq!(visible, "CAIdex local fixture complete");
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 3);
+    assert_eq!(trace["gatewayCredentialMatched"], true);
+    assert_eq!(trace["authorizationSeen"], false);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+    let requests = trace["nativeRequests"].as_array().unwrap();
+    assert_eq!(
+        requests[1]["systemInstruction"],
+        requests[0]["systemInstruction"]
+    );
+    assert_eq!(requests[1]["tools"], requests[0]["tools"]);
+    assert_eq!(requests[2]["tools"], requests[0]["tools"]);
+    assert_eq!(
+        requests[2]["systemInstruction"],
+        requests[0]["systemInstruction"]
+    );
+    let second_prefix = requests[1]["contents"].as_array().unwrap();
+    let resumed_contents = requests[2]["contents"].as_array().unwrap();
+    assert_eq!(&resumed_contents[..second_prefix.len()], second_prefix);
+    assert_eq!(
+        resumed_contents[second_prefix.len()],
+        trace["nativeResponses"][1]["candidates"][0]["content"]
+    );
+
+    let prefix = requests[0]["contents"].as_array().unwrap();
+    let contents = requests[1]["contents"].as_array().unwrap();
+    assert_eq!(&contents[..prefix.len()], prefix);
+    assert_eq!(
+        contents[prefix.len()],
+        trace["nativeResponses"][0]["candidates"][0]["content"]
+    );
+    assert_eq!(
+        contents[prefix.len()]["parts"][0]["thoughtSignature"],
+        "signed+/==\n"
+    );
+    assert_eq!(
+        contents[prefix.len()]["parts"][3]["futurePart"]["number"].to_string(),
+        "18446744073709551616"
+    );
+    for request in requests {
+        assert_eq!(request["generationConfig"]["maxOutputTokens"], 4096);
+        assert_eq!(
+            request["generationConfig"]["thinkingConfig"],
+            json!({"thinkingBudget":1024,"includeThoughts":true})
+        );
+        for key in ["model", "client_metadata", "prompt_cache_key", "include"] {
+            assert!(request.get(key).is_none());
+        }
+    }
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    assert!(read.to_string().contains("CAIdex local "));
+    assert!(read.to_string().contains("fixture complete"));
+    let path = PathBuf::from(read["thread"]["path"].as_str().unwrap());
+    assert!(
+        path.canonicalize()
+            .unwrap()
+            .starts_with(harness.directory.0.join("data").canonicalize().unwrap())
+    );
+    let rollout = std::fs::read_to_string(path).unwrap();
+    let histories: Vec<Value> = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            let item = &entry["payload"];
+            (entry["type"] == "response_item" && item["type"] == "reasoning").then(|| item.clone())
+        })
+        .collect();
+    assert_eq!(histories.len(), 3);
+    for (i, item) in histories.iter().enumerate() {
+        let envelope: Value = serde_json::from_str(
+            item["encrypted_content"]
+                .as_str()
+                .unwrap()
+                .strip_prefix("caidex.google.native-history.v2:")
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(envelope["request"], requests[i]);
+        assert_eq!(envelope["response"], trace["nativeResponses"][i]);
+        assert_eq!(envelope["chunks"], trace["nativeChunks"][i]);
+        assert_eq!(envelope["model"], "models/native-fixture");
+    }
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; explicit Gemini single-call profile, approved temp marker and disk resume"]
+async fn real_lite_native_google_code_mode_executes_tool_and_replays_result() {
+    real_google_tool("gateway-google-tools-lite", true).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and local MCP; static tools, no web/discovery, exact Gemini disk resume"]
+async fn real_classic_native_google_executes_static_mcp_and_replays_result() {
+    real_google_tool("gateway-google-mcp-classic", false).await;
+}
+
+async fn real_google_tool(mode: &str, lite: bool) {
+    let mut harness = Harness::start(mode).await;
+    let thread = harness.create_thread().await;
+    let marker = harness.directory.0.join("project/caidex-native-marker.txt");
+    let mut approved = false;
+    for i in 0..2 {
+        if i == 1 {
+            restart_google_runtime(&mut harness, &thread).await;
+        }
+        let client = harness.runtime.client();
+        client.start_turn(&thread, vec![json!({"type":"text","text":"Offline Gemini tool fixture; continue from disk on second turn"})], json!({}), DEADLINE).await.unwrap();
+        let mut visible = String::new();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Interaction(request) => {
+                    assert!(
+                        lite && i == 0 && !approved,
+                        "unexpected/repeated tool: {}",
+                        request.event.raw
+                    );
+                    assert_eq!(request.kind, InteractionKind::CommandApproval);
+                    assert!(!marker.exists());
+                    client
+                        .decide_approval(&request.id, ApprovalDecision::Accept)
+                        .await
+                        .unwrap();
+                    approved = true;
+                }
+                RuntimeEvent::Notification(event) if event.method == "item/agentMessage/delta" => {
+                    visible.push_str(event.raw["params"]["delta"].as_str().unwrap());
+                }
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(visible, "CAIdex local fixture complete");
+        if lite {
+            assert!(approved);
+            // Removing it before restart detects an unnoticed repeated write.
+            if i == 0 {
+                assert_eq!(
+                    std::fs::read_to_string(&marker).unwrap().trim(),
+                    "CAIDEX_NATIVE_CODE_MODE"
+                );
+                std::fs::remove_file(&marker).unwrap();
+            }
+        } else {
+            let mcp: Value = serde_json::from_slice(
+                &std::fs::read(harness.directory.0.join("mcp-trace.json")).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(
+                mcp["toolCalls"],
+                if i == 0 { json!(["echo"]) } else { json!([]) }
+            );
+        }
+        if i == 1 && lite {
+            assert!(!marker.exists());
+        }
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 3);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+    assert_eq!(trace["authorizationSeen"], false);
+    let requests = trace["nativeRequests"].as_array().unwrap();
+    let prefix = requests[0]["contents"].as_array().unwrap();
+    let contents = requests[1]["contents"].as_array().unwrap();
+    assert_eq!(&contents[..prefix.len()], prefix);
+    let signed = &trace["nativeResponses"][0]["candidates"][0]["content"];
+    assert_eq!(contents[prefix.len()], *signed);
+    assert_eq!(signed["parts"][1]["thoughtSignature"], "tool-signed+/==\n");
+    assert_eq!(signed["parts"][1]["functionCall"]["id"], "google-tool-one");
+    let results: Vec<_> = contents
+        .iter()
+        .flat_map(|c| c["parts"].as_array().unwrap())
+        .filter_map(|p| p.get("functionResponse"))
+        .collect();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["id"], "google-tool-one");
+    assert_eq!(
+        results[0]["name"],
+        signed["parts"][1]["functionCall"]["name"]
+    );
+    if lite {
+        assert!(
+            results[0]["response"]["output"]
+                .to_string()
+                .contains("CAIDEX_NATIVE_CODE_MODE")
+        );
+    } else {
+        let output = results[0]["response"]["output"].as_str().unwrap();
+        let structured: Value =
+            serde_json::from_str(output.split_once("\nOutput:\n").unwrap().1).unwrap();
+        assert_eq!(structured, json!({"fixture":true}));
+    }
+    let second_prefix = requests[1]["contents"].as_array().unwrap();
+    let resumed = requests[2]["contents"].as_array().unwrap();
+    assert_eq!(&resumed[..second_prefix.len()], second_prefix);
+    assert_eq!(
+        resumed[second_prefix.len()],
+        trace["nativeResponses"][1]["candidates"][0]["content"]
+    );
+    for request in &requests[1..] {
+        assert_eq!(request["tools"], requests[0]["tools"]);
+        assert_eq!(
+            request["systemInstruction"],
+            requests[0]["systemInstruction"]
+        );
+    }
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    let items: Vec<Value> = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            (entry["type"] == "response_item").then(|| entry["payload"].clone())
+        })
+        .collect();
+    let result = items
+        .iter()
+        .find(|item| {
+            item["call_id"] == "google-tool-one"
+                && item["type"]
+                    == if lite {
+                        "custom_tool_call_output"
+                    } else {
+                        "function_call_output"
+                    }
+        })
+        .unwrap();
+    assert_eq!(result["output"], results[0]["response"]["output"]);
+    let call = items
+        .iter()
+        .find(|item| {
+            item["call_id"] == "google-tool-one"
+                && item["type"]
+                    == if lite {
+                        "custom_tool_call"
+                    } else {
+                        "function_call"
+                    }
+        })
+        .unwrap();
+    assert_eq!(call["name"], if lite { "exec" } else { "echo" });
+    assert_eq!(
+        call["namespace"],
+        if lite { "functions" } else { "mcp__fixture" }
+    );
+    if lite {
+        assert_eq!(
+            call["input"],
+            signed["parts"][1]["functionCall"]["args"]["input"]
+        );
+    } else {
+        assert_eq!(call["arguments"], "{}");
+    }
+    assert_eq!(
+        items
+            .iter()
+            .filter(|item| item["type"] == "reasoning")
+            .count(),
+        3
+    );
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Gemini local single-call policy rejects two calls before approval/execution"]
+async fn real_lite_native_google_rejects_multiple_calls_before_execution() {
+    let mut harness = Harness::start("gateway-google-multi-lite").await;
+    let thread = harness.create_thread().await;
+    harness
+        .runtime
+        .client()
+        .start_turn(
+            &thread,
+            vec![json!({"type":"text","text":"Offline Gemini double-call negative fixture"})],
+            json!({}),
+            DEADLINE,
+        )
+        .await
+        .unwrap();
+    loop {
+        match harness.next().await {
+            RuntimeEvent::Interaction(request) => panic!(
+                "rejected generation requested approval: {}",
+                request.event.raw
+            ),
+            RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                assert_eq!(event.raw["params"]["turn"]["status"], "failed");
+                assert!(
+                    event.raw["params"]["turn"]["error"]["message"]
+                        .as_str()
+                        .unwrap()
+                        .contains("google_tool_call_limit_exceeded"),
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+            _ => {}
+        }
+    }
+    assert_eq!(harness.trace()["requests"], 1);
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 1);
+    assert!(
+        !harness
+            .directory
+            .0
+            .join("project/caidex-native-marker.txt")
+            .exists()
+    );
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    for line in rollout.lines() {
+        let entry: Value = serde_json::from_str(line).unwrap();
+        if entry["type"] == "response_item" {
+            assert!(!matches!(
+                entry["payload"]["type"].as_str(),
+                Some("custom_tool_call" | "function_call" | "reasoning")
+            ));
+        }
+    }
+    harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Gemini classic/Lite interrupt closes actual native streaming socket"]
+async fn real_runtime_interrupt_via_native_google_closes_socket() {
+    interrupt_gateway(&["gateway-google-stall-classic", "gateway-google-stall-lite"]).await;
 }

@@ -14,6 +14,7 @@ pub struct ResponsesProjection {
     tools: ToolMap,
     id: String,
     max_bytes: usize,
+    tool_call_limit: Option<usize>,
     remaining: usize,
     chunks: Vec<Value>,
     started: bool,
@@ -51,6 +52,7 @@ impl ResponsesProjection {
             tools,
             id,
             max_bytes,
+            tool_call_limit: None,
             remaining: max_bytes,
             chunks: Vec::new(),
             started: false,
@@ -62,6 +64,10 @@ impl ResponsesProjection {
             sequence: 0,
             terminal: false,
         })
+    }
+    pub(crate) fn with_tool_call_limit(mut self, limit: Option<usize>) -> Self {
+        self.tool_call_limit = limit;
+        self
     }
     pub fn push(&mut self, native: NativeStreamEvent) -> ProviderResult<Vec<StreamEvent>> {
         if self.terminal {
@@ -127,6 +133,7 @@ impl ResponsesProjection {
                 if self.chunks != native.chunks() {
                     return Err(invalid());
                 }
+                crate::provider::validate_tool_call_limit(native.response(), self.tool_call_limit)?;
                 let selected = native.response().blocked_prompt().is_none().then_some(0);
                 let response = NativeHistory::from_stream(
                     &native,

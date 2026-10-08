@@ -16,6 +16,8 @@ pub struct GeminiModel {
     pub max_tokens: u64,
     pub max_tools: usize,
     pub retain_runtime_metadata: bool,
+    /// Local output cardinality guard; not a native generation guarantee.
+    pub enforce_single_tool_call: bool,
     pub service_tier_mappings: Vec<crate::ServiceTierMapping>,
     pub verbosity_mappings: Vec<crate::VerbosityMapping>,
     pub image_mime_types: Vec<String>,
@@ -34,6 +36,7 @@ impl GeminiModel {
             max_tokens,
             max_tools,
             retain_runtime_metadata: false,
+            enforce_single_tool_call: false,
             service_tier_mappings: Vec::new(),
             verbosity_mappings: Vec::new(),
             image_mime_types: Vec::new(),
@@ -75,6 +78,7 @@ impl GeminiModel {
             self.max_tools,
             &RequestOptions {
                 retain_runtime_metadata: self.retain_runtime_metadata,
+                enforce_single_tool_call: self.enforce_single_tool_call,
                 service_tier_mappings: &self.service_tier_mappings,
                 verbosity_mappings: &self.verbosity_mappings,
                 image_mime_types: &images,
@@ -195,6 +199,7 @@ impl<S: SecretStore + 'static> ModelProvider for GeminiProvider<S> {
                     context,
                 )
                 .await?;
+            validate_tool_call_limit(&native, compiled.tool_call_limit())?;
             let selected = if native.blocked_prompt().is_some() {
                 None
             } else {
@@ -234,7 +239,8 @@ impl<S: SecretStore + 'static> ModelProvider for GeminiProvider<S> {
                 compiled.tools().clone(),
                 generation_id()?,
                 self.client.limits().response_bytes,
-            )?;
+            )?
+            .with_tool_call_limit(compiled.tool_call_limit());
             let native = self
                 .client
                 .stream_content(
@@ -261,4 +267,22 @@ fn generation_id() -> ProviderResult<String> {
         write!(&mut id, "{byte:02x}").expect("write to String");
     }
     Ok(id)
+}
+
+pub(crate) fn validate_tool_call_limit(
+    response: &crate::NativeResponse,
+    limit: Option<usize>,
+) -> ProviderResult<()> {
+    let calls = response
+        .candidates()
+        .iter()
+        .filter(|c| c["finishReason"] == "STOP")
+        .filter_map(|c| c["content"]["parts"].as_array())
+        .flatten()
+        .filter(|p| p["thought"] != true && crate::content::present(p, "functionCall").is_some())
+        .count();
+    if limit.is_some_and(|limit| calls > limit) {
+        return Err(ProviderError::new(502, "google_tool_call_limit_exceeded"));
+    }
+    Ok(())
 }

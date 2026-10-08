@@ -78,8 +78,10 @@ pub(crate) fn stream(
                     };
                     (
                         Bytes::from(format!(
-                            "event: error\ndata: {}\n\n",
-                            serde_json::json!({"type":"error","error":error})
+                            "event: response.failed\ndata: {}\n\n",
+                            // Fixed Runtime ignores generic error events except
+                            // flex-unavailable. Keep static errors observable.
+                            serde_json::json!({"type":"response.failed","response":{"status":"failed","error":error}})
                         )),
                         None,
                     )
