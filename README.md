@@ -32,6 +32,7 @@ node scripts/codex-binary.mjs
 - `model/providers/custom`：可独立调用的 Custom Responses 推理 client，供普通 Chat 与 Gateway 共用；配置模型列表、Broker 认证、显式 context headers、TLS 验证、取消/超时/背压与安全错误。
 - `model/providers/openai`：原生 Models 发现/Responses 适配器，显式执行端组织/项目与凭据引用；复用共享传输，默认无服务端历史存储。当前使用合成协议服务验证，真实 API 兼容性待验。
 - `model/providers/anthropic`：原生 Messages/Models/SSE 协议与 Broker 认证的原生 HTTP client；已开始离线验收，已有原生流式 HTTP 与背压/取消，已有原生回复投影与回放，请求转换和 Gateway 接入待续。
+- `model/providers/ollama`：经典无状态 Responses 的文本/function 离线适配，复用共享传输与 Models parser；六方法和 Gateway 协议已三平台验收，原生能力/推理及实际 Runtime 接线待续。
 - `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和其他 Provider 待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
@@ -40,6 +41,7 @@ node scripts/codex-binary.mjs
 - `docs/CAIdex-实施计划-V3.md`：阶段顺序与验收条件。
 - `docs/CAIdex-Model-Gateway-设计与验收.md`：模型协议/真实 wire 验证与 Gateway 恢复点。
 - `docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生模型发现、认证/存储边界与离线验收。
+- `docs/CAIdex-Ollama-Provider-设计与验收.md`：Ollama 配置、明确拒绝的控制项与三平台离线验收。
 - `docs/CAIdex-Runtime-能力对照.md`：完整固定协议清单、实现范围与 CLI 对照验收状态。
 - `docs/CAIdex-UI-规范-V1.md`：UI 布局和 CAIdex 功能入口。
 - `HANDOFF.md`：当前进度、验证与下一步；每次续接先读。
