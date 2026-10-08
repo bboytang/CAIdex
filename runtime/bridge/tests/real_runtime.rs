@@ -85,7 +85,9 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
-            "gateway-ollama-classic" | "gateway-ollama-context-classic" => "native-ollama-classic",
+            "gateway-ollama-classic"
+            | "gateway-ollama-context-classic"
+            | "gateway-ollama-native-tools-classic" => "native-ollama-classic",
             "gateway-ollama-lite" => "native-ollama-lite",
             "gateway-google-basic-classic" => "native-google-basic-classic",
             "gateway-google-basic-lite" => "native-google-basic-lite",
@@ -251,10 +253,16 @@ impl Harness {
                     Limits::default(),
                 )
                 .unwrap();
-                if mode == "gateway-ollama-context-classic" {
+                if matches!(
+                    mode,
+                    "gateway-ollama-context-classic" | "gateway-ollama-native-tools-classic"
+                ) {
                     provider = provider.with_runtime_context().with_native_history()
                         .with_verbosity_instruction("low".into(), "Keep user-facing answers concise while preserving required detail.".into()).unwrap()
                         .with_model_details(vec![(model.into(), ModelDetails::parse("native-fixture".into(),json!({"thinking":{"values":[false,"low","medium","high"],"default":"medium"}})).unwrap())]).unwrap();
+                }
+                if mode == "gateway-ollama-native-tools-classic" {
+                    provider = provider.with_native_tools();
                 }
                 Some(
                     caidex_model_gateway::start_with_provider(
@@ -454,12 +462,15 @@ impl Harness {
         };
         // Executor-owned catalog declares unsupported client tool search. This
         // uses the fixed Runtime's public config, never strips Gateway tools.
-        let google_summary =
-            if mode.starts_with("gateway-google-") || mode == "gateway-ollama-context-classic" {
-                "model_reasoning_summary = \"auto\"\n"
-            } else {
-                ""
-            };
+        let google_summary = if mode.starts_with("gateway-google-")
+            || matches!(
+                mode,
+                "gateway-ollama-context-classic" | "gateway-ollama-native-tools-classic"
+            ) {
+            "model_reasoning_summary = \"auto\"\n"
+        } else {
+            ""
+        };
         let catalog = if google_catalog {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures/google_model_catalog.json");
@@ -2838,6 +2849,10 @@ async fn real_ollama_runtime_defaults_and_partial_context_refuse_tools_before_au
         ("gateway-ollama-lite", "unsupported_dialect"),
         (
             "gateway-ollama-context-classic",
+            "ollama_unsupported_request",
+        ),
+        (
+            "gateway-ollama-native-tools-classic",
             "ollama_unsupported_request",
         ),
     ] {

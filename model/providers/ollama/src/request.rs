@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub(crate) struct Options {
     pub native_history: bool,
+    pub native_tools: bool,
     pub images: bool,
     pub structured_output: bool,
     pub runtime_context: bool,
@@ -156,7 +157,9 @@ pub(crate) fn compile(
         return Err(invalid());
     }
     let mut names = HashSet::new();
-    if let Some(tools) = wire.get("tools") {
+    if !options.native_tools
+        && let Some(tools) = wire.get("tools")
+    {
         for tool in tools.as_array().ok_or_else(invalid)? {
             fields(
                 tool,
@@ -239,6 +242,9 @@ pub(crate) fn compile(
                 }
                 "function_call" => {
                     pending_thinking = false;
+                    if options.native_tools {
+                        continue;
+                    }
                     fields(
                         item,
                         &["type", "id", "status", "name", "call_id", "arguments"],
@@ -258,6 +264,10 @@ pub(crate) fn compile(
                     if pending_thinking {
                         return Err(invalid());
                     }
+                    if options.native_tools {
+                        text(&item["output"], true, images, max_bytes)?;
+                        continue;
+                    }
                     fields(item, &["type", "id", "status", "call_id", "output"])?;
                     string(item, "call_id")?;
                     let id = item["call_id"].as_str().expect("validated ID");
@@ -265,6 +275,12 @@ pub(crate) fn compile(
                         return Err(invalid());
                     }
                     text(&item["output"], true, images, max_bytes)?;
+                }
+                "tool_search_call" if options.native_tools => pending_thinking = false,
+                "tool_search_output" if options.native_tools => {
+                    if pending_thinking {
+                        return Err(invalid());
+                    }
                 }
                 _ => return Err(unsupported()),
             }

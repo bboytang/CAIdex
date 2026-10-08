@@ -6,6 +6,7 @@ mod models;
 mod request;
 mod runtime;
 mod structured;
+mod tools;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits, NativeModel};
 pub use config::OllamaConfig;
@@ -87,6 +88,13 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
     /// Opt in to model/profile/prefix-bound native history. It is sensitive
     /// plaintext JSON, not encryption or a live model compatibility claim.
     pub fn with_native_history(mut self) -> Self {
+        self.options.native_history = true;
+        self
+    }
+    /// Opt in to native namespace functions and client tool discovery, with
+    /// bound history and terminal tool validation. This does not enable Lite.
+    pub fn with_native_tools(mut self) -> Self {
+        self.options.native_tools = true;
         self.options.native_history = true;
         self
     }
@@ -197,7 +205,7 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         &self,
         request: CanonicalRequest,
         context: &RequestContext,
-    ) -> ProviderResult<CanonicalRequest> {
+    ) -> ProviderResult<(CanonicalRequest, Option<tools::NativeTools>)> {
         context_guard(context)?;
         let metadata = self.metadata(request.model())?;
         if request.dialect() != ResponsesDialect::Classic {
@@ -217,6 +225,11 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             &metadata.capabilities,
             self.limits.request_bytes,
         )?;
+        let request = if self.options.native_tools {
+            tools::normalize(request)?
+        } else {
+            request
+        };
         let request = if self.options.native_history {
             history::expand(
                 request,
@@ -228,13 +241,19 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             request
         };
         let details = self.model_details.get(request.model());
-        request::compile(
+        let request = request::compile(
             request,
             details,
             &metadata.capabilities,
             &self.options,
             self.limits.request_bytes,
-        )
+        )?;
+        let tools = self
+            .options
+            .native_tools
+            .then(|| tools::NativeTools::from_request(&request))
+            .transpose()?;
+        Ok((request, tools))
     }
 }
 impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
@@ -294,7 +313,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
-            let request = self.prepare(request, &context)?;
+            let (request, tools) = self.prepare(request, &context)?;
             let strict = structured::StrictOutput::compile(&request)?;
             let native_model = self.metadata(request.model())?.native_model;
             let native_request = history::native_request(&request, &native_model)?;
@@ -308,6 +327,9 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
             if let Some(strict) = &strict {
                 strict.validate(&response.response)?;
             }
+            if let Some(tools) = &tools {
+                tools.validate_response(&response.response)?;
+            }
             if self.options.native_history {
                 response.response = NativeHistory::from_response(
                     &self.config,
@@ -320,7 +342,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
                 .to_responses(self.history_bytes)
                 .map_err(history::native_error)?;
             }
-            if strict.is_some() {
+            if strict.is_some() || tools.is_some() {
                 context_guard(&delivery_context)?;
             }
             Ok(response)
@@ -333,7 +355,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
-            let request = self.prepare(request, &context)?;
+            let (request, tools) = self.prepare(request, &context)?;
             let strict = structured::StrictOutput::compile(&request)?;
             let native_model = self.metadata(request.model())?.native_model;
             let native_request = history::native_request(&request, &native_model)?;
@@ -355,7 +377,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
                     native_request,
                     history_context,
                     self.limits.clone(),
-                    strict,
+                    (strict, tools),
                 ));
             }
             Ok(response)

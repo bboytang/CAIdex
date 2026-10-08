@@ -4,6 +4,7 @@ mod history;
 mod models;
 mod runtime;
 mod structured;
+mod tools;
 use caidex_credentials::{Broker, CredentialRef, Id, Secret, SecretKind, SecretStore};
 use caidex_model_core::{
     CancellationToken, CanonicalRequest, ContextHeaders, CredentialRequirement, EvidenceSource,

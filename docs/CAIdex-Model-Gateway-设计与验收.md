@@ -138,3 +138,6 @@ Ollama严格结构输出当前本地实现：既有structured opt-in接受strict
 
 
 Ollama固定Runtime请求入口本轮新增显式本地归属/leading developer策略、native history下include/auto summary/all_turns及执行端verbosity指令映射，编译后前缀绑定和双层预算保持；header/metadata不转发给native，不承诺持久化/cache或verbosity生成刻度。新增6项定向通过；真实固定Runtime新增1项三模式拒绝，零Key/POST/审批，非正例或Full。Runtime dev依赖只关联已有Ollama，无新第三方版本。完整本地workspace357/0/40、固定Runtime38/0/0、Clippy/fmt/diff通过；源码d934fe165d49b1638b1879d8e61ad32d60993c8f已push，[CI37775057618](https://github.com/bboytang/CAIdex/actions/runs/37775057618)精确head三平台全job/step成功或条件跳过，原始日志逐名Ollama45/OpenAI11/Custom7/Google90及固定Runtime各一次；workspace357/352/356、Runtime38/37/37均零失败。新增Runtime仅拒绝证据，恢复点为其余custom/namespace/discovery/Lite路径及正例，详Ollama文档/HANDOFF。
+
+
+Ollama原生工具本轮新增显式native_tools + bound history：namespace指导/别名碰撞、client tool_search顺序声明与call/result配对、JSON/SSE交付前工具身份/args/重复ID检查，failed/incomplete search无可执行done。默认/custom/Lite/web未放松，复用共享transport/v1 history，无新依赖或第二执行器。6项通过，第四模式实际Runtime拒绝通过，完整workspace363/0/40、固定Runtime38/0/0、Clippy/fmt/diff通过；三平台待验；不认领工具正例/daemon/Full，接下来custom/Lite转换，详Ollama文档/HANDOFF。

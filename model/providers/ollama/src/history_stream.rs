@@ -21,6 +21,7 @@ pub(crate) struct HistoryStream {
     native: Option<ProviderStream>,
     scope: Option<Value>,
     strict: Option<StrictOutput>,
+    tools: Option<crate::tools::NativeTools>,
     model: String,
     request: CanonicalRequest,
     context: RequestContext,
@@ -43,13 +44,14 @@ impl HistoryStream {
         request: CanonicalRequest,
         context: RequestContext,
         limits: Limits,
-        strict: Option<StrictOutput>,
+        delivery: (Option<StrictOutput>, Option<crate::tools::NativeTools>),
     ) -> Self {
         Self {
             native: Some(native),
             next_index: u64::from(scope.is_some()),
             scope,
-            strict,
+            strict: delivery.0,
+            tools: delivery.1,
             model,
             request,
             context,
@@ -168,6 +170,9 @@ impl HistoryStream {
                     if let Some(strict) = &self.strict {
                         strict.validate(&response)?;
                     }
+                    if let Some(tools) = &self.tools {
+                        tools.validate_response(&response)?;
+                    }
                     let projected = if let Some(scope) = &self.scope {
                         NativeHistory::stream_record(
                             scope,
@@ -186,8 +191,10 @@ impl HistoryStream {
                         response.clone()
                     };
                     for (index, item) in projected.output().iter().enumerate() {
-                        if item["type"] == "function_call"
-                            && response.state() != StreamState::Completed
+                        if matches!(
+                            item["type"].as_str(),
+                            Some("function_call" | "tool_search_call")
+                        ) && response.state() != StreamState::Completed
                         {
                             continue;
                         }
