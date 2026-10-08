@@ -38,6 +38,7 @@ pub struct DeepSeekProvider<S: SecretStore> {
     limits: Limits,
     native_history: bool,
     native_tools: bool,
+    native_apply_patch: bool,
 }
 impl<S: SecretStore + 'static> DeepSeekProvider<S> {
     pub fn new(
@@ -88,6 +89,7 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             limits,
             native_history: false,
             native_tools: false,
+            native_apply_patch: false,
         })
     }
     /// Explicit local attribution and leading developer-to-system policy.
@@ -107,6 +109,12 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
     pub fn with_native_tools(mut self) -> Self {
         self.native_tools = true;
         self.with_native_history()
+    }
+    /// Native apply_patch with source grammar retained as guidance, not a
+    /// native constrained-decoding guarantee. Codex validates execution.
+    pub fn with_native_apply_patch(mut self) -> Self {
+        self.native_apply_patch = true;
+        self.with_native_tools()
     }
     /// Executor-owned effort selection; aliases are never inferred from model names.
     /// Mapping a source level does not claim identical reasoning strength.
@@ -203,7 +211,7 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         if !self.native_history {
             return Ok((request, None));
         }
-        let tools = tools::ToolMap::from_request(&request)?;
+        let tools = tools::ToolMap::from_request(&request, self.native_apply_patch)?;
         let mut request = tools.compile(request)?;
         let mut wire = request.wire().clone();
         wire["model"] = model.native_model.into();

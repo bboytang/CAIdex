@@ -39,21 +39,32 @@ fn id(value: &Value) -> ProviderResult<&str> {
         .ok_or_else(invalid)
 }
 
-/// Original declarations remain bound beside the exact native aliases. Only
-/// functions are exposed here; native custom/Lite semantics need separate tests.
+/// Original declarations and explicit apply_patch policy remain bound beside
+/// the exact native aliases and tool kinds. Lite is not enabled.
 pub(crate) struct ToolMap {
     source: Value,
     native: Vec<Value>,
     identities: HashMap<(Option<String>, String), String>,
 }
 impl ToolMap {
-    pub(crate) fn from_request(request: &CanonicalRequest) -> ProviderResult<Self> {
-        Self::from_source(
-            json!({"tools":request.wire()["tools"], "tool_choice":request.wire()["tool_choice"], "parallel_tool_calls":request.wire()["parallel_tool_calls"]}),
-        )
+    pub(crate) fn from_request(
+        request: &CanonicalRequest,
+        apply_patch: bool,
+    ) -> ProviderResult<Self> {
+        let mut source = json!({"tools":request.wire()["tools"], "tool_choice":request.wire()["tool_choice"], "parallel_tool_calls":request.wire()["parallel_tool_calls"]});
+        if apply_patch {
+            source["apply_patch"] = true.into();
+        }
+        Self::from_source(source)
     }
     pub(crate) fn from_source(source: Value) -> ProviderResult<Self> {
-        fields(&source, &["tools", "tool_choice", "parallel_tool_calls"])?;
+        fields(
+            &source,
+            &["tools", "tool_choice", "parallel_tool_calls", "apply_patch"],
+        )?;
+        if source.get("apply_patch").is_some_and(|v| v != true) {
+            return Err(invalid());
+        }
         let mut map = Self {
             source,
             native: Vec::new(),
@@ -88,18 +99,43 @@ impl ToolMap {
         Ok(map)
     }
     fn add(&mut self, tool: &Value, namespace: Option<&str>, guidance: &str) -> ProviderResult<()> {
+        let custom = tool["type"] == "custom";
         fields(
             tool,
-            &[
-                "type",
-                "name",
-                "description",
-                "parameters",
-                "strict",
-                "defer_loading",
-            ],
+            if custom {
+                &["type", "name", "description", "format", "defer_loading"]
+            } else {
+                &[
+                    "type",
+                    "name",
+                    "description",
+                    "parameters",
+                    "strict",
+                    "defer_loading",
+                ]
+            },
         )?;
-        if tool["type"] != "function" {
+        if custom {
+            if self.source["apply_patch"] != true || tool["name"] != "apply_patch" {
+                return Err(unsupported());
+            }
+            if let Some(format) = tool.get("format") {
+                match format["type"].as_str() {
+                    Some("text") => fields(format, &["type"])?,
+                    Some("grammar") => {
+                        fields(format, &["type", "syntax", "definition"])?;
+                        if !matches!(format["syntax"].as_str(), Some("lark" | "regex"))
+                            || !format["definition"]
+                                .as_str()
+                                .is_some_and(|s| !s.trim().is_empty())
+                        {
+                            return Err(invalid());
+                        }
+                    }
+                    _ => return Err(unsupported()),
+                }
+            }
+        } else if tool["type"] != "function" {
             return Err(unsupported());
         }
         let member = name(&tool["name"])?;
@@ -114,7 +150,7 @@ impl ToolMap {
             }
         }
         let identity = (namespace.map(str::to_owned), member.to_owned());
-        let alias = if namespace.is_some() {
+        let alias = if namespace.is_some() && !custom {
             format!("caidex_ns_{}", self.native.len())
         } else {
             member.to_owned()
@@ -133,13 +169,21 @@ impl ToolMap {
             )
             .into();
         }
+        if custom && let Some(format) = tool.get("format") {
+            native["description"] = format!(
+                "{}\nOriginal apply_patch input format (guidance only): {format}",
+                native["description"].as_str().unwrap_or("")
+            )
+            .into();
+        }
         let object = native.as_object_mut().unwrap();
+        object.remove("format");
         object.remove("strict");
         object.remove("defer_loading");
         self.native.push(native);
         Ok(())
     }
-    fn alias(&self, item: &Value) -> ProviderResult<&str> {
+    fn alias(&self, item: &Value, kind: &str) -> ProviderResult<&str> {
         let namespace = item
             .get("namespace")
             .map(id)
@@ -148,6 +192,11 @@ impl ToolMap {
         self.identities
             .get(&(namespace, name(&item["name"])?.to_owned()))
             .map(String::as_str)
+            .filter(|alias| {
+                self.native
+                    .iter()
+                    .any(|tool| tool["name"] == *alias && tool["type"] == kind)
+            })
             .ok_or_else(invalid)
     }
     fn choice(&self) -> ProviderResult<Value> {
@@ -167,7 +216,7 @@ impl ToolMap {
         if choice["type"] != "function" {
             return Err(unsupported());
         }
-        Ok(json!({"type":"function", "name":self.alias(choice)?}))
+        Ok(json!({"type":"function", "name":self.alias(choice, "function")?}))
     }
     pub(crate) fn source(&self) -> &Value {
         &self.source
@@ -199,7 +248,15 @@ impl ToolMap {
     }
     pub(crate) fn compile_item(&self, item: &Value) -> ProviderResult<Value> {
         let mut item = item.clone();
-        if item["type"] == "function_call" {
+        if matches!(
+            item["type"].as_str(),
+            Some("function_call" | "custom_tool_call")
+        ) {
+            let kind = if item["type"] == "function_call" {
+                "function"
+            } else {
+                "custom"
+            };
             fields(
                 &item,
                 &[
@@ -209,10 +266,14 @@ impl ToolMap {
                     "name",
                     "namespace",
                     "call_id",
-                    "arguments",
+                    if kind == "function" {
+                        "arguments"
+                    } else {
+                        "input"
+                    },
                 ],
             )?;
-            item["name"] = self.alias(&item)?.into();
+            item["name"] = self.alias(&item, kind)?.into();
             item.as_object_mut().unwrap().remove("namespace");
         }
         Ok(item)
@@ -233,17 +294,29 @@ impl ToolMap {
                     return Err(invalid());
                 }
                 match item["type"].as_str() {
-                    Some("function_call") => {
+                    Some("function_call" | "custom_tool_call") => {
                         count += 1;
+                        let kind = if item["type"] == "function_call" {
+                            "function"
+                        } else {
+                            "custom"
+                        };
                         let alias = name(&item["name"])?;
                         if item.get("namespace").is_some()
-                            || !self.identities.values().any(|s| s == alias)
+                            || !self
+                                .native
+                                .iter()
+                                .any(|tool| tool["name"] == alias && tool["type"] == kind)
                             || !ids.insert(id(&item["call_id"])?.to_owned())
                         {
                             return Err(invalid());
                         }
                         id(&item["id"])?;
-                        arguments(item)?;
+                        if kind == "function" {
+                            arguments(item)?;
+                        } else if !item["input"].is_string() {
+                            return Err(invalid());
+                        }
                         if response.state() != StreamState::Completed
                             || item.get("status").is_some_and(|s| s != "completed")
                         {
@@ -251,8 +324,7 @@ impl ToolMap {
                         }
                     }
                     Some(
-                        "custom_tool_call"
-                        | "tool_search_call"
+                        "tool_search_call"
                         | "tool_search_output"
                         | "function_call_output"
                         | "custom_tool_call_output"
@@ -274,8 +346,13 @@ impl ToolMap {
                 && response
                     .output()
                     .iter()
-                    .filter(|item| item["type"] == "function_call")
-                    .any(|item| item["name"] != choice["name"])
+                    .filter(|item| {
+                        matches!(
+                            item["type"].as_str(),
+                            Some("function_call" | "custom_tool_call")
+                        )
+                    })
+                    .any(|item| item["type"] != "function_call" || item["name"] != choice["name"])
             {
                 return Err(invalid());
             }
@@ -289,7 +366,10 @@ impl ToolMap {
     ) -> ProviderResult<CanonicalResponse> {
         let mut wire = response.wire().clone();
         for item in wire["output"].as_array_mut().unwrap() {
-            if item["type"] == "function_call" {
+            if matches!(
+                item["type"].as_str(),
+                Some("function_call" | "custom_tool_call")
+            ) {
                 let ((namespace, member), _) = self
                     .identities
                     .iter()
@@ -314,7 +394,7 @@ fn arguments(item: &Value) -> ProviderResult<()> {
 }
 pub(crate) fn validate_input(request: &CanonicalRequest) -> ProviderResult<HashSet<String>> {
     let mut seen = HashSet::new();
-    let mut pending = HashSet::new();
+    let mut pending = HashMap::new();
     if let Some(input) = request.wire()["input"].as_array() {
         for item in input {
             if item.get("id").is_some_and(|v| id(v).is_err())
@@ -323,18 +403,27 @@ pub(crate) fn validate_input(request: &CanonicalRequest) -> ProviderResult<HashS
                 return Err(invalid());
             }
             match item["type"].as_str() {
-                Some("function_call") => {
+                Some("function_call" | "custom_tool_call") => {
                     let call = id(&item["call_id"])?;
                     name(&item["name"])?;
-                    arguments(item)?;
+                    if item["type"] == "function_call" {
+                        arguments(item)?;
+                    } else if item["name"] != "apply_patch" || !item["input"].is_string() {
+                        return Err(invalid());
+                    }
                     if !seen.insert(call.to_owned()) {
                         return Err(invalid());
                     }
-                    pending.insert(call.to_owned());
+                    pending.insert(call.to_owned(), item["type"].as_str().unwrap());
                 }
-                Some("function_call_output") => {
+                Some("function_call_output" | "custom_tool_call_output") => {
                     fields(item, &["type", "id", "status", "call_id", "output"])?;
-                    if !pending.remove(id(&item["call_id"])?) {
+                    let expected = if item["type"] == "function_call_output" {
+                        "function_call"
+                    } else {
+                        "custom_tool_call"
+                    };
+                    if pending.remove(id(&item["call_id"])?) != Some(expected) {
                         return Err(invalid());
                     }
                     if !item["output"].is_string() {

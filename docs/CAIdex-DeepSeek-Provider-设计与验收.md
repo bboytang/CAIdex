@@ -1,6 +1,6 @@
 # CAIdex DeepSeek Provider：协议基线与验收
 
-2026-10-08核对官方文档；经典基础Adapter和10项离线回归已三平台通过；新增上下文适配及6项回归亦已精确三平台通过。随后加入显式Classic函数/namespace与完整native历史，新增9项回归/共25项及完整workspace本地通过；该函数/历史范围已精确三平台通过；后续effort29项范围亦已精确三平台通过，实际DeepSeek Runtime/真实模型未验。继续V3的共享Custom transport/Broker与固定Runtime，不运行官方安装脚本或改写用户Codex配置。
+2026-10-08核对官方文档；经典基础Adapter和10项离线回归已三平台通过；新增上下文适配及6项回归亦已精确三平台通过。随后加入显式Classic函数/namespace与完整native历史，新增9项回归/共25项及完整workspace本地通过；该函数/历史范围已精确三平台通过；后续effort29项范围亦已精确三平台通过，本轮新增独立custom apply_patch及v2历史（见末节），本地workspace418/0/45、DeepSeek37、Clippy/fmt/diff通过，三平台待验；实际DeepSeek Runtime/真实模型未验。继续V3的共享Custom transport/Broker与固定Runtime，不运行官方安装脚本或改写用户Codex配置。
 
 ## 已核对的原生契约
 
@@ -81,3 +81,18 @@
 函数/历史三平台收尾：精确dba1c90123b31e89f50c871e225afc817765ca7e/CI37851276859，3job各17steps完成且成功或条件跳过；Linux113564495100/Windows113564495117/macOS113564494877完整raw1977/1664/1675行。workspace406/401/405（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。DeepSeek25及既有全部workspace/Runtime/credentials/compile-fail doc-test通过名逐平台核对，完整名集合450/443/447，等于已验6742b15基线加9新名，无遗漏或重复。watch54073、下载/check79697、normalize/full-names均exit0；原始和step标注日志/tmp/caidex-ci-37851276859-{linux,windows,macos}-raw.log及同前缀.log/status.json/watch.log。checker /tmp/caidex-deepseek-tools-ci-{normalize,available}.py及/tmp/caidex-deepseek-ci-full-names.py在精确源码归档/tmp/caidex-deepseek-tools-ci-source执行，不借后续effort源码代验。本CI不证明后续29项范围或实际DeepSeek Runtime/Live。
 
 effort三平台收尾：精确32a9f3f/CI37851939704整体completed/success，3job各17steps成功或条件跳过；Linux113566712391/Windows113566712436/macOS113566712113完整raw1981/1668/1679行。workspace410/405/409（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。DeepSeek29及全workspace/credentials/Runtime/compile-fail doc-test通过名逐平台核对，完整集合454/447/451与已验6742b15加13新名一致，无遗漏/重复。watch62556、最终下载/check85317、normalize/available/full-names均exit0；原始/标注日志/tmp/caidex-ci-37851939704-{linux,windows,macos}-raw.log及同前缀.log/status.json/watch.log。checker /tmp/caidex-deepseek-effort-ci-{normalize,available}.py及/tmp/caidex-deepseek-ci-full-names.py在精确源码归档/tmp/caidex-deepseek-effort-ci-source执行。两个源码范围已独立收尾，不重复运行旧CI，不把43/42/42旧Runtime当DeepSeek正例；实际DeepSeek Runtime/Live与完整F/G、H–R仍未完成。
+
+
+## 显式 native custom apply_patch（本地通过 / 三平台待验）
+
+`with_native_apply_patch()`单独启用Classic函数工具与完整历史，并允许唯一原生custom名称apply_patch。默认构造及单独with_native_tools仍拒绝custom；不启用Lite exec、任意custom、deferred/search或parallel false。可在namespace内声明apply_patch，但native固定名称不做函数alias，因此不同namespace重复apply_patch或与同名flat函数冲突必须拒绝。
+
+原始format支持未提供、text及有效lark/regex grammar；格式与namespace描述完整保存在源映射，format以明确“guidance only”追加native描述，不透传成原生约束保证。DeepSeek[官方契约](https://api-docs.deepseek.com/guides/responses_api/)只承诺内置custom apply_patch，未承诺grammar enforcement。固定d27764b的[工具声明](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/handlers/apply_patch_spec.rs)提供Lark，实际[handler](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/handlers/apply_patch.rs)继续负责parse_patch、环境与审批；CAIdex不执行补丁、不重写解析器、不绕过Runtime。测试grammar逐字来自该固定上游，来源及Apache-2.0见tests/fixtures/README.md。
+
+v2载体明确绑定apply_patch策略及原始tools/choice/parallel与完整compiled native请求/响应/执行端scope；旧v1保持原函数策略，无自动升级或松绑。不允许跨policy继续同一载体；新策略应建立对应新分支/历史，不将旧carrier强改版本。custom调用与结果按call_id和类型配对；function/custom不能互换，call_id复用/丢失结果/改写显示input与源grammar均拒绝。原始patch字符串、未知输出字段及大数保持，不改为JSON参数。named function choice不能选择custom，原生未定义的named custom choice仍拒绝。
+
+SSE沿用原I/O：custom added/input.delta/input.done暂存至完整终态；校验item id/index/kind、增量拼接、done输入与终态一致后才发出canonical工具added/delta/done/item.done。function arguments.done同步纳入一致性检查，错误流无可执行工具交付、关闭真实socket并释放slot。原始/编译后/历史/队列预算、取消/Drop沿用原路径。
+
+新增8项离线用例：固定grammar的namespace函数+custom JSON及序列化后两轮native回放；SSE精确chunks与custom input；坏声明/choice/碰撞/默认与Unsupported门控零Key-POST；native类型/choice/完成状态/重复ID拒绝与slot复用；坏custom delta/done、function done、索引/未知事件实际断连零工具交付；错误结果类型/策略版本/源声明/显示篡改Key前拒绝；部分custom流取消/Drop及编译扩展预算；裸/text/regex及required choice/flat身份。有效RED新增正例编译成功后400失败：/tmp/caidex-deepseek-patch-red.log。最终workspace418/0/45（DeepSeek37每名一次、旧29名全部保留）、Clippy全workspace/all-targets-D warnings、fmt/diff通过；日志/tmp/caidex-deepseek-patch-{workspace,clippy}.log，范围/fixture/文档链接核对脚本同前缀local-check.py。定向初轮36/0/0（同前缀green.log），后续第8项及function done坏流已在最终workspace通过。三平台待精确提交验证，不借旧29项CI代验37项。
+
+仍待summary/context/include与复杂reasoning索引、Lite/单调用策略、固定DeepSeek Classic/Lite实际Runtime审批/执行/取消/磁盘恢复与Live/Full；本步Adapter串行化不代表Host落盘恢复。F/G和H–R尚未完成，按既定顺序继续。

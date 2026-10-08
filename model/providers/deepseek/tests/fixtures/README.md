@@ -1,0 +1,1 @@
+`apply_patch.lark` is copied without changes from [openai/codex](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/assets/tools/apply_patch.lark), under Apache-2.0. It is an offline declaration fixture, not a CAIdex patch parser.

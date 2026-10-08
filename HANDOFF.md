@@ -1,14 +1,16 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 22:15 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-08 22:26 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
 F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现）；DeepSeek Classic函数/namespace与完整native推理历史dba1c90123b31e89f50c871e225afc817765ca7e/[CI37851276859](https://github.com/bboytang/CAIdex/actions/runs/37851276859)，后续显式effort映射32a9f3fdae8aed7519a867c1d32a8cf911f5ce09/[CI37851939704](https://github.com/bboytang/CAIdex/actions/runs/37851939704)，均已提交/push且精确三平台完整验收。最新范围DeepSeek29、workspace410/405/409、旧固定Runtime43/42/42通过；这不是实际DeepSeek Runtime接线或Live/Full。
 
-下一步custom apply_patch及summary/context/include等剩余Runtime控制，再Classic/Lite真实固定Runtime审批/执行/取消/磁盘恢复，随后Qwen/OpenRouter；不重做已验Adapter、不跳H/I。用户已明确授权今后本地检查通过直接commit/push并执行三平台CI，逐步记录，不再额外等待。仍不读取用户Key/调用商业模型/部署。
+当前custom apply_patch本地37项通过待提交/精确CI；之后summary/context/include等剩余Runtime控制，再Classic/Lite真实固定Runtime审批/执行/取消/磁盘恢复，随后Qwen/OpenRouter；不重做已验Adapter、不跳H/I。用户已明确授权今后本地检查通过直接commit/push并执行三平台CI，逐步记录，不再额外等待。仍不读取用户Key/调用商业模型/部署。
 
 ## 已完成 / 验证
+
+- 当前apply_patch子阶段本地收尾：独立with_native_apply_patch/Classic唯一custom名称、source grammar明确仅指导、v2策略绑定（旧v1不自动升级），类型/结果配对、native delta/done/id/index/终态一致性，验证后才交付工具。新增8项、最终DeepSeek37逐名/旧29名保持，workspace418/0/45、Clippy全workspace/all-targets-D warnings/fmt/diff通过；有效RED新正例编译成功400拒绝，同前缀red.log。日志/tmp/caidex-deepseek-patch-{red,green,workspace,clippy}.log（green初轮36，最终37以workspace为准），local-check.py核对范围/链接/固定grammar字节。只DeepSeek5源码+测试+2 fixture和4文档（10 tracked/2 new），无依赖/其他Provider/Runtime/workflow变化；main从991494f续接，当前未提交，下一步提交/push并验精确三平台。固定d27764b源声明/handler只读/tmp/caidex-pinned-apply-patch-{spec,handler}.rs；grammar fixture有Apache-2.0来源。此Adapter不是实际DeepSeek Runtime/Host磁盘恢复或Live。
 
 - 最新effort CI：精确32a9f3f/37851939704整体completed/success，3job各17steps成功或条件跳过；Linux113566712391/Windows113566712436/macOS113566712113完整raw1981/1668/1679行。workspace410/405/409（0failed，ignored45/43/43）、旧Runtime43/42/42（0failed/ignored）、Linux native credentials1。DeepSeek29每名逐平台一次；全workspace/credentials/Runtime/compile-fail doc-test完整通过名集合454/447/451，等于已验6742b15加13新名，无遗漏/重复。watch62556、最终下载/check85317、normalize/available/full-names均exit0，在/tmp/caidex-deepseek-effort-ci-source精确归档执行，全部handle结束。
 - 函数/历史CI：精确dba1c90/37851276859整体completed/success，各3job/17steps；Linux113564495100/Windows113564495117/macOS113564494877完整raw1977/1664/1675行，workspace406/401/405、旧Runtime43/42/42均0failed，ignored45/43/43；native credentials1。DeepSeek25每名一次，全通过名集合450/443/447与旧6742b15加9新名一致；watch54073、最终下载/check79697、normalize/available/full-names均exit0，在/tmp/caidex-deepseek-tools-ci-source精确归档执行，不代验29项。两阶段checker /tmp/caidex-deepseek-{tools,effort}-ci-{normalize,available}.py及/tmp/caidex-deepseek-ci-full-names.py，原始/标注日志/tmp/caidex-ci-{37851276859,37851939704}-{linux,windows,macos}-raw.log及同前缀.log/status.json/watch.log。
@@ -25,7 +27,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## 下一步顺序
 
-1. dba1c90/CI37851276859与32a9f3f/CI37851939704均已完整收尾，无源码变化不重跑。先核对当前Git和本交接；继续固定Runtime真实请求的custom apply_patch、summary/context/include及复杂reasoning流索引映射。固定上游grammar位于codex-rs/core/assets/tools/apply_patch.lark，已只读下载/tmp/caidex-pinned-apply-patch.lark；先核对源声明/grammar如何编译为原生apply_patch，不能任意透传format认领约束。每个新增范围有定向证据、精确CI、交接；已验函数/namespace/native历史和effort不重写，原生忽略/降级字段明确编译或拒绝。
+1. dba1c90/CI37851276859与32a9f3f/CI37851939704均已完整收尾，无源码变化不重跑。先核对当前Git和本交接；本轮custom apply_patch本地收尾待commit/push/精确三平台CI，之后继续summary/context/include及复杂reasoning流索引映射。固定上游grammar位于codex-rs/core/assets/tools/apply_patch.lark，已只读下载/tmp/caidex-pinned-apply-patch.lark；先核对源声明/grammar如何编译为原生apply_patch，不能任意透传format认领约束。每个新增范围有定向证据、精确CI、交接；已验函数/namespace/native历史和effort不重写，原生忽略/降级字段明确编译或拒绝。
 
 2. 随后Lite custom Code Mode/本地单调用交付、固定实际DeepSeek Runtime审批/执行/取消/磁盘重启，再Qwen/OpenRouter。每一步定向/相关回归、精确源码CI及交接；无源码变化不重跑已验本地全套/旧CI，不派重复独立审查。未经另行授权不调用商业API或下载模型。
 3. 按V3继续H Host/SQLite journal/安全证据契约 → I官方账户/PostgreSQL/独立Chat/Memory/同步/邮件/本机恢复 → Windows → SSH/iOS → CLI → Relay → R；新设计第12/13节为I内部顺序和全部待验矩阵。iOS在GitHub建立真正simulator测试/无签名archive，Rust macOS CI不代表iOS。文档任务结束不自动开始账户实现，已确认架构不重新询问/规划。
@@ -35,7 +37,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 - Windows11x64：Tauri2+React/TypeScript/Rust；Linuxx86_64 Host/CLI；iOS17+/Swift5 SwiftUI+UniFFI。GUI中文/英文，CLI英文；assets/brand原件，UI尽量1:1参考官方，模型/API Key入口在设置。
 - 固定Codex0.160.1/d27764b82f7118f674371e6d6e76271d9d606edb是唯一Runtime/工具执行器；Gateway仅适配Responses，共享Custom transport/Broker，不另造Agent/HTTP栈。未知协议信息保留，实验能力显式opt-in，经典/Lite分别验收。
 - Native wire为回放权威；载体绑定执行端/profile/端点/model/compiled前缀，工具另绑定原始声明及native声明/策略，SSE raw chunks重建核对。Gemini v1/v2、Anthropic v3/v4、Ollama v1/v2不自动升级/松绑；JSON载体不是加密或来源认证。Unknown/Configured/ProviderCatalog/ProtocolFixture不授予LiveRuntime/Full。
-- DeepSeek原生无服务端会话；developer降级user、unknown input/内置tools忽略、parallel flag忽略、summary/encrypted_content/verbosity不等价。当前default仍拒绝高级字段/Lite/tools/reasoning输入；工具/历史有独立显式opt-in，只有完整绑定载体允许回放，原生parallel false/custom/deferred仍拒绝，不允许伪造reasoning；后置developer拒绝。完整原生契约与后续恢复点见docs/DeepSeek。
+- DeepSeek原生无服务端会话；developer降级user、unknown input/内置tools忽略、parallel flag忽略、summary/encrypted_content/verbosity不等价。当前default仍拒绝高级字段/Lite/tools/reasoning输入；工具/历史有独立显式opt-in，只有完整绑定载体允许回放，单独with_native_tools仍拒绝custom；with_native_apply_patch新增v2显式策略，grammar仅指导、Runtime负责解析审批；parallel false/其他custom/deferred仍拒绝，不允许伪造reasoning；后置developer拒绝。完整原生契约与后续恢复点见docs/DeepSeek。
 - Chat独立无Shell/Git/项目写权限；Remote使用Host Key，手机不读取Host已存Key，同步不含凭据。模型轮次边界切换，跨Provider关联分支/新线程。
 - Host后台；SQLite journal先落盘再广播、快照补缺口、请求幂等/审批首次有效。不盲重跑未知结果、不承诺外部exactly-once；活动线程不迁移Host。Remote先SSH后Noise/Snow Relay；unsigned archive不是可安装IPA。
 - 官方统一CAIdex Account，客户端注册/邮箱验证/密码/Passkey/恢复；不可变user_id，auth_sessions无强制绑定/旧设备审批/默认数量限制，独立撤销/refresh轮换。账户/Gateway token/执行端CredentialRef.owner/Host ACL各自独立；登录不授予Host执行/Key读取。正式云端账户/Chat/Memory用PostgreSQL+pgvector/RLS，客户端本地记忆/缓存和Host journal继续SQLite，替代旧自托管Chat云SQLite描述；HTTPS服务器是信任边界，无Chat/记忆E2EE承诺。
@@ -45,7 +47,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## 问题 / 阻塞
 
-- 当前无审批/实现阻塞；两个新范围三平台均已完成，所有watch/下载/检查handle终止。2026-10-08用户明确授权本次及后续本地检查通过直接commit/push/三平台CI，覆盖此前文档任务的暂不push限制，不重复询问。离线合成fixture及旧Runtime临时marker仍获准；不读取用户Key/调用商业API/运行官方安装脚本。
+- 当前无审批/实现阻塞；前两个范围三平台均已完成；当前apply_patch最终本地workspace/clippy handle结束待新精确CI。2026-10-08用户明确授权本次及后续本地检查通过直接commit/push/三平台CI，覆盖此前文档任务的暂不push限制，不重复询问。离线合成fixture及旧Runtime临时marker仍获准；不读取用户Key/调用商业API/运行官方安装脚本。
 
 - 商业Key/真实模型/签名真实性/Full、生产Host权限/UI/iOS/真机/Windows UAC/签名未验。同步SecretStore开始后不可强停，仅保证取消后不POST；comment-only native chunk与实际Runtime下游idle单独未验。
 - 既有Minor保留在Provider文档：Gemini thought-call/无tools/未opt-in none覆盖、prefix-only整组互换、projection/满槽取消、ProtoJSON整数/空ID、部分usage/thought-only phase；Anthropic重启第三轮/完整Lite custom结果覆盖。不派重复独立审查，不把暂缓项改标为修复。
@@ -53,7 +55,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；最新生产源码32a9f3fdae8aed7519a867c1d32a8cf911f5ce09、前一dba1c90123b31e89f50c871e225afc817765ca7e及架构81debdb均已提交/push。无未完成源码；本轮收尾只改HANDOFF/README/docs-DeepSeek/docs-Model-Gateway4文档并随此记录提交/push，恢复用Git确认文档HEAD/工作区，不借文档head代源码CI。全部原成果保留；生产变化只DeepSeek，无依赖/其他Provider/共享生产源码/Runtime/workflow改动。
+- branch main；本轮apply_patch从991494f续接，本地验证通过的10 tracked/2 fixture未提交（DeepSeek5源码/测试、README/HANDOFF/DeepSeek/Gateway4文档），下一步commit/push并等待对应三平台；无未验证的生产实现。上一轮最新生产源码32a9f3fdae8aed7519a867c1d32a8cf911f5ce09、前一dba1c90123b31e89f50c871e225afc817765ca7e及架构81debdb均已提交/push。无未完成源码；本轮收尾只改HANDOFF/README/docs-DeepSeek/docs-Model-Gateway4文档并随此记录提交/push，恢复用Git确认文档HEAD/工作区，不借文档head代源码CI。全部原成果保留；生产变化只DeepSeek，无依赖/其他Provider/共享生产源码/Runtime/workflow改动。
 
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约9.4G可用，修改前先df，不清源码/凭据/保护目录。
 - 当前代码：model/providers/deepseek/src/{lib,config,catalog,request,tools,history,history_stream}.rs、tests/provider.rs；共享model/providers/custom、model/core、model/gateway、credentials/core；实际Runtime在runtime/bridge/tests/real_runtime.rs及fixtures。基准docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅需求背景。

@@ -1481,6 +1481,8 @@ fn native_chunks(wire: &Value) -> Vec<Value> {
         start["status"] = "in_progress".into();
         if item["type"] == "function_call" {
             start["arguments"] = "".into();
+        } else if item["type"] == "custom_tool_call" {
+            start["input"] = "".into();
         } else {
             start["content"] = json!([]);
         }
@@ -1489,6 +1491,9 @@ fn native_chunks(wire: &Value) -> Vec<Value> {
         if item["type"] == "function_call" {
             chunks.push(json!({"type":"response.function_call_arguments.delta", "output_index":index, "item_id":item["id"], "delta":item["arguments"]}));
             chunks.push(json!({"type":"response.function_call_arguments.done", "output_index":index, "item_id":item["id"], "arguments":item["arguments"]}));
+        } else if item["type"] == "custom_tool_call" {
+            chunks.push(json!({"type":"response.custom_tool_call_input.delta", "output_index":index, "item_id":item["id"], "delta":item["input"]}));
+            chunks.push(json!({"type":"response.custom_tool_call_input.done", "output_index":index, "item_id":item["id"], "input":item["input"]}));
         } else {
             let kind = if item["type"] == "reasoning" {
                 "response.reasoning_text.delta"
@@ -2389,4 +2394,590 @@ async fn effort_mapping_cannot_hide_an_oversized_original_request() {
     );
     assert_eq!(reads.load(Ordering::SeqCst), 0);
     assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+fn patch_wire(streaming: bool) -> Value {
+    let mut wire = tool_wire(streaming);
+    wire["tools"][0]["tools"].as_array_mut().unwrap().push(json!({"type":"custom", "name":"apply_patch", "description":"Edit files without JSON wrapping", "format":{"type":"grammar", "syntax":"lark", "definition":include_str!("fixtures/apply_patch.lark")}}));
+    wire
+}
+fn patch_native() -> Value {
+    let mut wire = tool_native("caidex_ns_0");
+    wire["output"].as_array_mut().unwrap().push(json!({"type":"custom_tool_call", "id":"patch_one", "status":"completed", "name":"apply_patch", "call_id":"patch-call", "input":"*** Begin Patch\n*** Add File: 中文.txt\n+🙂\n*** End Patch\n", "future":{"n":18446744073709551616_u128}}));
+    wire
+}
+fn patch_followup(original: &Value, output: &[Value]) -> Value {
+    let mut next = followup(original, output);
+    let input = next["input"].as_array_mut().unwrap();
+    input.insert(
+        input.len() - 1,
+        json!({"type":"custom_tool_call_output", "call_id":"patch-call", "output":"Patch applied"}),
+    );
+    next
+}
+fn patch_capsule(item: &Value) -> Value {
+    serde_json::from_str(
+        item["encrypted_content"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("caidex.deepseek.native-history.v2:")
+            .unwrap(),
+    )
+    .unwrap()
+}
+
+#[tokio::test]
+async fn native_apply_patch_keeps_source_grammar_kind_and_exact_two_turn_history() {
+    let first = patch_native();
+    let mut fixture = Fixture::start(vec![
+        Reply::json(first.clone()),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_apply_patch();
+    let original = patch_wire(false);
+    let response = provider
+        .create_response(request(original.clone()), RequestContext::default())
+        .await
+        .unwrap()
+        .response;
+    let sent = fixture.captured().await.body.unwrap();
+    assert_eq!(sent["tools"][1]["type"], "custom");
+    assert_eq!(sent["tools"][1]["name"], "apply_patch");
+    assert!(sent["tools"][1].get("format").is_none());
+    assert!(
+        sent["tools"][1]["description"]
+            .as_str()
+            .unwrap()
+            .contains(&original["tools"][0]["tools"][1]["format"].to_string())
+    );
+    assert!(
+        sent["tools"][1]["description"]
+            .as_str()
+            .unwrap()
+            .contains("guidance only")
+    );
+    let history = patch_capsule(&response.output()[0]);
+    assert_eq!(history["version"], 2);
+    assert_eq!(history["tool_mapping"]["apply_patch"], true);
+    assert_eq!(history["tool_mapping"]["tools"], original["tools"]);
+    assert_eq!(history["request"], sent);
+    assert_eq!(history["response"], first);
+    assert!(!history.to_string().contains(KEY));
+    assert_eq!(response.output()[3]["type"], "custom_tool_call");
+    assert_eq!(response.output()[3]["namespace"], "workspace");
+    assert_eq!(response.output()[3]["input"], first["output"][3]["input"]);
+    let serialized: Vec<Value> =
+        serde_json::from_slice(&serde_json::to_vec(response.output()).unwrap()).unwrap();
+    provider
+        .create_response(
+            request(patch_followup(&original, &serialized)),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    let next = fixture.captured().await.body.unwrap();
+    assert_eq!(next["input"][4], first["output"][3]);
+    assert_eq!(next["input"][6]["type"], "custom_tool_call_output");
+    assert!(!next.to_string().contains("caidex.deepseek.native-history"));
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn native_apply_patch_sse_validates_chunks_and_replays_original_custom_input() {
+    let first = patch_native();
+    let chunks = native_chunks(&first);
+    let mut fixture = Fixture::start(vec![
+        Reply::stream(chunks.iter().cloned().map(event).collect()),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_apply_patch();
+    let mut response = provider
+        .stream_response(request(patch_wire(true)), RequestContext::default())
+        .await
+        .unwrap();
+    let mut parser = caidex_model_core::ResponsesStream::new(limits().frame_bytes).unwrap();
+    let mut output = None;
+    let mut patch = String::new();
+    let mut added = 0;
+    while let Some(item) = response.events.next().await {
+        if let ProviderStreamEvent::Model(event) = item.unwrap() {
+            parser
+                .push(format!("data: {}\n\n", event.frame.data).as_bytes())
+                .unwrap();
+            let wire = event.response.wire();
+            match event.response.kind() {
+                "response.output_item.added" if wire["item"]["type"] == "custom_tool_call" => {
+                    added += 1;
+                    assert_eq!(wire["output_index"], 3);
+                    assert_eq!(wire["item"]["namespace"], "workspace");
+                    assert_eq!(wire["item"]["input"], "");
+                }
+                "response.custom_tool_call_input.delta" => {
+                    patch.push_str(wire["delta"].as_str().unwrap())
+                }
+                "response.custom_tool_call_input.done" => {
+                    assert_eq!(wire["input"], first["output"][3]["input"])
+                }
+                "response.completed" => {
+                    output = Some(wire["response"]["output"].as_array().unwrap().clone())
+                }
+                _ => (),
+            }
+        }
+    }
+    parser.finish().unwrap();
+    assert_eq!(added, 1);
+    assert_eq!(patch, first["output"][3]["input"].as_str().unwrap());
+    let output = output.unwrap();
+    assert_eq!(patch_capsule(&output[0])["chunks"], json!(chunks));
+    fixture.captured().await;
+    provider
+        .create_response(
+            request(patch_followup(&patch_wire(false), &output)),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        fixture.captured().await.body.unwrap()["input"][4],
+        first["output"][3]
+    );
+}
+
+#[tokio::test]
+async fn native_apply_patch_bad_declarations_choices_and_default_policy_never_read_key() {
+    let fixture = Fixture::start(vec![Reply::json(history_text())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_apply_patch();
+    let mut cases = Vec::new();
+    for format in [
+        Value::Null,
+        json!({"type":"grammar", "syntax":"unknown", "definition":"x"}),
+        json!({"type":"grammar", "syntax":"lark", "definition":" "}),
+        json!({"type":"text", "unknown":true}),
+    ] {
+        let mut wire = patch_wire(false);
+        wire["tools"][0]["tools"][1]["format"] = format;
+        cases.push(wire);
+    }
+    for field in ["name", "defer_loading", "parameters"] {
+        let mut wire = patch_wire(false);
+        wire["tools"][0]["tools"][1][field] = match field {
+            "name" => json!("exec"),
+            "defer_loading" => json!(true),
+            _ => json!({}),
+        };
+        cases.push(wire);
+    }
+    for choice in [
+        json!({"type":"custom", "namespace":"workspace", "name":"apply_patch"}),
+        json!({"type":"function", "namespace":"workspace", "name":"apply_patch"}),
+    ] {
+        let mut wire = patch_wire(false);
+        wire["tool_choice"] = choice;
+        cases.push(wire);
+    }
+    let mut wire = patch_wire(false);
+    wire["tools"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"type":"function", "name":"apply_patch", "parameters":{}}));
+    cases.push(wire);
+    let mut wire = patch_wire(false);
+    wire["tools"].as_array_mut().unwrap().push(json!({"type":"namespace", "name":"other", "tools":[{"type":"custom", "name":"apply_patch"}]}));
+    cases.push(wire);
+    for wire in cases {
+        assert_eq!(
+            provider
+                .create_response(request(wire), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+    }
+    let default = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    assert_eq!(
+        default
+            .create_response(request(patch_wire(false)), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .http_status,
+        400
+    );
+    let mut model = metadata("fixture", "native-fixture");
+    model.capabilities.native_tools = CapabilitySupport::Unsupported;
+    let unsupported = fixture
+        .provider(broker, vec![model], limits())
+        .with_native_apply_patch();
+    assert_eq!(
+        unsupported
+            .create_response(request(patch_wire(false)), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "unsupported_tools"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn native_apply_patch_response_kind_choice_and_completion_are_checked_before_delivery() {
+    for corrupt in 0..9 {
+        let mut wire = patch_native();
+        let mut input = patch_wire(false);
+        match corrupt {
+            0 => wire["output"][3]["name"] = "exec".into(),
+            1 => wire["output"][3]["type"] = "function_call".into(),
+            2 => wire["output"][2]["type"] = "custom_tool_call".into(),
+            3 => wire["output"][3]["input"] = json!({"patch":"x"}),
+            4 => wire["output"][3]["status"] = "in_progress".into(),
+            5 => {
+                wire["status"] = "incomplete".into();
+                wire["incomplete_details"] = json!({"reason":"max_output_tokens"});
+            }
+            6 => wire["output"][3]["call_id"] = "call-one".into(),
+            7 => input["tool_choice"] = "none".into(),
+            _ => {
+                input["tool_choice"] =
+                    json!({"type":"function", "namespace":"workspace", "name":"read"})
+            }
+        }
+        let mut fixture =
+            Fixture::start(vec![Reply::json(wire), Reply::json(patch_native())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_apply_patch();
+        assert_eq!(
+            provider
+                .create_response(request(input), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            502
+        );
+        fixture.captured().await;
+        provider
+            .create_response(request(patch_wire(false)), RequestContext::default())
+            .await
+            .unwrap();
+        fixture.captured().await;
+    }
+}
+
+#[tokio::test]
+async fn invalid_native_apply_patch_stream_never_delivers_calls_and_releases_socket_slot() {
+    for corrupt in 0..7 {
+        let mut chunks = native_chunks(&patch_native());
+        let kind = match corrupt {
+            0 | 1 | 4 | 5 => "response.custom_tool_call_input.delta",
+            6 => "response.function_call_arguments.done",
+            _ => "response.custom_tool_call_input.done",
+        };
+        let chunk = chunks.iter_mut().find(|c| c["type"] == kind).unwrap();
+        match corrupt {
+            0 => chunk["delta"] = "wrong patch".into(),
+            1 => chunk["item_id"] = "wrong id".into(),
+            2 => chunk["input"] = "wrong patch".into(),
+            3 => chunk["item_id"] = "wrong id".into(),
+            4 => chunk["type"] = "response.custom_tool_call_input.unknown".into(),
+            6 => chunk["arguments"] = "wrong arguments".into(),
+            _ => {
+                chunk["output_index"] = 2.into();
+                chunk["item_id"] = "fc_one".into();
+            }
+        }
+        let mut reply = Reply::stream(chunks.into_iter().map(event).collect());
+        reply.stall = 2;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_apply_patch();
+        let mut response = provider
+            .stream_response(request(patch_wire(true)), RequestContext::default())
+            .await
+            .unwrap();
+        let mut failed = false;
+        while let Some(item) = response.events.next().await {
+            match item {
+                Err(error) => {
+                    assert_eq!(error.http_status, 502);
+                    assert!(!failed);
+                    failed = true;
+                }
+                Ok(ProviderStreamEvent::Model(event)) => {
+                    assert!(
+                        !event
+                            .response
+                            .kind()
+                            .starts_with("response.custom_tool_call")
+                    );
+                    assert!(!event.response.kind().starts_with("response.function_call"));
+                    assert!(!matches!(
+                        event.response.wire()["item"]["type"].as_str(),
+                        Some("function_call" | "custom_tool_call")
+                    ));
+                }
+                _ => (),
+            }
+        }
+        assert!(failed);
+        fixture.disconnected().await;
+        provider
+            .create_response(request(patch_wire(false)), RequestContext::default())
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn native_apply_patch_history_rejects_wrong_result_kinds_policy_and_display_changes() {
+    let mut fixture = Fixture::start(vec![
+        Reply::json(patch_native()),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_apply_patch();
+    let original = patch_wire(false);
+    let response = provider
+        .create_response(request(original.clone()), RequestContext::default())
+        .await
+        .unwrap()
+        .response;
+    fixture.captured().await;
+    let good = patch_followup(&original, response.output());
+    let mut cases = Vec::new();
+    for index in [5, 6] {
+        let mut wire = good.clone();
+        wire["input"][index]["type"] = if index == 5 {
+            "custom_tool_call_output"
+        } else {
+            "function_call_output"
+        }
+        .into();
+        cases.push(wire);
+    }
+    let mut wire = good.clone();
+    wire["input"].as_array_mut().unwrap().remove(6);
+    cases.push(wire);
+    let mut wire = good.clone();
+    wire["input"][4]["input"] = "modified".into();
+    cases.push(wire);
+    let mut wire = good.clone();
+    wire["tools"][0]["tools"][1]["format"]["definition"] = "different".into();
+    cases.push(wire);
+    let mut wire = good.clone();
+    wire["input"][1]["encrypted_content"] = wire["input"][1]["encrypted_content"]
+        .as_str()
+        .unwrap()
+        .replacen("native-history.v2:", "native-history.v1:", 1)
+        .into();
+    cases.push(wire);
+    for wire in cases {
+        assert_eq!(
+            provider
+                .create_response(request(wire), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+    }
+    let default = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_tools();
+    assert_eq!(
+        default
+            .create_response(request(good.clone()), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .http_status,
+        400
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
+    provider
+        .create_response(request(good), RequestContext::default())
+        .await
+        .unwrap();
+    fixture.captured().await;
+}
+
+#[tokio::test]
+async fn native_apply_patch_partial_stream_cancel_drop_and_expanded_budget_preserve_limits() {
+    for cancel in [false, true] {
+        let mut chunks = native_chunks(&patch_native());
+        chunks.truncate(
+            chunks
+                .iter()
+                .position(|c| c["type"] == "response.custom_tool_call_input.done")
+                .unwrap(),
+        );
+        let count = chunks.len() + 1; // created also adds the canonical reasoning carrier.
+        let mut reply = Reply::stream(chunks.into_iter().map(event).collect());
+        reply.stall = 2;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_apply_patch();
+        let context = RequestContext::default();
+        let cancellation = context.cancellation.clone();
+        let mut response = provider
+            .stream_response(request(patch_wire(true)), context)
+            .await
+            .unwrap();
+        for _ in 0..count {
+            if let ProviderStreamEvent::Model(event) =
+                response.events.next().await.unwrap().unwrap()
+            {
+                assert!(
+                    !event
+                        .response
+                        .kind()
+                        .starts_with("response.custom_tool_call")
+                );
+                assert!(!matches!(
+                    event.response.wire()["item"]["type"].as_str(),
+                    Some("function_call" | "custom_tool_call")
+                ));
+            }
+        }
+        if cancel {
+            cancellation.cancel();
+            assert_eq!(
+                response.events.next().await.unwrap().err().unwrap().code,
+                "provider_cancelled"
+            );
+            assert!(response.events.next().await.is_none());
+        }
+        drop(response);
+        fixture.disconnected().await;
+        provider
+            .create_response(request(patch_wire(false)), RequestContext::default())
+            .await
+            .unwrap();
+    }
+    let fixture = Fixture::start(vec![Reply::json(history_text())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let wire = patch_wire(false);
+    let mut small = limits();
+    small.request_bytes = wire.to_string().len() + 8;
+    let provider = fixture
+        .provider(broker, vec![metadata("fixture", "native-fixture")], small)
+        .with_native_apply_patch();
+    assert_eq!(
+        provider
+            .create_response(request(wire), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .http_status,
+        413
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn native_apply_patch_bare_text_and_regex_formats_keep_required_choice_and_flat_identity() {
+    for format in [
+        None,
+        Some(json!({"type":"text"})),
+        Some(json!({"type":"grammar", "syntax":"regex", "definition":"^patch$"})),
+    ] {
+        let mut first = patch_native();
+        first["output"].as_array_mut().unwrap().remove(2);
+        let mut fixture = Fixture::start(vec![Reply::json(first)]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_apply_patch();
+        let mut wire = patch_wire(false);
+        let mut declaration = wire["tools"][0]["tools"][1].clone();
+        declaration.as_object_mut().unwrap().remove("format");
+        if let Some(format) = format {
+            declaration["format"] = format;
+        }
+        wire["tools"] = json!([declaration]);
+        wire["tool_choice"] = "required".into();
+        let response = provider
+            .create_response(request(wire.clone()), RequestContext::default())
+            .await
+            .unwrap()
+            .response;
+        let sent = fixture.captured().await.body.unwrap();
+        assert_eq!(sent["tool_choice"], "required");
+        assert_eq!(sent["tools"][0]["type"], "custom");
+        assert_eq!(response.output()[2]["name"], "apply_patch");
+        assert!(response.output()[2].get("namespace").is_none());
+        assert_eq!(
+            patch_capsule(&response.output()[0])["tool_mapping"]["tools"],
+            wire["tools"]
+        );
+    }
 }

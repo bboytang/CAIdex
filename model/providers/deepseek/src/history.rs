@@ -7,6 +7,7 @@ use serde_json::{Value, json};
 use std::{collections::HashMap, fmt};
 
 const PREFIX: &str = "caidex.deepseek.native-history.v1:";
+const PATCH_PREFIX: &str = "caidex.deepseek.native-history.v2:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "deepseek_invalid_history")
 }
@@ -31,7 +32,7 @@ impl NativeHistory {
         chunks: Option<&[Value]>,
         max_bytes: usize,
     ) -> ProviderResult<Self> {
-        let mut wire = json!({"provider":"deepseek", "version":1, "scope":scope, "native_model":request.model(), "request":request.wire(), "response":response.wire(), "tool_mapping":tools.source(), "source":if chunks.is_some() {"sse"} else {"json"}});
+        let mut wire = json!({"provider":"deepseek", "version":if tools.source()["apply_patch"] == true {2} else {1}, "scope":scope, "native_model":request.model(), "request":request.wire(), "response":response.wire(), "tool_mapping":tools.source(), "source":if chunks.is_some() {"sse"} else {"json"}});
         if let Some(chunks) = chunks {
             wire["chunks"] = json!(chunks);
         }
@@ -41,7 +42,12 @@ impl NativeHistory {
         let history = Self(wire);
         history.check_size(max_bytes)?;
         if history.0["provider"] != "deepseek"
-            || history.0["version"] != 1
+            || history.0["version"]
+                != if history.0["tool_mapping"]["apply_patch"] == true {
+                    2
+                } else {
+                    1
+                }
             || !history.0["scope"].is_object()
             || history.0["request"]["model"] != history.0["native_model"]
         {
@@ -120,8 +126,13 @@ impl NativeHistory {
             .collect();
         // shortcut: full prefixes grow quadratically; bounded budgets reject
         // overflow until Host persistence can deduplicate native history.
+        let prefix = if self.0["version"] == 2 {
+            PATCH_PREFIX
+        } else {
+            PREFIX
+        };
         let mut output = vec![
-            json!({"type":"reasoning", "id":format!("rs_{}_native", response.id()), "summary":summary, "encrypted_content":format!("{PREFIX}{}", self.0)}),
+            json!({"type":"reasoning", "id":format!("rs_{}_native", response.id()), "summary":summary, "encrypted_content":format!("{prefix}{}", self.0)}),
         ];
         output.extend(
             native
@@ -147,9 +158,16 @@ impl NativeHistory {
         if carrier["type"] != "reasoning" || capsule.len() > max_bytes {
             return Err(invalid());
         }
-        let wire = serde_json::from_str(capsule.strip_prefix(PREFIX).ok_or_else(invalid)?)
-            .map_err(|_| invalid())?;
+        let (encoded, version) = if let Some(wire) = capsule.strip_prefix(PREFIX) {
+            (wire, 1)
+        } else {
+            (capsule.strip_prefix(PATCH_PREFIX).ok_or_else(invalid)?, 2)
+        };
+        let wire = serde_json::from_str(encoded).map_err(|_| invalid())?;
         let history = Self::new(wire, max_bytes).map_err(|_| invalid())?;
+        if history.0["version"] != version {
+            return Err(invalid());
+        }
         if history.0["scope"] != config.replay_scope()
             || history.0["native_model"] != expected.model()
         {
@@ -274,6 +292,7 @@ fn validate_chunks(
             chunk["type"].as_str(),
             Some(
                 "response.function_call_arguments.delta"
+                    | "response.custom_tool_call_input.delta"
                     | "response.output_text.delta"
                     | "response.reasoning_text.delta"
             )
@@ -282,7 +301,13 @@ fn validate_chunks(
                 .as_u64()
                 .and_then(|n| usize::try_from(n).ok())
                 .ok_or_else(invalid)?;
-            let part = if chunk["type"] == "response.function_call_arguments.delta" {
+            let part = if matches!(
+                chunk["type"].as_str(),
+                Some(
+                    "response.function_call_arguments.delta"
+                        | "response.custom_tool_call_input.delta"
+                )
+            ) {
                 0
             } else {
                 chunk["content_index"]
@@ -306,7 +331,15 @@ fn validate_chunks(
     for ((index, part, kind), text) in deltas {
         let item = response.output().get(index).ok_or_else(invalid)?;
         let expected = if kind == "response.function_call_arguments.delta" {
+            if item["type"] != "function_call" {
+                return Err(invalid());
+            }
             &item["arguments"]
+        } else if kind == "response.custom_tool_call_input.delta" {
+            if item["type"] != "custom_tool_call" {
+                return Err(invalid());
+            }
+            &item["input"]
         } else {
             &item["content"][part]["text"]
         };
@@ -315,6 +348,25 @@ fn validate_chunks(
         }
     }
     for chunk in chunks {
+        if matches!(
+            chunk["type"].as_str(),
+            Some("response.function_call_arguments.done" | "response.custom_tool_call_input.done")
+        ) {
+            let index = chunk["output_index"]
+                .as_u64()
+                .and_then(|n| usize::try_from(n).ok())
+                .ok_or_else(invalid)?;
+            let item = response.output().get(index).ok_or_else(invalid)?;
+            let (kind, field) = if chunk["type"] == "response.function_call_arguments.done" {
+                ("function_call", "arguments")
+            } else {
+                ("custom_tool_call", "input")
+            };
+            if item["type"] != kind || chunk["item_id"] != item["id"] || chunk[field] != item[field]
+            {
+                return Err(invalid());
+            }
+        }
         if matches!(
             chunk["type"].as_str(),
             Some("response.output_item.added" | "response.output_item.done")

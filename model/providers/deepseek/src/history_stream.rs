@@ -15,7 +15,7 @@ fn invalid() -> ProviderError {
     ProviderError::new(502, "deepseek_invalid_history_stream")
 }
 
-/// Incremental text uses the existing native I/O. Function calls are delivered
+/// Incremental text uses the existing native I/O. Tool calls are delivered
 /// only after terminal validation and exact native-history reconstruction.
 pub(crate) struct HistoryStream {
     native: Option<ProviderStream>,
@@ -120,7 +120,10 @@ impl HistoryStream {
                         return Err(invalid());
                     }
                 }
-                Some(kind) if kind.ends_with("_call") && kind != "function_call" => {
+                Some(kind)
+                    if kind.ends_with("_call")
+                        && !matches!(kind, "function_call" | "custom_tool_call") =>
+                {
                     return Err(invalid());
                 }
                 _ => {
@@ -168,6 +171,8 @@ impl HistoryStream {
             "response.output_item.done"
             | "response.function_call_arguments.delta"
             | "response.function_call_arguments.done"
+            | "response.custom_tool_call_input.delta"
+            | "response.custom_tool_call_input.done"
             | "response.output_text.done"
             | "response.content_part.done"
             | "response.reasoning_text.done" => (),
@@ -205,8 +210,16 @@ impl HistoryStream {
                                 .is_some_and(|id| self.added.contains(id))
                         {
                             let mut start = item.clone();
-                            if item["type"] == "function_call" {
-                                start["arguments"] = "".into();
+                            if matches!(
+                                item["type"].as_str(),
+                                Some("function_call" | "custom_tool_call")
+                            ) {
+                                let field = if item["type"] == "function_call" {
+                                    "arguments"
+                                } else {
+                                    "input"
+                                };
+                                start[field] = "".into();
                                 start["status"] = "in_progress".into();
                             }
                             self.emit(json!({"type":"response.output_item.added", "output_index":index, "item":start}))?;
@@ -214,6 +227,10 @@ impl HistoryStream {
                         if item["type"] == "function_call" {
                             self.emit(json!({"type":"response.function_call_arguments.delta", "output_index":index, "item_id":item["id"], "delta":item["arguments"]}))?;
                             self.emit(json!({"type":"response.function_call_arguments.done", "output_index":index, "item_id":item["id"], "arguments":item["arguments"]}))?;
+                        }
+                        if item["type"] == "custom_tool_call" {
+                            self.emit(json!({"type":"response.custom_tool_call_input.delta", "output_index":index, "item_id":item["id"], "delta":item["input"]}))?;
+                            self.emit(json!({"type":"response.custom_tool_call_input.done", "output_index":index, "item_id":item["id"], "input":item["input"]}))?;
                         }
                         self.emit(json!({"type":"response.output_item.done", "output_index":index, "item":item}))?;
                     }

@@ -209,7 +209,12 @@ pub(crate) fn compile(
             if native_tools
                 && matches!(
                     item["type"].as_str(),
-                    Some("function_call" | "function_call_output")
+                    Some(
+                        "function_call"
+                            | "function_call_output"
+                            | "custom_tool_call"
+                            | "custom_tool_call_output"
+                    )
                 )
             {
                 continue;
