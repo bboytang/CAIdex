@@ -1,5 +1,6 @@
 use caidex_model_core::{CanonicalRequest, ProviderError, ProviderResult};
 use serde_json::Value;
+use std::collections::HashMap;
 
 fn invalid() -> ProviderError {
     ProviderError::new(400, "deepseek_invalid_request")
@@ -47,10 +48,67 @@ fn content(value: &Value) -> ProviderResult<()> {
 pub(crate) fn compile(
     request: CanonicalRequest,
     max_bytes: usize,
+    runtime_context: bool,
+    verbosity_instructions: &HashMap<String, String>,
 ) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
     if wire.to_string().len() > max_bytes {
         return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+    }
+    if runtime_context {
+        for key in ["client_metadata", "prompt_cache_key"] {
+            if let Some(value) = wire.get(key).filter(|value| !value.is_null()) {
+                let valid = if key == "client_metadata" {
+                    value
+                        .as_object()
+                        .is_some_and(|map| map.values().all(Value::is_string))
+                } else {
+                    value.as_str().is_some_and(|value| {
+                        !value.trim().is_empty() && !value.chars().any(char::is_control)
+                    })
+                };
+                if !valid {
+                    return Err(invalid());
+                }
+            }
+            wire.as_object_mut().unwrap().remove(key);
+        }
+        if let Some(input) = wire["input"].as_array_mut() {
+            let mut conversation = false;
+            for item in input {
+                if item.get("type").is_none() || item["type"] == "message" {
+                    match item["role"].as_str() {
+                        Some("developer") if !conversation => item["role"] = "system".into(),
+                        Some("developer") => return Err(unsupported()),
+                        Some("system") => (),
+                        _ => conversation = true,
+                    }
+                } else {
+                    conversation = true;
+                }
+            }
+        }
+    }
+    if let Some(verbosity) = wire.get("text").and_then(|text| text.get("verbosity")) {
+        if verbosity.is_null() && runtime_context {
+            wire["text"].as_object_mut().unwrap().remove("verbosity");
+        } else {
+            let instruction = verbosity_instructions
+                .get(verbosity.as_str().ok_or_else(invalid)?)
+                .ok_or_else(unsupported)?;
+            let original = match wire.get("instructions") {
+                None | Some(Value::Null) => "",
+                Some(Value::String(value)) => value,
+                _ => return Err(invalid()),
+            };
+            wire["instructions"] = if original.is_empty() {
+                instruction.clone()
+            } else {
+                format!("{original}\n{instruction}")
+            }
+            .into();
+            wire["text"].as_object_mut().unwrap().remove("verbosity");
+        }
     }
     fields(
         &wire,

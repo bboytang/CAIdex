@@ -1010,3 +1010,427 @@ async fn injected_gateway_keeps_local_token_separate_and_refuses_unmapped_contex
     assert_eq!(reads.load(Ordering::SeqCst), 1);
     gateway.shutdown().await.unwrap();
 }
+
+fn local_context() -> RequestContext {
+    let mut headers = ContextHeaders::default();
+    for name in ["session_id", "x-client-request-id", "x-codex-turn-metadata"] {
+        headers
+            .insert(name, format!("LOCAL_{name}"), REQUEST_HEADERS)
+            .unwrap();
+    }
+    RequestContext {
+        headers,
+        ..Default::default()
+    }
+}
+
+fn runtime_wire(streaming: bool) -> Value {
+    json!({"model":"fixture","input":[
+        {"type":"message","id":"dev1","role":"developer","content":[{"type":"input_text","text":"Priority 中文🙂"}]},
+        {"role":"system","content":"Existing system"},
+        {"role":"developer","content":"Second priority"},
+        {"role":"user","content":"Conversation"}],
+        "instructions":"Original instruction","stream":streaming,
+        "client_metadata":{"session_id":"LOCAL_BODY_SESSION","future":"LOCAL_EXTENSION"},
+        "prompt_cache_key":"LOCAL_CACHE","text":{"verbosity":"low","format":{"type":"text"}}})
+}
+
+#[tokio::test]
+async fn runtime_context_compiles_priority_and_verbosity_without_forwarding_attribution() {
+    for streaming in [false, true] {
+        let reply = if streaming {
+            Reply::stream(created() + &terminal(native()))
+        } else {
+            Reply::json(native())
+        };
+        let mut fixture = Fixture::start(vec![reply]).await;
+        let (broker, reads) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_runtime_context()
+            .with_verbosity_instruction("low".into(), "Executor concise guidance".into())
+            .unwrap();
+        let source = runtime_wire(streaming);
+        let mut nullable = source.clone();
+        for key in ["instructions", "client_metadata", "prompt_cache_key"] {
+            nullable[key] = Value::Null;
+        }
+        nullable["text"]["verbosity"] = Value::Null;
+        for source in [source, nullable] {
+            if streaming {
+                let mut response = provider
+                    .stream_response(request(source.clone()), local_context())
+                    .await
+                    .unwrap();
+                let mut found = None;
+                while let Some(event) = response.events.next().await {
+                    if let ProviderStreamEvent::Model(event) = event.unwrap()
+                        && event.response.terminal().is_some()
+                    {
+                        found = Some(event.response.wire()["response"].clone());
+                    }
+                }
+                assert_eq!(found, Some(native()));
+            } else {
+                assert_eq!(
+                    *provider
+                        .create_response(request(source.clone()), local_context())
+                        .await
+                        .unwrap()
+                        .response
+                        .wire(),
+                    native()
+                );
+            }
+            let captured = fixture.captured().await;
+            for name in ["session_id", "x-client-request-id", "x-codex-turn-metadata"] {
+                assert!(captured.header(name).is_none());
+            }
+            assert!(!captured.headers.contains("LOCAL_"));
+            assert_eq!(
+                captured.header("authorization"),
+                Some(format!("Bearer {KEY}").as_str())
+            );
+            let mut expected = source.clone();
+            expected["model"] = "native-fixture".into();
+            expected["store"] = false.into();
+            for index in [0, 2] {
+                expected["input"][index]["role"] = "system".into();
+            }
+            expected.as_object_mut().unwrap().remove("client_metadata");
+            expected.as_object_mut().unwrap().remove("prompt_cache_key");
+            expected["text"]
+                .as_object_mut()
+                .unwrap()
+                .remove("verbosity");
+            if !source["text"]["verbosity"].is_null() {
+                expected["instructions"] = "Original instruction\nExecutor concise guidance".into();
+            }
+            assert_eq!(captured.body, Some(expected));
+        }
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}
+
+#[tokio::test]
+async fn runtime_context_refuses_bad_local_controls_late_developer_and_unimplemented_history() {
+    let fixture = Fixture::start(vec![Reply::json(native())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_runtime_context()
+        .with_verbosity_instruction("low".into(), "Executor guidance".into())
+        .unwrap();
+    let mut cases = Vec::new();
+    for (key, value) in [
+        ("client_metadata", json!({"bad":1})),
+        ("client_metadata", json!([])),
+        ("prompt_cache_key", json!(" ")),
+        ("prompt_cache_key", json!("bad\n")),
+        ("prompt_cache_key", json!(1)),
+        ("text", json!({"verbosity":"high"})),
+        ("text", json!({"verbosity":1})),
+        ("text", json!({"verbosity":"low","future":true})),
+        (
+            "text",
+            json!({"verbosity":"low","format":{"type":"json_object"}}),
+        ),
+        ("instructions", json!([])),
+        ("reasoning", json!({"summary":"auto"})),
+        ("reasoning", json!({"context":"all_turns"})),
+        ("include", json!(["reasoning.encrypted_content"])),
+        ("parallel_tool_calls", json!(false)),
+        ("tools", json!([])),
+    ] {
+        let mut wire = runtime_wire(false);
+        wire[key] = value;
+        cases.push(wire);
+    }
+    for input in [
+        json!([{"role":"user","content":"Hi"},{"role":"developer","content":"Late priority"}]),
+        json!([{"role":"assistant","content":"Earlier"},{"role":"developer","content":"Late priority"}]),
+        json!([{"type":"reasoning","content":[]},{"role":"developer","content":"After native item"}]),
+        json!([{"type":"future","role":"developer","content":"Unknown item"}]),
+    ] {
+        let mut wire = runtime_wire(false);
+        wire["input"] = input;
+        cases.push(wire);
+    }
+    for mut wire in cases {
+        for streaming in [false, true] {
+            wire["stream"] = streaming.into();
+            let error = if streaming {
+                provider
+                    .stream_response(request(wire.clone()), local_context())
+                    .await
+                    .err()
+                    .unwrap()
+            } else {
+                provider
+                    .create_response(request(wire.clone()), local_context())
+                    .await
+                    .err()
+                    .unwrap()
+            };
+            assert_eq!(error.http_status, 400, "{wire}");
+        }
+    }
+    let mut state = local_context();
+    state
+        .headers
+        .insert("x-codex-turn-state", "UNBOUND".into(), REQUEST_HEADERS)
+        .unwrap();
+    assert_eq!(
+        provider
+            .create_response(request(basic(false)), state)
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "deepseek_unsupported_context"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn verbosity_mapping_is_executor_owned_validated_and_cannot_be_silently_replaced() {
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let make = || {
+        DeepSeekProvider::new(
+            DeepSeekConfig::new(reference()).unwrap(),
+            vec![metadata("fixture", "native-fixture")],
+            broker.clone(),
+            limits(),
+        )
+        .unwrap()
+    };
+    for (level, instruction) in [("unknown", "guide"), ("low", " ")] {
+        assert_eq!(
+            make()
+                .with_verbosity_instruction(level.into(), instruction.into())
+                .err()
+                .unwrap()
+                .code,
+            "deepseek_invalid_verbosity_mapping"
+        );
+    }
+    assert!(
+        make()
+            .with_verbosity_instruction("low".into(), "first".into())
+            .unwrap()
+            .with_verbosity_instruction("low".into(), "second".into())
+            .is_err()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn runtime_context_original_and_expanded_budgets_refuse_before_key_or_post() {
+    let fixture = Fixture::start(vec![Reply::json(native())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            Limits {
+                request_bytes: 256,
+                ..limits()
+            },
+        )
+        .with_runtime_context()
+        .with_verbosity_instruction("low".into(), "Guidance".repeat(100))
+        .unwrap();
+    for mut wire in [
+        json!({"model":"fixture","input":"Hello","client_metadata":{"large":"x".repeat(512)}}),
+        json!({"model":"fixture","input":"Hello","text":{"verbosity":"low"}}),
+    ] {
+        for streaming in [false, true] {
+            wire["stream"] = streaming.into();
+            let error = if streaming {
+                provider
+                    .stream_response(request(wire.clone()), local_context())
+                    .await
+                    .err()
+                    .unwrap()
+            } else {
+                provider
+                    .create_response(request(wire.clone()), local_context())
+                    .await
+                    .err()
+                    .unwrap()
+            };
+            assert_eq!(
+                (error.http_status, error.code),
+                (413, "invalid_or_oversized_body")
+            );
+        }
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn local_catalog_context_preserves_cancellation_and_deadline_and_refuses_native_turn_state() {
+    let mut fixture = Fixture::start(vec![Reply::json(catalog())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_runtime_context();
+    assert_eq!(
+        provider
+            .discover_models(local_context())
+            .await
+            .unwrap()
+            .len(),
+        2
+    );
+    let captured = fixture.captured().await;
+    for name in ["session_id", "x-client-request-id", "x-codex-turn-metadata"] {
+        assert!(captured.header(name).is_none());
+    }
+    for cancel in [false, true] {
+        let mut context = local_context();
+        let code = if cancel {
+            context.cancellation.cancel();
+            "provider_cancelled"
+        } else {
+            context.deadline = Some(std::time::Instant::now() - Duration::from_secs(1));
+            "provider_timeout"
+        };
+        assert_eq!(
+            provider.discover_models(context).await.err().unwrap().code,
+            code
+        );
+        let mut context = local_context();
+        if cancel {
+            context.cancellation.cancel();
+        } else {
+            context.deadline = Some(std::time::Instant::now() - Duration::from_secs(1));
+        }
+        assert_eq!(
+            provider
+                .create_response(request(basic(false)), context)
+                .await
+                .err()
+                .unwrap()
+                .code,
+            code
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
+    for streaming in [false, true] {
+        let mut bad = if streaming {
+            Reply::stream(created())
+        } else {
+            Reply::json(native())
+        };
+        bad.headers.push_str("X-Codex-Turn-State: UNBOUND\r\n");
+        if streaming {
+            bad.stall = 2;
+        }
+        let mut fixture = Fixture::start(vec![bad, Reply::json(native())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_runtime_context();
+        let error = if streaming {
+            provider
+                .stream_response(request(basic(true)), local_context())
+                .await
+                .err()
+                .unwrap()
+        } else {
+            provider
+                .create_response(request(basic(false)), local_context())
+                .await
+                .err()
+                .unwrap()
+        };
+        assert_eq!(
+            (error.http_status, error.code),
+            (502, "deepseek_unsupported_turn_state")
+        );
+        if streaming {
+            fixture.disconnected().await;
+        }
+        assert_eq!(
+            *provider
+                .create_response(request(basic(false)), local_context())
+                .await
+                .unwrap()
+                .response
+                .wire(),
+            native()
+        );
+    }
+}
+
+#[tokio::test]
+async fn gateway_runtime_context_is_consumed_locally_and_preserves_original_instructions() {
+    let mut fixture = Fixture::start(vec![Reply::json(native())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_runtime_context()
+        .with_verbosity_instruction("low".into(), "Executor guidance".into())
+        .unwrap();
+    let gateway =
+        caidex_model_gateway::start_with_provider(Arc::new(provider), broker.redactor(), limits())
+            .await
+            .unwrap();
+    let client = reqwest::Client::builder().no_proxy().build().unwrap();
+    let mut outgoing = client
+        .post(format!("http://{}/v1/responses", gateway.address()))
+        .bearer_auth(gateway.token().expose())
+        .header("content-type", "application/json")
+        .body(runtime_wire(false).to_string());
+    for (name, value) in local_context().headers.iter() {
+        outgoing = outgoing.header(name, value);
+    }
+    let response = outgoing.send().await.unwrap();
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&response.bytes().await.unwrap()).unwrap(),
+        native()
+    );
+    let captured = fixture.captured().await;
+    assert!(
+        !captured.headers.contains("LOCAL_")
+            && !captured.headers.contains(gateway.token().expose())
+    );
+    let body = captured.body.unwrap();
+    assert_eq!(
+        body["instructions"],
+        "Original instruction\nExecutor guidance"
+    );
+    assert_eq!(body["input"][0]["role"], "system");
+    assert_eq!(
+        body["input"][0]["content"],
+        runtime_wire(false)["input"][0]["content"]
+    );
+    assert!(body.get("client_metadata").is_none() && body.get("prompt_cache_key").is_none());
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    gateway.shutdown().await.unwrap();
+}

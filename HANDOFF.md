@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 18:25 UTC（DeepSeek基础源码2967f56已push，精确三平台CI37824041219进行中）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
+更新：2026-10-08 18:37 UTC（DeepSeek基础三平台已验；新增上下文16项/完整workspace397本地通过，待提交及精确CI）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
 
 ## 当前任务
 
-F/G：DeepSeek基础Adapter已实现：独立Models目录（created非必需、原生声明/未知大数保持）、六方法/配置路由交集、独立deepseek Bearer、经典文本JSON/SSE与Gateway注入，共享Custom transport/Broker。默认拒绝Lite/工具/媒体/推理控制与reasoning输入/开发者角色/归属头/未知控制，原生意外工具JSON/SSE在交付前安全拒绝。10项定向、完整workspace391/0/45、既有固定Runtime43/0/0、Clippy/fmt/diff本地通过；有效RED使用旧严格OpenAI目录解析器，缺created样本运行后502失败，恢复独立契约GREEN10/0/0。源码2967f56a7788ee90375f1e970e4500567a61cfd3已提交/push，精确CI37824041219进行中；无DeepSeek实际Runtime正例/Live/Full；完整F/G、H–R未完成。
+F/G：DeepSeek基础源码2967f56/CI37824041219已三平台完整逐名验收（10项、workspace391/386/390、旧Runtime43/42/42）。当前新增显式上下文适配：本地3头/client_metadata/cache消费、leading developer→system、执行端verbosity指令、请求/响应未绑定turn-state拒绝；新增6项，16/0/0、完整workspace397/0/45、Clippy全targets-D warnings/fmt/diff本地通过，有效RED禁用编译后运行400失败、finally恢复并完整GREEN。当前3源码文件及文档未提交，先提交/push后核对新精确三平台。tools/namespace/Lite/明文reasoning绑定历史/实际DeepSeek Runtime与Live/Full仍待，完整F/G、H–R未完成。
 
 ## 已完成
 
@@ -18,7 +18,7 @@ F/G：DeepSeek基础Adapter已实现：独立Models目录（created非必需、�
 
 ## 下一步顺序
 
-1. DeepSeek基础源码2967f56已提交/push；继续核对精确CI37824041219各job完整逐名日志（状态/tmp/caidex-ci-37824041219-status.json）。无容量故障时不另起重复job。预期workspace391/386/390（0failed，ignored45/43/43）、旧实际Runtime43/42/42，DeepSeek10及Ollama69/OpenAI11/Custom7/Google90每名一次。不能把旧43项Runtime回归当DeepSeek正例；无源码变化无需重跑本地全套。
+1. 提交/push当前上下文适配及README/docs恢复点，核对新精确三平台完整逐名日志。预期workspace397/392/396（0failed，ignored45/43/43）、旧Runtime43/42/42、DeepSeek16/Ollama69/OpenAI11/Custom7/Google90每名一次；旧43项Runtime不是DeepSeek正例。基础2967f56三平台已完，无变更不重跑旧阶段。
 2. 随后DeepSeek固定Runtime/工具/namespace/Lite：兼容表已确认developer降级user、未知input/内置tools忽略、parallel flag忽略、summary/encrypted_content/verbosity不等价，必须显式编译/拒绝及绑定历史。再Qwen/OpenRouter；不下载模型或调用商业API。Ollama三平台当前范围已完成，无变更不重跑、不重造其Adapter或工具执行器。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
@@ -48,7 +48,7 @@ F/G：DeepSeek基础Adapter已实现：独立Models目录（created非必需、�
 
 - 既有Ollama show/thinking、v1历史、图片/非严格格式、offline严格输出、runtime context/verbosity、namespace/search、custom→function/v2均已有精确三平台证据，包含在本轮69项回归，不重做。v1不自动升级/混用，grammar仅指导；历史源码/RED/GREEN/完整CI日志索引留docs/Ollama。
 
-- branch main；当前基础源码HEAD/origin main 2967f56a7788ee90375f1e970e4500567a61cfd3，全部12文件已提交/push，无未提交源码。新增path package只依赖现有固定版本，无第三方升级/新功能，无workflow/共享生产源码/Runtime变更。本次仅HANDOFF及docs/DeepSeek补提交/CI恢复点，随后文档提交；当前状态以git status为准。
+- branch main；当前基础源码HEAD/origin main 2967f56a7788ee90375f1e970e4500567a61cfd3，基础阶段12文件已提交/push；当前未提交src/lib.rs、src/request.rs、tests/provider.rs（上下文编译及6项新增回归），HANDOFF恢复点。新增path package只依赖现有固定版本，无第三方升级/新功能，无workflow/共享生产源码/Runtime变更。本次另有HANDOFF、README、docs/DeepSeek/Model-Gateway更新当前阶段与三平台证据；当前状态以git status为准。
 
 - 旧Ollama阶段中断核查：原/tmp/caidex-ollama-lite-runtime-first.log确认4/0/0，断开时运行已成功结束，非丢失或失败。当时工作区完整验证：/tmp/caidex-quota-audit-{workspace,runtime,clippy}.log；workspace381/0/45（新增4项被默认ignored，另有原41项），显式固定Runtime43/0/0，旧39与新4每名各一次；Clippy全targets-D warnings/fmt/Python compile/diff均通过。只使用合成凭据与隔离临时marker，无商业API/用户Key。文档/远程备份及新精确head三平台均已补齐，未发现本次范围的功能错误。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama/src/{tools,mapped_tools,runtime,structured,request,history,history_stream,lib}、tests/{tools,runtime,structured,content,history}；其他模块model/providers/custom、model/core、model/gateway、runtime/bridge/tests/{real_runtime.rs,fixtures}、credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
@@ -64,3 +64,7 @@ F/G：DeepSeek基础Adapter已实现：独立Models目录（created非必需、�
 - CI收尾：37818503514精确headf25179bf6e5446735b2323fc5169007ecfea947a全部3job/17steps完成success或条件跳过；Linux113453190593/Windows113453190663/macOS113453190281完整raw1932/1619/1630行逐名及总数已验，workspace381/376/380、Runtime43/42/42均0failed，Linux native credentials1。原始/标注日志=/tmp/caidex-ci-37818503514-{linux,windows,macos}-raw.log及同名前缀.log，status.json/watch.log；watch会话15353、下载13870均exit0，normalize/check/available脚本同前缀/tmp/caidex-ollama-lite-runtime-ci-{normalize,check,available}.py全部exit0。旧37816328543（head8ef915d）macOS零steps容量取消整体failure，新head完整继承回归补齐证据，不假称旧CI成功、不重启原job。此为前阶段Ollama精确证据；DeepSeek新增实现与回归见当前任务，不借旧CI代验。
 
 - DeepSeek恢复点：构造入口DeepSeekConfig::new/with_base_url、DeepSeekProvider::new/with_options；只允许Classic metadata，配置/已知模型能力门控仍在Key/POST前。基础允许字符串或user/assistant/system文本message、instructions、正整数或null max_output_tokens、纯text format及无意义null选项，store统一false；不忽略有意义未知字段。原生工具响应同时检查JSON、SSE item/delta/terminal，单次安全error后立即Drop底层stream，socket/slot已实测；不是新HTTP栈。Models只验证消费的id/object/owner，其余原样保留，不读取created或自动推导能力。定向日志/tmp/caidex-deepseek-{catalog-red,green,focused}.log；初次fixture编译/错误码/命名问题已修正，不计有效RED或成功。完整workspace391/0/45、旧固定Runtime43/0/0、Clippy全targets-D warnings/fmt/diff已通过，日志同前缀{workspace,runtime-regression,clippy-final}.log；唯一Clippy测试分支风格修复后定向10项重验，未重跑无变化的旧Runtime。源码2967f56已提交/push，精确三平台CI37824041219进行中；日志校验脚本/tmp/caidex-deepseek-basic-ci-{normalize,check,available}.py（期望391/386/390及43/42/42、DeepSeek10逐名一次）。
+
+- DeepSeek基础三平台收尾：2967f56a7788ee90375f1e970e4500567a61cfd3/[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)整体completed/success，各job17steps成功或条件跳过；Linux113472119918/Windows113472119538/macOS113472119894完整raw1962/1649/1660行，workspace391/386/390（0failed，ignored45/43/43）、既有固定Runtime43/42/42（0failed/ignored），Linux native credentials1。DeepSeek10/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每平台每名一次；watch77797与下载98157、normalize/check/available均exit0。原始日志/tmp/caidex-ci-37824041219-{linux,windows,macos}-raw.log及标注日志/status.json/watch.log，校验在精确2967f56归档/tmp/caidex-deepseek-basic-ci-source执行，未用后续16测试工作区冒充旧CI。CLI在整轮未结束时下载被拒绝，改只读job API成功；初次空日志检查失败不计验证结果。基础不包含新增上下文阶段或DeepSeek实际Runtime/Live。
+
+- 上下文适配本地检查完成：有效RED `/tmp/caidex-deepseek-context-red.log`，禁用本地编译的已编译反例在支持的Runtime输入处400失败；正确request源码与/tmp/caidex-deepseek-context-request-green.rs逐字相同，finally恢复后完整workspace397/0/45（DeepSeek16逐名一次）与Clippy全workspace/all-targets-D warnings通过，fmt/diff通过。日志同前缀{green,workspace,clippy}.log，测试会话55892、RED1834、完整3561均exit0；无新依赖/共享生产源码/Runtime/workflow改动，实际DeepSeek Runtime/Live仍未验。

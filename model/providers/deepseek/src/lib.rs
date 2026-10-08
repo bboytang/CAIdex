@@ -10,19 +10,25 @@ pub use config::DeepSeekConfig;
 
 use caidex_credentials::{Broker, SecretStore};
 use caidex_model_core::{
-    CanonicalRequest, CapabilitySupport, CredentialRequirement, EvidenceSource, ModelCapabilities,
-    ModelMetadata, ModelProvider, ProviderError, ProviderFuture, ProviderResponse, ProviderResult,
-    ProviderStreamEvent, RequestContext, ResponsesDialect, StreamingResponse,
+    CanonicalRequest, CapabilitySupport, ContextHeaders, CredentialRequirement, EvidenceSource,
+    ModelCapabilities, ModelMetadata, ModelProvider, ProviderError, ProviderFuture,
+    ProviderResponse, ProviderResult, ProviderStreamEvent, RequestContext, ResponsesDialect,
+    StreamingResponse,
 };
 use caidex_provider_custom::{ConfiguredModel, CustomResponses, CustomResponsesProvider};
 use futures_util::{StreamExt, stream};
 use serde_json::Value;
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 pub struct DeepSeekProvider<S: SecretStore> {
     responses: CustomResponsesProvider<S>,
     models_endpoint: CustomResponses,
     request_bytes: usize,
+    runtime_context: bool,
+    verbosity_instructions: HashMap<String, String>,
 }
 impl<S: SecretStore + 'static> DeepSeekProvider<S> {
     pub fn new(
@@ -61,24 +67,59 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             responses: CustomResponsesProvider::with_options(routes, broker, limits, options)?,
             models_endpoint,
             request_bytes,
+            runtime_context: false,
+            verbosity_instructions: HashMap::new(),
         })
+    }
+    /// Explicit local attribution and leading developer-to-system policy.
+    /// Does not implement native caching, persistence or reasoning replay.
+    pub fn with_runtime_context(mut self) -> Self {
+        self.runtime_context = true;
+        self
+    }
+    /// Executor-owned guidance, not a native verbosity scale guarantee.
+    pub fn with_verbosity_instruction(
+        mut self,
+        verbosity: String,
+        instruction: String,
+    ) -> ProviderResult<Self> {
+        if !matches!(verbosity.as_str(), "low" | "medium" | "high")
+            || instruction.trim().is_empty()
+            || self.verbosity_instructions.contains_key(&verbosity)
+        {
+            return Err(ProviderError::new(
+                400,
+                "deepseek_invalid_verbosity_mapping",
+            ));
+        }
+        self.verbosity_instructions.insert(verbosity, instruction);
+        Ok(self)
+    }
+    fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
+        if context.headers.iter().any(|(name, _)| {
+            !self.runtime_context
+                || !matches!(
+                    name,
+                    "session_id" | "x-client-request-id" | "x-codex-turn-metadata"
+                )
+        }) {
+            return Err(ProviderError::new(400, "deepseek_unsupported_context"));
+        }
+        context.headers = ContextHeaders::default();
+        Ok(context)
     }
     pub async fn discover_models(
         &self,
         context: RequestContext,
     ) -> ProviderResult<Vec<NativeModel>> {
-        context_headers(&context)?;
+        let context = self.native_context(context)?;
         catalog::parse(
             self.responses
                 .get_json(&self.models_endpoint, context)
                 .await?,
         )
     }
-    fn prepare(
-        &self,
-        request: CanonicalRequest,
-        context: &RequestContext,
-    ) -> ProviderResult<CanonicalRequest> {
+    fn prepare(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
         let model = self.responses.metadata(request.model())?;
         if !model.dialects.contains(&request.dialect()) {
             return Err(ProviderError::new(400, "unsupported_dialect"));
@@ -86,13 +127,17 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         if model.capabilities.text == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_text"));
         }
-        context_headers(context)?;
-        request::compile(request, self.request_bytes)
+        request::compile(
+            request,
+            self.request_bytes,
+            self.runtime_context,
+            &self.verbosity_instructions,
+        )
     }
 }
-fn context_headers(context: &RequestContext) -> ProviderResult<()> {
-    if context.headers.iter().next().is_some() {
-        return Err(ProviderError::new(400, "deepseek_unsupported_context"));
+fn response_headers(headers: &ContextHeaders) -> ProviderResult<()> {
+    if headers.get("x-codex-turn-state").is_some() {
+        return Err(ProviderError::new(502, "deepseek_unsupported_turn_state"));
     }
     Ok(())
 }
@@ -160,10 +205,12 @@ impl<S: SecretStore + 'static> ModelProvider for DeepSeekProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
+            let context = self.native_context(context)?;
             let response = self
                 .responses
-                .create_response(self.prepare(request, &context)?, context)
+                .create_response(self.prepare(request)?, context)
                 .await?;
+            response_headers(&response.headers)?;
             output(response.response.wire())?;
             Ok(response)
         })
@@ -174,10 +221,12 @@ impl<S: SecretStore + 'static> ModelProvider for DeepSeekProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
+            let context = self.native_context(context)?;
             let mut response = self
                 .responses
-                .stream_response(self.prepare(request, &context)?, context)
+                .stream_response(self.prepare(request)?, context)
                 .await?;
+            response_headers(&response.headers)?;
             response.events = Box::pin(stream::unfold(Some(response.events), |state| async move {
                 let mut events = state?;
                 match events.next().await? {
