@@ -54,7 +54,7 @@ JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字�
 
 日志 `/tmp/caidex-ci-37719887330-{status.json,watch.log,linux.log,windows.log,macos.log}`，逐名脚本 `/tmp/caidex-ollama-ci-check.py` exit0。阶段源码/依赖/最终差异已自行核对；未派新子agent审查，不把自查写成独立审查。Ollama高级控制、native reasoning归属/回放、实际daemon/模型与商业Full仍未验。
 
-## 模型详细信息与精确推理控制（本轮待提交/CI）
+## 模型详细信息与精确推理控制（已三平台验收）
 
 2026-10-08继续核对[官方模型详细信息](https://docs.ollama.com/api-reference/show-model-details)、[thinking声明](https://docs.ollama.com/capabilities/thinking)以及固定源码[e3cddc3e thinking类型](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/model/thinking.go)、[Responses编译](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/openai/responses.go)。show是POST；声明缺省不能推断无thinking；未声明named值可能回退default，因此只按明确声明编译。
 
@@ -66,6 +66,10 @@ JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字�
 - 不请求控制、think=null、reasoning=null/空对象/effort=null保持native默认，不强制合成开关；summary/未知reasoning字段拒绝。明确reasoning Unsupported拒绝开启/等级，但允许声明false时关闭；无控制不会替执行端改native默认。所有无效/未声明控制在Broker/POST前拒绝，JSON/SSE走同一compiler。
 - snapshot仅绑定模型ID，是可信执行端配置输入；不是签名、来源认证、digest/version锁或实时刷新。服务端同名模型变更后声明可能过时，需要执行端重新查询并重建Provider；不能据catalog/fixtures授予LiveRuntime/Full。
 
-`tests/models/mod.rs`复用既有loopback harness新增6项：metadata精度/未知/坏descriptor；同origin/path/native ID/无认证及Bearer；JSON/SSE exact等级和禁止fallback；bool/default/Unknown/Unsupported/重复绑定；POST大小/坏JSON/HTTP/重定向/脱敏/no retry；预取消/过期/headers/未知alias、同推理slot、取消/Drop/header deadline与body idle。现有10项保持通过，本地16/0/0；有效RED（旧compiler拒绝high）→GREEN日志`/tmp/caidex-ollama-thinking-{red,green}.log`，最终定向日志`/tmp/caidex-ollama-show-provider-final.log`。首次完整构建发现测试文件误识别为独立入口，已移入子模块后完整重验，该失败不计通过。workspace328/0/39、旧实际固定Runtime37/0/0、Clippy -D warnings/fmt/diff均通过，日志`/tmp/caidex-ollama-show-{workspace-final,all-real-final,clippy-final}.log`；Ollama16个名字在workspace各一次。新源码三平台CI尚待，不用首阶段CI代证。
+`tests/models/mod.rs`复用既有loopback harness新增6项：metadata精度/未知/坏descriptor；同origin/path/native ID/无认证及Bearer；JSON/SSE exact等级和禁止fallback；bool/default/Unknown/Unsupported/重复绑定；POST大小/坏JSON/HTTP/重定向/脱敏/no retry；预取消/过期/headers/未知alias、同推理slot、取消/Drop/header deadline与body idle。现有10项保持通过，本地16/0/0；有效RED（旧compiler拒绝high）→GREEN日志`/tmp/caidex-ollama-thinking-{red,green}.log`，最终定向日志`/tmp/caidex-ollama-show-provider-final.log`。首次完整构建发现测试文件误识别为独立入口，已移入子模块后完整重验，该失败不计通过。workspace328/0/39、旧实际固定Runtime37/0/0、Clippy -D warnings/fmt/diff均通过，日志`/tmp/caidex-ollama-show-{workspace-final,all-real-final,clippy-final}.log`；Ollama16个名字在workspace各一次。
 
-下一恢复点：先完成本轮回归/提交/push/三平台CI，再接native reasoning历史归属/回放、媒体/结构/工具路径和固定Runtime，随后其他兼容厂商。未连接真实daemon/模型，未下载模型或调用商业API，整体F/G及H–R未完成。
+源码`a1f7d6c27c33abf02af3d36fea0dbb3a0e926a75`已提交/push，[CI37722533837](https://github.com/bboytang/CAIdex/actions/runs/37722533837)精确head三job全部completed/success，每个step成功或条件跳过；watch exit0、三日志下载exit0、逐名脚本exit0。Ollama16/OpenAI11/Custom7/Google90及所有旧实际Runtime名字逐平台各一次。workspace Linux328/Windows323/macOS327，0失败、ignored39/37/37；旧实际Runtime Linux37/其他36，0失败/0ignored；Linux native credentials1与fmt/Clippy/schema/doctor通过。37/36是既有Runtime回归，不是本Adapter新Runtime证据。
+
+日志`/tmp/caidex-ci-37722533837-{status.json,watch.log,linux.log,windows.log,macos.log}`，逐名脚本`/tmp/caidex-ollama-show-ci-check.py`（传run与精确SHA）exit0。自行检查最终源码/依赖差异，无新增第三方依赖；未派新agent审查，不把自查写成独立审查。
+
+下一恢复点：native reasoning历史归属/回放、媒体/结构/工具路径和固定Runtime，随后其他兼容厂商。fixed Responses源码将reasoning.encrypted_content直接作为明文thinking附给下个assistant/function call，末尾形成thinking-only assistant；须在既有模型/前缀绑定模式下校验多轮顺序并完整回放，不能直接接受他方载体或宣称加密。未连接真实daemon/模型，未下载模型或调用商业API，整体F/G及H–R未完成。
