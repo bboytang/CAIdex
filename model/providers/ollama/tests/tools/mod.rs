@@ -1,5 +1,6 @@
 use super::*;
 use caidex_model_core::CanonicalResponse;
+mod deferred;
 mod mapped;
 
 fn namespace() -> Value {

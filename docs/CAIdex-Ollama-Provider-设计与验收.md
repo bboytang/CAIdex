@@ -169,3 +169,13 @@ JSON/SSE 在 typed terminal 前校验 custom arguments 为且仅为 `{input:stri
 本轮固定Runtime38项只为已有回归，尚无本Adapter实际工具执行正例；真实daemon/模型/Live/Full未验。首版8540ecd/CI37785263569被修正版替代并cancelled，不代验最终版本；修正版源码f481fc8f94a746a27f0cbb7f05227cfa43f1abbb已提交/push，[CI37787010246](https://github.com/bboytang/CAIdex/actions/runs/37787010246)精确head三平台已通过，随后deferred/Lite item转换及固定Runtime正例；整体F/G与H–R未完成。
 
 修正版三平台收尾：精确源码f481fc8f94a746a27f0cbb7f05227cfa43f1abbb/CI37787010246三个job均completed/success，所有step成功或条件跳过，watch/下载/逐名脚本exit0。完整raw逐名Ollama58/OpenAI11/Custom7/Google90及固定Runtime各一次；workspace Linux370/Windows365/macOS369（0failed，ignored40/38/38），固定Runtime38/37/37（0failed/ignored），Linux native credentials1及fmt/Clippy/schema/doctor通过。raw日志 `/tmp/caidex-ci-37787010246-{linux,windows,macos}-raw.log` 共1911/1598/1609行，另有status.json/watch.log与step标注日志，脚本 `/tmp/caidex-ollama-custom-ci-{normalize,check}.py`。macOS排队后正常完成，未用未修复首版CI代验；未派新子agent审查。下一步deferred/Lite及本Adapter固定Runtime工具正例，真实daemon/Live/Full及整体F/G与H–R未完成。
+
+## Deferred 可见性与固定 Classic Runtime MCP（本地通过，三平台待验）
+
+`with_deferred_tool_search()` 显式启用 custom mapping/native_tools/native_history，并将policy保存到v2 source。复用既有编译器先验证完整catalog的parameters对象、strict和别名（隐藏声明也不能绕过）；root defer_loading=true成员从实际native清单移出，须有client tool_search，原生namespace可保留空成员。只有按序匹配的client搜索结果才开放工具；原生忽略的defer flag不透传。重复声明可改变此加载标记，其余kind/schema/description必须相同；original root和每个original search result分别保存、回放仍精确绑定原始flags。未启用policy继续拒绝defer=true；新policy不能与旧v2 profile互换，不自动升级v1。Web/strict/Lite范围未放松，无新依赖、HTTP栈、模型下载或执行器。
+
+新增4项JSON/SSE：5轮隐藏→function/custom发现与原始arguments回放/重复flag变更；默认、无search、隐藏坏parameters/strict/未知字段/别名和提前调用零Key/POST；native提前调用不交付工具/载体并释放slot；相同native tools下policy及original flags变更仍拒绝。有效RED旧400→GREEN。同时实际Codex回放证明其会补reasoning.content=null，新增codec专项只将synthetic reasoning carrier此字段的缺省/null视为等价，数组/非空content/其他item仍拒绝，原生内容和未知字段不改写；旧400的有效RED→GREEN，诊断输出已移除。
+
+固定Codex0.160.1新增Classic正例：执行端config显式web_search=disabled、runtime context/verbosity/thinking snapshot与上述policy；实际ToolSearch客户端发现local MCP echo，调用执行并保存模型原文结果，停app-server后按磁盘resume。4次真实Gateway→Ollama Responses POST和合成Key读取，首轮MCP只调用echo一次，重启不重复；每轮raw native reasoning/call/message、arguments原字符串及未知大数、落盘完整response均逐项精确核对，root工具/指令及旧native前缀不变，native不收到Lite头、归属metadata或载体字符串。复用已有隔离Harness、MCP和restart helper，fixture不提供真实模型；默认cached web/未启用Lite的4模式拒绝回归仍保留，不能据此授予商业Full或实际daemon通过。
+
+本地Ollama63逐名一次、workspace375/0/41、固定Runtime39/0/0、Clippy全targets-D warnings/fmt/Python compile/diff通过。日志 `/tmp/caidex-ollama-deferred-{red,green,canonical-red,canonical-green,real-first,real-green,workspace-final,all-real-final,clippy-final}.log`。首次真实Runtime在null差异处失败后修复重验，失败不计通过。源码提交与精确head三平台CI待完成；下一步Lite additional_tools/parallel=false与实际Code Mode执行/审批/取消，整体F/G、daemon/Live/Full及H–R未完成。

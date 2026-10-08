@@ -89,6 +89,7 @@ impl Harness {
             | "gateway-ollama-context-classic"
             | "gateway-ollama-native-tools-classic" => "native-ollama-classic",
             "gateway-ollama-lite" => "native-ollama-lite",
+            "gateway-ollama-discovery-classic" => "native-ollama-discovery",
             "gateway-google-basic-classic" => "native-google-basic-classic",
             "gateway-google-basic-lite" => "native-google-basic-lite",
             "gateway-google-classic" => "native-google-classic",
@@ -202,7 +203,8 @@ impl Harness {
                     | "native-anthropic-discovery"
                     | "native-anthropic-stall"
                     | "native-google-classic"
-                    | "native-ollama-classic",
+                    | "native-ollama-classic"
+                    | "native-ollama-discovery",
                     _,
                 ) => "gpt-5.5",
                 _ => "gpt-5.1-codex",
@@ -255,7 +257,9 @@ impl Harness {
                 .unwrap();
                 if matches!(
                     mode,
-                    "gateway-ollama-context-classic" | "gateway-ollama-native-tools-classic"
+                    "gateway-ollama-context-classic"
+                        | "gateway-ollama-native-tools-classic"
+                        | "gateway-ollama-discovery-classic"
                 ) {
                     provider = provider.with_runtime_context().with_native_history()
                         .with_verbosity_instruction("low".into(), "Keep user-facing answers concise while preserving required detail.".into()).unwrap()
@@ -263,6 +267,9 @@ impl Harness {
                 }
                 if mode == "gateway-ollama-native-tools-classic" {
                     provider = provider.with_native_tools();
+                }
+                if mode == "gateway-ollama-discovery-classic" {
+                    provider = provider.with_deferred_tool_search();
                 }
                 Some(
                     caidex_model_gateway::start_with_provider(
@@ -448,6 +455,7 @@ impl Harness {
         let web_search = if matches!(
             mode,
             "gateway-anthropic-discovery-classic"
+                | "gateway-ollama-discovery-classic"
                 | "gateway-google-history-classic"
                 | "gateway-google-history-lite"
                 | "gateway-google-tools-lite"
@@ -465,7 +473,9 @@ impl Harness {
         let google_summary = if mode.starts_with("gateway-google-")
             || matches!(
                 mode,
-                "gateway-ollama-context-classic" | "gateway-ollama-native-tools-classic"
+                "gateway-ollama-context-classic"
+                    | "gateway-ollama-native-tools-classic"
+                    | "gateway-ollama-discovery-classic"
             ) {
             "model_reasoning_summary = \"auto\"\n"
         } else {
@@ -492,7 +502,10 @@ impl Harness {
         }
         if matches!(
             mode,
-            "mcp" | "gateway-anthropic-discovery-classic" | "gateway-google-mcp-classic"
+            "mcp"
+                | "gateway-anthropic-discovery-classic"
+                | "gateway-google-mcp-classic"
+                | "gateway-ollama-discovery-classic"
         ) {
             let fixture =
                 PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mcp_server.py");
@@ -2898,4 +2911,142 @@ async fn real_ollama_runtime_defaults_and_partial_context_refuse_tools_before_au
         assert_eq!(harness.trace()["requests"], 0);
         harness.shutdown().await;
     }
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and local MCP; explicit Ollama custom/deferred policy and disabled web"]
+async fn real_classic_native_ollama_discovers_executes_mcp_and_replays_after_restart() {
+    let mut harness = Harness::start("gateway-ollama-discovery-classic").await;
+    let thread = harness.create_thread().await;
+    for turn in 0..2 {
+        if turn == 1 {
+            // Existing helper only restarts the isolated app-server and resumes
+            // disk history; it has no Google provider configuration.
+            restart_google_runtime(&mut harness, &thread).await;
+        }
+        harness.runtime.client().start_turn(&thread,vec![json!({"type":"text","text":if turn==0 {"Find the local fixture echo tool and invoke it"} else {"Continue from exact discovered history after restart"}})],json!({}),DEADLINE).await.unwrap();
+        let mut visible = String::new();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                RuntimeEvent::Notification(event) if event.method == "item/agentMessage/delta" => {
+                    visible.push_str(event.raw["params"]["delta"].as_str().unwrap())
+                }
+                RuntimeEvent::Interaction(request) => panic!(
+                    "unexpected/repeated tool interaction: {}",
+                    request.event.raw
+                ),
+                _ => (),
+            }
+        }
+        assert_eq!(visible, "CAIdex local fixture complete");
+        let mcp: Value = serde_json::from_slice(
+            &std::fs::read(harness.directory.0.join("mcp-trace.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            mcp["toolCalls"],
+            if turn == 0 {
+                json!(["echo"])
+            } else {
+                json!([])
+            }
+        );
+    }
+    let trace = harness.trace();
+    assert_eq!(trace["requests"], 4);
+    assert_eq!(trace["liteHeaders"], json!([null, null, null, null]));
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 4);
+    let requests = trace["nativeRequests"].as_array().unwrap();
+    assert!(
+        requests[0]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|t| t["name"] != "mcp__fixture" || t["tools"].as_array().unwrap().is_empty())
+    );
+    for request in requests {
+        assert_eq!(request["model"], "native-fixture");
+        assert_eq!(request["tools"], requests[0]["tools"]);
+        assert_eq!(request["instructions"], requests[0]["instructions"]);
+        assert!(request.get("client_metadata").is_none());
+        assert!(
+            !request
+                .to_string()
+                .contains("caidex.ollama.native-history.v2:")
+        );
+    }
+    for turn in 0..3 {
+        let replay = requests[turn + 1]["input"].as_array().unwrap();
+        for item in trace["nativeResponses"][turn]["output"].as_array().unwrap() {
+            assert!(
+                replay.contains(item),
+                "raw native items must survive exact Runtime replay"
+            );
+        }
+    }
+    let input = requests[2]["input"].as_array().unwrap();
+    let result = input
+        .iter()
+        .find(|v| v["type"] == "function_call_output" && v["call_id"] == "native-discovery-echo")
+        .unwrap();
+    let text = result["output"].as_str().unwrap();
+    let structured: Value =
+        serde_json::from_str(text.split_once("\nOutput:\n").unwrap().1).unwrap();
+    assert_eq!(structured, json!({"fixture":true}));
+    assert!(input.contains(&trace["nativeResponses"][1]["output"][1]));
+    let prefix = requests[2]["input"].as_array().unwrap();
+    assert_eq!(
+        &requests[3]["input"].as_array().unwrap()[..prefix.len()],
+        prefix
+    );
+    let read = harness
+        .runtime
+        .client()
+        .read_thread(&thread, true, DEADLINE)
+        .await
+        .unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    assert!(rollout.contains("caidex.ollama.native-history.v2:"));
+    assert!(rollout.contains("tool_search_output"));
+    let stored: Vec<Value> = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            let capsule = entry["payload"]["encrypted_content"]
+                .as_str()?
+                .strip_prefix("caidex.ollama.native-history.v2:")?;
+            Some(serde_json::from_str(capsule).unwrap())
+        })
+        .collect();
+    assert_eq!(stored.len(), 4);
+    for (record, response) in stored
+        .iter()
+        .zip(trace["nativeResponses"].as_array().unwrap())
+    {
+        assert_eq!(record["response"], *response);
+        assert_eq!(record["tool_mapping"]["deferred_tool_search"], true);
+    }
+
+    let saved = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            let item = &entry["payload"];
+            (entry["type"] == "response_item"
+                && item["type"] == "function_call_output"
+                && item["call_id"] == "native-discovery-echo")
+                .then(|| item["output"].clone())
+        })
+        .next()
+        .unwrap();
+    assert_eq!(saved, result["output"]);
+    harness.shutdown().await;
 }

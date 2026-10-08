@@ -170,10 +170,43 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def native_ollama(self, body):
+        assert self.path == "/v1/responses"
+        assert self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
+        trace.setdefault("nativeRequests", []).append(body)
+        trace.setdefault("liteHeaders", []).append(self.headers.get("x-openai-internal-codex-responses-lite"))
+        identity = f"native-{trace['requests']}"
+        thinking = {"type": "reasoning", "id": f"rs_{identity}", "status": "completed", "encrypted_content": "Native fixture thinking", "summary": [{"type": "summary_text", "text": "Native fixture thinking"}], "future": {"n": 18446744073709551616}}
+        if trace["requests"] == 1:
+            item = {"type": "tool_search_call", "id": f"ts_{identity}", "status": "completed", "execution": "client", "call_id": "native-discovery-search", "arguments": {"query": "fixture echo", "limit": 1}}
+        elif trace["requests"] == 2:
+            loaded = [tool for result in body["input"] if result.get("type") == "tool_search_output" for tool in result["tools"]]
+            namespace = next(tool for tool in loaded if tool.get("type") == "namespace" and tool["name"] == "mcp__fixture")
+            member = next(tool for tool in namespace["tools"] if tool["name"] == "echo")
+            item = {"type": "function_call", "id": f"fc_{identity}", "status": "completed", "namespace": namespace["name"], "name": member["name"], "call_id": "native-discovery-echo", "arguments": " { } "}
+        else:
+            item = {"type": "message", "id": f"msg_{identity}", "status": "completed", "role": "assistant", "content": [{"type": "output_text", "text": "CAIdex local fixture complete"}]}
+        native = {"id": identity, "object": "response", "model": "native-fixture", "status": "completed", "output": [thinking, item], "future": {"n": 18446744073709551616}, "usage": {"input_tokens": 2, "output_tokens": 3, "total_tokens": 5}}
+        events = [event("response.created", response={"id": identity, "status": "in_progress", "output": []}), event("response.output_item.added", output_index=0, item={**thinking, "summary": [], "encrypted_content": ""}), event("response.reasoning_summary_text.delta", output_index=0, item_id=thinking["id"], summary_index=0, delta="Native fixture thinking")]
+        if item["type"] == "message":
+            events.extend([event("response.output_item.added", output_index=1, item={**item, "content": []}), event("response.content_part.added", output_index=1, item_id=item["id"], content_index=0, part={"type": "output_text", "text": ""}), event("response.output_text.delta", output_index=1, item_id=item["id"], content_index=0, delta=item["content"][0]["text"])])
+        events.append(event("response.completed", response=native))
+        trace.setdefault("nativeResponses", []).append(native)
+        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+        data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         trace["requests"] += 1
         trace["authorizationSeen"] |= "Authorization" in self.headers
+        if mode == "native-ollama-discovery":
+            self.native_ollama(body)
+            return
         if mode.startswith("native-google-"):
             self.native_google(body)
             return

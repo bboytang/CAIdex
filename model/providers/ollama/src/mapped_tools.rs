@@ -36,7 +36,7 @@ pub(crate) struct MappedTools {
     bindings: HashMap<Identity, (Value, bool)>,
 }
 impl MappedTools {
-    pub(crate) fn from_request(request: &CanonicalRequest) -> ProviderResult<Self> {
+    pub(crate) fn from_request(request: &CanonicalRequest, deferred: bool) -> ProviderResult<Self> {
         let results: Vec<_> = request.wire()["input"]
             .as_array()
             .into_iter()
@@ -44,12 +44,23 @@ impl MappedTools {
             .filter(|item| item["type"] == "tool_search_output")
             .map(|item| json!({"call_id":item["call_id"],"tools":item["tools"]}))
             .collect();
-        Self::from_source(
-            json!({"tools":request.wire().get("tools").cloned().unwrap_or_else(||json!([])),"search_results":results}),
-        )
+        let mut source = json!({"tools":request.wire().get("tools").cloned().unwrap_or_else(||json!([])),"search_results":results});
+        if deferred {
+            source["deferred_tool_search"] = true.into();
+        }
+        Self::from_source(source)
     }
     pub(crate) fn from_source(source: Value) -> ProviderResult<Self> {
-        fields(&source, &["tools", "search_results"])?;
+        fields(
+            &source,
+            &["tools", "search_results", "deferred_tool_search"],
+        )?;
+        if source
+            .get("deferred_tool_search")
+            .is_some_and(|v| v != true)
+        {
+            return Err(invalid());
+        }
         let mut map = Self {
             source: source.clone(),
             native: Vec::new(),
@@ -81,6 +92,19 @@ impl MappedTools {
                 self.member(tool, None, repeat, &mut batch)?;
             }
         }
+        let mut hidden = HashSet::new();
+        if self.source["deferred_tool_search"] == true {
+            for tool in &mut native {
+                if tool["type"] == "namespace" {
+                    let namespace = name(&tool["name"])?.to_owned();
+                    for member in tool["tools"].as_array_mut().unwrap() {
+                        defer(member, Some(&namespace), repeat, &mut hidden)?;
+                    }
+                } else if tool["type"] != "tool_search" {
+                    defer(tool, None, repeat, &mut hidden)?;
+                }
+            }
+        }
         let request = CanonicalRequest::new(
             json!({"model":"mapping","input":"","tools":native}),
             ResponsesDialect::Classic,
@@ -89,7 +113,29 @@ impl MappedTools {
         let request = tools::normalize(request)?;
         // Reuse native declaration/alias validation; no parallel tool registry.
         tools::NativeTools::from_request(&request)?;
-        Ok(request.wire()["tools"].as_array().unwrap().clone())
+        let mut native = request.wire()["tools"].as_array().unwrap().clone();
+        if !hidden.is_empty() {
+            if !native.iter().any(|v| v["type"] == "tool_search") {
+                return Err(invalid());
+            }
+            // Validate the complete catalog above, including hidden schema,
+            // strictness and aliases, before masking native availability.
+            native.retain_mut(|tool| {
+                if tool["type"] == "namespace" {
+                    let namespace = tool["name"].as_str().unwrap().to_owned();
+                    tool["tools"].as_array_mut().unwrap().retain(|member| {
+                        !hidden.contains(&(
+                            Some(namespace.clone()),
+                            member["name"].as_str().unwrap().to_owned(),
+                        ))
+                    });
+                    true
+                } else {
+                    !hidden.contains(&(None, tool["name"].as_str().unwrap_or("").to_owned()))
+                }
+            });
+        }
+        Ok(native)
     }
     fn member(
         &mut self,
@@ -111,7 +157,10 @@ impl MappedTools {
             return Err(invalid());
         }
         if let Some((previous, _)) = self.bindings.get(&identity) {
-            if !repeat || previous != tool {
+            let same = previous == tool
+                || self.source["deferred_tool_search"] == true
+                    && without_defer(previous) == without_defer(tool);
+            if !repeat || !same {
                 return Err(invalid());
             }
         } else {
@@ -284,7 +333,9 @@ impl MappedTools {
                     .ok_or_else(invalid)
             })
             .collect::<ProviderResult<_>>()?;
-        Self::from_source(json!({"tools":self.source["tools"],"search_results":results}))
+        let mut source = self.source.clone();
+        source["search_results"] = results.into();
+        Self::from_source(source)
     }
     pub(crate) fn matches_request(&self, request: &CanonicalRequest) -> ProviderResult<()> {
         if request.wire()["tools"] != json!(self.native) {
@@ -349,4 +400,30 @@ impl MappedTools {
         }
         CanonicalResponse::new(wire).map_err(|_| invalid())
     }
+}
+
+fn without_defer(tool: &Value) -> Value {
+    let mut tool = tool.clone();
+    tool.as_object_mut().unwrap().remove("defer_loading");
+    tool
+}
+fn defer(
+    tool: &mut Value,
+    namespace: Option<&str>,
+    discovered: bool,
+    hidden: &mut HashSet<Identity>,
+) -> ProviderResult<()> {
+    if let Some(flag) = tool.get("defer_loading") {
+        if !flag.is_null() && !flag.is_boolean() {
+            return Err(invalid());
+        }
+        if !discovered && flag == true {
+            hidden.insert((
+                namespace.map(str::to_owned),
+                name(&tool["name"])?.to_owned(),
+            ));
+        }
+        tool.as_object_mut().unwrap().remove("defer_loading");
+    }
+    Ok(())
 }

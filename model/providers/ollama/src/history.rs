@@ -309,6 +309,13 @@ fn without_identity(item: &Value) -> Value {
     if let Some(object) = item.as_object_mut() {
         object.remove("id");
         object.remove("status");
+        // Fixed Runtime serializes absent reasoning content as null. Only this
+        // empty carrier field is equivalent; arrays/future payloads stay bound.
+        if object.get("type").is_some_and(|v| v == "reasoning")
+            && object.get("content").is_some_and(Value::is_null)
+        {
+            object.remove("content");
+        }
     }
     item
 }

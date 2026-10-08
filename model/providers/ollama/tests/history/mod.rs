@@ -421,3 +421,31 @@ async fn json_provider_replays_three_turns_from_bound_capsules_and_rejects_plain
     assert_eq!(reads.load(Ordering::SeqCst), 3);
     assert_eq!(fixture.accepted.load(Ordering::SeqCst), 3);
 }
+
+#[test]
+fn canonical_reasoning_null_content_is_absence_without_loosening_meaningful_display_binding() {
+    let history = record();
+    let mut input = history.to_responses(BUDGET).unwrap().output().to_vec();
+    input[0]["content"] = Value::Null;
+    let (restored, _) = replay(&input, &seed()).unwrap();
+    assert_eq!(restored.native_response(), native().wire());
+    for bad in [
+        json!([]),
+        json!([{"type":"reasoning_text","text":"changed"}]),
+        json!("changed"),
+    ] {
+        let mut altered = input.clone();
+        altered[0]["content"] = bad;
+        assert_eq!(
+            replay(&altered, &seed()).err().unwrap().code,
+            "ollama_invalid_history"
+        );
+    }
+    let mut altered = input;
+    altered[1]["content"] = Value::Null;
+    assert_eq!(
+        replay(&altered, &seed()).err().unwrap().code,
+        "ollama_invalid_history",
+        "null exception belongs only to the synthetic reasoning carrier"
+    );
+}

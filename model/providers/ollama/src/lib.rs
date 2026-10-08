@@ -105,6 +105,12 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         self.options.custom_tools = true;
         self.with_native_tools()
     }
+    /// Enable client discovery of deferred tools, custom mapping and v2
+    /// history. Deferred declarations stay hidden until a client search result.
+    pub fn with_deferred_tool_search(mut self) -> Self {
+        self.options.deferred_tool_search = true;
+        self.with_custom_tools_as_functions()
+    }
     /// Opt in to bounded inline image inputs and image tool results. Model
     /// declarations still apply; this does not prove live vision compatibility.
     pub fn with_images(mut self) -> Self {
@@ -235,7 +241,9 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         let mapping = self
             .options
             .custom_tools
-            .then(|| mapped_tools::MappedTools::from_request(&request))
+            .then(|| {
+                mapped_tools::MappedTools::from_request(&request, self.options.deferred_tool_search)
+            })
             .transpose()?;
         let request = if let Some(mapping) = &mapping {
             mapping.compile_request(request)?
