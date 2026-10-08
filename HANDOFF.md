@@ -1,6 +1,6 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 17:03 UTC（断开后核对）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
+更新：2026-10-08 17:06 UTC（断开后核对）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
 
 ## 当前任务
 
@@ -34,7 +34,7 @@ F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑�
 
 ## 问题 / 暂缓项
 
-- Ollama尚无真实daemon/模型/Live；本轮新增固定Classic Runtime MCP发现/执行/磁盘重启本地正例，三平台待验；Lite仍无正例。show/精确think已有三平台证据，native history显式opt-in三平台已验；默认developer/context/Lite及其他高级控制明确拒绝；本轮runtime context及显式verbosity映射已三平台验收。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不自动开启Adapter媒体；显式images/非严格格式/严格交付校验均三平台已验，生成grammar/实际daemon/Lite Runtime仍未验，详docs/Ollama。README旧Anthropic简介滞后、Google未列，以HANDOFF/各验收文档为准，不据旧简介重做已完成阶段。
+- Ollama尚无真实daemon/模型/Live；本轮新增固定Classic Runtime MCP发现/执行/磁盘重启本地正例，三平台待验；Lite仍无正例。show/精确think已有三平台证据，native history显式opt-in三平台已验；默认developer/context/Lite及其他高级控制明确拒绝；本轮runtime context及显式verbosity映射已三平台验收。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不自动开启Adapter媒体；显式images/非严格格式/严格交付校验均三平台已验，生成grammar/实际daemon/Lite Runtime仍未验，详docs/Ollama。README已补Anthropic/Gemini/Ollama实际进度及文档入口，以各阶段证据为准，不据旧简介重做已完成阶段。
 
 - Gemini实际Runtime阶段唯一独立审查无Critical/Important，1覆盖Minor暂缓：thought-call豁免、无tools、未opt-in none缺直接专项。14排除项裁定/成本留Gemini文档；不派复审。
 - 旧Minor：prefix-only v1v2完整组互换、非空projection pending取消/Drop、满槽取消/Drop、ProtoJSON替代整数/空ID表示、部分usage下界矛盾、thought-only phase；Anthropic重启第三轮/完整Lite custom结果覆盖等，详Provider文档，未认领修复。
@@ -46,7 +46,7 @@ F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑�
 
 - 既有Ollama show/thinking、v1历史、图片/非严格格式、offline严格输出、runtime context/verbosity、namespace/search、custom→function/v2均已有精确三平台证据，包含在本轮63项回归，不重做。v1不自动升级/混用，grammar仅指导；历史源码/RED/GREEN/完整CI日志索引留docs/Ollama。
 
-- branch main跟踪origin/main；最近源码1a2668fc2f7688b316d8a4b361b22123c19089d2已push。本轮仅HANDOFF断点核对/CI恢复记录，随文档提交，无未完成源码修改；下次核对实际HEAD与Git状态。最终本地workspace375/0/41、固定Runtime39/0/0、Clippy/fmt/diff已过，CI37809165149 Linux/Windows已过，macOS attempt1/2基础设施取消、已成功仅重跑macOS attempt3待验，无新依赖。
+- branch main跟踪origin/main；最近源码1a2668fc2f7688b316d8a4b361b22123c19089d2已push。本次检查前HEAD/origin main为7c3f93a且工作区干净；本轮仅HANDOFF、README及Ollama/Model-Gateway验收状态修正，随文档提交，无未完成源码修改；下次核对实际HEAD与Git状态。最终本地workspace375/0/41、固定Runtime39/0/0、Clippy/fmt/diff已过，CI37809165149 Linux/Windows已过，macOS attempt1/2基础设施取消、已成功仅重跑macOS attempt3待验，无新依赖。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama/src/{tools,mapped_tools,runtime,structured,request,history,history_stream,lib}、tests/{tools,runtime,structured,content,history}；其他模块model/providers/custom、model/core、model/gateway、runtime/bridge/tests/{real_runtime.rs,fixtures}、credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
 - jsonschema固定0.58.6、只开arbitrary-precision、强制Offline retriever，无HTTP/file解析；新增41依赖，无既有包升级/删除，hashbrown启用依赖、bit-vec/r-efi更新多版本标识，base64保持0.22.1。标准Schema按库draft/约束校验，未知format拒绝，未知注释保留。同步求值有字节/Regex回溯限制，不承诺硬CPU抢占，留Host隔离；不重试或修补坏回答。
 - 旧磁盘满已解除，只清本项目可再生target；本次df约4.8G可用，下轮先查df。完整测试TMPDIR=/var/tmp，保留/tmp/.git保护，不清源码/凭据/保护目录。本机缺Windows/Xcode/gnome-keyring-daemon，对应CI检查；iOS未建立，不以Rust macOS CI冒充iOS。
@@ -61,4 +61,4 @@ F/G：Ollama custom/freeform→native function与v2声明/kind/发现前缀绑�
 
 - macOS CI恢复：attempt3 job113436013980 queued；Linux113436015643/Windows113436077634为原成功步骤的保留记录（17steps），无需重跑。先查run_attempt/latest jobs；mac成功后下载新job完整raw，沿用同一源码首轮Linux/Windows完整日志并逐名核对。未调换runner/架构；若再次无runner取消，保留缺口，继续独立Lite工作，勿靠循环重试冒充通过。
 
-- 本次断点检查：检查前HEAD/origin main均1a2668f（ahead/behind 0/0），仅HANDOFF未提交；复核本阶段源码/测试差异、V3及完整本地日志，未发现新错误或丢失修改。重新核对Linux/Windows完整raw总数、Classic MCP测试各一次、每job全部17steps，均通过；没有重复已通过测试。临时完整CI脚本已补17steps与关键step名称校验，三平台成功门槛不变。HANDOFF差异检查通过，先保存本次恢复点；Lite未开始修改。
+- 额度检查：远端main已确认含源码1a2668f与交接7c3f93a，无丢失/未提交源码。重新逐名核对既有local/Linux/Windows日志：Ollama63/OpenAI11/Custom7每名一次，本地workspace375/0/41、实际Runtime39个不同名字均通过；未重复运行测试，既有CI全17steps仍已核实；临时CI逐名脚本保留关键step校验。修正文档仍写“源码待提交”及README未列Gemini/旧接线状态，保留macOS未验/商业模型未验边界。attempt3仍queued（零steps），未再发起重试或开展新功能。
