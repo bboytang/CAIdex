@@ -1,6 +1,6 @@
 # CAIdex Ollama Provider：设计与验收
 
-阶段 F/G，沿 V3；本轮是经典 stateless Responses 的离线协议阶段。代码在 `model/providers/ollama`，本地 10 项及完整回归通过，源码95b0f6b已push，[CI37719887330](https://github.com/bboytang/CAIdex/actions/runs/37719887330)三平台已验收。尚未连接真实 Ollama daemon/模型，也未验证固定 Runtime 使用本 Adapter，不授予任何模型 Codex Full/Compatible。
+阶段 F/G，沿 V3；本轮是经典 stateless Responses 的离线协议阶段。代码在 `model/providers/ollama`，stateless/show/thinking/native history累计26项及完整回归通过，最新源码ad3a491/[CI37728309340](https://github.com/bboytang/CAIdex/actions/runs/37728309340)三平台已验收，各阶段范围/证据见后续节。尚未连接真实 Ollama daemon/模型，也未验证固定 Runtime 使用本 Adapter，不授予任何模型 Codex Full/Compatible。
 
 ## 原生依据与当前范围
 
@@ -72,9 +72,9 @@ JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字�
 
 日志`/tmp/caidex-ci-37722533837-{status.json,watch.log,linux.log,windows.log,macos.log}`，逐名脚本`/tmp/caidex-ollama-show-ci-check.py`（传run与精确SHA）exit0。自行检查最终源码/依赖差异，无新增第三方依赖；未派新agent审查，不把自查写成独立审查。
 
-下一恢复点：native reasoning历史归属/回放、媒体/结构/工具路径和固定Runtime，随后其他兼容厂商。fixed Responses源码将reasoning.encrypted_content直接作为明文thinking附给下个assistant/function call，末尾形成thinking-only assistant；须在既有模型/前缀绑定模式下校验多轮顺序并完整回放，不能直接接受他方载体或宣称加密。未连接真实daemon/模型，未下载模型或调用商业API，整体F/G及H–R未完成。
+show阶段结束时的恢复点：native reasoning历史归属/回放（现已完成当前协议范围，见下节）、媒体/结构/工具路径和固定Runtime，随后其他兼容厂商。fixed Responses源码将reasoning.encrypted_content直接作为明文thinking附给下个assistant/function call，末尾形成thinking-only assistant；须在既有模型/前缀绑定模式下校验多轮顺序并完整回放，不能直接接受他方载体或宣称加密。未连接真实daemon/模型，未下载模型或调用商业API，整体F/G及H–R未完成。
 
-## 原生历史、JSON/SSE回放（本轮本地通过，待提交/CI）
+## 原生历史、JSON/SSE回放（三平台离线通过）
 
 - `with_native_history()`显式启用，默认行为保持。仍只Classic，不增加Lite/Runtime/context/developer/media等支持，不生成兼容性报告。代码`src/history.rs`与`history_stream.rs`；共用现有Custom HTTP/TLS/Broker/socket/slot，不新建worker或执行器。
 - 敏感JSON载体前缀`caidex.ollama.native-history.v1:`，保留实际native model请求、完整native回复、SSE所收到的JSON事件及未知字段/大数/arguments字符串。profile绑定归一化base（含代理前缀）与凭据引用owner/provider/profile/kind，无秘密值；同时核对native model、实际compiled prefix和完整display group。此为执行端配置/结构校验，不是来源认证、签名、加密、模型digest/version锁或实时证据；可信Host存储/访问控制仍留H/I。
@@ -87,6 +87,10 @@ JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字�
 
 新增10项（共26）：codec JSON/绑定/display/原文/精度/坏version/JSON&SSE终态/chunks；实际HTTP JSON3轮精确POST和混入拒绝、thinking-only封闭与拒绝歧义；SSE2轮精确回放/载体先于工具/重写序列、无native reasoning时文本进度与index、失败/截断/不一致/超帧不放工具、取消/Drop/busy。stream保护有合法RED（旧SSE交付plainthinking）→GREEN，日志`/tmp/caidex-ollama-history-stream-{red,green}.log`；其他新增检查只认领通过，不夸大TDD。Clippy发现新测试不必要Vec及单分支match，最小修正后已通过。
 
-当前本地Ollama26/0/0、workspace338/0/39、旧实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；Ollama每名在workspace各一次。日志`/tmp/caidex-ollama-history-{codec,json,provider-final,workspace-final,all-real-final,clippy-final}.log`。新源码尚未提交/CI，前一阶段a1f7d6c CI不代证本轮；未派新agent审查。真实daemon/模型与本Adapter固定Runtime仍未验证，不认领商业Full。
+当前本地Ollama26/0/0、workspace338/0/39、旧实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；Ollama每名在workspace各一次。日志`/tmp/caidex-ollama-history-{codec,json,provider-final,workspace-final,all-real-final,clippy-final}.log`。源码ad3a49176b4dc6044454d800a09b4c7131dc9d86已提交/push，[CI37728309340](https://github.com/bboytang/CAIdex/actions/runs/37728309340)精确head三平台已验收；前一阶段a1f7d6c CI不代证本轮；未派新agent审查。真实daemon/模型与本Adapter固定Runtime仍未验证，不认领商业Full。
 
-下一恢复点：本轮提交/push后精确三平台CI；再按已确认顺序补媒体/结构/其余工具及固定Runtime（包括真实Runtime会变动的item表示/本地headers/developer/include/summary）。不提前忽略差异以冒充接线成功，随后兼容厂商与H–R。
+下一恢复点：按已确认顺序补媒体/结构/其余工具及固定Runtime（包括真实Runtime会变动的item表示/本地headers/developer/include/summary）。不提前忽略差异以冒充接线成功，随后兼容厂商与H–R。
+
+本轮CI收尾：精确源码head `ad3a49176b4dc6044454d800a09b4c7131dc9d86`，三个job均completed/success、全部step成功或条件跳过；watch exit0、日志下载exit0、逐名脚本exit0。Ollama26/OpenAI11/Custom7/Google90及旧实际Runtime每名逐平台各一次。workspace Linux338/Windows333/macOS337，0失败、ignored39/37/37；旧实际Runtime37/36/36，0失败/0ignored；Linux native凭据1与fmt/Clippy/schema/doctor通过。仍不是本Adapter新Runtime、真实daemon或Full证据。
+
+日志`/tmp/caidex-ci-37728309340-{status.json,watch.log,linux.log,windows.log,macos.log}`及逐名脚本`/tmp/caidex-ollama-history-ci-check.py`。第一次逐名检查发现macOS CLI缓存protocol段提前截断；直接下载job113151419136完整原始日志，保留`macos-{raw,cli-truncated}.log`，仅以原始完整protocol段替换对应段后重验成功，不把首次不完整检查计为通过。本次收尾仅文档，代码验收对应上述源码head。
