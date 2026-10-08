@@ -59,6 +59,7 @@ pub(crate) fn compile(
     request: CanonicalRequest,
     details: Option<&ModelDetails>,
     reasoning: CapabilitySupport,
+    native_history: bool,
 ) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
     fields(
@@ -167,6 +168,7 @@ pub(crate) fn compile(
     }
     if let Some(items) = wire["input"].as_array() {
         let mut pending = HashSet::new();
+        let mut pending_thinking = false;
         for item in items {
             if item.get("status").is_some_and(|value| value != "completed") {
                 return Err(unsupported());
@@ -179,14 +181,32 @@ pub(crate) fn compile(
                 Some(value) => value.as_str().ok_or_else(invalid)?,
             };
             match kind {
+                "reasoning" if native_history => {
+                    // Only verified capsules are expanded by the provider;
+                    // arbitrary caller reasoning never reaches this branch.
+                    if pending_thinking
+                        || !item["encrypted_content"].is_string()
+                        || !item["summary"].is_array()
+                    {
+                        return Err(invalid());
+                    }
+                    pending_thinking = true;
+                }
                 "message" => {
                     fields(item, &["type", "id", "status", "role", "content"])?;
                     if !matches!(item["role"].as_str(), Some("user" | "system" | "assistant")) {
                         return Err(unsupported());
                     }
+                    if pending_thinking && item["role"] != "assistant" {
+                        return Err(invalid());
+                    }
+                    if item["role"] == "assistant" {
+                        pending_thinking = false;
+                    }
                     text(&item["content"], item["role"] == "assistant")?;
                 }
                 "function_call" => {
+                    pending_thinking = false;
                     fields(
                         item,
                         &["type", "id", "status", "name", "call_id", "arguments"],
@@ -203,6 +223,9 @@ pub(crate) fn compile(
                     }
                 }
                 "function_call_output" => {
+                    if pending_thinking {
+                        return Err(invalid());
+                    }
                     fields(item, &["type", "id", "status", "call_id", "output"])?;
                     string(item, "call_id")?;
                     let id = item["call_id"].as_str().expect("validated ID");
@@ -214,7 +237,7 @@ pub(crate) fn compile(
                 _ => return Err(unsupported()),
             }
         }
-        if !pending.is_empty() {
+        if !pending.is_empty() || pending_thinking {
             return Err(invalid());
         }
     }

@@ -25,7 +25,7 @@
 
 明确 false/null 的 store/background 删除为原生前台无存储默认；显式 tool_choice=auto、parallel_tool_calls=true 删除为原生默认允许。这几项是语义等价的已知缺省控制，不处理任意未知字段。true storage/background、required/none tool choice、parallel=false、previous_response_id/conversation 在 Key/POST 前拒绝。
 
-同样拒绝此阶段未编译的 reasoning history/summary、include、metadata/cache/service tier/text formatting、truncation、developer role、custom/namespace/web/tool_search、strict/defer=true、媒体/附件、未知 input/嵌套字段。thinking控制的新增范围见下节。收到无法回放的 output 仍完整保留给调用方；下一请求明确报错，不能偷偷删 history 继续。既有 ModelCapabilities 中明确 Unsupported 的 text/native_tools/streaming 拦在网络前，Unknown 不自动转 Supported。
+同样拒绝未编译的 reasoning summary、include、metadata/cache/service tier/text formatting、truncation、developer role、custom/namespace/web/tool_search、strict/defer=true、媒体/附件、未知 input/嵌套字段。thinking控制与显式native history的新范围见后续节；默认仍不接受reasoning历史。收到无法回放的 output 仍完整保留给调用方；下一请求明确报错，不能偷偷删 history 继续。既有 ModelCapabilities 中明确 Unsupported 的 text/native_tools/streaming 拦在网络前，Unknown 不自动转 Supported。
 
 非空 RequestContext headers 当前全部拒绝，包括实际 Runtime 的本地 headers；服务端 x-codex-turn-state 亦在交付前拒绝，不假造 native session/state。context/header 放置、developer/system 语义和实际 Runtime 支持是下阶段需验证的接线，当前 Gateway 协议 fixture 不能代替它。
 
@@ -33,7 +33,7 @@
 
 JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字段/大整数/参数字符串保持，HTTP 200 failed/incomplete 不转换成功，流需真实 typed terminal，EOF/[DONE] 不合成 completed。SSE 原 data 在完整事件边界保留。
 
-原生 reasoning 的 encrypted_content 在所核对 Ollama 实现中是明文 thinking，当前只保留收到的 wire；未实现此项的安全历史归属/回放，不宣称加密、签名、隐藏思维或跨 Provider 可复用。
+原生 reasoning 的 encrypted_content 在所核对 Ollama 实现中是明文 thinking；默认仅保留native wire，显式native history的新绑定/回放范围见末节。均不宣称加密、签名、隐藏思维或跨 Provider 可复用。
 
 已取消/过期与不支持请求在 SecretStore/网络前返回安全 code；流 Drop/取消/整体 deadline 关闭 native socket，释放唯一 in-flight slot。共享 client 的同步 SecretStore 读无法强制中止、有限背压/TLS 等既有边界不变。
 
@@ -73,3 +73,20 @@ JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字�
 日志`/tmp/caidex-ci-37722533837-{status.json,watch.log,linux.log,windows.log,macos.log}`，逐名脚本`/tmp/caidex-ollama-show-ci-check.py`（传run与精确SHA）exit0。自行检查最终源码/依赖差异，无新增第三方依赖；未派新agent审查，不把自查写成独立审查。
 
 下一恢复点：native reasoning历史归属/回放、媒体/结构/工具路径和固定Runtime，随后其他兼容厂商。fixed Responses源码将reasoning.encrypted_content直接作为明文thinking附给下个assistant/function call，末尾形成thinking-only assistant；须在既有模型/前缀绑定模式下校验多轮顺序并完整回放，不能直接接受他方载体或宣称加密。未连接真实daemon/模型，未下载模型或调用商业API，整体F/G及H–R未完成。
+
+## 原生历史、JSON/SSE回放（本轮本地通过，待提交/CI）
+
+- `with_native_history()`显式启用，默认行为保持。仍只Classic，不增加Lite/Runtime/context/developer/media等支持，不生成兼容性报告。代码`src/history.rs`与`history_stream.rs`；共用现有Custom HTTP/TLS/Broker/socket/slot，不新建worker或执行器。
+- 敏感JSON载体前缀`caidex.ollama.native-history.v1:`，保留实际native model请求、完整native回复、SSE所收到的JSON事件及未知字段/大数/arguments字符串。profile绑定归一化base（含代理前缀）与凭据引用owner/provider/profile/kind，无秘密值；同时核对native model、实际compiled prefix和完整display group。此为执行端配置/结构校验，不是来源认证、签名、加密、模型digest/version锁或实时证据；可信Host存储/访问控制仍留H/I。
+- 仅model/input/instructions/tools绑定前缀，温度/think/stream等新轮控制可改变。简单string input只规范为user文本消息，其他表示严格匹配，不自动重写argument JSON或未知字段。执行端先编译已恢复native前缀，再与旧请求比较；不能拿capsule自己的request当expected。端点/凭据引用/native model/工具/历史前缀改变、删改/重排display、外来版本/明文reasoning在Key/POST前拒绝；允许Runtime省略有效item ID/completed status，语义数据不变。
+- display以一个reasoning carrier及原native非reasoning输出构成，原reasoning顺序、字段、明文thinking全部留在载体；summary只是合并的原生展示。回放恢复原始response.output而非渲染文本，载体不发给native endpoint。未映射的native output/未知输入字段虽然保留，仍按compiler显式拒绝，不因载体被校验就授予新语义。
+- thinking必须附给正确assistant/function；consecutive reasoning或跨user/tool result的歧义拒绝。思考-only回合在恢复组末附空assistant封闭，避免native pending把它挪到后来的user之后。schema/原文/status仍保持；不承诺模型遵循function JSON schema，不执行工具。
+- SSE重写序列/output index并保留text/summary增量；工具arguments/done与完整载体等typed terminal。记录的output_item.added身份及done原文须与最终output一致，chunks须重构同一terminal；坏/截断/不一致不交付可执行done或载体。failed/incomplete保留真实终态、不给function done；完整native回复仍在载体中。Drop/取消/截止释放共享socket/slot，待交付事件亦受取消/绝对deadline约束。
+- 沿Custom现有契约在typed terminal后停止读取native；没有HTTP clean EOF/终态后新chunk验证保证，不冒用Google的EOF证据。记录的是JSON事件值，不是SSE注释/id/retry/字节空白的存档；原native JSON字段/精确数值仍留在载体。
+- capsule、展开后的请求、投影回复受request/response预算限制，流还受累计native JSON/逐帧预算约束；过限安全失败，debug省略wire。非法caller history为400，native坏载体/不一致为安全502；没有POST自动重试。full prefix快照有O(n²)会话增长，预算封顶，H存储将来需要时可去重。
+
+新增10项（共26）：codec JSON/绑定/display/原文/精度/坏version/JSON&SSE终态/chunks；实际HTTP JSON3轮精确POST和混入拒绝、thinking-only封闭与拒绝歧义；SSE2轮精确回放/载体先于工具/重写序列、无native reasoning时文本进度与index、失败/截断/不一致/超帧不放工具、取消/Drop/busy。stream保护有合法RED（旧SSE交付plainthinking）→GREEN，日志`/tmp/caidex-ollama-history-stream-{red,green}.log`；其他新增检查只认领通过，不夸大TDD。Clippy发现新测试不必要Vec及单分支match，最小修正后已通过。
+
+当前本地Ollama26/0/0、workspace338/0/39、旧实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；Ollama每名在workspace各一次。日志`/tmp/caidex-ollama-history-{codec,json,provider-final,workspace-final,all-real-final,clippy-final}.log`。新源码尚未提交/CI，前一阶段a1f7d6c CI不代证本轮；未派新agent审查。真实daemon/模型与本Adapter固定Runtime仍未验证，不认领商业Full。
+
+下一恢复点：本轮提交/push后精确三平台CI；再按已确认顺序补媒体/结构/其余工具及固定Runtime（包括真实Runtime会变动的item表示/本地headers/developer/include/summary）。不提前忽略差异以冒充接线成功，随后兼容厂商与H–R。

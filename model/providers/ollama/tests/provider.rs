@@ -1,4 +1,5 @@
 //! Offline Ollama protocol fixtures: no daemon, model download or user key.
+mod history;
 mod models;
 use caidex_credentials::{Broker, CredentialRef, Id, Secret, SecretKind, SecretStore};
 use caidex_model_core::{

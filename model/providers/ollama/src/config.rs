@@ -43,6 +43,10 @@ impl OllamaConfig {
     pub(crate) fn take_show_endpoint(&mut self) -> Option<CustomResponses> {
         self.show.take()
     }
+    pub(crate) fn replay_scope(&self) -> serde_json::Value {
+        // References contain owner/profile identifiers, never the secret.
+        serde_json::json!({"base":self.base.as_str(),"credential":self.credential})
+    }
     pub(crate) fn endpoint(&self, path: &str) -> Result<CustomResponses, Error> {
         let endpoint = self.base.join(path).map_err(|_| Error::InvalidEndpoint)?;
         CustomResponses::new(endpoint.as_str(), self.credential.clone())

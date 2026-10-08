@@ -1,10 +1,13 @@
 //! Stateless Ollama Responses. Inference only, with the existing bounded client.
 mod config;
+mod history;
+mod history_stream;
 mod models;
 mod request;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits, NativeModel};
 pub use config::OllamaConfig;
+pub use history::NativeHistory;
 pub use models::ModelDetails;
 
 use caidex_credentials::{Broker, SecretStore};
@@ -24,6 +27,10 @@ pub struct OllamaProvider<S: SecretStore> {
     models_endpoint: CustomResponses,
     show_endpoint: Option<CustomResponses>,
     model_details: HashMap<String, ModelDetails>,
+    config: OllamaConfig,
+    native_history: bool,
+    history_bytes: usize,
+    limits: Limits,
 }
 impl<S: SecretStore + 'static> OllamaProvider<S> {
     pub fn new(
@@ -58,12 +65,28 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
                 .with_metadata(model)
             })
             .collect::<Result<Vec<_>, Error>>()?;
+        let history_bytes = limits.request_bytes.min(limits.response_bytes);
         Ok(Self {
-            responses: CustomResponsesProvider::with_options(routes, broker, limits, options)?,
+            responses: CustomResponsesProvider::with_options(
+                routes,
+                broker,
+                limits.clone(),
+                options,
+            )?,
             models_endpoint,
             show_endpoint,
             model_details: HashMap::new(),
+            config,
+            native_history: false,
+            history_bytes,
+            limits,
         })
+    }
+    /// Opt in to model/profile/prefix-bound native history. It is sensitive
+    /// plaintext JSON, not encryption or a live model compatibility claim.
+    pub fn with_native_history(mut self) -> Self {
+        self.native_history = true;
+        self
     }
     /// Install a fixed executor-owned snapshot; does not fetch automatically or
     /// turn catalog/fixture success into a live compatibility report.
@@ -134,8 +157,23 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         {
             return Err(ProviderError::new(400, "ollama_unsupported_capability"));
         }
+        let request = if self.native_history {
+            history::expand(
+                request,
+                &self.config,
+                &metadata.native_model,
+                self.history_bytes,
+            )?
+        } else {
+            request
+        };
         let details = self.model_details.get(request.model());
-        request::compile(request, details, metadata.capabilities.reasoning)
+        request::compile(
+            request,
+            details,
+            metadata.capabilities.reasoning,
+            self.native_history,
+        )
     }
 }
 impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
@@ -194,11 +232,23 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
-            let response = self
-                .responses
-                .create_response(self.prepare(request, &context)?, context)
-                .await?;
+            let request = self.prepare(request, &context)?;
+            let native_model = self.metadata(request.model())?.native_model;
+            let native_request = history::native_request(&request, &native_model)?;
+            let mut response = self.responses.create_response(request, context).await?;
             response_headers_guard(&response.headers)?;
+            if self.native_history {
+                response.response = NativeHistory::from_response(
+                    &self.config,
+                    &native_model,
+                    &native_request,
+                    &response.response,
+                    self.history_bytes,
+                )
+                .map_err(history::native_error)?
+                .to_responses(self.history_bytes)
+                .map_err(history::native_error)?;
+            }
             Ok(response)
         })
     }
@@ -208,11 +258,27 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
-            let response = self
-                .responses
-                .stream_response(self.prepare(request, &context)?, context)
-                .await?;
+            let request = self.prepare(request, &context)?;
+            let native_model = self.metadata(request.model())?.native_model;
+            let native_request = history::native_request(&request, &native_model)?;
+            let total = std::time::Instant::now() + self.limits.total_timeout;
+            let history_context = RequestContext {
+                cancellation: context.cancellation.clone(),
+                deadline: Some(context.deadline.unwrap_or(total).min(total)),
+                ..Default::default()
+            };
+            let mut response = self.responses.stream_response(request, context).await?;
             response_headers_guard(&response.headers)?;
+            if self.native_history {
+                response.events = Box::pin(history_stream::HistoryStream::new(
+                    response.events,
+                    self.config.replay_scope(),
+                    native_model,
+                    native_request,
+                    history_context,
+                    self.limits.clone(),
+                ));
+            }
             Ok(response)
         })
     }

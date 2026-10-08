@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-F/G：Ollama `/api/show` 与精确thinking控制已三平台验收，源码a1f7d6c27c33abf02af3d36fea0dbb3a0e926a75已push，[CI37722533837](https://github.com/bboytang/CAIdex/actions/runs/37722533837)精确head全job成功、step成功或条件跳过，逐名日志已核对。本次仅阶段收尾文档；下一步native reasoning历史归属/回放。此阶段不代表Ollama固定Runtime/真实daemon模型Full；完整F/G及H–R未完成。
+F/G：Ollama native history本地当前范围已实现/验收，基准main/e9a9d8d；尚未提交/三平台CI。显式with_native_history、v1 profile/native model/compiled prefix/group绑定、JSON三轮/SSE两轮、原文/chunks一致性、文本进度与延迟工具/载体、thinking-only封闭及拒绝歧义。Ollama26/0/0、workspace338/0/39、旧Runtime37/0/0、Clippy/fmt/diff通过；SSE保护有有效RED→GREEN。不是实际Ollama Runtime/daemon/商业Full，完整F/G及H–R未完成。
 
 ## 已完成
 
@@ -18,7 +18,7 @@ F/G：Ollama `/api/show` 与精确thinking控制已三平台验收，源码a1f7d
 
 ## 下一步顺序
 
-1. 核对实际HEAD/Git后接Ollama native reasoning历史归属/回放；保持单一Runtime/transport，参考已验Anthropic binding及Google NativeHistory，不能直接接受他方opaque/plaintext项。固定官方e3cddc3e openai/responses.go已读：原生encrypted_content是明文thinking，pending附给下个assistant/function call，末尾会建thinking-only assistant；按真实顺序校验/回放并保留未知原文，非密码学认证，不据fixture授予Full。先最小JSON/SSE多轮正负例；不要重做已验show/Gemini。
+1. 核对最终差异并补Ollama/Model-Gateway文档，提交/push本轮history，核对精确源码三平台CI；不要重做已验show/Gemini。Custom在typed terminal后停止读取native，不保证HTTP clean EOF；不冒用Google EOF承诺。raw caller reasoning只过codec进入compiler，不允许直接plaintext/其他Provider载体；未映射native output保留但下轮显式拒绝，不静默删除。
 2. 补齐Ollama媒体/结构/其余工具路径及固定Runtime。随后DeepSeek/Qwen/OpenRouter等兼容API；DeepSeek Responses developer按user、未知input忽略，其models不保证created，不能直接透传/照搬严格catalog。等价路径复用transport，差异明确编译/拒绝；不据URL/目录/fixture授予Lite/Full，不下载大模型/调用商业API。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
@@ -26,7 +26,7 @@ F/G：Ollama `/api/show` 与精确thinking控制已三平台验收，源码a1f7d
 
 - Windows11x64 Tauri2+React/TypeScript/Rust；Linuxx86_64 Host/CLI；iOS17+/Swift5 SwiftUI+UniFFI。GUI中文/英文，CLI英文；只用assets/brand原件，UI尽量1:1官方参考，模型/Key放设置。
 - 固定真实Codex0.160.1/d27764b82f7118f674371e6d6e76271d9d606edb，一个Runtime，不造第二Agent/HTTP栈。Gateway只适配Responses，不执行工具；Runtime负责发现/审批/沙箱/执行。未知协议字段保留、实验opt-in、经典/Lite分别验收。
-- Native wire是回放权威；Gemini v1完整model/request绑定，v2另绑定canonical工具及actual native tools，raw chunks重建核对。Anthropic v3绑定compiled前缀/认证组织，v4保存发现记录。签名/未知字段不改写、不自动升级/松绑；Anthropic/Gemini自建encrypted_content只是敏感JSON载体，Ollama原生此字段是明文thinking且当前拒绝回放，均不宣称加密/密码学认证，生产访问控制留H/I。
+- Native wire是回放权威；Gemini v1完整model/request绑定，v2另绑定canonical工具及actual native tools，raw chunks重建核对。Anthropic v3绑定compiled前缀/认证组织，v4保存发现记录。签名/未知字段不改写、不自动升级/松绑；各Provider自建encrypted_content只是敏感JSON载体，Ollama原生此字段是明文thinking，仅显式native history允许绑定回放，均不宣称加密/密码学认证，生产访问控制留H/I。
 - Gemini正例公共model_catalog_json复用精确固定gpt-5.5/gpt-6.1-sol模板，仅alias/描述/display_name/supports_search_tool=false；显式禁用web。高级默认与未opt-in Lite负例继续Key/POST前拒绝。工具搜索/web/strict/deferred/后置system未支持；grammar仅指导。local数量限制不追溯伪改旧signed历史。
 - Unknown≠Supported，Configured/ProviderCatalog/ProtocolFixture不授予Full/Compatible，须LiveRuntime报告。
 - Chat独立无Shell/Git/项目写权限；Remote用执行Host Key，手机不读已存Host Key，同步不含凭据。模型轮次边界切换，跨Provider关联分支/新线程。
@@ -34,7 +34,7 @@ F/G：Ollama `/api/show` 与精确thinking控制已三平台验收，源码a1f7d
 
 ## 问题 / 暂缓项
 
-- Ollama尚无真实daemon/模型或本Adapter固定Runtime证据；show/精确think控制新增本地已验，reasoning历史/developer/context/Lite及其他高级控制均明确拒绝。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不是Adapter媒体支持，详docs/Ollama。README旧Anthropic简介滞后、Google未列，以HANDOFF/各验收文档为准，不据旧简介重做已完成阶段。
+- Ollama尚无真实daemon/模型或本Adapter固定Runtime证据；show/精确think已有三平台证据，native history显式opt-in本地已验、待CI；developer/context/Lite及其他高级控制明确拒绝。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不是Adapter媒体支持，详docs/Ollama。README旧Anthropic简介滞后、Google未列，以HANDOFF/各验收文档为准，不据旧简介重做已完成阶段。
 
 - Gemini实际Runtime阶段唯一独立审查无Critical/Important，1覆盖Minor暂缓：thought-call豁免、无tools、未opt-in none缺直接专项。14排除项裁定/成本留Gemini文档；不派复审。
 - 旧Minor：prefix-only v1v2完整组互换、非空projection pending取消/Drop、满槽取消/Drop、ProtoJSON替代整数/空ID表示、部分usage下界矛盾、thought-only phase；Anthropic重启第三轮/完整Lite custom结果覆盖等，详Provider文档，未认领修复。
@@ -44,9 +44,10 @@ F/G：Ollama `/api/show` 与精确thinking控制已三平台验收，源码a1f7d
 
 ## Git / 文件 / 验证
 
-- branch main跟踪origin/main，源码a1f7d6c已同步；Custom bounded POST、Ollama models/compiler/tests已提交。本次收尾仅HANDOFF与Ollama/Model-Gateway文档，无未提交源码；提交后核对实际HEAD/状态，不把预期干净当作已验证。
+- branch main跟踪origin/main，基准HEAD e9a9d8d已同步；本轮未提交Ollama config/lib/request/Cargo.toml、新history.rs/history_stream.rs、新tests/history/{mod,stream}.rs、provider测试接线及HANDOFF。futures-util仅从dev移到原有版本的dependency，Cargo.lock未变；HTTP接线已本地验，待文档/提交/精确CI。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama、model/providers/custom/src/catalog.rs、model/providers/google、model/gateway、model/core、runtime/bridge/tests/{real_runtime.rs,fixtures}；其他模块credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
-- 当前本轮本地：Ollama16/0/0、workspace328/0/39、旧实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；精确thinking有有效RED→GREEN，旧guard/call_id复用证据留Ollama文档。测试模块误识别为独立入口已移tests/models/mod.rs并完整重验，不计失败构建为通过。
+- 前一阶段本地：Ollama16/0/0、workspace328/0/39、旧实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；精确thinking有有效RED→GREEN，旧guard/call_id复用证据留Ollama文档。测试模块误识别为独立入口已移tests/models/mod.rs并完整重验，不计失败构建为通过。
+- 新history本地26/0/0、workspace338/0/39、旧Runtime37/0/0、Clippy/fmt/diff通过。日志/tmp/caidex-ollama-history-{codec,json,stream-red,stream-green,provider-final,workspace-final,all-real-final,clippy-final}.log；新代码CI尚待，旧CI不代证。
 - [CI37722533837](https://github.com/bboytang/CAIdex/actions/runs/37722533837)：heada1f7d6c、3job/所有step终态均核对；Ollama16/OpenAI11/Custom7/Google90及旧实际Runtime Linux37/其他36每名各一次。workspace Linux328/Windows323/macOS327，0失败、ignored39/37/37；旧实际Runtime37/36/36，0失败/0ignored；Linux native凭据1、fmt/Clippy/schema/doctor通过。watch、三日志下载、逐名脚本exit0；不是Ollama新Runtime证据。
 - 日志/tmp/caidex-ollama-show-{provider-final,workspace-final,all-real-final,clippy-final}.log、thinking-{red,green}.log；CI/tmp/caidex-ci-37722533837-{status.json,watch.log,linux.log,windows.log,macos.log}，逐名脚本/tmp/caidex-ollama-show-ci-check.py。跨机器以已提交文档/CI为准，/tmp不保证保留。
 - 环境磁盘满已解除：只cargo clean本项目可再生target缓存释放16.9GiB；受截断新测试已恢复并完整复验，10项名字核对，中断运行不计通过。当前不再阻塞；下轮先查df，不累积旧构建缓存。
