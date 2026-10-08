@@ -1,6 +1,6 @@
 # CAIdex Gemini Provider：设计与验收
 
-阶段F/G，执行基准V3，代码在model/providers/google。原生Models/JSON/SSE/历史/工具/图片/推理/结构输出/Runtime参数与六方法/Profile、Registry/Gateway已三平台验收；上阶段源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)，Google88逐平台通过。当前实际Gemini Runtime接线本地已验，唯一审查已完成；提交与新精确源码三平台CI待收尾，见末节与HANDOFF。本阶段不授予Gemini Codex Full。
+阶段F/G，执行基准V3，代码在model/providers/google。原生Models/JSON/SSE/历史/工具/图片/推理/结构输出/Runtime参数与六方法/Profile、Registry/Gateway已三平台验收；上阶段源码530ead5535b6bc6cd8896317b7360c7872a98571/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)，Google88逐平台通过。当前实际Gemini Runtime离线接线已在源码56f9789/CI37717424972三平台验收，唯一审查已完成；下一步兼容API/Ollama，见末节与HANDOFF。本阶段不授予Gemini Codex Full。
 
 ## 原生协议与配置
 
@@ -274,17 +274,17 @@ Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG�
 本阶段六方法/投影/Registry/Gateway离线范围已验收；下一步固定Runtime的实际请求、显式本地context归属、已知unsupported前Key拒绝、支持范围内审批/工具/取消/落盘重启。保持Lite parallelfalse、发现/网页/strict/deferred/后置system门控和完整native request绑定，不改架构，不重做本阶段。
 
 
-## 固定Runtime接线（进行中，未提交/未CI）
+## 固定Runtime接线（三平台离线已验收）
 
 - 固定Codex公开model_catalog_json配置复用gpt-5.5/gpt-6.1-sol模板，仅fixture别名/展示描述和supports_search_tool=false；默认高级工具拒绝仍单独实际验证，非Full。显式web_search=disabled范围避免尚无native等价的网页，不在Gateway过滤声明。
 - GeminiConfig::with_local_runtime_context仅允许3个固定Runtime header留本地，不映射native路由/cache；默认非空与turn-state拒绝保持。GET/JSON/SSE实际HTTP正例与负例1项有效RED→GREEN。
 - 执行端GeminiModel.enforce_single_tool_call默认false；opt-in才允许parallel_tool_calls=false。成功交付前在JSON或SSE正常EOF校验STOP非thought调用数量，超限整轮google_tool_call_limit_exceeded，工具/完整载体/terminal均不发布，无自动重试。tool_choice=none/无tools上限0。裁定：这是本地交付保证，不是Google生成约束；错误成本为原生生成已消耗但整轮报错，不截断/删调用/伪改签名/提示词冒充硬保证。前缀绑定不松动，native wire与历史仍原样。
-- context1、单调用1（JSON/SSE×单调用、双调用、none、MAX_TOKENS）有效RED→GREEN；实际Runtime默认拒绝4模式、经典/Lite三轮签名/落盘重启、Lite执行/MCP/取消与完整套件均已本地通过，唯一审查已完成，待提交与新三平台CI。准确恢复点与日志见HANDOFF.md。
+- context1、单调用1（JSON/SSE×单调用、双调用、none、MAX_TOKENS）有效RED→GREEN；实际Runtime默认拒绝4模式、经典/Lite三轮签名/落盘重启、Lite执行/MCP/取消与完整套件均已本地通过，唯一审查已完成，新三平台CI通过（见本节收尾证据）。准确恢复点与日志见HANDOFF.md。
 
 - 增补本地实际证据：经典/Lite三轮含重启后磁盘恢复；Lite Code Mode审批前无marker，批准后实际生成marker，精确canonical custom call/input/result与native functionResponse、签名content逐值匹配，移除marker后重启不重复执行。经典静态MCP明确禁用发现，echo实际调用/result逐字保留，重启后新MCP进程toolCalls=[]；不宣称Gemini动态发现。classic/Lite interrupt实际socket关闭。新Lite profile实际有效RED→GREEN。
-- 实际双调用负例暴露共享Gateway通用SSE error只被固定Codex用于flex-unavailable，安全code被忽略变成generic断流。固定源码sse/responses.rs/responses_error.rs已核对；共享出口改response.failed/response.error，无成功终态，更新既有坏流/timeout测试；坏流有效RED→GREEN与实际双调用safe code、无审批/执行/载体且1Key/1POST已绿。裁定：共享修复适用于各Adapter，HTTP错误格式不变；新的SSE消费者读取response.error，成本为旧消费者只认error事件时需迁移。完整本地回归及唯一审查已通过，三平台CI尚待，不把本地证据当三平台验收。
+- 实际双调用负例暴露共享Gateway通用SSE error只被固定Codex用于flex-unavailable，安全code被忽略变成generic断流。固定源码sse/responses.rs/responses_error.rs已核对；共享出口改response.failed/response.error，无成功终态，更新既有坏流/timeout测试；坏流有效RED→GREEN与实际双调用safe code、无审批/执行/载体且1Key/1POST已绿。裁定：共享修复适用于各Adapter，HTTP错误格式不变；新的SSE消费者读取response.error，成本为旧消费者只认error事件时需迁移。完整本地回归、唯一审查及精确源码三平台CI均已通过；仅认领本节离线支持范围。
 
-本轮最终本地完整workspace312passed/0failed/39ignored；另完整实际Runtime37passed/0failed/0ignored，Google7各一次，新增Google离线测试合计90。Clippy -D warnings/fmt/diff通过；Python fixture语法解析通过。唯一独立审查已完成，新精确源码三平台CI尚未运行；实际服务与凭据都是合成，固定Runtime证据不授予商业模型Full。
+本轮最终本地完整workspace312passed/0failed/39ignored；另完整实际Runtime37passed/0failed/0ignored，Google7各一次，新增Google离线测试合计90。Clippy -D warnings/fmt/diff通过；Python fixture语法解析通过。唯一独立审查与新精确源码三平台CI已完成；实际服务与凭据都是合成，固定Runtime证据不授予商业模型Full。
 
 
 ### 本轮唯一独立审查与裁定
@@ -308,4 +308,8 @@ Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG�
 13. 本源码Windows/macOS：提交后新精确源码三平台CI是前置，不能用旧CI/Linux代证；Rust macOS不等于iOS。成本是未验新增平台差异，收集新CI后再认领。
 14. 穷举fuzz/极端负载/全坏输入/全部时序：有限回归与已存预算/slot/deadline是现有证据，不声称形式证明。成本是未测边界仍可能拒绝或失败，实际异常再补回归。
 
-最终本地复验日志workspace-final/all-real-final分别312/0/39与37/0/0；Clippy-final exit0，fmt/diff通过。源码准备提交，新CI待收集。
+最终本地复验日志workspace-final/all-real-final分别312/0/39与37/0/0；Clippy-final exit0，fmt/diff通过。
+
+源码56f9789e133d94b657b950405ddbf50214afd56b已提交/push；[CI37717424972](https://github.com/bboytang/CAIdex/actions/runs/37717424972)三平台completed/success，精确head、三job及全部step success/skipped已核对。Google90个名字及新增Google实际Runtime7个名字逐平台各一次。workspace Linux312/Windows307/macOS311，0失败、ignored39/37/37；实际Runtime Linux37/WindowsmacOS36，0失败/0ignored；Linux隔离native credentials1及fmt/Clippy/schema/doctor通过。watch exit0、三job日志下载均exit0，逐名脚本exit0。日志/tmp/caidex-ci-37717424972-{status.json,watch.log,linux.log,windows.log,macos.log}。商业模型Full、comment-only Runtime idle及H–R未验；Rust macOS不等于iOS应用构建。
+
+本节实际Runtime离线阶段已验收；下一步兼容API/Ollama，沿V3与现有Provider/Gateway边界，不重做Gemini已完成阶段。
