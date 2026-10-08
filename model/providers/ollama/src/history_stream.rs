@@ -148,6 +148,13 @@ impl HistoryStream {
                 }
                 self.emit(wire)?;
             }
+            "response.custom_tool_call_input.delta" | "response.custom_tool_call_input.done"
+                if self.tools.is_some() =>
+            {
+                // Native declarations only expose functions. Custom input is
+                // produced locally after validation, never forwarded natively.
+                return Err(ProviderError::new(502, "ollama_invalid_native_tools"));
+            }
             "response.output_item.done"
             | "response.function_call_arguments.delta"
             | "response.function_call_arguments.done"

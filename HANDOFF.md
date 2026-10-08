@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-F/G：Ollama native namespace/function与client tool_search已三平台离线验收，源码40edb9a40975ade7690a946596e85a8fdb7cc56e已push，[CI37779554830](https://github.com/bboytang/CAIdex/actions/runs/37779554830)精确head全部job/step与完整逐名日志通过。已有真实Runtime四模式拒绝证据，仍无Ollama工具正例。本轮custom/freeform映射和v2绑定已本地实现/验证，源码提交与三平台CI待完成；deferred/Lite与固定Runtime正例随后；整体F/G及H–R未完成。
+F/G：Ollama native namespace/function与client tool_search已三平台离线验收，源码40edb9a40975ade7690a946596e85a8fdb7cc56e已push，[CI37779554830](https://github.com/bboytang/CAIdex/actions/runs/37779554830)精确head全部job/step与完整逐名日志通过。已有真实Runtime四模式拒绝证据，仍无Ollama工具正例。本轮custom/freeform映射和v2绑定已本地实现/验证，首版源码8540ecd已push、Linux/Windows CI已过；复核发现native custom输入事件可提前流出，已有有效RED和拒绝守卫/第7项回归，修正版最终workspace370/0/40、固定Runtime38/0/0及Clippy/fmt/diff已通过；旧CI不代验修正版；deferred/Lite与固定Runtime正例随后；整体F/G及H–R未完成。
 
 ## 已完成
 
@@ -44,7 +44,7 @@ F/G：Ollama native namespace/function与client tool_search已三平台离线验
 
 ## Git / 文件 / 验证
 
-- branch main跟踪origin/main；本轮源码40edb9a40975ade7690a946596e85a8fdb7cc56e已push，CI成功。当前HEAD/origin main 4c4dfc5，开始时干净；未提交Ollama mapped_tools、lib/request/tools、history/history_stream、tests/tools及HANDOFF；Provider/v2/SSE已接线，最终本地回归通过，源码提交/三平台CI待完成。无依赖变更。
+- branch main跟踪origin/main；当前源码HEAD/origin main 8540ecda107d2ffe65be7202329730a56e73aa1d，已push。首版提交后干净；目前未提交history_stream守卫、tests/tools/mapped第7项与HANDOFF，修正版最终本地回归通过，待提交/push/新head三平台CI。无依赖变更。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama/src/{tools,runtime,structured,request,history,history_stream,lib}、tests/{tools,runtime,structured,content,history}；其他模块model/providers/custom、model/core、model/gateway、runtime/bridge/tests/{real_runtime.rs,fixtures}、credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
 - jsonschema固定0.58.6、只开arbitrary-precision、强制Offline retriever，无HTTP/file解析；新增41依赖，无既有包升级/删除，hashbrown启用依赖、bit-vec/r-efi更新多版本标识，base64保持0.22.1。标准Schema按库draft/约束校验，未知format拒绝，未知注释保留。同步求值有字节/Regex回溯限制，不承诺硬CPU抢占，留Host隔离；不重试或修补坏回答。
 - 前阶段严格输出源码bd3995e/CI37770508610三平台已通过；详细依赖/Schema/JSON/SSE与历史验收证据留docs/Ollama，不重做。
@@ -62,4 +62,4 @@ F/G：Ollama native namespace/function与client tool_search已三平台离线验
 
 - 工具三平台收尾：CI37779554830精确head 40edb9a，3job/全部step终态成功或条件跳过；完整原始日志逐名Ollama51/OpenAI11/Custom7/Google90与固定Runtime各一次。workspace Linux363/Windows358/macOS362，0失败、ignored40/38/38；Runtime38/37/37，0失败/0ignored，Ollama新opt-in第四模式只为拒绝边界。Linux native credentials1及fmt/Clippy/schema/doctor通过。日志/tmp/caidex-ci-37779554830-{status.json,watch.log,linux-raw.log,windows-raw.log,macos-raw.log}（1910/1591/1602行）及step标注日志，/tmp/caidex-ollama-native-tools-ci-{normalize,check}.py，watch/下载/check exit0。macOS排队后正常完成，没有重启/重跑；跨机器以原CI/提交文档为准。
 
-- 当前恢复点：断开前只有未接入的mapped_tools草稿，已修正多行grammar被名称control-char校验误拒绝。本轮with_custom_tools_as_functions显式opt-in已接NativeTools/JSON/SSE与NativeHistory v2，绑定original tools/search results及actual native tools；逐前缀发现子集、原始arguments字符串回放，custom结果kind配对，输入事件仅终态校验后交付。旧v1保留且禁止v1/v2混用，grammar只作指导，无native constrained decoding。6项新增（Ollama57逐名一次）；有效RED旧400→GREEN；最终workspace369/0/40、固定Runtime38/0/0、Clippy全targets-D warnings/fmt/diff通过，日志/tmp/caidex-ollama-custom-{red,green,workspace-final,all-real-final,clippy-final}.log。测试曾误用RequestContext.clone，已改为复制cancellation token并完整重验；失败不计通过。恢复时先核对Git和源码提交/push→精确head三平台CI→文档收尾。deferred/Lite/真实Runtime工具正例仍未做，无新依赖。
+- 当前恢复点：断开前只有未接入的mapped_tools草稿，已修正多行grammar被名称control-char校验误拒绝。本轮with_custom_tools_as_functions显式opt-in已接NativeTools/JSON/SSE与NativeHistory v2，绑定original tools/search results及actual native tools；逐前缀发现子集、原始arguments字符串回放，custom结果kind配对，输入事件仅终态校验后交付。旧v1保留且禁止v1/v2混用，grammar只作指导，无native constrained decoding。7项新增（Ollama58逐名一次）；有效RED旧400→GREEN；最终workspace370/0/40、固定Runtime38/0/0、Clippy全targets-D warnings/fmt/diff通过，日志/tmp/caidex-ollama-custom-{red,green,workspace-final,all-real-final,clippy-final}.log。测试曾误用RequestContext.clone，已改为复制cancellation token并完整重验；失败不计通过。复核新发现共享stream默认分支可转发服务端custom input delta/done，首版8540ecd不是最终版本；有效RED已复现。已在NativeTools守卫路径拒绝这些native事件，保留本地终态后投影；第7项两种事件边界/关闭socket回归已补。修正版最终workspace370/0/40、固定Runtime38/0/0、Clippy/fmt/diff通过；日志/tmp/caidex-ollama-custom-native-event-{red,green}.log及custom-{workspace-final,all-real-final,clippy-final}.log。恢复先核对Git→修正版提交/push→以新head三平台CI验收；旧CI37785263569不代验修正版。deferred/Lite/真实Runtime工具正例仍未做，无新依赖。

@@ -487,3 +487,54 @@ async fn custom_stream_emits_input_events_only_after_valid_terminal_and_preserve
         }
     }
 }
+
+#[tokio::test]
+async fn custom_native_input_events_cannot_bypass_terminal_projection_guard() {
+    for kind in [
+        "response.custom_tool_call_input.delta",
+        "response.custom_tool_call_input.done",
+    ] {
+        let injected = json!({"type":kind,"sequence_number":1,"item_id":"fc_c1","output_index":0,"delta":"premature input","input":"premature input"});
+        let native = terminal(vec![call("c1")]);
+        let body = format!(
+            "{CREATED}data: {injected}\n\ndata: {}\n\n",
+            json!({"type":"response.completed","sequence_number":2,"response":native})
+        );
+        let mut fixture = Fixture::start(vec![Reply::stream(body)]).await;
+        let (broker, _) = broker();
+        let provider = fixture
+            .provider(broker, true)
+            .with_custom_tools_as_functions();
+        let mut events = provider
+            .stream_response(
+                request(
+                    json!({"model":"fixture","input":"patch","tools":[custom()],"stream":true}),
+                ),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap()
+            .events;
+        let mut failed = false;
+        while let Some(event) = events.next().await {
+            match event {
+                Err(error) => {
+                    assert_eq!(error.http_status, 502);
+                    failed = true;
+                }
+                Ok(ProviderStreamEvent::Model(event)) => {
+                    assert_ne!(
+                        event.response.kind(),
+                        kind,
+                        "native custom input must never be delivered before validation"
+                    );
+                    assert!(event.response.terminal().is_none());
+                    assert_ne!(event.response.kind(), "response.output_item.done");
+                }
+                _ => (),
+            }
+        }
+        assert!(failed);
+        fixture.disconnected().await;
+    }
+}
