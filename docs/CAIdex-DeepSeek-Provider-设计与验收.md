@@ -28,3 +28,5 @@
 ## 验证状态
 
 当前仅上述经典基础目录/JSON/SSE/Gateway本地范围通过；工具/高级参数/媒体/推理控制与history/Lite/实际DeepSeek Runtime/三平台/Live/Full仍待。整体F/G与H–R未完成，测试fixture不证明真实模型能力。
+
+基础源码已提交/push：`2967f56a7788ee90375f1e970e4500567a61cfd3`；[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)正在运行，尚不认领三平台通过。预期workspace391/386/390（0failed，ignored45/43/43）、既有Runtime43/42/42；完整逐名日志须包含DeepSeek10及既有Provider回归。状态记录 `/tmp/caidex-ci-37824041219-status.json`，脚本 `/tmp/caidex-deepseek-basic-ci-{normalize,check,available}.py`。
