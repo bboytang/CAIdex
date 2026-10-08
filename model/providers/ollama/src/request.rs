@@ -344,13 +344,11 @@ fn output_format(wire: &mut Value, enabled: bool) -> ProviderResult<()> {
             {
                 return Err(invalid());
             }
-            // Native forwards schema but ignores strict and wrapper guidance.
-            // Preserve the schema verbatim; hard strict semantics need their
-            // own grammar/output validation before enabling them.
-            if format["strict"] == true
-                || format
-                    .get("description")
-                    .is_some_and(|description| !description.is_null())
+            // Native ignores strict; the delivery guard enforces it. Wrapper
+            // guidance has no native mapping, so it still requires rejection.
+            if format
+                .get("description")
+                .is_some_and(|description| !description.is_null())
             {
                 return Err(unsupported());
             }

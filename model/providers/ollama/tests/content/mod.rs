@@ -142,7 +142,7 @@ async fn media_sources_detail_invalid_bytes_and_unmapped_formats_fail_before_key
         json!({"verbosity":"high"}),
         json!({"format":{"type":"future_format"}}),
         json!({"format":{"type":"json_schema","name":"bad name","schema":{}}}),
-        json!({"format":{"type":"json_schema","name":"fixture","strict":true,"schema":{}}}),
+        json!({"format":{"type":"json_schema","name":"fixture","strict":"invalid","schema":{}}}),
         json!({"format":{"type":"json_schema","name":"fixture","schema":[],"strict":false}}),
         json!({"format":{"type":"json_schema","name":"fixture","schema":{},"description":"model guidance"}}),
     ] {

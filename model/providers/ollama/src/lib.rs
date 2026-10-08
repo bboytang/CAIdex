@@ -4,6 +4,7 @@ mod history;
 mod history_stream;
 mod models;
 mod request;
+mod structured;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits, NativeModel};
 pub use config::OllamaConfig;
@@ -98,8 +99,8 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         self.images = true;
         self
     }
-    /// Opt in to native non-strict JSON Schema output. The native decoder
-    /// ignores `strict`, so hard strict guarantees are not advertised.
+    /// Opt in to native JSON Schema output. For strict requests, validate the
+    /// completed answer locally before releasing terminal output or tools.
     pub fn with_structured_output(mut self) -> Self {
         self.structured_output = true;
         self
@@ -252,10 +253,19 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
             let request = self.prepare(request, &context)?;
+            let strict = structured::StrictOutput::compile(&request)?;
             let native_model = self.metadata(request.model())?.native_model;
             let native_request = history::native_request(&request, &native_model)?;
+            let delivery_context = RequestContext {
+                cancellation: context.cancellation.clone(),
+                deadline: context.deadline,
+                ..Default::default()
+            };
             let mut response = self.responses.create_response(request, context).await?;
             response_headers_guard(&response.headers)?;
+            if let Some(strict) = &strict {
+                strict.validate(&response.response)?;
+            }
             if self.native_history {
                 response.response = NativeHistory::from_response(
                     &self.config,
@@ -268,6 +278,9 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
                 .to_responses(self.history_bytes)
                 .map_err(history::native_error)?;
             }
+            if strict.is_some() {
+                context_guard(&delivery_context)?;
+            }
             Ok(response)
         })
     }
@@ -278,6 +291,7 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
             let request = self.prepare(request, &context)?;
+            let strict = structured::StrictOutput::compile(&request)?;
             let native_model = self.metadata(request.model())?.native_model;
             let native_request = history::native_request(&request, &native_model)?;
             let total = std::time::Instant::now() + self.limits.total_timeout;
@@ -288,14 +302,15 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
             };
             let mut response = self.responses.stream_response(request, context).await?;
             response_headers_guard(&response.headers)?;
-            if self.native_history {
+            if self.native_history || strict.is_some() {
                 response.events = Box::pin(history_stream::HistoryStream::new(
                     response.events,
-                    self.config.replay_scope(),
+                    self.native_history.then(|| self.config.replay_scope()),
                     native_model,
                     native_request,
                     history_context,
                     self.limits.clone(),
+                    strict,
                 ));
             }
             Ok(response)

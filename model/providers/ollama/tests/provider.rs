@@ -2,6 +2,7 @@
 mod content;
 mod history;
 mod models;
+mod structured;
 use caidex_credentials::{Broker, CredentialRef, Id, Secret, SecretKind, SecretStore};
 use caidex_model_core::{
     CancellationToken, CanonicalRequest, ContextHeaders, CredentialRequirement, EvidenceSource,

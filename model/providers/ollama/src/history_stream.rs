@@ -1,4 +1,4 @@
-use crate::{Limits, NativeHistory};
+use crate::{Limits, NativeHistory, structured::StrictOutput};
 use caidex_model_core::{
     CanonicalRequest, CanonicalResponse, ProviderError, ProviderResult, ProviderStream,
     ProviderStreamEvent, RequestContext, ResponseEvent, SseEvent, StreamEvent, StreamState,
@@ -19,7 +19,8 @@ fn invalid() -> ProviderError {
 /// incremental; complete history/tools wait for a validated typed terminal.
 pub(crate) struct HistoryStream {
     native: Option<ProviderStream>,
-    scope: Value,
+    scope: Option<Value>,
+    strict: Option<StrictOutput>,
     model: String,
     request: CanonicalRequest,
     context: RequestContext,
@@ -37,15 +38,18 @@ pub(crate) struct HistoryStream {
 impl HistoryStream {
     pub(crate) fn new(
         native: ProviderStream,
-        scope: Value,
+        scope: Option<Value>,
         model: String,
         request: CanonicalRequest,
         context: RequestContext,
         limits: Limits,
+        strict: Option<StrictOutput>,
     ) -> Self {
         Self {
             native: Some(native),
+            next_index: u64::from(scope.is_some()),
             scope,
+            strict,
             model,
             request,
             context,
@@ -55,7 +59,6 @@ impl HistoryStream {
             pending: VecDeque::new(),
             indices: HashMap::new(),
             added: HashSet::new(),
-            next_index: 1,
             sequence: 0,
             reasoning_id: None,
             terminal: false,
@@ -97,17 +100,24 @@ impl HistoryStream {
                 self.reasoning_id = Some(reasoning_id.clone());
                 wire["response"]["output"] = json!([]);
                 self.emit(wire)?;
-                self.emit(json!({"type":"response.output_item.added","output_index":0,"item":{"type":"reasoning","id":reasoning_id,"summary":[]}}))?;
+                if self.scope.is_some() {
+                    self.emit(json!({"type":"response.output_item.added","output_index":0,"item":{"type":"reasoning","id":reasoning_id,"summary":[]}}))?;
+                }
             }
             "response.output_item.added" => {
-                if wire["item"]["type"] != "reasoning" {
+                if self.scope.is_none() || wire["item"]["type"] != "reasoning" {
                     let source = wire["output_index"].as_u64().ok_or_else(invalid)?;
-                    if self.indices.insert(source, self.next_index).is_some() {
+                    let target = if self.scope.is_some() {
+                        self.next_index
+                    } else {
+                        source
+                    };
+                    if self.indices.insert(source, target).is_some() {
                         return Err(invalid());
                     }
-                    wire["output_index"] = self.next_index.into();
+                    wire["output_index"] = target.into();
                     self.next_index = self.next_index.checked_add(1).ok_or_else(invalid)?;
-                    if wire["item"]["type"] == "message" {
+                    if wire["item"]["type"] == "message" || wire["item"]["type"] == "reasoning" {
                         let id = wire["item"]["id"].as_str().ok_or_else(invalid)?.to_owned();
                         self.added.insert(id);
                         self.emit(wire)?;
@@ -125,13 +135,15 @@ impl HistoryStream {
                 self.emit(wire)?;
             }
             "response.reasoning_summary_text.delta" | "response.reasoning_summary_part.added" => {
-                wire["output_index"] = 0.into();
-                wire["item_id"] = self
-                    .reasoning_id
-                    .as_ref()
-                    .ok_or_else(invalid)?
-                    .clone()
-                    .into();
+                if self.scope.is_some() {
+                    wire["output_index"] = 0.into();
+                    wire["item_id"] = self
+                        .reasoning_id
+                        .as_ref()
+                        .ok_or_else(invalid)?
+                        .clone()
+                        .into();
+                }
                 self.emit(wire)?;
             }
             "response.output_item.done"
@@ -153,24 +165,33 @@ impl HistoryStream {
                     let response =
                         CanonicalResponse::new(wire["response"].clone()).map_err(|_| invalid())?;
                     let budget = self.limits.request_bytes.min(self.limits.response_bytes);
-                    let projected = NativeHistory::stream_record(
-                        &self.scope,
-                        &self.model,
-                        &self.request,
-                        &response,
-                        &self.chunks,
-                        budget,
-                    )
-                    .map_err(crate::history::native_error)?
-                    .to_responses(budget)
-                    .map_err(crate::history::native_error)?;
+                    if let Some(strict) = &self.strict {
+                        strict.validate(&response)?;
+                    }
+                    let projected = if let Some(scope) = &self.scope {
+                        NativeHistory::stream_record(
+                            scope,
+                            &self.model,
+                            &self.request,
+                            &response,
+                            &self.chunks,
+                            budget,
+                        )
+                        .map_err(crate::history::native_error)?
+                        .to_responses(budget)
+                        .map_err(crate::history::native_error)?
+                    } else {
+                        crate::history::validate_chunks(&response, &self.chunks, budget)
+                            .map_err(crate::history::native_error)?;
+                        response.clone()
+                    };
                     for (index, item) in projected.output().iter().enumerate() {
                         if item["type"] == "function_call"
                             && response.state() != StreamState::Completed
                         {
                             continue;
                         }
-                        if item["type"] != "reasoning"
+                        if !(self.scope.is_some() && item["type"] == "reasoning")
                             && !item["id"]
                                 .as_str()
                                 .is_some_and(|id| self.added.contains(id))

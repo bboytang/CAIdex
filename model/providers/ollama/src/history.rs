@@ -121,48 +121,7 @@ impl NativeHistory {
             Some("json") if history.0.get("chunks").is_none() => (),
             Some("sse") => {
                 let chunks = history.0["chunks"].as_array().ok_or_else(invalid)?;
-                let mut parser = ResponsesStream::new(max_bytes).map_err(|_| invalid())?;
-                let mut terminal = None;
-                for chunk in chunks {
-                    for event in parser
-                        .push(format!("data: {chunk}\n\n").as_bytes())
-                        .map_err(|_| invalid())?
-                    {
-                        if event.response.terminal().is_some() {
-                            terminal = event.response.wire().get("response").cloned();
-                        }
-                    }
-                }
-                parser.finish().map_err(|_| invalid())?;
-                if terminal.as_ref() != Some(response.wire()) {
-                    return Err(invalid());
-                }
-                for chunk in chunks {
-                    if let Some("response.output_item.done" | "response.output_item.added") =
-                        chunk["type"].as_str()
-                    {
-                        let index = chunk["output_index"]
-                            .as_u64()
-                            .and_then(|index| usize::try_from(index).ok())
-                            .ok_or_else(invalid)?;
-                        let final_item = response.output().get(index).ok_or_else(invalid)?;
-                        let item = &chunk["item"];
-                        if chunk["type"] == "response.output_item.done" {
-                            if item != final_item {
-                                return Err(invalid());
-                            }
-                        } else {
-                            for field in ["type", "id", "role", "name", "call_id", "namespace"] {
-                                if item
-                                    .get(field)
-                                    .is_some_and(|value| final_item.get(field) != Some(value))
-                                {
-                                    return Err(invalid());
-                                }
-                            }
-                        }
-                    }
-                }
+                validate_chunks(&response, chunks, max_bytes)?;
             }
             _ => return Err(invalid()),
         }
@@ -345,4 +304,55 @@ pub(crate) fn expand(
         return Err(ProviderError::new(413, "invalid_or_oversized_body"));
     }
     CanonicalRequest::new(wire, request.dialect()).map_err(|_| invalid())
+}
+
+// Both history projection and strict-only delivery use the same terminal checks.
+pub(crate) fn validate_chunks(
+    response: &CanonicalResponse,
+    chunks: &[Value],
+    max_bytes: usize,
+) -> ProviderResult<()> {
+    let mut parser = ResponsesStream::new(max_bytes).map_err(|_| invalid())?;
+    let mut terminal = None;
+    for chunk in chunks {
+        for event in parser
+            .push(format!("data: {chunk}\n\n").as_bytes())
+            .map_err(|_| invalid())?
+        {
+            if event.response.terminal().is_some() {
+                terminal = event.response.wire().get("response").cloned();
+            }
+        }
+    }
+    parser.finish().map_err(|_| invalid())?;
+    if terminal.as_ref() != Some(response.wire()) {
+        return Err(invalid());
+    }
+    for chunk in chunks {
+        if let Some("response.output_item.done" | "response.output_item.added") =
+            chunk["type"].as_str()
+        {
+            let index = chunk["output_index"]
+                .as_u64()
+                .and_then(|index| usize::try_from(index).ok())
+                .ok_or_else(invalid)?;
+            let final_item = response.output().get(index).ok_or_else(invalid)?;
+            let item = &chunk["item"];
+            if chunk["type"] == "response.output_item.done" {
+                if item != final_item {
+                    return Err(invalid());
+                }
+            } else {
+                for field in ["type", "id", "role", "name", "call_id", "namespace"] {
+                    if item
+                        .get(field)
+                        .is_some_and(|value| final_item.get(field) != Some(value))
+                    {
+                        return Err(invalid());
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
