@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 18:39 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。
+更新：2026-10-08 18:47 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。
 
 ## 当前任务
 
-F/G：DeepSeek基础三平台已验；新增显式Runtime上下文与verbosity适配已提交/push为 `6742b151b225bb695c673331ead808ecbdbc61e9`，本地完整通过，精确[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)进行中。上下文适配不等于实际DeepSeek Runtime接线；工具/namespace/Lite/明文reasoning绑定历史/Live/Full仍未完成，完整F/G、H–R未完成。
+F/G：DeepSeek基础及新增显式Runtime上下文/verbosity适配均已提交/push并三平台完整逐名验收。最新源码 `6742b151b225bb695c673331ead808ecbdbc61e9`/[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)整体completed/success，DeepSeek16、workspace397/392/396、旧Runtime43/42/42均通过。下一步DeepSeek工具/namespace与明文reasoning绑定历史；当前无未完成源码。上下文适配不等于实际DeepSeek Runtime接线，tools/Lite/Live/Full及完整F/G、H–R未完成。
 
 ## 已完成 / 验证
 
@@ -12,12 +12,12 @@ F/G：DeepSeek基础三平台已验；新增显式Runtime上下文与verbosity�
 - F/G基础：canonical经典/Lite、Provider六方法/Registry证据门槛、共享Custom transport、本地Gateway独立token/取消/背压/TLS/安全错误；OpenAI原生。Anthropic/Gemini原生适配及固定Classic/Lite离线Runtime已三平台验；具体未支持能力和债务见对应docs。
 - Ollama当前离线范围：原生目录/show/thinking/媒体/结构/绑定v1v2历史/namespace/custom/deferred/Lite；固定Classic MCP与Lite Code Mode审批、隔离执行、取消、磁盘恢复不重跑。精确f25179bf6e5446735b2323fc5169007ecfea947a/[CI37818503514](https://github.com/bboytang/CAIdex/actions/runs/37818503514)完整3job/17steps及逐名通过：workspace381/376/380，Runtime43/42/42。真实daemon/模型/Live未验；不重造Adapter或执行器。
 - DeepSeek基础 `2967f56a7788ee90375f1e970e4500567a61cfd3`/[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)：原生Models不要求created，完整未知字段/大数、六方法/配置交集、经典文本JSON/SSE/Gateway与独立deepseek Bearer。3job/17steps及完整raw逐名通过，workspace391/386/390（0failed，ignored45/43/43），旧Runtime43/42/42（0failed/ignored）、Linux native credentials1。job Linux113472119918/Windows113472119538/macOS113472119894，raw1962/1649/1660行；DeepSeek10/Ollama69/OpenAI11/Custom7/Google90每名一次。watch77797、下载98157及normalize/check/available均exit0，校验在精确源码归档执行。
-- DeepSeek新增上下文 `6742b15`：with_runtime_context只消费本地3头/client_metadata/cache，前置developer→system保留优先级；with_verbosity_instruction用执行端配置追加原instructions，未映射/重复映射拒绝。请求/响应未绑定turn-state拒绝，SSE实际断连/slot复用；原始及编译后预算、取消/deadline保持。新增6项/共16项、完整workspace397/0/45、Clippy全workspace/all-targets-D warnings、fmt/diff本地通过。有效RED禁用本地编译后编译成功、运行400失败；finally恢复正确源码后完整GREEN。无新依赖/共享生产源码/Runtime/workflow改动；此范围三平台待验。
+- DeepSeek新增上下文 `6742b15`：with_runtime_context只消费本地3头/client_metadata/cache，前置developer→system保留优先级；with_verbosity_instruction用执行端配置追加原instructions，未映射/重复映射拒绝。请求/响应未绑定turn-state拒绝，SSE实际断连/slot复用；原始及编译后预算、取消/deadline保持。新增6项/共16项、完整workspace397/0/45、Clippy全workspace/all-targets-D warnings、fmt/diff本地通过。有效RED禁用本地编译后编译成功、运行400失败；finally恢复正确源码后完整GREEN。无新依赖/共享生产源码/Runtime/workflow改动；此范围精确6742b15三平台已验（见当前任务及下方证据）。
 
 ## 下一步顺序
 
-1. 继续观察精确6742b15的CI37825726756，核对所有3job/17steps与完整逐名日志。预期workspace397/392/396（0failed，ignored45/43/43）、旧Runtime43/42/42、DeepSeek16/Ollama69/OpenAI11/Custom7/Google90每名一次；旧43项Runtime不是DeepSeek正例。完成后同步README/docs/本文件并push文档。无源码变化不重跑已验本地全套/旧CI；只观察现有handle，不因观察超时重启job。
-2. 随后DeepSeek工具/namespace、明文reasoning与绑定历史、Lite custom Code Mode/本地单调用交付、固定实际Runtime审批/执行/取消/重启。原生忽略/降级的字段必须明确编译或拒绝，原始声明与native编译结果一起绑定；不得丢弃历史或用仅Adapter fixture代替实际Runtime。再Qwen/OpenRouter；未经另行授权不调用商业API或下载模型。
+1. DeepSeek工具/namespace、明文reasoning与绑定历史：先检查现有Ollama/Gemini/Anthropic codec和原生契约，再增加有效回归并最小实现。原生忽略/降级字段明确编译或拒绝，原始声明与native编译结果一起绑定。函数名仅ASCII字母/数字/_/-、最多128字符且唯一，不能直接复用Ollama点号namespace；effort别名/采样钳制见docs/DeepSeek新段。不得丢弃历史或用Adapter fixture代替实际Runtime。
+2. 随后Lite custom Code Mode/本地单调用交付、固定实际Runtime审批/执行/取消/磁盘重启，再Qwen/OpenRouter。每一步定向/相关回归、精确源码CI及交接；无源码变化不重跑已验本地全套/旧CI，不派重复独立审查。未经另行授权不调用商业API或下载模型。
 3. 按V3继续H Host/持久化、I Chat/同步 → Windows → SSH/iOS → CLI → Relay → R最终验收；iOS在GitHub建立真正simulator测试/无签名archive，Rust macOS CI不代表iOS。
 
 ## 重要架构决定
@@ -38,8 +38,10 @@ F/G：DeepSeek基础三平台已验；新增显式Runtime上下文与verbosity�
 
 ## Git / 环境 / 相关文件
 
-- branch main；最新源码6742b151b225bb695c673331ead808ecbdbc61e9已push，源码已提交。当前仅HANDOFF及docs/DeepSeek更新精确CI恢复点，随后文档提交；实际HEAD/未提交状态以git status为准。基础新增path crate仅使用既有固定依赖，上下文阶段无依赖变化。
+- branch main；最新源码6742b151b225bb695c673331ead808ecbdbc61e9已提交/push，后续提交只同步HANDOFF、README及docs/DeepSeek/Model-Gateway验收与原生约束。无未完成源码；本轮文档随收尾提交，恢复时以git status确认精确HEAD/工作区。基础新增path crate仅使用既有固定依赖，上下文阶段无依赖变化。
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约10G可用，修改前先df，不清源码/凭据/保护目录。
 - 当前代码：model/providers/deepseek/src/{lib,config,catalog,request}.rs、tests/provider.rs；共享model/providers/custom、model/core、model/gateway、credentials/core；实际Runtime在runtime/bridge/tests/real_runtime.rs及fixtures。基准docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅需求背景。
 - 本地日志：/tmp/caidex-deepseek-context-{red,green,workspace,clippy}.log；正确request备份/tmp/caidex-deepseek-context-request-green.rs。有效RED1834、定向55892、完整3561均exit0；测试计数不是编译失败或初次空日志检查。
 - CI证据：/tmp/caidex-ci-37824041219-{status.json,watch.log,linux-raw.log,windows-raw.log,macos-raw.log}及标注日志；旧基础校验归档/tmp/caidex-deepseek-basic-ci-source。新增CI状态/tmp/caidex-ci-37825726756-status.json；校验脚本/tmp/caidex-deepseek-context-ci-{normalize,check,available}.py，在精确6742b15归档/tmp/caidex-deepseek-context-ci-source执行，不能用后续工作区新增测试代验旧head。跨机器以已提交docs和原CI为准。
+
+- 最新CI收尾：6742b15/37825726756的3job/17steps均completed且成功或条件跳过，Linux113477961713/Windows113477962030/macOS113477961883完整raw1968/1655/1666行。workspace397/392/396（0failed，ignored45/43/43）、旧Runtime43/42/42（0failed/ignored）、Linux native credentials1；DeepSeek16/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每平台每名一次。watch53780、最终下载13789及normalize/check/available均exit0，在精确6742b15归档核对；所有工具handle已结束，无待运行测试/CI。原始/标注日志/tmp/caidex-ci-37825726756-{linux,windows,macos}-raw.log及同名前缀.log/status.json/watch.log。实际DeepSeek Runtime/Live仍未验。

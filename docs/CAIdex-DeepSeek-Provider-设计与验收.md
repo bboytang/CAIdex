@@ -1,6 +1,6 @@
 # CAIdex DeepSeek Provider：协议基线与验收
 
-2026-10-08核对官方文档；经典基础Adapter和10项离线回归已三平台通过；新增上下文适配及6项回归完整本地通过，精确三平台待验，实际DeepSeek Runtime/真实模型未验。继续V3的共享Custom transport/Broker与固定Runtime，不运行官方安装脚本或改写用户Codex配置。
+2026-10-08核对官方文档；经典基础Adapter和10项离线回归已三平台通过；新增上下文适配及6项回归亦已精确三平台通过，实际DeepSeek Runtime/真实模型未验。继续V3的共享Custom transport/Broker与固定Runtime，不运行官方安装脚本或改写用户Codex配置。
 
 ## 已核对的原生契约
 
@@ -23,20 +23,31 @@
 
 ## 下一步
 
-基础三平台已收尾；先完成新增上下文适配检查/提交/精确三平台，再按真实固定Runtime请求逐项接工具/namespace、明文reasoning和绑定历史、Lite custom Code Mode/单调用策略。对原生忽略但用户依赖的字段明确拒绝或以显式策略编译，源声明与编译历史继续绑定；实际Runtime/Live证据分别记录。Qwen/OpenRouter随后按各自原生契约核对，不从“OpenAI-compatible”标签推定相同能力。
+基础与上下文适配三平台已收尾；下一步按真实固定Runtime请求逐项接工具/namespace、明文reasoning和绑定历史、Lite custom Code Mode/单调用策略。对原生忽略但用户依赖的字段明确拒绝或以显式策略编译，源声明与编译历史继续绑定；实际Runtime/Live证据分别记录。Qwen/OpenRouter随后按各自原生契约核对，不从“OpenAI-compatible”标签推定相同能力。
 
 ## 验证状态
 
-上述经典基础目录/JSON/SSE/Gateway范围三平台通过；新增上下文适配完整本地通过、三平台待验。工具/其他高级参数/媒体/推理控制与history/Lite/实际DeepSeek Runtime/Live/Full仍待。整体F/G与H–R未完成，测试fixture不证明真实模型能力。
+上述经典基础目录/JSON/SSE/Gateway范围三平台通过；新增上下文适配亦三平台通过。工具/其他高级参数/媒体/推理控制与history/Lite/实际DeepSeek Runtime/Live/Full仍待。整体F/G与H–R未完成，测试fixture不证明真实模型能力。
 
 基础源码`2967f56a7788ee90375f1e970e4500567a61cfd3`/[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)整体completed/success，各3job/17steps成功或条件跳过。完整raw Linux1962/Windows1649/macOS1660行，workspace391/386/390（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored），Linux native credentials1；DeepSeek10/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每名每平台一次。watch77797、下载98157及normalize/check/available均exit0；原始/标注日志 `/tmp/caidex-ci-37824041219-{linux,windows,macos}-raw.log`及同前缀.log/status.json/watch.log，校验脚本 `/tmp/caidex-deepseek-basic-ci-{normalize,check,available}.py`在精确2967f56归档执行。这不验证后续上下文适配或DeepSeek实际Runtime/Live。
 
-## 当前上下文适配（完整本地通过，三平台待验）
+## 已验收上下文适配（三平台通过）
 
 沿用现有Provider显式构造策略：`with_runtime_context`仅允许3个本地归属头session_id/x-client-request-id/x-codex-turn-metadata并清空后发起原生GET/POST，取消/deadline保持；client_metadata仅字符串值，prompt_cache_key非空无控制字符，两者只在本地消费，不承诺原生缓存/归属持久化。只将对话前developer消息编译为system；对话开始后developer拒绝，不接受原生降级user。
 
 `with_verbosity_instruction`由执行端为low/medium/high配置非空指令，重复映射拒绝；请求的verbosity必须已映射，移除原生无效果字段并追加到原instructions，原文/中文文本/已有system不改。null选项仅无意义值允许。原始body与扩展后body均检查预算。请求和响应的未绑定x-codex-turn-state分别400/502拒绝，SSE关闭真实socket并释放slot。默认构造仍拒绝这些Runtime参数；tools/reasoning输入/summary/context/include/Lite仍拒绝，不能据此认领完整固定Runtime。
 
-新增6项离线回归：JSON/SSE优先指令与verbosity/nullable精确native wire，本地控制畸形/后置developer/未实现history拒绝且零Key/POST，执行端映射校验，原始及扩展预算，目录归属/取消/deadline及native turn-state断连/slot复用，实际Gateway原instructions/本地token隔离。共16项定向通过，日志 `/tmp/caidex-deepseek-context-green.log`；有效RED临时禁用本地编译，测试编译成功并运行400失败，正确源码finally恢复（同前缀red.log）。正确源码finally恢复后完整workspace397/0/45（DeepSeek16每名一次）、Clippy全workspace/all-targets-D warnings/fmt/diff通过，日志同前缀{workspace,clippy}.log；新精确提交三平台待验。无新依赖/共享生产源码/Runtime/workflow修改。
+新增6项离线回归：JSON/SSE优先指令与verbosity/nullable精确native wire，本地控制畸形/后置developer/未实现history拒绝且零Key/POST，执行端映射校验，原始及扩展预算，目录归属/取消/deadline及native turn-state断连/slot复用，实际Gateway原instructions/本地token隔离。共16项定向通过，日志 `/tmp/caidex-deepseek-context-green.log`；有效RED临时禁用本地编译，测试编译成功并运行400失败，正确源码finally恢复（同前缀red.log）。正确源码finally恢复后完整workspace397/0/45（DeepSeek16每名一次）、Clippy全workspace/all-targets-D warnings/fmt/diff通过，日志同前缀{workspace,clippy}.log；精确6742b15随后通过三平台，见下方完整日志证据。无新依赖/共享生产源码/Runtime/workflow修改。
 
-上下文源码已提交/push：`6742b151b225bb695c673331ead808ecbdbc61e9`；[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)进行中，不借基础2967f56的CI代验。预期workspace397/392/396、旧Runtime43/42/42、DeepSeek16逐名一次；校验脚本 `/tmp/caidex-deepseek-context-ci-{normalize,check,available}.py`在精确6742b15归档上执行。
+上下文源码`6742b151b225bb695c673331ead808ecbdbc61e9`/[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)整体completed/success，3job/17steps均成功或条件跳过。Linux113477961713/Windows113477962030/macOS113477961883完整raw1968/1655/1666行；workspace397/392/396（0failed，ignored45/43/43）、旧Runtime43/42/42（0failed/ignored）、Linux native credentials1。DeepSeek16/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每平台每名一次；watch53780、最终下载13789及normalize/check/available均exit0。原始/标注日志 `/tmp/caidex-ci-37825726756-{linux,windows,macos}-raw.log`及同前缀.log/status.json/watch.log；脚本 `/tmp/caidex-deepseek-context-ci-{normalize,check,available}.py`在精确6742b15归档执行，未借基础CI代验。实际DeepSeek Runtime/Live及完整F/G仍未验。
+
+## 下一阶段已核对边界（尚未实现）
+
+2026-10-08再次核对官方[Responses请求定义](https://api-docs.deepseek.com/api/create-response/)、[Thinking说明](https://api-docs.deepseek.com/guides/thinking_mode/)和Models声明；不运行安装脚本、不访问模型服务。实现继续复用现有transport/Broker/codec模式，不增加另一Provider依赖或执行器。
+
+- function name必须非空、最多128字符、`[a-zA-Z0-9_-]+`且全局唯一；因此不能直接照搬Ollama的点号namespace名称。原始namespace/function/custom身份与编译后的安全native名称必须可逆对应，并一起绑定请求/历史；拒绝冲突、未知声明和不支持的内置tools，不能自动去重或静默丢弃工具。custom仅apply_patch原生支持；Lite exec不能原样透传，须明确映射及绑定原始输入/actual结果。
+- effort原生none/low/high/max；none关闭thinking。公开兼容别名minimal→low、medium/xhigh→high不证明精确等级等价；Thinking通用页另列ultra→max，但Responses参考未列，先不推定支持。映射应由执行端明确选择并记录，目录只提供声明、不能自动授予Live/Full。
+- temperature在thinking开启时无效果；top_p只在thinking开启时有效且下限0.95，低值会被原生钳制，关闭thinking时固定1.0。不能因成功响应把忽略/钳制当作按原值执行；后续必须按明确原生thinking选择门控，拒绝不等价组合而不悄改用户值。top_logprobs原生0–20，具体输出及strict结构交付还须独立验证。
+- reasoning input仅明文content进入原生上下文；summary/encrypted_content不支持。沿用已确定的完整native wire载体/前缀绑定：包含执行端profile/端点/model、编译请求、原响应及SSE chunks；canonical显示/工具组须与native输出一致，未知字段/大数/中文/原始arguments保持。不得把本地敏感JSON载体称作真实加密/来源认证，不删除真实推理以假装Runtime回放成功。
+
+以上为接入约束，不是已实现/已验证能力。优先工具映射与绑定历史，再Classic/Lite实际固定Runtime审批、执行、取消及磁盘恢复；每一步独立测试、精确CI和交接。
