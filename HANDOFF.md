@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 17:52 UTC（Ollama Lite实际Runtime三平台离线验收完成；下一步DeepSeek兼容API）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
+更新：2026-10-08 18:23 UTC（额度中断核查完成；DeepSeek基础本地回归通过，未提交/未push/三平台待验）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
 
 ## 当前任务
 
-F/G：Ollama当前离线Adapter与固定Classic MCP/Lite Code Mode范围已三平台验收：源码f25179bf6e5446735b2323fc5169007ecfea947a已push，[CI37818503514](https://github.com/bboytang/CAIdex/actions/runs/37818503514)3job及每个17steps成功或条件跳过，完整raw逐名核对通过。workspace381/376/380（0failed、ignored45/43/43）、固定Runtime43/42/42（0failed/ignored）；Ollama69/OpenAI11/Custom7/Google90及全部Runtime每名各平台一次。新增4项Lite实际审批/隔离执行/磁盘重启不重复/多调用拒绝/流及审批取消已验；原两轮macOS容量失败保留，新提交累计补齐证据。下一步DeepSeek目录/六方法经典基础JSON/SSE，契约已核对并记录docs/DeepSeek；真实模型Live/Full、完整F/G和H–R未完成。
+F/G：DeepSeek基础Adapter已实现：独立Models目录（created非必需、原生声明/未知大数保持）、六方法/配置路由交集、独立deepseek Bearer、经典文本JSON/SSE与Gateway注入，共享Custom transport/Broker。默认拒绝Lite/工具/媒体/推理控制与reasoning输入/开发者角色/归属头/未知控制，原生意外工具JSON/SSE在交付前安全拒绝。10项定向、完整workspace391/0/45、既有固定Runtime43/0/0、Clippy/fmt/diff本地通过；有效RED使用旧严格OpenAI目录解析器，缺created样本运行后502失败，恢复独立契约GREEN10/0/0。新精确head三平台待验，无DeepSeek实际Runtime正例/Live/Full；完整F/G、H–R未完成。
 
 ## 已完成
 
@@ -18,7 +18,7 @@ F/G：Ollama当前离线Adapter与固定Classic MCP/Lite Code Mode范围已三�
 
 ## 下一步顺序
 
-1. 按docs/CAIdex-DeepSeek-Provider-设计与验收.md实现原生Models目录及六方法经典基础JSON/SSE：缺created必须有效，不能放松现有OpenAI parser；字段/未知数字保持、目录与显式路由交集不授予Live/Full。复用Custom transport/Broker、独立DeepSeek凭据归属。先检查现有Custom/OpenAI配置及请求/流入口，新增有效样本/拒绝边界回归，再最小实现，完成后完整检查与精确源码三平台。
+1. DeepSeek当前基础阶段本地完整验证、代码/lock核对、README/DeepSeek/Model-Gateway已完成；提交/push后核对新精确源码三平台完整逐名日志。预期workspace391/386/390（0failed，ignored45/43/43）、旧实际Runtime43/42/42，DeepSeek10及Ollama69/OpenAI11/Custom7/Google90每名一次。不能把旧43项Runtime回归当DeepSeek正例；无源码变化无需重跑本地全套。
 2. 随后DeepSeek固定Runtime/工具/namespace/Lite：兼容表已确认developer降级user、未知input/内置tools忽略、parallel flag忽略、summary/encrypted_content/verbosity不等价，必须显式编译/拒绝及绑定历史。再Qwen/OpenRouter；不下载模型或调用商业API。Ollama三平台当前范围已完成，无变更不重跑、不重造其Adapter或工具执行器。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
@@ -44,11 +44,13 @@ F/G：Ollama当前离线Adapter与固定Classic MCP/Lite Code Mode范围已三�
 
 ## Git / 文件 / 验证
 
+- 本次额度中断核查：未推进新功能/提交/push。逐文件核对未提交DeepSeek源码/lock及既有日志，catalog有效RED替换已恢复；新跑定向10/0/0、全workspace/all-targets离线Clippy、fmt/diff通过，日志 `/tmp/caidex-deepseek-interruption-{audit,clippy}.log`。保存的完整workspace391/0/45、旧Runtime43/0/0及Ollama CI37818503514三平台完整逐名日志复核通过，未发现当前基础范围功能错误。修正本文件标题误写“完整回归待验”；DeepSeek仍未提交/远程备份/三平台验证，工具/Lite/实际Runtime/Live按原下一步继续。当前磁盘约10G可用。
+
 - 既有Ollama show/thinking、v1历史、图片/非严格格式、offline严格输出、runtime context/verbosity、namespace/search、custom→function/v2均已有精确三平台证据，包含在本轮69项回归，不重做。v1不自动升级/混用，grammar仅指导；历史源码/RED/GREEN/完整CI日志索引留docs/Ollama。
 
-- branch main；最新Runtime测试源码f25179bf6e5446735b2323fc5169007ecfea947a，已push；后续提交仅文档。两份Runtime测试文件已提交，无未完成源码；DeepSeek契约文档已提交；本次仅HANDOFF、README、docs/Ollama及Model-Gateway补三平台收尾证据。当前提交状态以git status为准。未改生产源码、依赖或workflow。
+- branch main，开始HEAD/origin main d3c192e、干净；当前未提交：Cargo.toml/Cargo.lock（加入deepseek path crate）、model/providers/deepseek/{Cargo.toml,src/{lib,config,catalog,request}.rs,tests/provider.rs}、HANDOFF、README及docs/DeepSeek、Model-Gateway（当前范围/验证）。新增path package只依赖现有固定版本，无第三方升级/新依赖功能，无workflow/共享生产源码/Runtime变更。本地完整回归已通过，提交/CI未完成。
 
-- 中断核查：原/tmp/caidex-ollama-lite-runtime-first.log确认4/0/0，断开时运行已成功结束，非丢失或失败。当前工作区重新完整验证：/tmp/caidex-quota-audit-{workspace,runtime,clippy}.log；workspace381/0/45（新增4项被默认ignored，另有原41项），显式固定Runtime43/0/0，旧39与新4每名各一次；Clippy全targets-D warnings/fmt/Python compile/diff均通过。只使用合成凭据与隔离临时marker，无商业API/用户Key。文档/远程备份及新精确head三平台均已补齐，未发现本次范围的功能错误。
+- 旧Ollama阶段中断核查：原/tmp/caidex-ollama-lite-runtime-first.log确认4/0/0，断开时运行已成功结束，非丢失或失败。当时工作区完整验证：/tmp/caidex-quota-audit-{workspace,runtime,clippy}.log；workspace381/0/45（新增4项被默认ignored，另有原41项），显式固定Runtime43/0/0，旧39与新4每名各一次；Clippy全targets-D warnings/fmt/Python compile/diff均通过。只使用合成凭据与隔离临时marker，无商业API/用户Key。文档/远程备份及新精确head三平台均已补齐，未发现本次范围的功能错误。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama/src/{tools,mapped_tools,runtime,structured,request,history,history_stream,lib}、tests/{tools,runtime,structured,content,history}；其他模块model/providers/custom、model/core、model/gateway、runtime/bridge/tests/{real_runtime.rs,fixtures}、credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
 - jsonschema固定0.58.6、只开arbitrary-precision、强制Offline retriever，无HTTP/file解析；新增41依赖，无既有包升级/删除，hashbrown启用依赖、bit-vec/r-efi更新多版本标识，base64保持0.22.1。标准Schema按库draft/约束校验，未知format拒绝，未知注释保留。同步求值有字节/Regex回溯限制，不承诺硬CPU抢占，留Host隔离；不重试或修补坏回答。
 - 旧磁盘满已解除，只清本项目可再生target；本次df约4.8G可用，下轮先查df。完整测试TMPDIR=/var/tmp，保留/tmp/.git保护，不清源码/凭据/保护目录。本机缺Windows/Xcode/gnome-keyring-daemon，对应CI检查；iOS未建立，不以Rust macOS CI冒充iOS。
@@ -59,4 +61,6 @@ F/G：Ollama当前离线Adapter与固定Classic MCP/Lite Code Mode范围已三�
 
 - 已提交Lite Adapter契约：with_lite_options为显式构造入口，默认new/with_options继续拒绝Lite路由；original metadata先验证，内部Classic路由与公开原dialects分开。首个developer additional_tools仅接受type/id/role/tools，id只消费运输身份，原工具声明进v2；未知/错位/重复/畸形声明及原始body超限在Key/POST前拒绝。Lite-only与两dialect声明逐请求门控；native不携Lite头、additional_tools或parallel flag。v2 source另存lite_single_tool_call布尔，None代表Classic，false/true分别为Lite无约束/本地单调用，原始声明及策略不能改写旧组。NativeTools共享终态校验在JSON/SSE工具/完整history交付前拒绝多调用，failed/incomplete也检查，slot可复用；无native生成约束承诺。定向6/0/0，日志/tmp/caidex-ollama-lite-{red,green,focused}.log；RED是旧mapping400，非编译失败。完整本地workspace381/0/41、Ollama69逐名一次、既有固定Runtime39/0/0、Clippy全targets-D warnings/fmt/diff已过；日志同前缀{workspace-final,all-real-final,clippy-final}.log。此处39项是已提交Adapter阶段的旧回归；随后f25179b中4项实际Lite Runtime及43项完整回归已本地及三平台通过，Live仍未验。全局codex-cli 0.160.1可用；本机没有CI专用.tools/codex目录，定位脚本ENOENT不影响本轮实际Runtime运行。Adapter源码已提交/push；实际Code Mode测试f25179b已push且三平台收尾完成。
 
-- CI收尾：37818503514精确headf25179bf6e5446735b2323fc5169007ecfea947a全部3job/17steps完成success或条件跳过；Linux113453190593/Windows113453190663/macOS113453190281完整raw1932/1619/1630行逐名及总数已验，workspace381/376/380、Runtime43/42/42均0failed，Linux native credentials1。原始/标注日志=/tmp/caidex-ci-37818503514-{linux,windows,macos}-raw.log及同名前缀.log，status.json/watch.log；watch会话15353、下载13870均exit0，normalize/check/available脚本同前缀/tmp/caidex-ollama-lite-runtime-ci-{normalize,check,available}.py全部exit0。旧37816328543（head8ef915d）macOS零steps容量取消整体failure，新head完整继承回归补齐证据，不假称旧CI成功、不重启原job。下一步DeepSeek仍仅文档核对，无其源码/测试/六方法/真实模型验收。
+- CI收尾：37818503514精确headf25179bf6e5446735b2323fc5169007ecfea947a全部3job/17steps完成success或条件跳过；Linux113453190593/Windows113453190663/macOS113453190281完整raw1932/1619/1630行逐名及总数已验，workspace381/376/380、Runtime43/42/42均0failed，Linux native credentials1。原始/标注日志=/tmp/caidex-ci-37818503514-{linux,windows,macos}-raw.log及同名前缀.log，status.json/watch.log；watch会话15353、下载13870均exit0，normalize/check/available脚本同前缀/tmp/caidex-ollama-lite-runtime-ci-{normalize,check,available}.py全部exit0。旧37816328543（head8ef915d）macOS零steps容量取消整体failure，新head完整继承回归补齐证据，不假称旧CI成功、不重启原job。此为前阶段Ollama精确证据；DeepSeek新增实现与回归见当前任务，不借旧CI代验。
+
+- DeepSeek恢复点：构造入口DeepSeekConfig::new/with_base_url、DeepSeekProvider::new/with_options；只允许Classic metadata，配置/已知模型能力门控仍在Key/POST前。基础允许字符串或user/assistant/system文本message、instructions、正整数或null max_output_tokens、纯text format及无意义null选项，store统一false；不忽略有意义未知字段。原生工具响应同时检查JSON、SSE item/delta/terminal，单次安全error后立即Drop底层stream，socket/slot已实测；不是新HTTP栈。Models只验证消费的id/object/owner，其余原样保留，不读取created或自动推导能力。定向日志/tmp/caidex-deepseek-{catalog-red,green,focused}.log；初次fixture编译/错误码/命名问题已修正，不计有效RED或成功。完整workspace391/0/45、旧固定Runtime43/0/0、Clippy全targets-D warnings/fmt/diff已通过，日志同前缀{workspace,runtime-regression,clippy-final}.log；唯一Clippy测试分支风格修复后定向10项重验，未重跑无变化的旧Runtime。新精确提交三平台待验。

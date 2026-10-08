@@ -34,6 +34,7 @@ node scripts/codex-binary.mjs
 - `model/providers/anthropic`：原生 Messages/Models/SSE、Responses 转换和绑定历史；Gateway、经典 MCP 发现/执行/重启和 Lite Code Mode 审批/执行/取消已三平台离线验收，默认缓存网页搜索及商业模型兼容性待验。
 - `model/providers/google`：Gemini 原生 Models/generateContent、媒体/推理/结构输出和绑定历史；Gateway 与固定经典/Lite Runtime 离线接线已三平台验收，商业模型兼容性待验。
 - `model/providers/ollama`：复用共享传输的原生 Responses 适配，六方法、能力/推理、媒体/结构输出、绑定历史和 deferred 工具发现已三平台离线验收；固定经典 Runtime MCP 执行/重启及 Lite Code Mode 审批/执行/取消/磁盘恢复亦已三平台验证，真实 daemon/模型兼容性待验。
+- `model/providers/deepseek`：原生 Models 目录、六方法和经典文本 JSON/SSE，复用共享传输与独立执行端凭据；基础 Gateway 离线回归已本地通过，工具/高级控制/Lite/实际 Runtime 接线及三平台、真实模型兼容性待验。
 - `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和剩余兼容 API 接入待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
@@ -45,6 +46,7 @@ node scripts/codex-binary.mjs
 - `docs/CAIdex-Anthropic-Provider-设计与验收.md`：Anthropic 原生协议、工具发现与固定 Runtime 离线验收。
 - `docs/CAIdex-Gemini-Provider-设计与验收.md`：Gemini 原生协议、绑定历史与固定 Runtime 离线验收。
 - `docs/CAIdex-Ollama-Provider-设计与验收.md`：Ollama 配置、明确拒绝的控制项与三平台离线验收。
+- `docs/CAIdex-DeepSeek-Provider-设计与验收.md`：DeepSeek 原生契约、基础 Adapter 范围与待验证能力。
 - `docs/CAIdex-Runtime-能力对照.md`：完整固定协议清单、实现范围与 CLI 对照验收状态。
 - `docs/CAIdex-UI-规范-V1.md`：UI 布局和 CAIdex 功能入口。
 - `HANDOFF.md`：当前进度、验证与下一步；每次续接先读。

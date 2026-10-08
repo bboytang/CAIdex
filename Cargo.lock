@@ -472,6 +472,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-provider-deepseek"
+version = "0.1.0"
+dependencies = [
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-model-gateway",
+ "caidex-provider-custom",
+ "futures-util",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "caidex-provider-google"
 version = "0.1.0"
 dependencies = [
