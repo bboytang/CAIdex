@@ -142,7 +142,7 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 - 完整原始job日志Linux113303703210（1896行）、Windows113303703627（1584行）、macOS113303703461（1596行），直接GitHub API下载、未截断。`/tmp/caidex-ci-37775057618-{status.json,watch.log,linux-raw.log,windows-raw.log,macos-raw.log}`及同名step标注日志；`/tmp/caidex-ollama-runtime-request-ci-{normalize,check}.py`仅标注实际Run命令、不改payload，watch/下载/check exit0。跨机器以提交文档和原CI为准，/tmp不保证保留；本次收尾只三文档，不改变已验源码。
 
 
-## 原生 namespace 与客户端工具搜索（完整本地通过，三平台待验）
+## 原生 namespace 与客户端工具搜索（三平台离线通过）
 
 - 固定官方Responses转换器支持namespace function、client tool_search及其历史items；Model-visible search结果保留声明，Runtime执行发现/工具。`with_native_tools()`显式启用此范围并同时启用v1 native history；默认行为/Lite/custom/web未放松，不新增HTTP栈/执行器或第三方依赖。
 - namespace wrapper说明原生忽略，编译时将说明加入成员description并移除wrapper说明，之后绑定compiled prefix；原始body及展开指导预算仍在Broker前检查。未知/嵌套namespace、strict/defer_loading=true、server search与未映射custom/web拒绝。保留原生namespace/member身份，不使用别名哈希或依赖另一Provider。
@@ -150,4 +150,8 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 - JSON及共享history SSE终态前检查原生调用是否属于当前声明、arguments是否object、namespace/name是否是明确canonical身份、item/call ID是否唯一及call ID是否已出现。坏原生工具502安全错误，无工具完成/载体交付。新增search与旧function同样在failed/incomplete时不发送可执行done，保留真实失败终态；工具/载体仍等已验证typed terminal，不承诺clean EOF。取消/截止继续共享入口与交付guard，无新worker。
 - 新6项fixture：namespace JSON/SSE两轮精确args/中文/大数与legacy result、说明与前缀变更；search JSON/SSE四轮发现/调用/重复声明及delta拒绝；默认/碰撞/Unsupported/错序/孤立/错种类/预算；坏原生工具和重复ID零done/载体；failed/incomplete search真实状态；capability/预取消零Key/POST。有效RED旧flat compiler拒绝namespace400，GREEN6/0/0；初次fixture枚举笔误及Clippy helper折叠已修正，不计作成功验收。
 - 复用实际固定Runtime拒绝测试增加第四模式（context + native tools显式启用），完整真实默认请求仍含未映射custom/web，必须失败且零Key/POST/审批。四模式完整真实Runtime回归通过；没有Ollama Runtime工具正例、daemon、商业Live或Full，custom/freeform/Lite下一阶段继续。
-- 日志`/tmp/caidex-ollama-native-tools-{red,green,workspace-final,clippy-final,all-real-final}.log`；最终本地workspace363/0/40（Ollama51逐名各一次）、固定Runtime38/0/0每名各一次、Clippy全targets-D warnings/fmt/diff通过；精确源码三平台CI待验。保持既定F/G及H–R范围，不以namespace/发现fixture代证实际模型能力。
+- 日志`/tmp/caidex-ollama-native-tools-{red,green,workspace-final,clippy-final,all-real-final}.log`；最终本地workspace363/0/40（Ollama51逐名各一次）、固定Runtime38/0/0每名各一次、Clippy全targets-D warnings/fmt/diff通过；源码`40edb9a40975ade7690a946596e85a8fdb7cc56e`已提交/push，[CI37779554830](https://github.com/bboytang/CAIdex/actions/runs/37779554830)精确head三平台成功，详以下收尾证据。保持既定F/G及H–R范围，不以namespace/发现fixture代证实际模型能力。
+
+- 三平台收尾：CI精确head 40edb9a，三个job全部completed/success、所有step成功或条件跳过；Ollama51/OpenAI11/Custom7/Google90及完整固定Runtime每个名字各平台各一次。workspace Linux363/Windows358/macOS362，0失败、ignored40/38/38；固定Runtime38/37/37，0失败/0ignored；Linux隔离native credentials1与fmt/Clippy/schema/doctor通过。Runtime第四模式仍只证明拒绝未映射请求，无Ollama工具正例、daemon或Full。
+- GitHub API完整原始日志：Linux113318904267（1910行）、Windows113318904133（1591行）、macOS113318903828（1602行）；macOS排队后完成，无重启/重跑。`/tmp/caidex-ci-37779554830-{status.json,watch.log,linux-raw.log,windows-raw.log,macos-raw.log}`及同名step标注日志；`/tmp/caidex-ollama-native-tools-ci-{normalize,check}.py`只按实际Run命令标注、不改原payload，watch/下载/check exit0。跨机器以已提交文档/原CI为准，/tmp不保证保留。
+- 下一步custom/freeform、deferred/Lite及固定Runtime正例：固定源码只声明DeferLoading而不实施可见性；native-only v1无法证明映射前custom kind/声明绑定，须复用已有codec模式增加明确绑定且保持旧v1，不自动升级/松绑。不以本轮namespace/search fixture代证全部默认Runtime或真实模型，整体F/G及H–R未完成。
