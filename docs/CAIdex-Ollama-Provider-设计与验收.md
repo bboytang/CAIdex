@@ -128,7 +128,7 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 - 下一步：其余Ollama工具路径及固定Runtime（item表示/本地headers/developer/include/summary），继续复用共享transport和现有历史codec，不把原生回显参数或fixture当LiveRuntime/Full。
 
 
-## 固定 Runtime 请求入口（完整本地通过，三平台回归待验）
+## 固定 Runtime 请求入口（三平台离线通过）
 
 - 先用固定 Codex 0.160.1 的真实 app-server 捕获经典/Lite 请求，未经过本Adapter，也未调用商业模型。经典请求含leading developer、本地归属字段、verbosity及custom apply_patch/tool_search/web_search；Lite还有additional_tools、namespaced custom exec、parallel=false、reasoning.context。捕获只证明实际请求表示，不授予Ollama兼容性。
 - `with_runtime_context()`显式消费本地client_metadata/prompt_cache_key及session_id/x-client-request-id/x-codex-turn-metadata三个头，六方法中的目录/show/JSON/SSE传输均不转发这些头；不承诺持久化或原生cache。client_metadata须string值object、cache标记须非空且无控制字符；turn-state与未知头仍拒绝。
@@ -136,4 +136,7 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 - `with_verbosity_instruction(level, instruction)`仅允许low/medium/high的执行端明确指令，追加到instructions；不伪称native verbosity刻度。重复/空配置拒绝。verbosity映射变更影响compiled prefix，旧历史必须拒绝；format/strict校验仍独立保持。默认或未映射参数继续Key/POST前拒绝。
 - 原始body在移除本地字段之前检查预算；展开指导和history后仍受已有native request预算约束。新增6项覆盖JSON/SSE精确wire、header/Bearer、回放绑定、拒绝/Unsupported、取消/deadline、双层预算及strict格式组合；定向6/0/0。有效RED使用旧header guard（编译成功后400拒绝），恢复实现后GREEN通过；最初fixture API/错误码断言问题已更正，不将失败构建计入验收。
 - 复用真实Runtime Harness新增1项、三个真实请求模式：默认classic、本Adapter未支持Lite、partial context经典含未映射工具，全部turn failed且零凭据读取/native POST/审批；1/0/0。此项是Ollama Adapter真实Runtime负例，仍无正例、daemon或Live模型证据。只新增Runtime测试到已有Ollama crate的path依赖，lock只增加这一关联，无第三方升级。
-- 日志`/tmp/caidex-ollama-runtime-request-{red,green,real-negative}.log`；直接wire捕获`/tmp/caidex-ollama-runtime-{classic,lite}-wire.json`及probe.log只保留本机，不将内部完整prompt公开归档。完整本地workspace357/0/40（Ollama45每名各一次）、固定Runtime38/0/0逐名各一次、Clippy全targets -D warnings/fmt/diff通过，日志同前缀{workspace-final,clippy-final,all-real-final}.log。精确源码三平台CI待验。下一步custom/namespace/discovery/Lite item路径与正例，保持一个Runtime/共享transport，不用请求入口成功冒充完整接线。F/G及H–R仍未完成。
+- 日志`/tmp/caidex-ollama-runtime-request-{red,green,real-negative}.log`；直接wire捕获`/tmp/caidex-ollama-runtime-{classic,lite}-wire.json`及probe.log只保留本机，不将内部完整prompt公开归档。完整本地workspace357/0/40（Ollama45每名各一次）、固定Runtime38/0/0逐名各一次、Clippy全targets -D warnings/fmt/diff通过，日志同前缀{workspace-final,clippy-final,all-real-final}.log。源码`d934fe165d49b1638b1879d8e61ad32d60993c8f`已提交/push，[CI37775057618](https://github.com/bboytang/CAIdex/actions/runs/37775057618)精确head三平台已通过，详以下收尾证据。下一步custom/namespace/discovery/Lite item路径与正例，保持一个Runtime/共享transport，不用请求入口成功冒充完整接线。F/G及H–R仍未完成。
+
+- 精确源码三平台收尾：3job全部completed/success、所有step成功或条件跳过；Ollama45/OpenAI11/Custom7/Google90及完整固定Runtime逐名各平台各一次。workspace Linux357/Windows352/macOS356，0失败、ignored40/38/38；固定Runtime38/37/37，0失败/0ignored；Linux隔离native credentials1及fmt/Clippy/schema/doctor通过。新增Runtime测试只证明真实请求拒绝边界，仍无Ollama工具正例、daemon或Full。
+- 完整原始job日志Linux113303703210（1896行）、Windows113303703627（1584行）、macOS113303703461（1596行），直接GitHub API下载、未截断。`/tmp/caidex-ci-37775057618-{status.json,watch.log,linux-raw.log,windows-raw.log,macos-raw.log}`及同名step标注日志；`/tmp/caidex-ollama-runtime-request-ci-{normalize,check}.py`仅标注实际Run命令、不改payload，watch/下载/check exit0。跨机器以提交文档和原CI为准，/tmp不保证保留；本次收尾只三文档，不改变已验源码。
