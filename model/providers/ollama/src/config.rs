@@ -8,6 +8,7 @@ use std::fmt;
 pub struct OllamaConfig {
     base: Url,
     credential: Option<CredentialRef>,
+    show: Option<CustomResponses>,
 }
 impl OllamaConfig {
     pub fn new(base: &str, credential: Option<CredentialRef>) -> Result<Self, Error> {
@@ -22,7 +23,25 @@ impl OllamaConfig {
         if !base.path().ends_with('/') {
             base.set_path(&format!("{}/", base.path()));
         }
-        Ok(Self { base, credential })
+        Ok(Self {
+            base,
+            credential,
+            show: None,
+        })
+    }
+    /// Exact native endpoint on the same configured origin. Do not infer it
+    /// by dropping a proxy's /v1 prefix, or send this profile's key elsewhere.
+    pub fn with_show_endpoint(mut self, endpoint: &str) -> Result<Self, Error> {
+        let show = CustomResponses::new(endpoint, self.credential.clone())?;
+        let url = Url::parse(endpoint).map_err(|_| Error::InvalidEndpoint)?;
+        if url.origin() != self.base.origin() {
+            return Err(Error::InvalidEndpoint);
+        }
+        self.show = Some(show);
+        Ok(self)
+    }
+    pub(crate) fn take_show_endpoint(&mut self) -> Option<CustomResponses> {
+        self.show.take()
     }
     pub(crate) fn endpoint(&self, path: &str) -> Result<CustomResponses, Error> {
         let endpoint = self.base.join(path).map_err(|_| Error::InvalidEndpoint)?;

@@ -108,18 +108,49 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
         configuration: &CustomResponses,
         context: RequestContext,
     ) -> ProviderResult<serde_json::Value> {
+        self.json_request(configuration, None, context).await
+    }
+    /// Bounded native metadata POST to an executor-owned endpoint. This shares
+    /// the GET/inference authentication, limits and cancellation, without
+    /// treating a metadata object as a Responses generation.
+    pub async fn post_json(
+        &self,
+        configuration: &CustomResponses,
+        body: serde_json::Value,
+        context: RequestContext,
+    ) -> ProviderResult<serde_json::Value> {
+        self.json_request(configuration, Some(body), context).await
+    }
+    async fn json_request(
+        &self,
+        configuration: &CustomResponses,
+        body: Option<serde_json::Value>,
+        context: RequestContext,
+    ) -> ProviderResult<serde_json::Value> {
         let deadline = request_deadline(&self.state, &context)?;
+        let body = body.map(|body| serde_json::to_vec(&body).expect("valid JSON"));
+        if body
+            .as_ref()
+            .is_some_and(|body| body.len() > self.state.limits.request_bytes)
+        {
+            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
         let _permit = self
             .state
             .permits
             .clone()
             .try_acquire_owned()
             .map_err(|_| ProviderError::new(503, "provider_busy"))?;
-        let outgoing = self
-            .state
-            .client
-            .get(configuration.endpoint.clone())
-            .header(header::ACCEPT, "application/json");
+        let outgoing = match body {
+            Some(body) => self
+                .state
+                .client
+                .post(configuration.endpoint.clone())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(body),
+            None => self.state.client.get(configuration.endpoint.clone()),
+        }
+        .header(header::ACCEPT, "application/json");
         let upstream = execute(&self.state, outgoing, configuration, &context, deadline).await?;
         if !is_media_type(upstream.headers(), "application/json") {
             return Err(ProviderError::new(502, "provider_invalid_content_type"));

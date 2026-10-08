@@ -25,7 +25,7 @@
 
 明确 false/null 的 store/background 删除为原生前台无存储默认；显式 tool_choice=auto、parallel_tool_calls=true 删除为原生默认允许。这几项是语义等价的已知缺省控制，不处理任意未知字段。true storage/background、required/none tool choice、parallel=false、previous_response_id/conversation 在 Key/POST 前拒绝。
 
-同样拒绝此阶段未编译的 reasoning controls/history、include、metadata/cache/service tier/text formatting、truncation、developer role、custom/namespace/web/tool_search、strict/defer=true、媒体/附件、未知 input/嵌套字段。收到无法回放的 output 仍完整保留给调用方；下一请求明确报错，不能偷偷删 history 继续。既有 ModelCapabilities 中明确 Unsupported 的 text/native_tools/streaming 拦在网络前，Unknown 不自动转 Supported。
+同样拒绝此阶段未编译的 reasoning history/summary、include、metadata/cache/service tier/text formatting、truncation、developer role、custom/namespace/web/tool_search、strict/defer=true、媒体/附件、未知 input/嵌套字段。thinking控制的新增范围见下节。收到无法回放的 output 仍完整保留给调用方；下一请求明确报错，不能偷偷删 history 继续。既有 ModelCapabilities 中明确 Unsupported 的 text/native_tools/streaming 拦在网络前，Unknown 不自动转 Supported。
 
 非空 RequestContext headers 当前全部拒绝，包括实际 Runtime 的本地 headers；服务端 x-codex-turn-state 亦在交付前拒绝，不假造 native session/state。context/header 放置、developer/system 语义和实际 Runtime 支持是下阶段需验证的接线，当前 Gateway 协议 fixture 不能代替它。
 
@@ -33,7 +33,7 @@
 
 JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字段/大整数/参数字符串保持，HTTP 200 failed/incomplete 不转换成功，流需真实 typed terminal，EOF/[DONE] 不合成 completed。SSE 原 data 在完整事件边界保留。
 
-原生 reasoning 的 encrypted_content 在所核对 Ollama 实现中是明文 thinking，当前只保留收到的 wire；未实现此项的安全历史归属/回放或 effort 映射，不宣称加密、签名、隐藏思维或跨 Provider 可复用。
+原生 reasoning 的 encrypted_content 在所核对 Ollama 实现中是明文 thinking，当前只保留收到的 wire；未实现此项的安全历史归属/回放，不宣称加密、签名、隐藏思维或跨 Provider 可复用。
 
 已取消/过期与不支持请求在 SecretStore/网络前返回安全 code；流 Drop/取消/整体 deadline 关闭 native socket，释放唯一 in-flight slot。共享 client 的同步 SecretStore 读无法强制中止、有限背压/TLS 等既有边界不变。
 
@@ -54,4 +54,18 @@ JSON/SSE 都委托同一已验 bounded client；response/items/usage/未知字�
 
 日志 `/tmp/caidex-ci-37719887330-{status.json,watch.log,linux.log,windows.log,macos.log}`，逐名脚本 `/tmp/caidex-ollama-ci-check.py` exit0。阶段源码/依赖/最终差异已自行核对；未派新子agent审查，不把自查写成独立审查。Ollama高级控制、native reasoning归属/回放、实际daemon/模型与商业Full仍未验。
 
-下一恢复点：原生show是POST JSON，参考[官方模型详细信息](https://docs.ollama.com/api-reference/show-model-details)和[thinking声明](https://docs.ollama.com/capabilities/thinking)。复用现有Custom TLS/凭据/slot/guard，显式配置native端点，保留代理路径；thinking.values bool/string/default及未知原文保留，缺省与不匹配named effort不可冒充已生效。随后完善native历史/媒体/结构/工具路径和固定Runtime，再接其他兼容厂商；不重新规划V3。
+## 模型详细信息与精确推理控制（本轮待提交/CI）
+
+2026-10-08继续核对[官方模型详细信息](https://docs.ollama.com/api-reference/show-model-details)、[thinking声明](https://docs.ollama.com/capabilities/thinking)以及固定源码[e3cddc3e thinking类型](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/model/thinking.go)、[Responses编译](https://github.com/ollama/ollama/blob/e3cddc3e897d8414a60a46e23f5ef3a99be2eb81/openai/responses.go)。show是POST；声明缺省不能推断无thinking；未声明named值可能回退default，因此只按明确声明编译。
+
+- `OllamaConfig::with_show_endpoint`须显式完整同origin地址（scheme/host/port匹配），如`http://127.0.0.1:11434/api/show`；不猜/剥`/v1`或代理前缀。默认无show端点，不会自动请求daemon。`show_model(alias, context)`只发送配置绑定的native model，body不带verbose，不允许响应的remote_host选目的地/凭据。
+- 复用Custom新增bounded `post_json`及GET共用实现：同TLS/Auth/slot/时间/取消/HTTP脱敏/no redirect/no retry；body大小在读Key之前限制，返回JSON受响应大小限制。show与目录/推理共用单一in-flight池；Drop/取消/timeout关闭socket，释放slot。
+- `ModelDetails`保留capabilities、thinking.values/default、template/parameters/model_info及未知原文/大数/高精度小数，Debug不显示内容。有效descriptor须非空、bool或非空string、无重复，default在values内；坏descriptor/明确error返回静态安全502。Go nullable metadata map允许null；缺省字段维持Unknown。`[false]`为无thinking；unknown capability名称保留但不自动授予新功能。
+- `with_model_details`安装执行端拥有的固定snapshot，alias须配置存在、native model精确相同、不可重复安装；本地metadata/capabilities与list交集共用声明。已显式Unsupported不放松；catalog声明仅为原生能力，vision声明不代表当前Adapter可编译图片，streaming/parallel/结构/搜索仍不从目录推断。model_info的架构context_length不冒充实际num_ctx；兼容性报告不生成/升级。
+- `reasoning.effort`只有精确advertised named值可转native `think`；`none`仅在声明false时转false。无minimal→low/xhigh→max别名；布尔开关只接受明确`think=true/false`，不冒充high等精细等级。直接think同样要求values含精确值；两种非空控制同时出现拒绝，不依赖native覆盖优先级。
+- 不请求控制、think=null、reasoning=null/空对象/effort=null保持native默认，不强制合成开关；summary/未知reasoning字段拒绝。明确reasoning Unsupported拒绝开启/等级，但允许声明false时关闭；无控制不会替执行端改native默认。所有无效/未声明控制在Broker/POST前拒绝，JSON/SSE走同一compiler。
+- snapshot仅绑定模型ID，是可信执行端配置输入；不是签名、来源认证、digest/version锁或实时刷新。服务端同名模型变更后声明可能过时，需要执行端重新查询并重建Provider；不能据catalog/fixtures授予LiveRuntime/Full。
+
+`tests/models/mod.rs`复用既有loopback harness新增6项：metadata精度/未知/坏descriptor；同origin/path/native ID/无认证及Bearer；JSON/SSE exact等级和禁止fallback；bool/default/Unknown/Unsupported/重复绑定；POST大小/坏JSON/HTTP/重定向/脱敏/no retry；预取消/过期/headers/未知alias、同推理slot、取消/Drop/header deadline与body idle。现有10项保持通过，本地16/0/0；有效RED（旧compiler拒绝high）→GREEN日志`/tmp/caidex-ollama-thinking-{red,green}.log`，最终定向日志`/tmp/caidex-ollama-show-provider-final.log`。首次完整构建发现测试文件误识别为独立入口，已移入子模块后完整重验，该失败不计通过。workspace328/0/39、旧实际固定Runtime37/0/0、Clippy -D warnings/fmt/diff均通过，日志`/tmp/caidex-ollama-show-{workspace-final,all-real-final,clippy-final}.log`；Ollama16个名字在workspace各一次。新源码三平台CI尚待，不用首阶段CI代证。
+
+下一恢复点：先完成本轮回归/提交/push/三平台CI，再接native reasoning历史归属/回放、媒体/结构/工具路径和固定Runtime，随后其他兼容厂商。未连接真实daemon/模型，未下载模型或调用商业API，整体F/G及H–R未完成。

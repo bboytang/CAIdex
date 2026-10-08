@@ -4,7 +4,7 @@
 
 ## 当前任务
 
-F/G：Ollama经典stateless Responses首阶段已验收，源码95b0f6b3101b39e891b6ab30bb097665fced8bc0已push，[CI37719887330](https://github.com/bboytang/CAIdex/actions/runs/37719887330)精确head三平台completed/success。本次补阶段收尾文档，下一步Ollama模型能力/推理声明。仅文本/扁平function离线协议，不代表本Adapter的固定Runtime或真实模型Full；完整F/G及H–R未完成。
+F/G：Ollama `/api/show` 与精确thinking控制本地实现/验收完成，准备提交/push/核对精确源码三平台CI，当前基准main/1231663。Custom bounded POST、显式同origin端点、模型绑定snapshot，effort仅转声明中的精确think值；有效RED→GREEN，Ollama16、workspace328/0/39、固定Runtime37/0/0、Clippy/fmt/diff通过。测试入口误识别已移tests/models/mod.rs并完整重验；首阶段CI不能代证本轮。完整F/G及H–R未完成。
 
 ## 已完成
 
@@ -18,7 +18,7 @@ F/G：Ollama经典stateless Responses首阶段已验收，源码95b0f6b3101b39e8
 
 ## 下一步顺序
 
-1. 核对实际HEAD/Git状态后，从Ollama `/api/show` 原生能力/推理声明续接：已有Custom bounded GET JSON，原生show是固定配置端点的POST JSON，需要最小复用传输；保留代理路径，不能猜/剥URL前缀。官方文档 https://docs.ollama.com/api-reference/show-model-details 和 https://docs.ollama.com/capabilities/thinking；values可bool/string，缺省元数据是Unknown，未支持named effort会回退模型default，Adapter不能假装按请求生效。固定官方源码e3cddc3e已核对，详Ollama文档。不重跑已过CI/不派Gemini复审。
+1. 完成本轮show/thinking测试与回归，再提交/push核对新源码三平台CI。元数据固定snapshot需native model匹配配置alias，不自动fetch/放松Unsupported；未声明think控制拒绝，none仅在声明false时禁用，Boolean不冒充high。官方show/thinking文档及固定e3cddc3e源码已核对；不派Gemini复审。
 2. 再接Ollama native历史归属/回放、媒体/结构/工具路径及固定Runtime。随后DeepSeek/Qwen/OpenRouter等兼容API；DeepSeek Responses developer按user、未知input忽略，其models不保证created，不能直接透传/照搬严格catalog。等价路径复用transport，差异明确编译/拒绝；不据URL/目录/fixture授予Lite/Full，不下载大模型/调用商业API。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
@@ -34,7 +34,7 @@ F/G：Ollama经典stateless Responses首阶段已验收，源码95b0f6b3101b39e8
 
 ## 问题 / 暂缓项
 
-- Ollama尚无真实daemon/模型或本Adapter固定Runtime证据；metadata/reasoning历史/developer/context/Lite及其他高级控制均明确拒绝，详docs/Ollama。README旧Anthropic简介滞后、Google未列，以HANDOFF/各验收文档为准，不据旧简介重做已完成阶段。
+- Ollama尚无真实daemon/模型或本Adapter固定Runtime证据；show/精确think控制新增本地已验，reasoning历史/developer/context/Lite及其他高级控制均明确拒绝。snapshot绑定模型ID，非来源认证/version锁/实时刷新；native vision声明不是Adapter媒体支持，详docs/Ollama。README旧Anthropic简介滞后、Google未列，以HANDOFF/各验收文档为准，不据旧简介重做已完成阶段。
 
 - Gemini实际Runtime阶段唯一独立审查无Critical/Important，1覆盖Minor暂缓：thought-call豁免、无tools、未opt-in none缺直接专项。14排除项裁定/成本留Gemini文档；不派复审。
 - 旧Minor：prefix-only v1v2完整组互换、非空projection pending取消/Drop、满槽取消/Drop、ProtoJSON替代整数/空ID表示、部分usage下界矛盾、thought-only phase；Anthropic重启第三轮/完整Lite custom结果覆盖等，详Provider文档，未认领修复。
@@ -44,9 +44,9 @@ F/G：Ollama经典stateless Responses首阶段已验收，源码95b0f6b3101b39e8
 
 ## Git / 文件 / 验证
 
-- branch main跟踪origin/main，源码95b0f6b已同步；新Ollama crate/tests/catalog/文档全部入Git。本次收尾提交仅HANDOFF、Ollama/Model-Gateway文档及README新模块入口，无未提交源码。恢复先查实际HEAD/状态，不将预期干净当作已验证。
+- branch main跟踪origin/main，HEAD1231663已同步；本轮未提交Custom lib bounded POST、Ollama config/lib/request、新增src/models.rs与tests/models/mod.rs、provider测试模块接线、Ollama验收文档及本交接文档。未完成项见当前任务；恢复先查实际Git状态。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama、model/providers/custom/src/catalog.rs、model/providers/google、model/gateway、model/core、runtime/bridge/tests/{real_runtime.rs,fixtures}；其他模块credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
-- 当前本地：Ollama10/0/0、workspace322/0/39、实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；guard与后续轮次call_id复用有有效RED→GREEN。
+- 当前本轮本地：Ollama16/0/0、workspace328/0/39、实际Runtime37/0/0、Clippy -D warnings/fmt/diff通过；精确thinking有有效RED→GREEN，旧guard与后续轮次call_id复用证据保留。日志/tmp/caidex-ollama-show-{provider-final,workspace-final,all-real-final,clippy-final}.log，旧thinking-{red,green}.log；新三平台CI尚待。
 - [CI37719887330](https://github.com/bboytang/CAIdex/actions/runs/37719887330)：head95b0f6b、3job及所有step终态均核对；Ollama10/OpenAI11/Custom7/Google90及实际Runtime Linux37/其他36每个名字各一次。workspace Linux322/Windows317/macOS321，0失败、ignored39/37/37；实际Runtime37/36/36，0失败/0ignored；Linux native凭据1、fmt/Clippy/schema/doctor通过。watch、三日志下载、逐名脚本exit0。
 - 日志/tmp/caidex-ollama-{provider-final,workspace-final,all-real-final,clippy-final}.log；CI日志/tmp/caidex-ci-37719887330-{status.json,watch.log,linux.log,windows.log,macos.log}，逐名脚本/tmp/caidex-ollama-ci-check.py。跨机器以已提交文档/CI为准，/tmp不保证保留。
 - 环境磁盘满已解除：只cargo clean本项目可再生target缓存释放16.9GiB；受截断新测试已恢复并完整复验，10项名字核对，中断运行不计通过。当前不再阻塞；下轮先查df，不累积旧构建缓存。

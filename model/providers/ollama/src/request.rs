@@ -1,4 +1,5 @@
-use caidex_model_core::{CanonicalRequest, ProviderError, ProviderResult};
+use crate::ModelDetails;
+use caidex_model_core::{CanonicalRequest, CapabilitySupport, ProviderError, ProviderResult};
 use serde_json::Value;
 use std::collections::HashSet;
 
@@ -54,7 +55,11 @@ fn text(content: &Value, assistant: bool) -> ProviderResult<()> {
 
 /// Reject controls the native decoder would ignore; never silently filter
 /// meaningful history or pretend that echoed flags implement an API guarantee.
-pub(crate) fn compile(request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
+pub(crate) fn compile(
+    request: CanonicalRequest,
+    details: Option<&ModelDetails>,
+    reasoning: CapabilitySupport,
+) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
     fields(
         &wire,
@@ -71,8 +76,11 @@ pub(crate) fn compile(request: CanonicalRequest) -> ProviderResult<CanonicalRequ
             "background",
             "parallel_tool_calls",
             "tool_choice",
+            "think",
+            "reasoning",
         ],
     )?;
+    thinking(&mut wire, details, reasoning)?;
     for key in ["store", "background"] {
         if let Some(value) = wire.get(key) {
             if !value.is_null() && value != &Value::Bool(false) {
@@ -211,4 +219,45 @@ pub(crate) fn compile(request: CanonicalRequest) -> ProviderResult<CanonicalRequ
         }
     }
     CanonicalRequest::new(wire, request.dialect()).map_err(|_| invalid())
+}
+
+fn thinking(
+    wire: &mut Value,
+    details: Option<&ModelDetails>,
+    capability: CapabilitySupport,
+) -> ProviderResult<()> {
+    let mut control = wire.get("think").filter(|v| !v.is_null()).cloned();
+    if let Some(reasoning) = wire.get("reasoning").filter(|v| !v.is_null()) {
+        fields(reasoning, &["effort"])?;
+        if let Some(effort) = reasoning.get("effort").filter(|v| !v.is_null()) {
+            if control.is_some() {
+                return Err(invalid());
+            }
+            let effort = effort.as_str().ok_or_else(invalid)?;
+            control = Some(if effort == "none" {
+                Value::Bool(false)
+            } else {
+                Value::String(effort.into())
+            });
+        }
+    }
+    if let Some(control) = &control {
+        if !control.is_boolean() && !control.is_string() {
+            return Err(invalid());
+        }
+        if !details.is_some_and(|details| details.supports_thinking(control)) {
+            return Err(unsupported());
+        }
+        if capability == CapabilitySupport::Unsupported && control != &Value::Bool(false) {
+            return Err(ProviderError::new(400, "ollama_unsupported_capability"));
+        }
+    }
+    // Avoid native effort aliases and fallback: only a declared exact value is
+    // sent as think. No control leaves the model's default untouched.
+    let object = wire.as_object_mut().expect("validated object");
+    object.remove("reasoning");
+    if let Some(control) = control {
+        object.insert("think".into(), control);
+    }
+    Ok(())
 }
