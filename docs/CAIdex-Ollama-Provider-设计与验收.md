@@ -191,7 +191,7 @@ v2 source 新增可选 `lite_single_tool_call` 布尔：缺省为 Classic profil
 
 新增6项离线 loopback 回归：Lite-only 元数据/目录与三轮 function/custom 原文；默认 route/畸形 item/能力/原始预算零 Key/POST；多调用在三种终态的交付拒绝与 slot 复用；缺省/true 多调用保留；相同 native 工具下 dialect/policy/original 声明绑定及坏载体拒绝；无工具能力的纯文本复用显式 Runtime context/verbosity。第一项旧 mapping400有效 RED→GREEN，日志 `/tmp/caidex-ollama-lite-{red,green,focused}.log`。
 
-本地完整 workspace381/0/41，Ollama69每名一次；既有固定Codex0.160.1 Runtime39/0/0，Clippy全targets-D warnings/fmt/diff通过，日志同前缀 `{workspace-final,all-real-final,clippy-final}.log`。该Adapter提交未修改依赖、workflow、Runtime executor 或 Harness，39项为已有回归；实际Lite测试在下一节单独记录。源码8ef915d77ed4331b8bfb94e83f6b809d31da7fb4已提交/push，[CI37816328543](https://github.com/bboytang/CAIdex/actions/runs/37816328543)Linux/Windows completed/success、全部17steps成功或条件跳过，完整raw1924/1611行逐名Ollama69/OpenAI11/Custom7/Google90和全部旧Runtime各一次。workspace381/376（ignored41/39）、固定Runtime39/38均0failed，Linux native credentials1；macOS queued零steps，三平台仍未验收。原始日志 `/tmp/caidex-ci-37816328543-{linux,windows}-raw.log`，旧CI容量失败不代证本轮。真实daemon/Live/Full及完整F/G、H–R仍未完成。
+本地完整 workspace381/0/41，Ollama69每名一次；既有固定Codex0.160.1 Runtime39/0/0，Clippy全targets-D warnings/fmt/diff通过，日志同前缀 `{workspace-final,all-real-final,clippy-final}.log`。该Adapter提交未修改依赖、workflow、Runtime executor 或 Harness，39项为已有回归；实际Lite测试在下一节单独记录。源码8ef915d77ed4331b8bfb94e83f6b809d31da7fb4已提交/push，[CI37816328543](https://github.com/bboytang/CAIdex/actions/runs/37816328543)Linux/Windows completed/success、全部17steps成功或条件跳过，完整raw1924/1611行逐名Ollama69/OpenAI11/Custom7/Google90和全部旧Runtime各一次。workspace381/376（ignored41/39）、固定Runtime39/38均0failed，Linux native credentials1；macOS因hosted runner容量不足零steps取消，CI整体failure，三平台仍未验收。原始日志 `/tmp/caidex-ci-37816328543-{linux,windows}-raw.log`，旧CI容量失败不代证本轮。真实daemon/Live/Full及完整F/G、H–R仍未完成。
 
 ## 固定 Lite Runtime Code Mode（本地通过，新增测试三平台待验）
 
@@ -200,3 +200,7 @@ v2 source 新增可选 `lite_single_tool_call` 布尔：缺省为 Classic profil
 新增4项真实Runtime测试：Code Mode请求实际命令审批，批准前不写临时marker，批准后写入；删除marker并停app-server后按磁盘resume，第二轮不得重复审批或执行。3次native POST/Key读取，原native reasoning/function/message、arguments字符串、未知大数、完整v2载体和实际custom call/result逐项核对；native旧前缀连续保持，单调用策略随落盘历史绑定，本地归属字段、additional_tools、parallel flag和Lite header不向native透传。另验证两调用生成整轮安全失败、无审批/marker/工具或载体入盘；stream interrupt关闭实际native socket；等待审批时interrupt后状态为interrupted，迟到批准返回NotPending且marker仍不存在。
 
 定向4/0/0已在中断前完成，日志 `/tmp/caidex-ollama-lite-runtime-first.log`。中断后复核现有修改并完整回归：workspace381/0/45（新增4项默认ignored）、固定Runtime43/0/0（旧39和新4逐名各一次）、Clippy全targets-D warnings/fmt/Python语法/diff通过，日志 `/tmp/caidex-quota-audit-{workspace,runtime,clippy}.log`。改动仅两份Runtime测试文件，无生产源码、依赖或workflow变更；提交后的新精确head三平台CI须独立验收，8ef915d的CI不包含这4项。离线Runtime成功不授予LiveRuntime/Full，真实daemon/模型和完整F/G、H–R仍未完成。
+
+固定Lite Runtime测试源码`f25179bf6e5446735b2323fc5169007ecfea947a`已提交/push，[CI37818503514](https://github.com/bboytang/CAIdex/actions/runs/37818503514)已建立：Linux113453190593成功，Windows113453190663/macOS113453190281运行，尚未跨平台验收。前一Adapter CI37816328543的macOS于17:39:38 UTC因hosted runner容量不足取消、零steps，整体failure；Linux/Windows成功事实保留，不重跑原job、不代证本轮新测试。完整raw逐名核对尚待，预期workspace381/376/380（ignored45/43/43）、实际Runtime43/42/42。
+
+新CI Linux完整raw1932行已逐名核对：workspace381/0/45、固定Runtime43/0/0，Ollama69/OpenAI11/Custom7/Google90及全部Runtime各一次；17steps成功或条件跳过，native credentials1。日志 `/tmp/caidex-ci-37818503514-linux-raw.log`，其余job运行，不以Linux代证三平台。
