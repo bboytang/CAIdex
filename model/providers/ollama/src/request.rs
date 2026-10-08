@@ -10,6 +10,7 @@ use std::collections::{HashMap, HashSet};
 pub(crate) struct Options {
     pub native_history: bool,
     pub native_tools: bool,
+    pub custom_tools: bool,
     pub images: bool,
     pub structured_output: bool,
     pub runtime_context: bool,

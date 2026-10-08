@@ -155,3 +155,15 @@ show阶段结束时的恢复点：native reasoning历史归属/回放（现已�
 - 三平台收尾：CI精确head 40edb9a，三个job全部completed/success、所有step成功或条件跳过；Ollama51/OpenAI11/Custom7/Google90及完整固定Runtime每个名字各平台各一次。workspace Linux363/Windows358/macOS362，0失败、ignored40/38/38；固定Runtime38/37/37，0失败/0ignored；Linux隔离native credentials1与fmt/Clippy/schema/doctor通过。Runtime第四模式仍只证明拒绝未映射请求，无Ollama工具正例、daemon或Full。
 - GitHub API完整原始日志：Linux113318904267（1910行）、Windows113318904133（1591行）、macOS113318903828（1602行）；macOS排队后完成，无重启/重跑。`/tmp/caidex-ci-37779554830-{status.json,watch.log,linux-raw.log,windows-raw.log,macos-raw.log}`及同名step标注日志；`/tmp/caidex-ollama-native-tools-ci-{normalize,check}.py`只按实际Run命令标注、不改原payload，watch/下载/check exit0。跨机器以已提交文档/原CI为准，/tmp不保证保留。
 - 下一步custom/freeform、deferred/Lite及固定Runtime正例：固定源码只声明DeferLoading而不实施可见性；native-only v1无法证明映射前custom kind/声明绑定，须复用已有codec模式增加明确绑定且保持旧v1，不自动升级/松绑。不以本轮namespace/search fixture代证全部默认Runtime或真实模型，整体F/G及H–R未完成。
+
+## Custom/freeform 映射与 v2 历史（本地离线通过，三平台待验）
+
+`with_custom_tools_as_functions()` 显式启用 custom→function，并启用 native_tools/native_history。原始 flat 或 namespace custom 编成同名原生 function，只允许一个必填字符串 `input`，`additionalProperties=false`；namespace 指导沿用既有成员说明编译。text/缺省格式原样文本，lark/regex grammar 原文加入明确标记的指导，不承诺 Ollama constrained decoding 或 grammar 生成正确性。defer_loading=true、strict、自定义未知字段、web 和 Lite 仍拒绝；工具执行、grammar 解析与审批仍属于固定 Runtime。
+
+v2 明文 JSON 载体新增 original tools 与按序 client search results 快照，同时核对实际编译的 native tools/发现声明、原生请求前缀和完整展示组。每个历史响应只绑定其请求前缀已有的发现子集，允许以后发现新 custom；重复声明须与原始声明一致。custom/function kind 变化即使生成相同原生 schema 也拒绝。v1 继续可用，两种 profile 不自动升级、交换或混用；需要新线程/关联分支。仍非加密、签名或来源认证。
+
+JSON/SSE 在 typed terminal 前校验 custom arguments 为且仅为 `{input:string}`，再还原 custom_tool_call 和 input；SSE 使用 response.custom_tool_call_input.delta/done，failed/incomplete 不生成可执行 custom done。完整原生 arguments 字符串、工具名空间、未知字段及 SSE chunks 保存在 v2，回放不以重序列化的字符串替代。caller 自行提供的 custom call/result 单独编译，call/result kind、身份、顺序和唯一 ID 沿用既有 NativeTools 校验；custom result 要求 call_id，不能伪装成 function 或 legacy named result。仍共用 Custom bounded transport/Broker，无第二执行器、新依赖或新的 HTTP EOF 承诺。
+
+复用既有 loopback fixture 新增6项：namespace/mixed function JSON&SSE三轮原生字符串回放、多行grammar/source/kind/展示与破坏载体拒绝；动态 custom 搜索4轮、发现子集及重复声明；坏 arguments 不交付工具/载体/成功并释放 slot；默认/声明/配对/原始与编译预算/预取消均零Key/POST；v1/v2双向拒绝；flat text custom 输入事件与failed/incomplete状态。有效RED旧compiler400→GREEN，最终Ollama57逐名一次、workspace369/0/40、固定Runtime38/0/0、Clippy全targets-D warnings/fmt/diff通过。日志 `/tmp/caidex-ollama-custom-{red,green,workspace-final,all-real-final,clippy-final}.log`。补取消测试时误用不可Clone的RequestContext，已修正并完整重验，该失败不计通过。
+
+本轮固定Runtime38项只为已有回归，尚无本Adapter实际工具执行正例；真实daemon/模型/Live/Full未验。源码提交与精确head三平台CI待完成，随后deferred/Lite item转换及固定Runtime正例；整体F/G与H–R未完成。

@@ -29,7 +29,7 @@ fn name(value: &Value) -> ProviderResult<&str> {
         .ok_or_else(invalid)
 }
 
-fn native_name(namespace: Option<&str>, member: &str) -> String {
+pub(crate) fn native_name(namespace: Option<&str>, member: &str) -> String {
     let Some(namespace) = namespace else {
         return member.to_owned();
     };
@@ -98,6 +98,7 @@ pub(crate) struct NativeTools {
     aliases: HashMap<String, Identity>,
     search: bool,
     call_ids: HashSet<String>,
+    mapping: Option<crate::mapped_tools::MappedTools>,
 }
 impl NativeTools {
     pub(crate) fn from_request(request: &CanonicalRequest) -> ProviderResult<Self> {
@@ -107,6 +108,7 @@ impl NativeTools {
             aliases: HashMap::new(),
             search: false,
             call_ids: HashSet::new(),
+            mapping: None,
         };
         if let Some(declarations) = wire.get("tools") {
             tools.add(declarations, false, true)?;
@@ -390,8 +392,17 @@ impl NativeTools {
                     return Err(invalid());
                 }
             }
+            if let Some(mapping) = &self.mapping {
+                mapping.project(response)?;
+            }
             Ok(())
         })()
         .map_err(|_| ProviderError::new(502, "ollama_invalid_native_tools"))
+    }
+    pub(crate) fn set_mapping(&mut self, mapping: crate::mapped_tools::MappedTools) {
+        self.mapping = Some(mapping);
+    }
+    pub(crate) fn mapping(&self) -> Option<&crate::mapped_tools::MappedTools> {
+        self.mapping.as_ref()
     }
 }

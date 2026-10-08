@@ -183,6 +183,13 @@ impl HistoryStream {
                             budget,
                         )
                         .map_err(crate::history::native_error)?
+                        .with_mapping(
+                            self.tools
+                                .as_ref()
+                                .and_then(crate::tools::NativeTools::mapping),
+                            budget,
+                        )
+                        .map_err(crate::history::native_error)?
                         .to_responses(budget)
                         .map_err(crate::history::native_error)?
                     } else {
@@ -193,7 +200,7 @@ impl HistoryStream {
                     for (index, item) in projected.output().iter().enumerate() {
                         if matches!(
                             item["type"].as_str(),
-                            Some("function_call" | "tool_search_call")
+                            Some("function_call" | "tool_search_call" | "custom_tool_call")
                         ) && response.state() != StreamState::Completed
                         {
                             continue;
@@ -207,12 +214,18 @@ impl HistoryStream {
                             if item["type"] == "function_call" {
                                 start["arguments"] = "".into();
                                 start["status"] = "in_progress".into();
+                            } else if item["type"] == "custom_tool_call" {
+                                start["input"] = "".into();
+                                start["status"] = "in_progress".into();
                             }
                             self.emit(json!({"type":"response.output_item.added","output_index":index,"item":start}))?;
                         }
                         if item["type"] == "function_call" {
                             self.emit(json!({"type":"response.function_call_arguments.delta","output_index":index,"item_id":item["id"],"delta":item["arguments"]}))?;
                             self.emit(json!({"type":"response.function_call_arguments.done","output_index":index,"item_id":item["id"],"arguments":item["arguments"]}))?;
+                        } else if item["type"] == "custom_tool_call" {
+                            self.emit(json!({"type":"response.custom_tool_call_input.delta","output_index":index,"item_id":item["id"],"delta":item["input"]}))?;
+                            self.emit(json!({"type":"response.custom_tool_call_input.done","output_index":index,"item_id":item["id"],"input":item["input"]}))?;
                         }
                         self.emit(json!({"type":"response.output_item.done","output_index":index,"item":item}))?;
                     }

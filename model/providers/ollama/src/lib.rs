@@ -2,6 +2,7 @@
 mod config;
 mod history;
 mod history_stream;
+mod mapped_tools;
 mod models;
 mod request;
 mod runtime;
@@ -97,6 +98,12 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
         self.options.native_tools = true;
         self.options.native_history = true;
         self
+    }
+    /// Map custom text tools to native functions. Grammar is guidance only;
+    /// v2 history binds the original declarations and compiled native tools.
+    pub fn with_custom_tools_as_functions(mut self) -> Self {
+        self.options.custom_tools = true;
+        self.with_native_tools()
     }
     /// Opt in to bounded inline image inputs and image tool results. Model
     /// declarations still apply; this does not prove live vision compatibility.
@@ -225,7 +232,14 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             &metadata.capabilities,
             self.limits.request_bytes,
         )?;
-        let request = if self.options.native_tools {
+        let mapping = self
+            .options
+            .custom_tools
+            .then(|| mapped_tools::MappedTools::from_request(&request))
+            .transpose()?;
+        let request = if let Some(mapping) = &mapping {
+            mapping.compile_request(request)?
+        } else if self.options.native_tools {
             tools::normalize(request)?
         } else {
             request
@@ -236,6 +250,7 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
                 &self.config,
                 &metadata.native_model,
                 self.history_bytes,
+                mapping.as_ref(),
             )?
         } else {
             request
@@ -248,11 +263,15 @@ impl<S: SecretStore + 'static> OllamaProvider<S> {
             &self.options,
             self.limits.request_bytes,
         )?;
-        let tools = self
+        let mut tools = self
             .options
             .native_tools
             .then(|| tools::NativeTools::from_request(&request))
             .transpose()?;
+        if let (Some(tools), Some(mapping)) = (&mut tools, mapping) {
+            mapping.matches_request(&request)?;
+            tools.set_mapping(mapping);
+        }
         Ok((request, tools))
     }
 }
@@ -336,6 +355,11 @@ impl<S: SecretStore + 'static> ModelProvider for OllamaProvider<S> {
                     &native_model,
                     &native_request,
                     &response.response,
+                    self.history_bytes,
+                )
+                .map_err(history::native_error)?
+                .with_mapping(
+                    tools.as_ref().and_then(tools::NativeTools::mapping),
                     self.history_bytes,
                 )
                 .map_err(history::native_error)?

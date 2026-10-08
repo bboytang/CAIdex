@@ -141,3 +141,5 @@ Ollama固定Runtime请求入口本轮新增显式本地归属/leading developer�
 
 
 Ollama原生工具本轮新增显式native_tools + bound history：namespace指导/别名碰撞、client tool_search顺序声明与call/result配对、JSON/SSE交付前工具身份/args/重复ID检查，failed/incomplete search无可执行done。默认/custom/Lite/web未放松，复用共享transport/v1 history，无新依赖或第二执行器。6项通过，第四模式实际Runtime拒绝通过，完整workspace363/0/40、固定Runtime38/0/0、Clippy/fmt/diff通过；源码40edb9a40975ade7690a946596e85a8fdb7cc56e已push，[CI37779554830](https://github.com/bboytang/CAIdex/actions/runs/37779554830)精确head三平台全job/step成功或条件跳过，完整原始日志逐名Ollama51/OpenAI11/Custom7/Google90及固定Runtime各一次；workspace363/358/362、Runtime38/37/37均零失败。不认领工具正例/daemon/Full，接下来custom/deferred/Lite转换，详Ollama文档/HANDOFF。
+
+Ollama custom/freeform本轮本地显式映射：单一input:string原生function、grammar仅指导、JSON/SSE终态后还原custom input；v2同时绑定original声明/kind/按序发现子集与actual native tools、compiled prefix/display group，保留native arguments原字符串，禁止v1/v2互换。沿用NativeTools与Custom transport，无新依赖/执行器；6项新增、Ollama57逐名一次、workspace369/0/40、固定Runtime38/0/0、Clippy/fmt/diff通过。源码提交及三平台CI待完成；deferred/Lite、Ollama实际Runtime工具正例/daemon/Full仍未验，详Ollama文档/HANDOFF。

@@ -1,4 +1,5 @@
 use crate::OllamaConfig;
+use crate::mapped_tools::MappedTools;
 use caidex_model_core::{
     CanonicalRequest, CanonicalResponse, ProviderError, ProviderResult, ResponsesStream,
 };
@@ -6,6 +7,7 @@ use serde_json::{Value, json};
 use std::fmt;
 
 const PREFIX: &str = "caidex.ollama.native-history.v1:";
+const MAPPED_PREFIX: &str = "caidex.ollama.native-history.v2:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "ollama_invalid_history")
 }
@@ -79,7 +81,8 @@ impl NativeHistory {
         let history = Self(wire);
         history.check_size(max_bytes)?;
         if history.0["provider"] != "ollama"
-            || history.0["version"] != 1
+            || !matches!(history.0["version"].as_u64(), Some(1 | 2))
+            || (history.0["version"] == 1 && history.0.get("tool_mapping").is_some())
             || !history.0["scope"].is_object()
             || history.0["request"]["model"] != history.0["native_model"]
             || !history.0["native_model"]
@@ -88,7 +91,7 @@ impl NativeHistory {
         {
             return Err(invalid());
         }
-        CanonicalRequest::new(
+        let request = CanonicalRequest::new(
             history.0["request"].clone(),
             caidex_model_core::ResponsesDialect::Classic,
         )
@@ -101,6 +104,15 @@ impl NativeHistory {
             .is_some_and(|model| model != &history.0["native_model"])
         {
             return Err(invalid());
+        }
+        if history.0["version"] == 2 {
+            let mapping = MappedTools::from_source(history.0["tool_mapping"].clone())
+                .map_err(|_| invalid())?;
+            mapping.matches_request(&request).map_err(|_| invalid())?;
+            let mut tools =
+                crate::tools::NativeTools::from_request(&request).map_err(|_| invalid())?;
+            tools.set_mapping(mapping);
+            tools.validate_response(&response).map_err(|_| invalid())?;
         }
         for item in response
             .output()
@@ -127,8 +139,35 @@ impl NativeHistory {
         }
         Ok(history)
     }
+    pub(crate) fn with_mapping(
+        mut self,
+        mapping: Option<&MappedTools>,
+        max_bytes: usize,
+    ) -> ProviderResult<Self> {
+        if let Some(mapping) = mapping {
+            self.0["version"] = 2.into();
+            self.0["tool_mapping"] = mapping.source().clone();
+            Self::new(self.0, max_bytes)
+        } else {
+            Ok(self)
+        }
+    }
+    fn carrier_prefix(&self) -> &'static str {
+        if self.0["version"] == 2 {
+            MAPPED_PREFIX
+        } else {
+            PREFIX
+        }
+    }
     fn check_size(&self, max_bytes: usize) -> ProviderResult<()> {
-        if max_bytes == 0 || self.0.to_string().len().saturating_add(PREFIX.len()) > max_bytes {
+        if max_bytes == 0
+            || self
+                .0
+                .to_string()
+                .len()
+                .saturating_add(self.carrier_prefix().len())
+                > max_bytes
+        {
             return Err(ProviderError::new(502, "ollama_history_too_large"));
         }
         Ok(())
@@ -144,7 +183,19 @@ impl NativeHistory {
     }
     pub fn to_responses(&self, max_bytes: usize) -> ProviderResult<CanonicalResponse> {
         self.check_size(max_bytes)?;
-        let mut wire = self.native_response().clone();
+        let mut wire = if self.0["version"] == 2 {
+            MappedTools::from_source(self.0["tool_mapping"].clone())
+                .map_err(|_| invalid())?
+                .project(
+                    &CanonicalResponse::new(self.native_response().clone())
+                        .map_err(|_| invalid())?,
+                )
+                .map_err(|_| invalid())?
+                .wire()
+                .clone()
+        } else {
+            self.native_response().clone()
+        };
         let native = wire["output"].as_array().expect("validated output");
         let summary: Vec<_> = native
             .iter()
@@ -161,7 +212,7 @@ impl NativeHistory {
         // bounded request/history budgets cap this, Host may deduplicate later.
         let mut output = vec![
             json!({"type":"reasoning","id":format!("rs_{}_native",wire["id"].as_str().expect("validated ID")),
-            "summary":summary,"encrypted_content":format!("{PREFIX}{}",self.0)}),
+            "summary":summary,"encrypted_content":format!("{}{}",self.carrier_prefix(),self.0)}),
         ];
         output.extend(
             native
@@ -184,6 +235,23 @@ impl NativeHistory {
         expected_request: &CanonicalRequest,
         max_bytes: usize,
     ) -> ProviderResult<(Self, usize)> {
+        Self::restore(
+            input,
+            config,
+            native_model,
+            expected_request,
+            max_bytes,
+            None,
+        )
+    }
+    fn restore(
+        input: &[Value],
+        config: &OllamaConfig,
+        native_model: &str,
+        expected_request: &CanonicalRequest,
+        max_bytes: usize,
+        mapping: Option<&MappedTools>,
+    ) -> ProviderResult<(Self, usize)> {
         if expected_request.dialect() != caidex_model_core::ResponsesDialect::Classic {
             return Err(invalid());
         }
@@ -192,9 +260,17 @@ impl NativeHistory {
         if carrier["type"] != "reasoning" || max_bytes == 0 || capsule.len() > max_bytes {
             return Err(invalid());
         }
-        let wire: Value = serde_json::from_str(capsule.strip_prefix(PREFIX).ok_or_else(invalid)?)
+        let marker = if mapping.is_some() {
+            MAPPED_PREFIX
+        } else {
+            PREFIX
+        };
+        let wire: Value = serde_json::from_str(capsule.strip_prefix(marker).ok_or_else(invalid)?)
             .map_err(|_| invalid())?;
         let history = Self::new(wire, max_bytes).map_err(|_| invalid())?;
+        if history.carrier_prefix() != marker {
+            return Err(invalid());
+        }
         if history.0["scope"] != config.replay_scope() || history.0["native_model"] != native_model
         {
             return Err(ProviderError::new(400, "ollama_history_model_mismatch"));
@@ -203,6 +279,12 @@ impl NativeHistory {
             .map_err(|_| invalid())?;
         if prefix(&original) != prefix(expected_request) {
             return Err(ProviderError::new(400, "ollama_history_prefix_mismatch"));
+        }
+        if let Some(mapping) = mapping {
+            let expected = mapping.at_prefix(expected_request).map_err(|_| invalid())?;
+            if &history.0["tool_mapping"] != expected.source() {
+                return Err(ProviderError::new(400, "ollama_history_prefix_mismatch"));
+            }
         }
         let projected = history.to_responses(max_bytes).map_err(|_| invalid())?;
         let count = projected.output().len();
@@ -259,6 +341,7 @@ pub(crate) fn expand(
     config: &OllamaConfig,
     native_model: &str,
     max_bytes: usize,
+    mapping: Option<&MappedTools>,
 ) -> ProviderResult<CanonicalRequest> {
     let Some(input) = request.wire()["input"].as_array() else {
         return Ok(request);
@@ -273,12 +356,13 @@ pub(crate) fn expand(
                 &CanonicalRequest::new(prefix, request.dialect()).map_err(|_| invalid())?,
                 native_model,
             )?;
-            let (history, count) = NativeHistory::from_responses_prefix(
+            let (history, count) = NativeHistory::restore(
                 &input[index..],
                 config,
                 native_model,
                 &expected,
                 max_bytes,
+                mapping,
             )?;
             let output = history.native_response()["output"]
                 .as_array()
@@ -294,7 +378,11 @@ pub(crate) fn expand(
             }
             index += count;
         } else {
-            native.push(input[index].clone());
+            native.push(if let Some(mapping) = mapping {
+                mapping.compile_item(&input[index], &native)?
+            } else {
+                input[index].clone()
+            });
             index += 1;
         }
     }

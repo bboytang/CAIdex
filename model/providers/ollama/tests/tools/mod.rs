@@ -1,5 +1,6 @@
 use super::*;
 use caidex_model_core::CanonicalResponse;
+mod mapped;
 
 fn namespace() -> Value {
     json!({"type":"namespace","name":"functions","description":"Fixture namespace guidance","tools":[{"type":"function","name":"echo","description":"Echo exact arguments","parameters":{"type":"object"},"strict":false}]})
