@@ -99,3 +99,17 @@ SSE沿用原I/O：custom added/input.delta/input.done暂存至完整终态；校
 
 
 apply_patch三平台收尾：精确源码df98a54bb247f947d9ce4014f7007c9d192056b1/[CI37854138352](https://github.com/bboytang/CAIdex/actions/runs/37854138352)整体completed/success，3job各17steps成功或条件跳过；Linux113574131063/Windows113574131960/macOS113574131216完整raw1989/1676/1687行。workspace418/413/417（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。DeepSeek37每名每平台一次；全workspace/credentials/Runtime/compile-fail doc-test通过名集合462/455/459，等于已验6742b15加21新名，无遗漏/重复。watch29915及完整日志下载/normalize/available/full-names均exit0，全部handle结束；checker /tmp/caidex-deepseek-patch-ci-{normalize,available}.py与/tmp/caidex-deepseek-ci-full-names.py在精确/tmp/caidex-deepseek-patch-ci-source归档执行，未借旧29项CI或后续文档HEAD代验。日志/tmp/caidex-ci-37854138352-{linux,windows,macos}-raw.log及同前缀.log/status.json/watch.log。上述旧43/42/42只是既有固定Runtime回归，尚不是DeepSeek实际Runtime正例；grammar仍仅作指导，不认领原生约束/Live/Full。
+
+
+## Runtime summary/context/include本地契约（本地42项通过 / 三平台待验）
+
+只有执行端同时启用with_runtime_context与with_native_history（native_tools/apply_patch也显式包含history）才允许该组合；默认、仅上下文或仅history仍拒绝。复用已有whole-reasoning展示和完整绑定回放，不添加新builder、HTTP传输、模型调用或第二Agent，不改变v1/v2编码。源请求先检查完整字节预算，再消费本地控制，随后一次effort映射与native展开；不能靠删除include/metadata缩小body来绕过原始预算。
+
+- include仅允许唯一reasoning.encrypted_content、空数组或null，字段本地消费，不传到原生；对应现有敏感JSON载体，不是加密/签名/来源认证或云存储。重复项、其他include及错误类型拒绝。
+- reasoning.summary仅auto或null。auto请求使用已授权的完整原生明文reasoning作为显示文本，不生成精简summary、不能承诺concise/detailed刻度；Unsupported reasoning拒绝auto。CLI/未来GUI应说明全文显示，不能把伪encrypted_content宣传为机密性保障。
+- reasoning.context仅all_turns或null。客户端完整绑定组展开为实际全部native reasoning/工具/结果，Key前校验scope/model/compiled前缀/源声明；不是原生previous_response_id、持久化或上下文截断。未绑定/伪造reasoning仍拒绝。
+- summary/context-only无effort时消费后不向原生编造effort，不要求配置effort映射；有effort时继续既有显式映射和Unsupported门控。原始空reasoning对象、null根或未知字段仍拒绝。顶层context_management不在该契约中，不允许假装支持服务端compaction。
+
+新增5项：JSON/SSE与v1函数/v2 custom两轮完整native历史、单次effort/verbosity保留；无effort与可空控制不编造参数；畸形/默认/部分启用/Unsupported/未知上下文及不可信reasoning零Key-POST；原始预算与预取消/deadline；真实Gateway SSE→JSON回放、developer优先级与token/Key隔离。有效RED新正例编译成功400失败（/tmp/caidex-deepseek-history-controls-red.log），实现后定向42/0/0（同前缀green.log），旧37名保留。最终workspace423/0/45（42名各一次、旧37名保留）、Clippy全workspace/all-targets-D warnings、fmt/diff通过；日志同前缀{workspace,clippy}.log，local-check.py核对范围/链接。首次Clippy只指出新增测试可合并if，修正后重新42项及Clippy通过；未重复与此无关的旧本地Runtime全套。独立精确CI待验；原37项CI37854138352不能代验42项。本轮生产只lib/request入口与helper，未改HistoryStream/历史codec/工具编译/其他Provider/Runtime/依赖/workflow。
+
+恢复点：复杂reasoning/content_part/多item索引映射与状态、Lite及单调用、固定DeepSeek实际Runtime审批/执行/取消/磁盘恢复，再Qwen/OpenRouter。原生生成兼容性/Live/Full未验；本local契约不替代未来账户/Host/UI验收。

@@ -1,4 +1,4 @@
-use caidex_model_core::{CanonicalRequest, ProviderError, ProviderResult};
+use caidex_model_core::{CanonicalRequest, CapabilitySupport, ProviderError, ProviderResult};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -42,6 +42,55 @@ fn content(value: &Value) -> ProviderResult<()> {
     }
     Ok(())
 }
+/// Runtime explicitly requests the existing whole-reasoning display and bound
+/// local carrier. This neither produces concise summaries nor encrypts history.
+pub(crate) fn compile_history_controls(
+    request: CanonicalRequest,
+    enabled: bool,
+    reasoning_support: CapabilitySupport,
+    max_bytes: usize,
+) -> ProviderResult<CanonicalRequest> {
+    if !enabled {
+        return Ok(request);
+    }
+    let mut wire = request.wire().clone();
+    if wire.to_string().len() > max_bytes {
+        return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+    }
+    if let Some(include) = wire.get("include").filter(|v| !v.is_null()) {
+        let values = include.as_array().ok_or_else(invalid)?;
+        if !(values.is_empty() || values.len() == 1 && values[0] == "reasoning.encrypted_content") {
+            return Err(unsupported());
+        }
+    }
+    wire.as_object_mut().unwrap().remove("include");
+    if let Some(reasoning) = wire.get_mut("reasoning") {
+        fields(reasoning, &["effort", "summary", "context"])?;
+        let controls = reasoning.get("summary").is_some() || reasoning.get("context").is_some();
+        if let Some(summary) = reasoning.get("summary").filter(|v| !v.is_null()) {
+            if summary != "auto" {
+                return Err(unsupported());
+            }
+            if reasoning_support == CapabilitySupport::Unsupported {
+                return Err(ProviderError::new(400, "unsupported_reasoning"));
+            }
+        }
+        if reasoning
+            .get("context")
+            .is_some_and(|v| !v.is_null() && v != "all_turns")
+        {
+            return Err(unsupported());
+        }
+        let object = reasoning.as_object_mut().unwrap();
+        object.remove("summary");
+        object.remove("context");
+        if controls && object.is_empty() {
+            wire.as_object_mut().unwrap().remove("reasoning");
+        }
+    }
+    CanonicalRequest::new(wire, request.dialect()).map_err(|_| invalid())
+}
+
 /// Apply executor-owned mappings once, before either validation pass. A native
 /// level may itself be a source mapped to another level on the next turn.
 pub(crate) fn compile_effort(

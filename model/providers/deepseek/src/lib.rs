@@ -93,7 +93,8 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         })
     }
     /// Explicit local attribution and leading developer-to-system policy.
-    /// Does not implement native caching, persistence or reasoning replay.
+    /// Combined with native history, consumes auto whole-reasoning display,
+    /// all_turns replay and the local carrier include; no encryption or caching.
     pub fn with_runtime_context(mut self) -> Self {
         self.runtime_context = true;
         self
@@ -190,6 +191,12 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         if self.native_tools && model.capabilities.native_tools == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_tools"));
         }
+        let request = request::compile_history_controls(
+            request,
+            self.runtime_context && self.native_history,
+            model.capabilities.reasoning,
+            self.request_bytes,
+        )?;
         let request =
             request::compile_effort(request, &self.reasoning_efforts, self.request_bytes)?;
         if request.wire().get("reasoning").is_some()
