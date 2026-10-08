@@ -2155,3 +2155,238 @@ async fn serialized_three_turn_history_replays_exact_native_prefix_and_rejects_r
         .unwrap();
     assert_eq!(reads.load(Ordering::SeqCst), 4);
 }
+
+#[test]
+fn reasoning_effort_mapping_requires_reviewed_levels_and_rejects_duplicate_policy() {
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let make = || {
+        DeepSeekProvider::new(
+            DeepSeekConfig::new(reference()).unwrap(),
+            vec![metadata("fixture", "native-fixture")],
+            broker.clone(),
+            limits(),
+        )
+        .unwrap()
+    };
+    for (source, native) in [
+        ("unknown", "low"),
+        ("ultra", "max"),
+        ("high", "medium"),
+        ("high", "ultra"),
+        ("", "none"),
+    ] {
+        assert_eq!(
+            make()
+                .with_reasoning_effort_mapping(source.into(), native.into())
+                .err()
+                .unwrap()
+                .code,
+            "deepseek_invalid_effort_mapping"
+        );
+    }
+    assert!(
+        make()
+            .with_reasoning_effort_mapping("medium".into(), "high".into())
+            .unwrap()
+            .with_reasoning_effort_mapping("medium".into(), "low".into())
+            .is_err()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn explicit_effort_maps_json_sse_and_history_once_preserving_prior_native_controls() {
+    for (source, native_effort) in [
+        ("none", "none"),
+        ("minimal", "low"),
+        ("medium", "high"),
+        ("xhigh", "max"),
+    ] {
+        for streaming in [false, true] {
+            let first_native = history_text();
+            let reply = if streaming {
+                Reply::stream(
+                    native_chunks(&first_native)
+                        .into_iter()
+                        .map(event)
+                        .collect(),
+                )
+            } else {
+                Reply::json(first_native.clone())
+            };
+            let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+            let (broker, reads) = fixture_broker(Some(KEY));
+            let mut model = metadata("fixture", "native-fixture");
+            if native_effort == "none" {
+                model.capabilities.reasoning = CapabilitySupport::Unsupported;
+            }
+            let mut provider = fixture
+                .provider(broker, vec![model], limits())
+                .with_native_history()
+                .with_runtime_context()
+                .with_reasoning_effort_mapping(source.into(), native_effort.into())
+                .unwrap()
+                .with_verbosity_instruction("low".into(), "Executor guidance".into())
+                .unwrap();
+            if native_effort != source {
+                provider = provider
+                    .with_reasoning_effort_mapping(native_effort.into(), "none".into())
+                    .unwrap();
+            }
+            let mut original = basic(streaming);
+            original["input"] = json!([{"role":"developer","content":"Priority"},{"role":"user","content":"中文🙂"}]);
+            original["instructions"] = "Original".into();
+            original["text"] = json!({"verbosity":"low"});
+            original["reasoning"] = json!({"effort":source});
+            let first = if streaming {
+                let mut stream = provider
+                    .stream_response(request(original.clone()), local_context())
+                    .await
+                    .unwrap();
+                let mut terminal = None;
+                while let Some(item) = stream.events.next().await {
+                    if let ProviderStreamEvent::Model(event) = item.unwrap()
+                        && event.response.terminal().is_some()
+                    {
+                        terminal = Some(event.response.wire()["response"].clone());
+                    }
+                }
+                terminal.unwrap()
+            } else {
+                provider
+                    .create_response(request(original.clone()), local_context())
+                    .await
+                    .unwrap()
+                    .response
+                    .wire()
+                    .clone()
+            };
+            let sent_first = fixture.captured().await.body.unwrap();
+            assert_eq!(sent_first["reasoning"], json!({"effort":native_effort}));
+            assert_eq!(sent_first["instructions"], "Original\nExecutor guidance");
+            assert_eq!(sent_first["input"][0]["role"], "system");
+            assert_eq!(capsule(&first["output"][0])["request"], sent_first);
+            let mut next = original;
+            next["stream"] = false.into();
+            next["reasoning"] = json!({"effort":native_effort});
+            next["input"]
+                .as_array_mut()
+                .unwrap()
+                .extend(first["output"].as_array().unwrap().iter().cloned());
+            next["input"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({"role":"user", "content":"继续"}));
+            provider
+                .create_response(request(next), local_context())
+                .await
+                .unwrap();
+            let sent_second = fixture.captured().await.body.unwrap();
+            assert_eq!(sent_second["reasoning"], json!({"effort":"none"}));
+            assert_eq!(sent_second["input"][2], first_native["output"][0]);
+            assert_eq!(reads.load(Ordering::SeqCst), 2);
+        }
+    }
+}
+
+#[tokio::test]
+async fn invalid_unmapped_and_unsupported_effort_controls_refuse_before_key_or_post() {
+    let fixture = Fixture::start(vec![Reply::json(history_text())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_reasoning_effort_mapping("medium".into(), "high".into())
+        .unwrap();
+    for reasoning in [
+        Value::Null,
+        json!({}),
+        json!([]),
+        json!({"effort":null}),
+        json!({"effort":3}),
+        json!({"effort":"low"}),
+        json!({"effort":"ultra"}),
+        json!({"effort":"medium", "summary":"auto"}),
+        json!({"effort":"medium", "context":"all_turns"}),
+    ] {
+        for streaming in [false, true] {
+            let mut wire = basic(streaming);
+            wire["reasoning"] = reasoning.clone();
+            let error = if streaming {
+                provider
+                    .stream_response(request(wire), RequestContext::default())
+                    .await
+                    .err()
+                    .unwrap()
+            } else {
+                provider
+                    .create_response(request(wire), RequestContext::default())
+                    .await
+                    .err()
+                    .unwrap()
+            };
+            assert_eq!(error.http_status, 400);
+        }
+    }
+    let mut model = metadata("fixture", "native-fixture");
+    model.capabilities.reasoning = CapabilitySupport::Unsupported;
+    let unsupported = fixture
+        .provider(broker.clone(), vec![model], limits())
+        .with_reasoning_effort_mapping("medium".into(), "high".into())
+        .unwrap();
+    let mut wire = basic(false);
+    wire["reasoning"] = json!({"effort":"medium"});
+    assert_eq!(
+        unsupported
+            .create_response(request(wire.clone()), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "unsupported_reasoning"
+    );
+    let default = fixture.provider(
+        broker,
+        vec![metadata("fixture", "native-fixture")],
+        limits(),
+    );
+    assert_eq!(
+        default
+            .create_response(request(wire), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .http_status,
+        400
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn effort_mapping_cannot_hide_an_oversized_original_request() {
+    let fixture = Fixture::start(vec![Reply::json(history_text())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let mut wire = basic(false);
+    wire["reasoning"] = json!({"effort":"medium"});
+    let mut small = limits();
+    small.request_bytes = wire.to_string().len() - 1;
+    let provider = fixture
+        .provider(broker, vec![metadata("fixture", "native-fixture")], small)
+        .with_reasoning_effort_mapping("medium".into(), "low".into())
+        .unwrap();
+    assert_eq!(
+        provider
+            .create_response(request(wire), RequestContext::default())
+            .await
+            .err()
+            .unwrap()
+            .http_status,
+        413
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}

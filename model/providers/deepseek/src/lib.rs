@@ -34,6 +34,7 @@ pub struct DeepSeekProvider<S: SecretStore> {
     request_bytes: usize,
     runtime_context: bool,
     verbosity_instructions: HashMap<String, String>,
+    reasoning_efforts: HashMap<String, String>,
     limits: Limits,
     native_history: bool,
     native_tools: bool,
@@ -83,6 +84,7 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             request_bytes,
             runtime_context: false,
             verbosity_instructions: HashMap::new(),
+            reasoning_efforts: HashMap::new(),
             limits,
             native_history: false,
             native_tools: false,
@@ -105,6 +107,24 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
     pub fn with_native_tools(mut self) -> Self {
         self.native_tools = true;
         self.with_native_history()
+    }
+    /// Executor-owned effort selection; aliases are never inferred from model names.
+    /// Mapping a source level does not claim identical reasoning strength.
+    pub fn with_reasoning_effort_mapping(
+        mut self,
+        effort: String,
+        native: String,
+    ) -> ProviderResult<Self> {
+        if !matches!(
+            effort.as_str(),
+            "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
+        ) || !matches!(native.as_str(), "none" | "low" | "high" | "max")
+            || self.reasoning_efforts.contains_key(&effort)
+        {
+            return Err(ProviderError::new(400, "deepseek_invalid_effort_mapping"));
+        }
+        self.reasoning_efforts.insert(effort, native);
+        Ok(self)
     }
     /// Executor-owned guidance, not a native verbosity scale guarantee.
     pub fn with_verbosity_instruction(
@@ -162,6 +182,14 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         if self.native_tools && model.capabilities.native_tools == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_tools"));
         }
+        let request =
+            request::compile_effort(request, &self.reasoning_efforts, self.request_bytes)?;
+        if request.wire().get("reasoning").is_some()
+            && request.wire()["reasoning"]["effort"] != "none"
+            && model.capabilities.reasoning == CapabilitySupport::Unsupported
+        {
+            return Err(ProviderError::new(400, "unsupported_reasoning"));
+        }
         let route = request.model().to_owned();
         let request = request::compile(
             request,
@@ -170,6 +198,7 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             &self.verbosity_instructions,
             self.native_history,
             self.native_tools,
+            !self.reasoning_efforts.is_empty(),
         )?;
         if !self.native_history {
             return Ok((request, None));
@@ -193,6 +222,7 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             &self.verbosity_instructions,
             self.native_history,
             self.native_tools,
+            !self.reasoning_efforts.is_empty(),
         )?;
         tools::validate_input(&request)?;
         let mut wire = request.wire().clone();

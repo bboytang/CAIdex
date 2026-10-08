@@ -159,4 +159,7 @@ DeepSeek基础2967f56/[CI37824041219](https://github.com/bboytang/CAIdex/actions
 
 DeepSeek上下文适配已以精确6742b151b225bb695c673331ead808ecbdbc61e9/[CI37825726756](https://github.com/bboytang/CAIdex/actions/runs/37825726756)独立三平台验收：3job/17steps成功或条件跳过，完整raw逐名核对DeepSeek16及既有Provider/Runtime每名一次；workspace397/392/396与旧Runtime43/42/42均0failed，Linux native credentials1。watch/下载/完整checker全部exit0，详DeepSeek文档/HANDOFF。此范围只证明显式本地上下文与指令编译，不代表tools/Lite/reasoning绑定历史/实际DeepSeek Runtime/Live/Full已实现。下一步继续原V3工具映射与绑定历史，不重规划架构。
 
-DeepSeek续接新增范围：显式Classic函数/namespace编译及完整明文reasoning绑定历史，复用原transport/Broker；原始声明/choice与实际native前缀及执行端scope绑定，工具只在终态校验通过后交付，实际Gateway仍隔离本地token/原生凭据。新增9项/共25项定向回归；完整本地workspace406/0/45、旧固定Runtime43/0/0及Clippy/fmt/diff通过，未提交，新范围精确三平台CI待验，旧6742b15不代验。custom/deferred/Lite/推理控制与固定DeepSeek实际Runtime及Live/Full仍待；具体限制、日志和恢复点见[DeepSeek验收](CAIdex-DeepSeek-Provider-设计与验收.md)/HANDOFF。无共享生产源码、其他Provider、Runtime、依赖或workflow修改，保持V3。
+DeepSeek续接新增范围：显式Classic函数/namespace编译及完整明文reasoning绑定历史，复用原transport/Broker；原始声明/choice与实际native前缀及执行端scope绑定，工具只在终态校验通过后交付，实际Gateway仍隔离本地token/原生凭据。新增9项/共25项定向回归；完整本地workspace406/0/45、旧固定Runtime43/0/0及Clippy/fmt/diff通过，已提交/push dba1c90，新范围精确CI37851276859验收中，旧6742b15不代验。custom/deferred/Lite/推理控制与固定DeepSeek实际Runtime及Live/Full仍待；具体限制、日志和恢复点见[DeepSeek验收](CAIdex-DeepSeek-Provider-设计与验收.md)/HANDOFF。无共享生产源码、其他Provider、Runtime、依赖或workflow修改，保持V3。
+
+
+后续DeepSeek effort配置本地通过：执行端显式source→native等级、单次映射与历史保留，畸形/未配置/Unsupported和预算Key/POST前门控；新增4项/共29项、workspace410/0/45、Clippy/fmt/diff通过。该后续范围须新提交独立三平台CI，不能由dba1c90的25项范围代验；summary/context/include与custom/Lite/实际DeepSeek Runtime等仍待，恢复点见HANDOFF和DeepSeek文档。

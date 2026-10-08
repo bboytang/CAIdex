@@ -42,6 +42,30 @@ fn content(value: &Value) -> ProviderResult<()> {
     }
     Ok(())
 }
+/// Apply executor-owned mappings once, before either validation pass. A native
+/// level may itself be a source mapped to another level on the next turn.
+pub(crate) fn compile_effort(
+    request: CanonicalRequest,
+    mappings: &HashMap<String, String>,
+    max_bytes: usize,
+) -> ProviderResult<CanonicalRequest> {
+    let Some(reasoning) = request.wire().get("reasoning") else {
+        return Ok(request);
+    };
+    if request.wire().to_string().len() > max_bytes {
+        return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+    }
+    if mappings.is_empty() {
+        return Err(unsupported());
+    }
+    fields(reasoning, &["effort"])?;
+    let source = reasoning["effort"].as_str().ok_or_else(invalid)?;
+    let native = mappings.get(source).ok_or_else(unsupported)?;
+    let mut wire = request.wire().clone();
+    wire["reasoning"]["effort"] = native.clone().into();
+    CanonicalRequest::new(wire, request.dialect()).map_err(|_| invalid())
+}
+
 /// The native API silently ignores unsupported controls and downgrades
 /// developer messages. Reject them before authentication, rather than claim
 /// an equivalent response from a successful HTTP request.
@@ -52,6 +76,7 @@ pub(crate) fn compile(
     verbosity_instructions: &HashMap<String, String>,
     native_history: bool,
     native_tools: bool,
+    reasoning_controls: bool,
 ) -> ProviderResult<CanonicalRequest> {
     let mut wire = request.wire().clone();
     if wire.to_string().len() > max_bytes {
@@ -126,8 +151,21 @@ pub(crate) fn compile(
             "tools",
             "tool_choice",
             "parallel_tool_calls",
+            "reasoning",
         ],
     )?;
+    if let Some(reasoning) = wire.get("reasoning") {
+        if !reasoning_controls {
+            return Err(unsupported());
+        }
+        fields(reasoning, &["effort"])?;
+        if !matches!(
+            reasoning["effort"].as_str(),
+            Some("none" | "low" | "high" | "max")
+        ) {
+            return Err(invalid());
+        }
+    }
     if !native_tools
         && ["tools", "tool_choice", "parallel_tool_calls"]
             .iter()
