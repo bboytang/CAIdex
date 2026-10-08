@@ -7,6 +7,7 @@
 - `CredentialRef` = owner / provider / profile / kind。owner 是实际执行端持久 ID；普通 Chat 使用客户端 owner，Remote Codex 使用 Host owner。profile 为内部 ID，显示名称由设置元数据单独保存。
 - ID 使用 1–64 字节小写 ASCII、数字、下划线或连字符。Windows 凭据目标不区分大小写，因此拒绝混合大小写及路径分隔符，保持各平台相同的身份语义。[Windows CREDENTIAL](https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentiala)
 - Broker 固定一个 owner，拒绝其他 owner 的读取、保存、删除；backend 是执行进程内部接口。Host 的网络授权与设备权限仍由 H/L/Q 实现，不能将该本地检查冒称远程访问控制完成。
+- I 阶段的统一 CAIdex `user_id` 与执行端 owner 是不同身份域，不改现有 reference 语义；新增账户缓存/配置权限与 Host 配对/执行 ACL 分别验证。账户登录不能读取 Host Key，切换账户不能沿用前一账户私有配置/Key 权限；账户 token 不等于 Gateway 本地 token。正式云端使用 PostgreSQL，本地/Host 保留 SQLite，参见[Account/Memory/Cloud 设计](CAIdex-Account-Memory-Cloud-设计与验收-V1.md)；该新增账户隔离尚未实现。
 - UI/Remote 可返回 `CredentialStatus { reference, configured, readOnly }`。`resolve` 仅供执行进程的 Provider Adapter，未来 Host RPC 不提供读取已保存 Key 的方法。
 - `Secret` 不实现 Serialize/Clone/Display，Debug 为遮蔽值；自身字符串由 Zeroizing 释放时清零。构造失败也清零；不承诺第三方 SDK/OS 所有中间副本都已清零。[Zeroizing](https://docs.rs/zeroize/latest/zeroize/struct.Zeroizing.html)
 
@@ -30,7 +31,7 @@
 
 - Redactor 处理诊断副本：敏感字段/HTTP header（Authorization、api_key、apikey、x-api-key、access_token、refresh_token、client_secret、cookie 等）及已注册完整秘密值。
 - Broker 保存/读取时注册秘密，替换/删除后旧值仍被遮蔽，直到 Broker 释放。结构化 JSON、嵌套数组、JSON 文本及独立 header 行均有回归。
-- 不对 Runtime 历史或 Provider wire 原文执行破坏性脱敏；诊断、崩溃报告、HTTP tracing/analytics 的接入点必须用安全副本。未来同步采用只含公开元数据的 DTO；不依赖全文替换来保证任意文档无秘密。
+- 不对 Runtime 历史或 Provider wire 原文执行破坏性脱敏；诊断、崩溃报告、HTTP tracing/analytics 的接入点必须用安全副本。未来云同步使用经账户/项目授权、允许字段且排除秘密的 DTO，可含用户明确授权的私人 Chat/记忆，不能将其误称公开数据；正文/来源/附件也需最小化和秘密阻断，不依赖全文替换保证任意文档无秘密。模型 API Key 不进入云端账户/Chat/记忆或普通同步数据库；现有原生敏感 carrier 不自动上传。
 - 目前尚未接入 Host/UI/Gateway/同步等模块，不能声称所有未来输出通道均已验收。
 
 ## CLI 管理入口
