@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 17:23 UTC（Ollama Lite Adapter本地回归通过）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
+更新：2026-10-08 17:26 UTC（Ollama Lite Adapter源码已push，新CI进行中）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重规划架构。详细历史证据留docs各阶段验收文档。
 
 ## 当前任务
 
-F/G：当前开发Ollama Lite Adapter。显式with_lite_options保持对外dialects、内部共享Classic transport；additional_tools本地编译、custom/function沿用v2，新增Lite单调用交付策略绑定。三轮JSON/SSE已有效RED→GREEN，6项定向回归、完整workspace381/0/41、既有固定Runtime39/0/0、Clippy/fmt/diff均通过；本轮三平台及实际Lite Runtime尚待。先前deferred/Classic MCP源码1a2668f已push，CI37809165149 Linux/Windows完整日志已过，macOS前三次均因无runner零steps取消，不能认领三平台；整体F/G及H–R未完成。
+F/G：当前开发Ollama Lite Adapter。显式with_lite_options保持对外dialects、内部共享Classic transport；additional_tools本地编译、custom/function沿用v2，新增Lite单调用交付策略绑定。三轮JSON/SSE已有效RED→GREEN，6项定向回归、完整workspace381/0/41、既有固定Runtime39/0/0、Clippy/fmt/diff均通过；源码8ef915d77ed4331b8bfb94e83f6b809d31da7fb4已push，[CI37816328543](https://github.com/bboytang/CAIdex/actions/runs/37816328543)已建立：Linux/Windows运行、macOS queued，三平台及实际Lite Runtime尚待。先前deferred/Classic MCP源码1a2668f已push，CI37809165149 Linux/Windows完整日志已过，macOS前三次均因无runner零steps取消，不能认领三平台；整体F/G及H–R未完成。
 
 ## 已完成
 
@@ -18,7 +18,7 @@ F/G：当前开发Ollama Lite Adapter。显式with_lite_options保持对外diale
 
 ## 下一步顺序
 
-1. 完成Lite Adapter最终diff/源码提交与新CI；随后固定Runtime Lite Code Mode审批/真实执行/取消/磁盘重启。复用Custom transport及已验codec，不另造执行器。旧CI37809165149已基础设施失败，不循环重试；新源码三平台回归不得借旧CI代证，Lite fixture不冒充Runtime/Live。strict仍是本地交付校验，不承诺native生成控制或HTTP clean EOF；媒体/history/show/Gemini已验范围不重做。
+1. 先核对CI37816328543精确源码/终态/逐名日志；运行期间可接固定Runtime Lite Code Mode定向正例，随后固定Runtime Lite Code Mode审批/真实执行/取消/磁盘重启。复用Custom transport及已验codec，不另造执行器。旧CI37809165149已基础设施失败，不循环重试；新源码三平台回归不得借旧CI代证，Lite fixture不冒充Runtime/Live。strict仍是本地交付校验，不承诺native生成控制或HTTP clean EOF；媒体/history/show/Gemini已验范围不重做。
 2. 随后DeepSeek/Qwen/OpenRouter等兼容API；DeepSeek Responses developer按user、未知input忽略，其models不保证created，不能直接透传/照搬严格catalog。等价路径复用transport，差异明确编译/拒绝；不据URL/目录/fixture授予Lite/Full，不下载大模型/调用商业API。
 3. 兼容API/Ollama完成当前范围后，V3 H/I → Windows → SSH/iOS → CLI → Relay → R。iOS simulator/无签名archive在GitHub macOS；真机/UAC/签名/逐模型商业报告独立验。
 
@@ -46,7 +46,7 @@ F/G：当前开发Ollama Lite Adapter。显式with_lite_options保持对外diale
 
 - 既有Ollama show/thinking、v1历史、图片/非严格格式、offline严格输出、runtime context/verbosity、namespace/search、custom→function/v2均已有精确三平台证据，包含在本轮69项回归，不重做。v1不自动升级/混用，grammar仅指导；历史源码/RED/GREEN/完整CI日志索引留docs/Ollama。
 
-- branch main跟踪origin/main，本轮开始HEAD/origin main a867c95、干净；当前未提交Ollama lib/mapped_tools/request/runtime/tools、tests/tools/mod及新lite.rs、HANDOFF。6项定向、workspace381/0/41、既有Runtime39/0/0、Clippy/fmt/diff已过，等待本轮源码提交/新CI；无依赖、workflow或Runtime源码改动。
+- branch main跟踪origin/main，本轮开始HEAD/origin main a867c95、干净；源码8ef915d已提交/push，包含Ollama lib/mapped_tools/request/runtime/tools、tests/tools/mod及新lite.rs、文档；目前仅HANDOFF/Ollama/Model-Gateway补新CI恢复点，无未完成源码。6项定向、workspace381/0/41、既有Runtime39/0/0、Clippy/fmt/diff已过，新CI37816328543三平台待终态；无依赖、workflow或Runtime源码改动。
 - 基准：docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md，原V2只作需求背景。相关代码model/providers/ollama/src/{tools,mapped_tools,runtime,structured,request,history,history_stream,lib}、tests/{tools,runtime,structured,content,history}；其他模块model/providers/custom、model/core、model/gateway、runtime/bridge/tests/{real_runtime.rs,fixtures}、credentials/core、apps/cli、upstream/codex、.github/workflows/ci.yml、scripts。
 - jsonschema固定0.58.6、只开arbitrary-precision、强制Offline retriever，无HTTP/file解析；新增41依赖，无既有包升级/删除，hashbrown启用依赖、bit-vec/r-efi更新多版本标识，base64保持0.22.1。标准Schema按库draft/约束校验，未知format拒绝，未知注释保留。同步求值有字节/Regex回溯限制，不承诺硬CPU抢占，留Host隔离；不重试或修补坏回答。
 - 旧磁盘满已解除，只清本项目可再生target；本次df约4.8G可用，下轮先查df。完整测试TMPDIR=/var/tmp，保留/tmp/.git保护，不清源码/凭据/保护目录。本机缺Windows/Xcode/gnome-keyring-daemon，对应CI检查；iOS未建立，不以Rust macOS CI冒充iOS。
@@ -61,4 +61,6 @@ F/G：当前开发Ollama Lite Adapter。显式with_lite_options保持对外diale
 
 - 原macOS job113436013980 completed/cancelled，17:17:35 UTC、零steps，官方annotations为未获hosted runner与arm64 capacity；原CI已终态，不再重启。新Lite源码CI需独立核对精确head/所有job-step/完整逐名日志，不借旧两平台结论；若新CI仍无runner，记录缺口并继续固定Runtime接线，不循环等待。
 
-- Lite当前恢复点：with_lite_options为显式构造入口，默认new/with_options继续拒绝Lite路由；original metadata先验证，内部Classic路由与公开原dialects分开。首个developer additional_tools仅接受type/id/role/tools，id只消费运输身份，原工具声明进v2；未知/错位/重复/畸形声明及原始body超限在Key/POST前拒绝。Lite-only与两dialect声明逐请求门控；native不携Lite头、additional_tools或parallel flag。v2 source另存lite_single_tool_call布尔，None代表Classic，false/true分别为Lite无约束/本地单调用，原始声明及策略不能改写旧组。NativeTools共享终态校验在JSON/SSE工具/完整history交付前拒绝多调用，failed/incomplete也检查，slot可复用；无native生成约束承诺。定向6/0/0，日志/tmp/caidex-ollama-lite-{red,green,focused}.log；RED是旧mapping400，非编译失败。完整本地workspace381/0/41、Ollama69逐名一次、既有固定Runtime39/0/0、Clippy全targets-D warnings/fmt/diff已过；日志同前缀{workspace-final,all-real-final,clippy-final}.log。实际Lite Runtime/三平台/Live未验；当前通过的39项仍为已有回归，不能冒充Lite正例。全局codex-cli 0.160.1可用；本机没有CI专用.tools/codex目录，定位脚本ENOENT不影响本轮实际Runtime运行。下步diff/源码提交与新CI，再实际Code Mode审批/执行/取消/重启。
+- Lite当前恢复点：with_lite_options为显式构造入口，默认new/with_options继续拒绝Lite路由；original metadata先验证，内部Classic路由与公开原dialects分开。首个developer additional_tools仅接受type/id/role/tools，id只消费运输身份，原工具声明进v2；未知/错位/重复/畸形声明及原始body超限在Key/POST前拒绝。Lite-only与两dialect声明逐请求门控；native不携Lite头、additional_tools或parallel flag。v2 source另存lite_single_tool_call布尔，None代表Classic，false/true分别为Lite无约束/本地单调用，原始声明及策略不能改写旧组。NativeTools共享终态校验在JSON/SSE工具/完整history交付前拒绝多调用，failed/incomplete也检查，slot可复用；无native生成约束承诺。定向6/0/0，日志/tmp/caidex-ollama-lite-{red,green,focused}.log；RED是旧mapping400，非编译失败。完整本地workspace381/0/41、Ollama69逐名一次、既有固定Runtime39/0/0、Clippy全targets-D warnings/fmt/diff已过；日志同前缀{workspace-final,all-real-final,clippy-final}.log。实际Lite Runtime/三平台/Live未验；当前通过的39项仍为已有回归，不能冒充Lite正例。全局codex-cli 0.160.1可用；本机没有CI专用.tools/codex目录，定位脚本ENOENT不影响本轮实际Runtime运行。源码已提交/push，接CI与实际Code Mode审批/执行/取消/重启。
+
+- 新CI恢复：37816328543精确head 8ef915d77ed4331b8bfb94e83f6b809d31da7fb4；macOS113445788687 queued、Windows113445789083/Linux113445789222 in_progress。预期workspace Linux381/Windows376/macOS380，0failed、ignored41/39/39；既有Runtime39/38/38，0failed/ignored；Ollama69/OpenAI11/Custom7/Google90每名一次，所有17steps及Linux native credentials1。使用/tmp/caidex-ollama-lite-ci-{normalize,check}.py核对完整raw/精确head；status已保存/tmp/caidex-ci-37816328543-status.json。脚本已准备、完整核对尚未执行；新CI不借旧head代验。
