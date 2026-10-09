@@ -201,4 +201,4 @@ Qwen后续显式控制本步只改Qwen lib/request，不改共享Gateway/传输�
 
 ## Qwen显式custom映射与v3历史
 
-当前`with_custom_tool_mapping`在既有Qwen ToolMap中将custom编译为native function(input:string)，校验完整终态后恢复custom身份与原文本，v3保存原政策/format与完整native JSON/SSE，v1/v2/v3不混用。grammar仅指导，真实解析/审批/执行仍由固定Runtime负责；不新建执行器或传输，Gateway/Core/Custom/Broker生产实现保持。新增11项/54项及最终workspace492/0/52、Clippy/fmt/diff本地通过，精确源码CI仍按[HANDOFF](../HANDOFF.md)收尾。Gateway两轮合成测试验证监听token/Runtime attribution与native Key隔离，坏流/取消不交付调用；旧43项CI不代验，Lite/实际Qwen Runtime/Live/Full未验。具体契约见[Qwen文档](CAIdex-Qwen-Provider-设计与验收.md)。
+当前`with_custom_tool_mapping`在既有Qwen ToolMap中将custom编译为native function(input:string)，校验完整终态后恢复custom身份与原文本，v3保存原政策/format与完整native JSON/SSE，v1/v2/v3不混用。grammar仅指导，真实解析/审批/执行仍由固定Runtime负责；不新建执行器或传输，Gateway/Core/Custom/Broker生产实现保持。新增11项/54项及最终workspace492/0/52、Clippy/fmt/diff本地通过，精确源码ae0b2d0/[CI37939652724](https://github.com/bboytang/CAIdex/actions/runs/37939652724)三平台完整通过（workspace492/487/491、既有Runtime50/49/49，Qwen54每名一次、全通过名543/536/540精确为旧CI+11），证据见[HANDOFF](../HANDOFF.md)。Gateway两轮合成测试验证监听token/Runtime attribution与native Key隔离，坏流/取消不交付调用；旧43项CI不代验，Lite/实际Qwen Runtime/Live/Full未验。具体契约见[Qwen文档](CAIdex-Qwen-Provider-设计与验收.md)。
