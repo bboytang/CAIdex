@@ -110,9 +110,18 @@ ModelProvider 六方法全部接入：
 
 精确ae0b2d059f83b46548388e72ad04719e25cd59f5/[CI37939652724](https://github.com/bboytang/CAIdex/actions/runs/37939652724)整体completed/success。Linux113850470052/Windows113850469751/macOS113850469466各17steps成功或条件跳过，完整raw2099/1785/1796行；workspace492/487/491（0failed，ignored52/50/50）、既有Runtime50/49/49（0failed/ignored）、Qwen54和DeepSeek57每名每平台一次。全通过名543/536/540精确等于旧CI37932689731集合+11，无遗漏/重复；watch78385 exit0，状态/完整日志下载与ci-check通过，全部句柄结束。证据/tmp/caidex-ci-37939652724-{linux,windows,macos}-raw.log及status.json/watch.log，checker /tmp/caidex-qwen-custom-resume/ci-check.py及ci-result.json。此Runtime回归不是实际Qwen Runtime接线或商业Live/Full验收，不将协议夹具当真实模型能力。
 
+## Runtime与history控制组合（本地完整通过，三平台待验）
+
+仅同时显式选择`with_runtime_context()`与`with_native_history()`（工具策略可显式包含history）时，本地消费固定Runtime的`reasoning.summary=auto`、`reasoning.context=all_turns`和唯一`include=[reasoning.encrypted_content]`。采用已有完整原生summary展示及v1/v2/v3历史回放，不承诺原生精简摘要、加密、签名认证或服务端会话；这些控制不发送给会忽略非列出参数的native服务，`store=false`保持。[官方Responses参数与回放说明](https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-responses)
+
+- 缺省/null summary/context、缺省/null/空include可本地消费；坏类型、未知/重复include、非auto摘要或非all_turns context在Key/POST前拒绝。default或部分启用策略不放宽；声明reasoning Unsupported时auto摘要拒绝。无effort不编造，显式effort沿route映射一次，旧carrier中的native effort不再次映射。
+- source全量预算先于剥离控制/工具，编译、展开、carrier/frame预算及取消/deadline/Drop、实际socket/slot保持。历史仅存compiled native请求；v1/v2/v3恢复统一验证reasoning如存在必须是单一合法native effort对象，拒绝summary/context/空值/畸形值。端点/Profile/model/前缀/显示组/工具政策绑定保持，载体仍非来源认证。
+- 8项新增/共62项定向通过：JSON/SSE三种carrier与序列化三轮、一次effort、成对function/custom结果、缺省/null/无effort、畸形/部分策略/能力/预算/预取消、半流取消/Drop/deadline与socket/slot、15类carrier坏输入及Gateway两轮凭据/优先指令隔离。旧54测试原文保留。
+- 中断前60/2不是通过证据。原流测试误用投影事件名，修正native夹具；新RED36230编译成功7/1、明确v1 case6放行坏carrier，最小修复上述统一NativeHistory内部契约后14628 exit0、62/0/0。日志`/tmp/caidex-qwen-history-controls/{resume-red-fixed-fixture,resume-green}.log`。最终workspace56270 exit0：500/0/52，旧492通过名+8新名精确保持；Clippy61254 exit0（全workspace/all-targets-D warnings）、fmt/diff/7路径/16Markdown/68本地链接/22锚点/旧54测试原文及非任务文件保持均通过。checker同目录local-check.py/local-result.json，最终日志workspace-final/clippy-final.log。精确新源码三平台仍待，不借旧custom CI或既有Runtime回归代验实际Qwen接线。
+
 ## 后续实施顺序
 
 1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
-2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，源码ae0b2d0/CI37939652724精确三平台已收尾；下一步先补固定Runtime源控制组合，再Lite与实际固定Runtime。不盲复制DeepSeek明文content或Gemini签名契约。
-3. 单独核对Lite/Code Mode、并行与本地交付策略及native能力边界；固定Runtime的summary/context/include等组合目前仍拒绝，接线前需单独核对和显式适配，再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
+2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，源码ae0b2d0/CI37939652724精确三平台已收尾；Runtime/history控制组合已62项定向通过，完整本地通过、精确CI待验；通过后再Lite与实际固定Runtime。不盲复制DeepSeek明文content或Gemini签名契约。
+3. 单独核对Lite/Code Mode、并行与本地交付策略及native能力边界；固定Runtime的summary/context/include组合仅在上述双策略显式消费，默认仍拒绝；Lite适配后再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

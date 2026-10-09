@@ -121,6 +121,15 @@ impl NativeHistory {
             .contains(&k.as_str())
                 && !(tools.is_some() && matches!(k.as_str(), "tools" | "tool_choice"))
         }) || request.wire()["store"] != false
+            || request.wire().get("reasoning").is_some_and(|value| {
+                value.as_object().is_none_or(|object| {
+                    object.len() != 1
+                        || object
+                            .get("effort")
+                            .and_then(Value::as_str)
+                            .is_none_or(|effort| !crate::request::valid_effort(effort))
+                })
+            })
         {
             return Err(invalid());
         }
