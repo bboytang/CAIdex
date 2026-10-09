@@ -178,3 +178,6 @@ DeepSeek多reasoning/content-part本轮本地映射：按原生item/part顺序�
 首版复杂流7393550/CI37862740579已取消，不代验修正版；自查复现未知reasoning delta part扩展触发panic后，最小改动限定只转换真实part事件，正例增加未知扩展保留；独立修正版CI证据收尾见DeepSeek/HANDOFF。
 
 DeepSeek Lite本步新增显式with_lite_options，公开dialect保留原配置、原生传输只发Classic，消费additional_tools与本地单调用限制，custom映射function input并还原原freeform/namespace；v3绑定Lite来源/单调用/工具/执行端及完整native回放，v1/v2不升级。新增11项安全回归、旧46项保持；Gateway离线SSE→JSON确认内部Lite/context及Gateway token不出执行端、只有合成DeepSeek Bearer发送fixture，一次effort映射及原生两轮回放保留，Provider另验三轮。只DeepSeek生产源码，无共享Gateway/HTTP/依赖/Runtime改变；最终本地workspace438/0/45、Clippy/fmt/diff通过，精确82cfab8/[CI37867150335](https://github.com/bboytang/CAIdex/actions/runs/37867150335)三平台完整验收：各17steps、workspace438/433/437、DeepSeek57及旧Runtime43/42/42通过，全通过名482/475/479为e04d944基线+11新名，无遗漏/重复。细节见DeepSeek/HANDOFF；此证据不代验实际DeepSeek Runtime/Live。
+
+
+DeepSeek固定Runtime本步本地7项/累计50项通过：Classic/Lite实际审批执行隔离marker、磁盘重启精确原生历史/实际工具结果回放不重跑、默认及不完整策略Key前拒绝、多调用拒绝、socket interrupt、过期审批拒绝和真实Cancel中断；未提供的Decline不能发送。仅复用共享测试Harness及内部dev接线，Provider/Gateway/Runtime生产源码未改。新源码三平台仍待验，不借82cfab8旧Runtime43/42/42代验；商业Live/Full与H生产Host仍未验，详DeepSeek文档/HANDOFF。

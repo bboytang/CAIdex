@@ -547,6 +547,7 @@ dependencies = [
  "caidex-model-core",
  "caidex-model-gateway",
  "caidex-provider-anthropic",
+ "caidex-provider-deepseek",
  "caidex-provider-google",
  "caidex-provider-ollama",
  "caidex-provider-openai",

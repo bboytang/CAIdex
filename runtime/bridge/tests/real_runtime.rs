@@ -1,4 +1,6 @@
 //! Real pinned app-server and scripted loopback Responses; no paid model or key.
+mod deepseek;
+
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -85,6 +87,15 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-deepseek-classic"
+            | "gateway-deepseek-context-classic"
+            | "gateway-deepseek-native-tools-classic" => "native-deepseek-tools-classic",
+            "gateway-deepseek-lite" => "native-deepseek-tools-lite",
+            "gateway-deepseek-tools-classic" => "native-deepseek-tools-classic",
+            "gateway-deepseek-tools-lite" => "native-deepseek-tools-lite",
+            "gateway-deepseek-multi-lite" => "native-deepseek-multi-lite",
+            "gateway-deepseek-stall-classic" => "native-deepseek-stall-classic",
+            "gateway-deepseek-stall-lite" => "native-deepseek-stall-lite",
             "gateway-ollama-classic"
             | "gateway-ollama-context-classic"
             | "gateway-ollama-native-tools-classic" => "native-ollama-classic",
@@ -179,7 +190,14 @@ impl Harness {
             mode,
             "gateway-ollama-tools-lite" | "gateway-ollama-multi-lite" | "gateway-ollama-stall-lite"
         );
-        let model = if google_catalog {
+        let deepseek = mode.starts_with("gateway-deepseek-");
+        let model = if deepseek {
+            if mode.ends_with("-lite") {
+                "caidex-deepseek-lite-fixture"
+            } else {
+                "caidex-deepseek-classic-fixture"
+            }
+        } else if google_catalog {
             if mode.ends_with("-lite") {
                 "caidex-google-lite-fixture"
             } else {
@@ -231,7 +249,9 @@ impl Harness {
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
-                provider: Id::new(if native_openai {
+                provider: Id::new(if deepseek {
+                    "deepseek"
+                } else if native_openai {
                     "openai"
                 } else if native_anthropic {
                     "anthropic"
@@ -250,7 +270,81 @@ impl Harness {
                 owner,
                 GatewayFixtureStore(credential_reads.clone()),
             ));
-            if native_ollama {
+            if deepseek {
+                use caidex_provider_deepseek::{DeepSeekConfig, DeepSeekProvider};
+                let config = DeepSeekConfig::new(credential)
+                    .unwrap()
+                    .with_base_url(&format!("http://127.0.0.1:{port}/v1"))
+                    .unwrap();
+                let models = vec![caidex_model_core::ModelMetadata::configured(
+                    model.into(),
+                    "native-fixture".into(),
+                    vec![if mode.ends_with("-lite") {
+                        ResponsesDialect::Lite
+                    } else {
+                        ResponsesDialect::Classic
+                    }],
+                )];
+                let mut provider = if mode.ends_with("-lite") && mode != "gateway-deepseek-lite" {
+                    DeepSeekProvider::with_lite_options(
+                        config,
+                        models,
+                        broker.clone(),
+                        Limits::default(),
+                        Default::default(),
+                    )
+                } else {
+                    // A default Classic-only route intentionally rejects Lite.
+                    let models = if mode == "gateway-deepseek-lite" {
+                        vec![caidex_model_core::ModelMetadata::configured(
+                            model.into(),
+                            "native-fixture".into(),
+                            vec![ResponsesDialect::Classic],
+                        )]
+                    } else {
+                        models
+                    };
+                    DeepSeekProvider::new(config, models, broker.clone(), Limits::default())
+                }
+                .unwrap();
+                if mode != "gateway-deepseek-classic" {
+                    provider = provider.with_runtime_context();
+                }
+                if mode != "gateway-deepseek-classic"
+                    && mode != "gateway-deepseek-context-classic"
+                    && mode != "gateway-deepseek-lite"
+                {
+                    provider = if mode == "gateway-deepseek-native-tools-classic"
+                        || mode.ends_with("-lite")
+                    {
+                        provider.with_native_tools()
+                    } else {
+                        provider.with_native_apply_patch()
+                    };
+                    provider = provider
+                        .with_reasoning_effort_mapping("low".into(), "low".into())
+                        .unwrap()
+                        .with_reasoning_effort_mapping("medium".into(), "high".into())
+                        .unwrap()
+                        .with_reasoning_effort_mapping("high".into(), "high".into())
+                        .unwrap()
+                        .with_verbosity_instruction(
+                            "low".into(),
+                            "Keep user-facing answers concise while preserving required detail."
+                                .into(),
+                        )
+                        .unwrap();
+                }
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        Arc::new(provider),
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if native_ollama {
                 use caidex_provider_ollama::{ModelDetails, OllamaConfig, OllamaProvider};
                 let config =
                     OllamaConfig::new(&format!("http://127.0.0.1:{port}/v1"), Some(credential))
@@ -475,7 +569,8 @@ impl Harness {
         };
         // Explicit fixture scope: native Anthropic has no verified equivalent
         // for Codex cached web search. Never filter it inside the Gateway.
-        let web_search = if ollama_lite
+        let web_search = if deepseek
+            || ollama_lite
             || matches!(
                 mode,
                 "gateway-anthropic-discovery-classic"
@@ -494,7 +589,8 @@ impl Harness {
         };
         // Executor-owned catalog declares unsupported client tool search. This
         // uses the fixed Runtime's public config, never strips Gateway tools.
-        let google_summary = if ollama_lite
+        let google_summary = if deepseek
+            || ollama_lite
             || mode.starts_with("gateway-google-")
             || matches!(
                 mode,
@@ -506,7 +602,11 @@ impl Harness {
         } else {
             ""
         };
-        let catalog = if google_catalog {
+        let catalog = if deepseek {
+            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/deepseek_model_catalog.json");
+            format!("model_catalog_json = {}\n", json!(path))
+        } else if google_catalog {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures/google_model_catalog.json");
             format!("model_catalog_json = {}\n", json!(path))

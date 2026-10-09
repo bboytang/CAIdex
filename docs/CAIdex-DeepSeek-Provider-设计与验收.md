@@ -145,3 +145,14 @@ v3完整绑定Lite来源和单调用策略、源/native声明、执行端owner/p
 恢复顺序：本步本地/精确三平台CI已完成，下一步固定DeepSeek Classic/Lite实际Runtime审批、执行、取消、磁盘恢复，然后Qwen/OpenRouter；商业模型Live/Full与整体F/G、H–R仍待。
 
 Lite三平台收尾：精确源码82cfab860d67ed5dd3edeeffded279cb03db65c4/[CI37867150335](https://github.com/bboytang/CAIdex/actions/runs/37867150335)整体completed/success；Linux113616480992/Windows113616481222/macOS113616481210各17steps成功或条件跳过，完整raw2009/1696/1707行。workspace438/433/437（0failed，ignored45/43/43）、DeepSeek57每名每平台一次、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。全通过名482/475/479等于e04d944基线加11新名，无遗漏/重复；watch83687及完整日志下载/normalize/ci-check均exit0。checker /tmp/caidex-deepseek-lite-ci-check.py从git show精确源码取名核对，结果/tmp/caidex-deepseek-lite-ci-result.json；日志/tmp/caidex-ci-37867150335-{linux,windows,macos}-raw.log及标注.log/status.json/watch.log。只认领本步离线Adapter，不认领实际DeepSeek Runtime接线、商业API、Host落盘恢复或Live/Full。
+
+
+## 固定Runtime Classic/Lite接线（2026-10-09，本地验证）
+
+复用真实Codex 0.160.1、共享Harness、Gateway/Custom传输和Broker；新增内部path dev-dependency，不改变Provider/Runtime生产实现或工作流。专用离线catalog选择Classic/Lite Code Mode、HTTP和有限effort，执行端明确禁用web与tool_search；这是合成测试配置，不是商业模型能力声明。原生夹具只接受flat function声明和明文reasoning，未知大数扩展、原始参数及SSE chunks完整保留，内部Lite/header/本地控制不透传。
+
+新增7项真实Runtime用例：①Classic函数审批后实际执行隔离marker，②Lite custom exec经同一真实审批/工具执行，二者均再重启app-server从磁盘resume、原生3轮request/response/chunks与实际工具结果精确回放且不重复写入；③默认/不完整policy在Key/POST前拒绝；④Lite两调用整轮失败，无审批/工具/完整carrier；⑤Classic/Lite interrupt关闭native socket；⑥等待审批interrupt使迟到批准NotPending；⑦仅按真实availableDecisions取消审批，无marker，终态interrupted，未提供Decline返回Protocol而不消费有效请求。没有创建Agent、审批引擎或工具执行器。
+
+初轮Classic夹具误用command而实际工具是exec_command/cmd；边界夹具写错默认错误码并假定提供Decline，均只修测试，不能计为生产缺陷RED。定向7/0/0（/tmp/caidex-deepseek-runtime-boundaries-fixed.log），完整固定Runtime50/0/0（旧43名+7新名，/tmp/caidex-deepseek-runtime-regression.log）本地通过。完整workspace438/0/52（DeepSeek57保持）及全workspace/all-targets Clippy-D warnings、fmt/Python AST/catalog JSON/diff通过，日志同前缀{workspace,clippy}.log；新源码三平台待验，不能借82cfab8旧CI代验这7项。
+
+该证据验证真实固定Runtime与合成原生API的链路；不代表商业DeepSeek Live/Full、生产Host journal/多端审批或真实服务器灾难恢复。按V3继续本次本地/精确CI收尾，再Qwen/OpenRouter；不开始H/I/CLI编码。旧阶段及CI记录均保留其当时范围。

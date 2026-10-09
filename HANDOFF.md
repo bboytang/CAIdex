@@ -1,14 +1,14 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（CLI正式文档续接复核；F/G恢复点与未提交DeepSeek Runtime草稿保留）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（F/G恢复DeepSeek实际固定Runtime接线；DeepSeek固定Runtime本地验收通过，提交/三平台CI待启动）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
-本轮仅复核/补全文档，不继续F/G编码。CLI独立V1已在ab98333归档，本轮沿用并补task实际审批配置、登录token保存失败/撤销重试安全边界、重新登录保留pending关闭意图/CAS及验收断言；修改CLI/V3/Account/UI/Credentials/README/HANDOFF共7文档，全部CLI-01～34仍待实现/未执行。正式认证仍公开客户端PKCE+Device Code、无注册、统一auth_sessions；同账户Memory Sync自动继承/新账户默认关闭/首次旧数据上传另授权；Account/模型Key/Gateway/Host权限隔离。H/I/P/R职责及A–R顺序不变，不部署/付费/跑完整Rust CI。
+本轮恢复F/G实际DeepSeek Classic/Lite Runtime，复用真实0.160.1/既有Harness和Custom传输/Broker，不开始H/I或CLI编码。上一轮CLI正式规范复核7文档已独立提交/push272c88e696e24cae72a0c90075bb1e46bb83fb6b，HEAD/origin一致；完整CLI/账户/Memory仍未实现，产品决定保持。
 
-开始时branch main、HEAD/origin a3880a6c6e1641d1df60de13998138d0d2f8be22；已有未提交runtime/bridge/Cargo.toml、runtime/bridge/tests/real_runtime.rs及未跟踪runtime/bridge/tests/fixtures/deepseek_model_catalog.json。本轮逐字保留，不纳入文档提交。草稿声明mod deepseek但tests/deepseek/mod.rs尚不存在，Python原生DeepSeekfixture/测试模块尚未接入，Cargo.lock尚未加入Runtime dev关联；这是未完成接线，不算已编译/通过。不运行完整编译来重复确认静态缺项，不删除或撤回草稿。文档完成后恢复此点：先读diff→补真实fixture/模块与必要lock→定向实际Runtime验证，再按原F/G步骤；不跳H/I。
+开始branch main、HEAD/origin272c88e；原3项Runtime草稿保留并续接，新增DeepSeek测试模块/Python flat function与明文reasoning SSE/catalog及内部dev lock关联，均未提交。首轮44877 exit101为Classic夹具误用command而实际Runtime要求cmd/exec_command，已修夹具；正例84681 exit0（Classic/Lite审批→隔离marker→磁盘重启恢复，两项通过）。边界39215 exit101，7项中5通过/2失败：默认错误码写成其他Provider的码；实际请求仅提供Cancel却测试发送Decline，facade正确拒绝。只修测试期望，未提供Decline拒绝、有效Cancel中断无工具副作用；复测50776 exit0，定向7/0/0通过，日志/tmp/caidex-deepseek-runtime-boundaries-fixed.log。生产Provider/Runtime未改。这些失败不作为生产RED。日志/tmp/caidex-deepseek-runtime-{first,positive,boundaries}.log，无旧活跃句柄。本地全固定Runtime75097 exit0为50/0/0（旧43+7）；workspace84022 exit0为438/0/52，DeepSeek57保持；全workspace/all-targets Clippy-D warnings33016 exit0、fmt/Python AST/catalog JSON/diff通过。日志/tmp/caidex-deepseek-runtime-{regression,workspace,clippy}.log。全部本地句柄结束。最终11路径/15Markdown/54本地链接/21锚点、原43 Runtime名+7新名、CLI/架构和旧CI证据保留检查通过；checker /tmp/caidex-deepseek-runtime-local-check.py。下一步独立提交/push精确三平台CI→Qwen/OpenRouter。不开始H/I/CLI，不读用户Key/商业API，保留target。
 
-当前F/G DeepSeek Lite custom Code Mode/本地单调用Adapter已提交/push82cfab860d67ed5dd3edeeffded279cb03db65c4，并完成精确[CI37867150335](https://github.com/bboytang/CAIdex/actions/runs/37867150335)三平台验收。新增11项/共57项，旧46名保持；本地workspace438/0/45、Clippy全workspace/all-targets-D warnings/fmt/diff通过。不重跑已验Adapter，不跳H/I。下一步固定实际DeepSeek Classic/Lite Runtime：默认/能力门控、真实审批/执行、单调用拒绝、取消/Drop、磁盘重启恢复不重复工具，然后Qwen/OpenRouter。Runtime接线/商业模型Live/Full尚未验，旧Runtime43/42/42不代验DeepSeek。CLI文档ab98333及交接3f5bfff已push，不开始CLI/账户编码。
+当前F/G DeepSeek Lite custom Code Mode/本地单调用Adapter已提交/push82cfab860d67ed5dd3edeeffded279cb03db65c4，并完成精确[CI37867150335](https://github.com/bboytang/CAIdex/actions/runs/37867150335)三平台验收。新增11项/共57项，旧46名保持；本地workspace438/0/45、Clippy全workspace/all-targets-D warnings/fmt/diff通过。不重跑已验Adapter，不跳H/I。下一步固定实际DeepSeek Classic/Lite Runtime：默认/能力门控、真实审批/执行、单调用拒绝、取消/Drop、磁盘重启恢复不重复工具，然后Qwen/OpenRouter。该旧CI不验Runtime接线；本轮实际Runtime已本地50项通过、三平台待验，商业模型Live/Full仍未验。旧Runtime43/42/42不代验DeepSeek。CLI文档ab98333及交接3f5bfff已push，不开始CLI/账户编码。
 
 DeepSeek复杂reasoning/content-part修正版e04d94402e63d43337533ba22396f8fb8fd84a55已提交/push，独立[CI37862956680](https://github.com/bboytang/CAIdex/actions/runs/37862956680)已精确三平台完整验收。新增4项/共46名、旧42名保持，workspace427/422/426及旧固定Runtime43/42/42通过；下一步Lite custom Code Mode/本地单调用，然后固定DeepSeek实际Runtime。首版7393550/CI37862740579已取消，不代验修正版；自查opaque delta part的panic已有效RED→最小修复/新正例/完整本地与CI通过。不重做已验Adapter、不跳H/I。
 
@@ -55,9 +55,9 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## 下一步顺序
 
-1. DeepSeek Lite Adapter57项及精确82cfab8/CI37867150335已完整三平台验收；summary/context/include与复杂流旧阶段保持。无源码变化不重跑本地/CI，直接继续实际DeepSeek固定Runtime。已有Runtime fixtures在runtime/bridge/tests/real_runtime.rs及fixtures/responses_server.py，复用Harness/真实0.160.1、隔离marker与重启helper；DeepSeek尚无已提交/已验Runtime接线；当前已有未提交dev-dependency/模式/catalog草稿，缺测试模块、Python native fixture及lock续接，详当前任务。原生flat tools/明文reasoning须专用fixture，不直接复用Ollama namespace/encrypted thinking。已验函数/namespace/native历史/effort/apply_patch不重写，未知控制显式编译或拒绝，不冒称精简summary/加密/原生生成限制。
+1. DeepSeek Lite Adapter57项及精确82cfab8/CI37867150335已完整三平台验收；summary/context/include与复杂流旧阶段保持。无源码变化不重跑本地/CI，直接继续实际DeepSeek固定Runtime。已有Runtime fixtures在runtime/bridge/tests/real_runtime.rs及fixtures/responses_server.py，复用Harness/真实0.160.1、隔离marker与重启helper；DeepSeek实际Runtime本轮本地已验、尚待提交/精确三平台；当前dev-dependency/模式/catalog草稿已补7项测试与Python native fixture，全部7项及Runtime50/workspace438/Clippy本地通过，精确新源码三平台待验，详当前任务。原生flat tools/明文reasoning须专用fixture，不直接复用Ollama namespace/encrypted thinking。已验函数/namespace/native历史/effort/apply_patch不重写，未知控制显式编译或拒绝，不冒称精简summary/加密/原生生成限制。
 
-2. 随后固定实际DeepSeek Runtime审批/执行/取消/磁盘重启，再Qwen/OpenRouter。每一步定向/相关回归、精确源码CI及交接；无源码变化不重跑已验本地全套/旧CI，不派重复独立审查。未经另行授权不调用商业API或下载模型。
+2. 先收尾本轮DeepSeek实际Runtime精确三平台CI，再Qwen/OpenRouter。每一步定向/相关回归、精确源码CI及交接；无源码变化不重跑已验本地全套/旧CI，不派重复独立审查。未经另行授权不调用商业API或下载模型。
 3. 按V3继续H Host/SQLite journal/安全证据契约 → I官方账户/PostgreSQL/独立Chat/Memory/同步/邮件/本机恢复 → Windows → SSH/iOS → CLI → Relay → R；新设计第12/13节为I内部顺序和全部待验矩阵。iOS在GitHub建立真正simulator测试/无签名archive，Rust macOS CI不代表iOS。文档任务结束不自动开始账户实现，已确认架构不重新询问/规划。
 
 ## 重要架构决定
@@ -84,10 +84,10 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；本轮开始HEAD/origin a3880a6，已有3个未提交DeepSeek Runtime草稿路径（见当前任务），保持原样。源码82cfab860d67ed5dd3edeeffded279cb03db65c4已push，CI37867150335已精确三平台验收，收尾文档a3880a6已push。本轮7文档独立提交标题`docs: reaffirm CLI final contracts and recovery boundaries`，不夹带Runtime草稿；提交/push结果恢复时核对git log -1、HEAD/origin及git status，剩余未提交仅上述3个草稿路径。用户已授权本地检查通过commit/push/三平台CI，纯文档收尾不额外dispatch，工作流路径过滤亦不触发完整Rust CI。
+- branch main；本轮开始HEAD/origin272c88e，原3项DeepSeek Runtime草稿续接（Cargo.toml/Harness/catalog），新增测试模块/原生Python fixture及必要lock，当前均未提交；已本地验收、三平台未验，日志见当前任务。CLI文档272c88e已push，旧Adapter源码82cfab8/CI37867150335保持。用户授权本地通过直接commit/push/三平台CI，纯文档不额外dispatch，不夹带无关改动。
 
 
-- .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约9.4G可用，修改前先df，不清源码/凭据/保护目录。
+- .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约8.9G可用，修改前先df，不清源码/凭据/保护目录。
 - 当前代码：model/providers/deepseek/src/{lib,config,catalog,request,tools,history,history_stream}.rs、tests/provider.rs；共享model/providers/custom、model/core、model/gateway、credentials/core；实际Runtime在runtime/bridge/tests/real_runtime.rs及fixtures。基准docs/CAIdex-实施计划-V3.md、CAIdex-UI-规范-V1.md；原V2仅需求背景。
 - 函数/历史本地日志：/tmp/caidex-deepseek-tools-{red,green,workspace,runtime-regression,clippy}.log；RED正确源码备份/tmp/caidex-deepseek-tools-tools-green.rs。最终workspace406/0/45、DeepSeek25逐名、旧Runtime43/0/0均exit0，Clippy/fmt/diff通过；loopback首次沙箱PermissionDenied不算有效RED。全部工具handle结束，无正在运行的测试。
 - effort本地日志：/tmp/caidex-deepseek-effort-{red,green,workspace,clippy}.log；RED编译成功运行400失败→29项GREEN及完整workspace410/0/45、Clippy/fmt/diff通过。文档检查脚本/tmp/caidex-deepseek-effort-final-check.py，CI收尾/tmp/caidex-deepseek-ci-final-doc-check.py；最终检查15份Markdown/20本地链接/1锚点、17实体/55核心待实施/16UI待实施、A–R/旧CI保留通过，账户/GUI/iOS新矩阵仍未执行。
