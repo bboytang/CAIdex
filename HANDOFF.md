@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（CLI正式文档收尾，准确Git以当前状态为准）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（CLI正式文档已提交推送，纯文档范围复核收尾）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
-本轮用户指令为纯文档：新增CLI完整交互/验收V1，同步V3、Account/Memory、UI、Credentials、README与Runtime对照，完整CLI仍未实现、CLI-01～34全未执行。固定0.160.1二进制help及固定d27764b CLI/TUI/exec源码已只读核对；普通exec Never/AutoReview例外、MCP elicitation Cancel、上游login/memories/stop命名冲突已明确。只固化设计，不改源码/依赖/workflow，不运行模型或全Rust/三平台CI。文档检查/提交推送收尾后，恢复下面F/G下一步，不提前启动H/I/P。
+本轮CLI纯文档指令已完成：新增CLI完整交互/验收V1，同步V3、Account/Memory、UI、Credentials、README与Runtime对照，提交ab98333f8150a4bb516fccaccd1e10179f80d865已push。完整CLI仍未实现、CLI-01～34全未执行。固定0.160.1二进制help及固定d27764b CLI/TUI/exec源码已只读核对；普通exec Never/AutoReview例外、MCP elicitation Cancel、上游login/memories/stop命名冲突已明确。此次止于文档交付，未改变源码/依赖/workflow、未运行模型或完整Rust/三平台CI；后续开发从下面F/G恢复点继续，不提前启动H/I/P。
 
 DeepSeek复杂reasoning/content-part修正版e04d94402e63d43337533ba22396f8fb8fd84a55已提交/push，独立[CI37862956680](https://github.com/bboytang/CAIdex/actions/runs/37862956680)已精确三平台完整验收。新增4项/共46名、旧42名保持，workspace427/422/426及旧固定Runtime43/42/42通过；下一步Lite custom Code Mode/本地单调用，然后固定DeepSeek实际Runtime。首版7393550/CI37862740579已取消，不代验修正版；自查opaque delta part的panic已有效RED→最小修复/新正例/完整本地与CI通过。不重做已验Adapter、不跳H/I。
 
@@ -16,6 +16,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 - CLI正式产品契约：英文TUI/exec与持久task分开，共享真实Host/Runtime；无register/signup，桌面浏览器PKCE、VPS/SSH RFC8628 Device Code，公开客户端无内置secret、CLI独立auth_sessions/撤销。账户Token/模型Key/Gateway/Host凭据分开，账户不授Host审批权限。
 - Windows/iOS/CLI继承同账户enabled/settings_version/cloud_epoch/范围，新账户默认关闭；继承Enabled不授权上传旧匿名/他账户/未选记忆。Linux本地SQLite与Host journal分离，A保留/B删除、离线pending、来源/epoch墓碑不复活按原设计。H负责Host任务/持久审批/seq与unknown；I负责身份/同步核心，P终端整合，R真实终端/认证/多设备验收。新规范见docs/CAIdex-CLI-完整交互与验收规范-V1.md；认证库/参数、固定TUI/exec接Host的最小适配、终端/协议/迁移细节仍待H/I/P/R验证。
+- 续接范围复核：曾误启动DeepSeek Lite草稿及一次定向cargo test，session58470已结束/exit101，测试未编译成功（两处夹具API/返回类型错误），不算有效RED或功能验收。仅撤回本轮新添的constructor/module引用，未提交测试草稿移至/tmp/caidex-lite-out-of-scope-draft/lite，日志/tmp/caidex-deepseek-lite-red.log；未改既有F/G成果/缓存。重新核对生产源码/依赖/workflow无差异，文档checker与diff检查通过；草稿不作为下次必须接续的实现。
 - 本轮文档检查通过：8文档范围、15份Markdown/53本地链接/21锚点（含完整目录）、34项CLI全待实现；17实体/55核心/16UI原表逐行保持，A–R原顺序、历史CI链接、credentials验证段逐字保持，源码/依赖/workflow无差异，git diff --check通过。checker /tmp/caidex-cli-doc-check.py；固定源码只读缓存/tmp/caidex-cli-spec-pinned。未运行新CLI/账户/真实终端功能测试或Rust CI，不冒称验收。
 
 - 复杂流当前范围：五种顺序/交错/缺done/提前message/未知扩展正例精确索引及完整两轮native回放；17种坏流不交付工具/carrier且真实socket/slot复用，5种载体篡改Key前拒绝，等待偏移时正文增量、取消/Drop/字节预算通过。初轮定向46，修正版workspace427/0/45、全workspace Clippy/fmt/diff通过；日志/tmp/caidex-deepseek-complex-{red,opaque-red,green,workspace,clippy}.log。生产只DeepSeek history/history_stream，无依赖/执行器/其他Provider/Runtime/workflow变化。
@@ -74,7 +75,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；本轮开始HEAD/origin为1d3c8bd0d9060d84ff90bb1dae7348a17fdc994c且工作区干净，无并行未提交成果。本任务交付7既有文档（HANDOFF/README/V3/Account/UI/Credentials/Runtime对照）及1新增CLI规范；DeepSeek源码e04d944/CI37862956680及原证据保持，无生产代码待提交。按既有授权以 `docs: finalize CLI architecture and acceptance contracts` 单独提交/push；恢复时用本文件所属提交与origin/main核对收尾状态，若仍有这8文档diff则先完成文档Git收尾，否则直接继续F/G。ci.yml的push paths不包含文档，本次不dispatch完整Rust三平台CI。
+- branch main；CLI文档起点1d3c8bd0d9060d84ff90bb1dae7348a17fdc994c，文档提交ab98333f8150a4bb516fccaccd1e10179f80d865已push且本轮复核HEAD/origin一致。本任务交付7既有文档（HANDOFF/README/V3/Account/UI/Credentials/Runtime对照）及1新增CLI规范；DeepSeek源码与e04d944/CI37862956680保持一致。本文件收尾记录以 `docs: record CLI documentation closeout` 独立提交/push；恢复时核对HEAD/origin及git status，若仍有本文件diff则完成该收尾，无生产代码待提交。ci.yml的push paths不包含文档，本次不dispatch完整Rust三平台CI。
 
 
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约9.4G可用，修改前先df，不清源码/凭据/保护目录。
