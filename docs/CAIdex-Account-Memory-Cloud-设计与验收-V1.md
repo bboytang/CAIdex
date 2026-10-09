@@ -17,7 +17,7 @@
 | Windows / iOS 客户端 | 原生账户流程、按账户隔离的 SQLite 缓存、Chat/记忆设置、outbox/cursor、同步与用户纠错/导出；共享 Rust 核心供 Tauri/UniFFI 使用 | 未登录或云端故障时，已配置的本地 Codex、文件和本地模型按既有权限继续工作；云端数据访问必须认证 |
 | Windows / Linux CLI | 英文账户登录/退出/会话状态；按OS用户/账户/项目隔离的SQLite本地记忆与同步缓存；共享核心与Host操作 | 不注册；未登录可用已配置本地能力；账户认证不授予Host权限；完整TUI/exec及命令见[CLI规范](CAIdex-CLI-完整交互与验收规范-V1.md)（待实现） |
 | 用户授权的 Codex Host | 真实 Runtime 生命周期、执行/审批/事件恢复；SQLite journal；用自身 Broker 中的模型凭据 | SSH/Relay 配对和 Host ACL 单独授权；账户登录不授予 Shell、文件系统、管理员权限或其他电脑的 Key |
-| CAIdex 官方云端应用服务 | 认证、会话/安全、Chat 与记忆同步 API、授权检索、任务状态编排、EmailSender、数据删除与备份管理 | 不执行项目工具、不持有用户模型 API Key、不接管 Runtime 线程；HTTPS 服务端是信任边界，不宣称历史/记忆端到端加密 |
+| CAIdex 官方云端应用服务 | 认证、会话/安全、Chat 与记忆同步 API、授权检索、记忆作业状态编排、EmailSender、数据删除与备份管理 | 不编排Host执行任务、不执行项目工具、不持有用户模型 API Key、不接管 Runtime 线程；HTTPS 服务端是信任边界，不宣称历史/记忆端到端加密 |
 | 云端 PostgreSQL + pgvector | 账户、Chat、长期记忆、版本/来源、权限、同步事件与相关服务数据 | 从正式服务第一版采用 PostgreSQL；不先做 SQLite 云端服务再迁移 |
 | 已有 ModelProvider / Gateway | Chat、记忆整合及 Embedding 的模型能力/调用接入；Gateway 继续仅适配 Responses | 复用既有传输与凭据机制；Embedding 若当前接口尚不能表达，在 I 内验证必要契约扩展，不能伪装已有支持或新建第二套传输 |
 | 邮件供应商 | 发送事务邮件 | 只得到发送所需最少资料；邮件 API Key 只在服务端安全配置 |
@@ -64,6 +64,8 @@
 Device流程遵RFC8628：秘密高熵device_code、短时随机user_code、HTTPS验证地址/期限/interval，按interval轮询pending、slow_down退避及拒绝/过期/取消/超时处理，一次性消费/client上下文绑定、防暴猜/限流及反诱骗提示；这不是旧设备批准新设备制度，不强制绑定或限制普通设备数。CLI是公开客户端，不内置长期Client Secret，成熟OAuth/OIDC库在I验证。浏览器/Device具体流程、参数与安全验收见[CLI规范第8节](CAIdex-CLI-完整交互与验收规范-V1.md#8-账户登录令牌与会话)。
 
 两种流程共用同一规划中的官方账户后端，每次创建独立CLI auth_sessions，显示在GUI已登录设备并可单独撤销。建议access约10分钟/refresh约30天闲置且轮换，仅作I安全/可用性测试初值，未部署；撤销/重放/token family规则仍按4.2，不能只等access过期。Account Token与模型Key/Gateway/Host凭据分namespace、安全存储；Linux无Secret Service须明确授权Git外受保护明文文件。退出先处理本地待同步数据，撤销账户不删除项目或取消全部Host任务/独立配对；离线区分本地保存会话、服务器核验和同步未知状态。
+
+CLI认证授权范围不能隐含Host执行权、Memory Sync启用或旧本地数据上传许可；ID Token不作数据API Access Token。token保存失败不得显示成功，尝试撤销本次新会话并报告实际结果；退出重试材料若含凭据仍只在独立安全存储，普通同步队列仅记公开操作状态。具体原子存储/撤销重试策略由I验证，不能借补交退出恢复已停账户正文传输。
 
 ## 5. PostgreSQL 与逻辑数据模型
 
@@ -168,6 +170,8 @@ Embedding 空间标识包含 Provider/端点、模型与版本、维度、预处
 CLI不维护另一套独立默认开关，重新安装/登录/换设备先读取同一账户enabled/settings_version/cloud_epoch/授权范围；既有Enabled/Disabled直接继承，新账户仍默认false。启用状态未知或离线首次登录不冲刷旧队列。Windows开启后CLI继承Enabled，iOS关闭后CLI继承Disabled，CLI sync on/off同样改变全账户权威状态。
 
 继承Enabled与这台设备首次上传许可分别记录：历史匿名、其他账户或未选范围的记忆不能自动改归属/上传，确认后才进入当前账户授权outbox。Linux本地SQLite按OS用户/user_id/项目隔离，登出原账户缓存不能作为游客暴露，纯本地跨模型记忆仍可工作。CLI关闭也按既定A保留/B删除、离线立即停传/待确认、CAS/epoch/tombstone和来源屏障；B须重认证，本地保留与其他设备影响明确。Chat同步/自动记忆/Provider外发权限独立，不上传Host journal/Key。详见[CLI记忆规则](CAIdex-CLI-完整交互与验收规范-V1.md#9-本地记忆与账户级同步)。
+
+重新登录时保留本机未确认的关闭意图：权威状态仍Enabled也不能冲刷该设备旧队列，先提交关闭或明确处理CAS冲突。本地归属/上传许可不是独立记忆同步开关；服务器enabled/settings_version/cloud_epoch仍是唯一账户权威。此补充沿用8.1状态机，不改数据库实体、epoch或删除墓碑设计，实施断言对应CLI-24/26/32。
 
 ### 8.2 项目范围与多端一致性
 

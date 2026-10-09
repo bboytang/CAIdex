@@ -2,6 +2,8 @@
 
 正式决定：2026-10-09。状态：**最终设计基准；完整 CLI 尚未实现，CLI-01～CLI-34 全部待实现、未执行**。本文不启动 CLI 编码，不改变 A–R 顺序或当前 F/G 恢复点。原 V2 仅作需求背景，冲突以 [V3](CAIdex-实施计划-V3.md)、本文及[账户/记忆/云设计](CAIdex-Account-Memory-Cloud-设计与验收-V1.md)为准。
 
+本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。
+
 ## 目录
 
 - [1. 目标、非目标与当前实现](#1-目标非目标与当前实现)
@@ -42,7 +44,7 @@ Host 管理真实 Thread/Turn 与后台任务，CLI 是操作和显示端。CAId
 
 ## 3. 固定上游依据与命名冲突
 
-本轮在当前环境只运行固定二进制 `--version`、各命令 `--help`；读取固定 commit 源码，不启动 TUI、登录或模型调用。最新[官方 CLI 参考](https://developers.openai.com/codex/cli/reference/)仅作导航，版本事实以以下不可变源码及项目 [lock](../upstream/codex/lock.json)为准：
+本轮在当前环境只运行固定二进制 `--version`、各命令 `--help`；读取固定 commit 源码，不启动 TUI、登录或模型调用。最新[官方 CLI 参考](https://learn.chatgpt.com/docs/cli/reference)仅作导航，版本事实以以下不可变源码及项目 [lock](../upstream/codex/lock.json)为准：
 
 - [CLI 命令树](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/cli/src/main.rs)、[exec 参数](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/cli.rs)。
 - [exec 配置解析与服务端请求处理](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/lib.rs)：`build_exec_config`、`handle_server_request`、stdin、interrupt、终态与退出。
@@ -50,6 +52,8 @@ Host 管理真实 Thread/Turn 与后台任务，CLI 是操作和显示端。CAId
 - [Slash commands](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/slash_command.rs)、[默认 keymap](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/keymap.rs)、[TUI 退出边界](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/chatwidget.rs)。
 
 固定版本已有 `agents/exec/review/login/logout/mcp/plugin/app-server/remote-control/completion/update/doctor/sandbox/debug/apply/resume/queue/archive/delete/migrate-rollouts/unarchive/fork/cloud/exec-server/features`。没有顶层 `task/models/provider/credentials/config/remote/account/memory/skills/plugins/threads`；不要因存在相关协议或 Slash command 就声称已有对应顶层命令。
+
+2026-10-09 复核：上述 CLI main、exec lib、SlashCommand 三份缓存与 GitHub 固定 commit 原文逐字一致，二进制为 `codex-cli 0.160.1`，顶层及 exec/login/resume/fork help 与契约对应。上游还有平台门控的 `app`（Windows/macOS）及部分隐藏维护入口；不透传启动原生 Codex Desktop，也不因此增加 CAIdex macOS GUI。上游 `debug models` 仅为目录/诊断能力，不能代替正式 `models` 的 Host Registry、凭据状态及兼容证据。
 
 | 冲突 / 等效能力 | 采用的正式规范 |
 | --- | --- |
@@ -122,6 +126,8 @@ caidex --help
 | `doctor/--version/--help` | 上游有同名；CAIdex自有已实现 | 当前doctor只离线元数据；完整doctor后续增加脱敏分项，云不可用与本地故障分别报告。版本显示CAIdex及锁定Runtime；help英文且只标实际实现状态 |
 
 参数错误在读取秘密/提交工具前拒绝；远程写入须独立 Host ACL，不因为 `--owner` 或 `--host` 字符串获得授权。未来管理命令的 `--json` 为版本化对象；task attach是JSONL事件。凡交互确认必需且无TTY的命令，要求明确范围与操作选项，否则失败，不能猜用户选择。
+
+`task submit` 使用 Host 允许的持久任务审批配置，受理结果显示实际 policy/reviewer/sandbox，不能复制 exec 的无头 Never 默认值后假称能等待跨端人工审批。自动化提交也不能擅自提升该配置；Host 不支持持久受理或所需审批能力时明确拒绝。`exec` 仍等待最终结果，不因已有手机客户端在线就改变审批模式。
 
 ### 4.2 通用非秘密选项
 
@@ -212,6 +218,8 @@ CAIdex CLI属于公开OAuth客户端，不能内置所谓长期保密Client Secr
 5. 验证issuer、目标audience/client、令牌归属和必要签名/时间/nonce属性；opaque token通过可信后端核验，不凭token文本自认user_id。创建独立CLI auth_sessions。
 6. 安全保存令牌、关闭监听并清除一次性材料，查询账户设置。取消、超时、端口抢占或交换失败也关闭监听；不会用未校验回调当登录成功。
 
+授权范围只包含本次需要的账户/云数据能力，必须由官方后端和用户授权共同限定；认证同意不自动开启 Memory Sync、扩大项目访问、允许历史资料上传或授予 Host 权限。令牌保存失败不能显示登录成功；新建会话应尝试撤销并明确报告尚未确认的结果，不能留下可供后续启动误用的半写入登录状态。issuer/client/回调和资源 audience 的校验分别按选定成熟 OAuth/OIDC 库完成，不把 ID Token 当 API Access Token。
+
 ### 8.3 VPS / SSH Device Authorization Grant
 
 `caidex login --device-code` 使用同一官方账户后端的 [RFC 8628](https://www.rfc-editor.org/rfc/rfc8628.html)。用户授权的是本次CLI会话，不是旧设备批准新设备的硬件绑定；任意受支持浏览器可完成，默认不限制普通登录设备数量。
@@ -241,7 +249,7 @@ Memory sync: Enabled
 
 或 `Memory sync: Disabled`。身份核验成功但设置获取失败时显示 `Account authenticated. Memory sync: Unknown (server unavailable).` 并暂停同步，不能猜默认值覆盖服务端。已有本地token离线时显示 `Saved session; not verified online.` 及最后确认版本/时间；明确区分离线本地能力、当前服务端会话与sync状态。
 
-logout立即停账户网络任务/锁定原账户缓存，先处理未同步内容；网络不可用的撤销记录为pending，不假称服务器已经撤销。账户退出/被撤销不自动删除Codex项目、模型Key、不自动取消全部Host任务、不撤销独立Host配对。离线下载资料不能保证远程立即擦除。
+logout先展示并明确处理未同步内容，进入退出提交后立即停账户数据传输、锁定原账户缓存。网络不可用的撤销记录为pending，不假称服务器已经撤销；重试材料若含凭据，只能留在独立安全存储中，普通outbox仅记公开操作状态，不能为了补交撤销继续下载/上传该账户正文。账户退出/被撤销不自动删除Codex项目、模型Key、不自动取消全部Host任务、不撤销独立Host配对。离线下载资料不能保证远程立即擦除。
 
 ## 9. 本地记忆与账户级同步
 
@@ -256,6 +264,8 @@ Linux CLI正式采用本地SQLite记忆与同步缓存，Windows CLI与GUI在同
 服务器统一保存 `enabled/settings_version/cloud_epoch/authorized scope`，**新账户默认false**；Windows、iOS、CLI是同一状态。Windows已开启，CLI随后登录应继承Enabled；iOS已关闭，CLI应继承Disabled。CLI不创建自己的独立默认开关，重新安装/重新登录不重置账户设置。控制面查询可在关闭时进行，不下载记忆正文。
 
 **继承Enabled不等于授权上传这台CLI的全部历史记忆。** 未归属当前user_id、其他账户、匿名积累或未批准范围的旧资料保持隔离，只在明确归属/首次上传范围确认后入队。之后在当前账户授权范围内正常生成的记忆可增量同步；不上传整个项目、Host journal、未经选择的来源或任何Key。初次开启和已有Enabled设备首次上传许可是两个不同状态。
+
+共享核心分别记录服务器权威开关、当前本地数据归属/上传许可和待确认控制操作；上传许可不是另一个设备级同步开关。CLI登录只读取权威状态，不隐式调用 `sync on`，也不清除本机尚未确认的关闭意图；有此意图时本机继续停传，先提交关闭或明确处理版本冲突，再处理数据。on/off被CAS拒绝时不静默反转用户意图或恢复旧队列。
 
 ### 9.3 CLI同步状态机与命令
 
@@ -415,12 +425,15 @@ SQLite schema与Host/账户API均版本化。迁移前检查可用空间、兼�
 | CLI-33 | H/I/P/R；U/H/A/T | 旧配置/SQLite迁移，坏schema/满盘/回滚失败，旧Host/client协议，选择导入Codex | 源文件/未同步队列/墓碑保护，旧版本安全拒绝，秘密不自动复制/上传，pin不自动升级 |
 | CLI-34 | P/R；T/H/A/D | Windows11 Terminal、Linux SSH/VPS、无TTY CI实际全链路；resize/ANSI/nocolor/paste/中文路径/signals | 各平台实运行报告，keymap上下文正确，headless无prompt死等、恢复准确；无真实覆盖的层级保留未验 |
 
+复核补充断言仍归以上原编号，不算新增通过：CLI-16/32在task受理和恢复时核对真实policy/reviewer/sandbox，exec不会被改成跨端人工等待；CLI-17/21注入安全store写失败，确认无半写入成功状态，新增会话撤销失败明确pending，撤销重试秘密不进普通outbox；CLI-24/26/32在离线关闭后重新登录Enabled账户及CAS冲突，确认本机仍停传、旧队列不自动恢复、用户意图不被默默覆盖。
+
 ## 16. 实施时待验证的技术细节
 
 不重新决定已经确定的公开客户端PKCE/Device Code、只登录、账户默认sync关闭/自动继承、执行端Key或唯一Runtime。以下为同一行为的实施选项：
 
 - H/P验证固定TUI已有remote/共享daemon可复用程度、Host facade事件/请求适配及退出detach改动；固定exec当前使用in-process app-server并关闭客户端，不能未经验证就认为原进程可直接管理持久Host。选择最小适配/上游补丁，保持实际Runtime执行，禁止另造Agent。
 - I选择成熟OAuth/OIDC库、官方issuer/client IDs/redirect注册、loopback平台保护、Device码策略/限流与token参数；刷新并发/丢失回应恢复、重新认证和撤销必须真实测试，不内置client secret。
+- I/P验证安全存储的会话原子保存、部分写入清理及撤销待确认恢复；仅复用现有backend，不将普通outbox当秘密存储。已有Enabled账户重登录时保留pending关闭意图的CAS处理，也须真实认证/多设备故障测试。
 - H/I/P验证Host聚合qualified model ID/Gateway route与Profile绑定、共享配置加载/trust、Windows路径、多进程SQLite锁/账户分区与迁移、可选本地加密边界。
 - H验证任务状态/阻塞期限、跨重启审批幂等与Runtime不可恢复请求；本地退出/信号既不假称任务停止，也不能吞掉用户明确的interrupt。
 - P核对完整原生命令/参数/Slash兼容表、选项门控、默认TTY键及剪贴板/信号/颜色；保留exec raw JSONL，CAIdex envelope/schema与退出例外用真实脚本测试固定。
