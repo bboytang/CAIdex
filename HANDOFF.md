@@ -1,10 +1,10 @@
 # CAIdex 开发交接
 
-更新：2026-10-09，实际Qwen Classic/Lite Runtime精确三平台离线验收完成，下一步OpenRouter。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-09，OpenRouter契约与复用边界已核对，基础Adapter完整本地已验，完整本地已验，OpenRouter main发布被自动审批拒绝，源码CI未运行。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
 
-当前处于 **F/G 多模型与 Gateway**。实际固定Qwen Classic/Lite Runtime已实现并精确三平台离线验收，源码`bf94c9d3041b75806470ae06ca4b658d2966228b`/[CI37982550340](https://github.com/bboytang/CAIdex/actions/runs/37982550340)。新增Provider2项/Qwen72、新增Qwen Runtime7项；workspace510/505/509、实际Runtime57/56/56，旧通过名精确+2/+7。下一步 **OpenRouter Provider**：先核对V3、现有ModelProvider/Custom传输/Registry和官方契约，再按已确定F/G方案接入，不重新设计。商业Live/Full仍需明确授权；不跳到H/I/CLI/UI。
+当前处于 **F/G 多模型与 Gateway**。Qwen实际Runtime源码bf94c9d/CI37982550340已收尾；本步从干净main=origin/main=368a341继续OpenRouter。步骤1已完成：V3、AGENTS、ModelProvider/Custom传输、OpenAI与Qwen实现及官方OpenRouter目录/Responses/路由契约已核对。采用既定六方法/共享传输与执行端Broker，基础Classic文本JSON/SSE先验；OpenRouter目录不是OpenAI object=list/catalog，不直接套parse_model_catalog。Responses无服务端状态，store=true/previous_response_id拒绝；executor固定require_parameters=true/allow_fallbacks=false且拒绝caller路由覆盖。基础scope不绑定供应商历史，不冒称稳定后端或Full。步骤2已完成独立Provider/配置/目录解析/请求与输出门控、隔离测试，最终14/0/0；初次13/1仅坏工具身份夹具已修正。步骤3已完成：workspace524/0/59、既有Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff及旧通过名+14/Runtime不变精确核对通过。步骤4 diff已审阅，提交推送组合命令被自动审批拒绝且未执行：审查认为本会话明确发布授权仅覆盖Qwen Lite，不覆盖OpenRouter main发布。下一动作先保存本地提交，取得OpenRouter main明确授权后推送并核验精确源码三平台CI；旧Qwen CI不代验OpenRouter。工具/推理历史/Lite/实际OpenRouter Runtime后续分项，不改Runtime执行器或跳H/I/CLI/UI。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 
@@ -78,13 +78,13 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 ## 问题与阻塞
 
 - 本步本地72项Provider/7项定向Runtime、workspace510/0/59、完整Runtime57/0/0及Clippy/fmt/diff已通过；日志`/tmp/caidex-qwen-runtime/`，local-check.py/local-result.json精确核对旧通过名+2/+7和修改边界。精确源码bf94c9d/CI37982550340已completed/success，watch与三份完整raw下载exit0、ci-check通过，所有本步句柄已结束。
-- 实际Qwen Runtime离线三平台已验；OpenRouter尚未实现，不是阻塞。Qwen原生输入自动截断风险待真实模型验证；本地预算不能替代token/context能力。商业模型/签名真实性/Full、生产权限、多端Host、Windows桌面/UAC、iOS真机/签名未验。
+- 实际Qwen Runtime离线三平台已验；OpenRouter基础Adapter14项、workspace524/0/59、既有Runtime57/0/0及Clippy/fmt/diff本地通过；OpenRouter main推送被自动审批拒绝，CI未运行，须本次明确发布授权。Qwen原生输入自动截断风险待真实模型验证；本地预算不能替代token/context能力。商业模型/签名真实性/Full、生产权限、多端Host、Windows桌面/UAC、iOS真机/签名未验。
 - 既有Minor/覆盖空缺保留在Provider文档：Gemini thought-call/无tools/none、整组载体互换、projection/满槽取消、整数/空ID、usage/thought-only等；Anthropic重启第三轮/完整Lite custom结果等。不是本轮已修复项，不派重复审查或无关重构。
 - 同步SecretStore调用开始后不能强停，只保证取消后不POST；comment-only native chunk/实际Runtime下游idle单独未验。jsonschema0.58.6离线retriever虽有字节/regex限制但无硬CPU抢占，留H隔离；不自动重试/修补坏回答。
 
 ## Git、环境与操作授权
 
-- 分支 **main**，已验源码`bf94c9d3041b75806470ae06ca4b658d2966228b`已推送，收尾前HEAD=origin/main=该SHA；本次收尾仅HANDOFF/README/Qwen/Gateway/Runtime能力五份验收文档，独立纯文档提交号以git log -1为准。基线d9211e7，Lite源码3ec8ca7；本步仅Qwen生产校验及Runtime测试dev接线/内部lock依赖，不改共享Runtime生产源码/传输/Broker/执行器/workflow。
+- 分支 **main**，本步基线HEAD=origin/main=368a3416d4a58db2ee82ee74b01aaf6f21af5c79；当前未提交OpenRouter源码/测试、Cargo workspace成员/lock内部包及HANDOFF/README/OpenRouter/Gateway验收文档。无共享生产源码/Runtime/其他Provider/workflow改动。
 - 新会话用户已明确授权本次核验通过的文档与Qwen Lite源码提交推送main及源码三平台CI；首次推送曾因自动审批不认可旧交接授权被拒，取得本会话明确授权后推送成功。
 - 用户2026-10-08持续授权本地检查通过后直接commit/push、源码三平台CI，不再重复询问；纯文档不运行完整Rust CI。离线合成fixture/临时marker已授权；未授权读取用户Key、商业API/邮件/生产部署/模型下载或购买服务。
 - `.git`普通沙箱只读，Git写入/push需授权执行环境。push使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局凭据或输出秘密。
@@ -101,3 +101,11 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 本步补充：`/tmp/caidex-qwen-runtime/{provider-final,focused-final,workspace-final,clippy-final,runtime-final}.log`及local-check.py/local-result.json；独立Qwen Runtime用例与fixtures在runtime/bridge/tests，ID策略测试在model/providers/qwen/tests/runtime_ids。
 
 本步收尾核对：17份Markdown/84本地链接/22锚点、git diff --check通过；收尾仅上述五份文档，源码逐字保持bf94c9d/CI37982550340已验内容。纯文档不重复Rust CI，提交推送后再核对HEAD/origin与工作区。
+
+OpenRouter步骤1依据：[Responses无状态](https://openrouter.ai/docs/api_reference/responses/overview)、[基础请求](https://openrouter.ai/docs/api_reference/responses/basic-usage)、[目录](https://openrouter.ai/docs/api/api-reference/models/list-all-models-and-their-properties)、[路由](https://openrouter.ai/docs/guides/routing/provider-selection)、[Responses请求参考](https://openrouter.ai/docs/api/api-reference/responses/create-responses)。目录完整raw保留，公开metadata只返回配置交集/Unknown；不调用商业API、不读用户Key。
+
+OpenRouter步骤2：新增model/providers/openrouter/{src/config,src/catalog,src/request,src/lib}.rs及tests/provider.rs、Cargo workspace成员及lock内部package；无新外部包或共享生产源码/Runtime/workflow改动。恢复文件见[OpenRouter验收](docs/CAIdex-OpenRouter-Provider-设计与验收.md)；本地检查已结束，日志`/tmp/caidex-openrouter-basic/`。
+
+OpenRouter步骤3本地证据：`/tmp/caidex-openrouter-basic/{focused-final,workspace-final,clippy-final,runtime-final}.log`与local-check.py/local-result.json；workspace旧510+14、Runtime旧57逐名完全保持，外部package/version集合不变。
+
+OpenRouter步骤4阻塞：自动审批拒绝git add/commit/push组合命令，理由为“此前授权明确针对Qwen Lite，本次未明确授权将OpenRouter变更发布到main”；命令未执行、无远端变化。本地核验及reviewable源码已完成，只保存本地提交，不能绕过拒绝推送/触发CI。用户需明确授权OpenRouter main推送与源码三平台CI。
