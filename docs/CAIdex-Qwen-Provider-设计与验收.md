@@ -48,11 +48,13 @@ ModelProvider 六方法全部接入：
 | 传输生命周期 | 分页不续总期限、query编码及URL保护、取消/Drop真实断连、占槽与释放、HTTP/Retry-After/无重定向、未知工具拒绝 |
 | Gateway | 独立监听token、执行端Key只去native、流终态及无秘密回显 |
 
-首次46479未编译成功（夹具误用现有Gateway API和reqwest helper），不算有效RED；第二轮38347为8通过/3夹具期望失败（空Registry、非法Lite字符串、坏SSE同chunk不保证先交付created），按既有契约修正。35171定向13/0/0通过；随后补充能力门控/完整assistant消息用例，最终workspace54851 exit0：452通过/0失败/52ignored，Qwen14每名一次、DeepSeek57及Custom7保持；全workspace/all-targets Clippy-D warnings86201 exit0，fmt/diff通过。实际Runtime源码未改，本机不重复执行旧实际Runtime全套；本步独立源码三平台CI尚待提交后验收。日志 `/tmp/caidex-qwen-basic-{first,green,boundaries,workspace,clippy}.log`；检查和CI恢复点见[HANDOFF](../HANDOFF.md)。尚未完成的检查不得按上轮结果冒称通过。
+首次46479未编译成功（夹具误用现有Gateway API和reqwest helper），不算有效RED；第二轮38347为8通过/3夹具期望失败（空Registry、非法Lite字符串、坏SSE同chunk不保证先交付created），按既有契约修正。35171定向13/0/0通过；随后补充能力门控/完整assistant消息用例，最终workspace54851 exit0：452通过/0失败/52ignored，Qwen14每名一次、DeepSeek57及Custom7保持；全workspace/all-targets Clippy-D warnings86201 exit0，fmt/diff通过。实际Runtime源码未改，本机不重复执行旧实际Runtime全套；本步独立源码三平台CI已按下列精确提交验收，旧CI不代验。日志 `/tmp/caidex-qwen-basic-{first,green,boundaries,workspace,clippy}.log`；检查和CI恢复点见[HANDOFF](../HANDOFF.md)。尚未完成的检查不得按上轮结果冒称通过。
+
+精确源码`3638d13863b339e230aa884820a8ff4b840526e6`/[CI37888877980](https://github.com/bboytang/CAIdex/actions/runs/37888877980)已completed/success。Linux113685036842、Windows113685037198、macOS113685037053各17steps成功或条件跳过，完整raw2059/1745/1756行；workspace452/447/451（0failed，ignored52/50/50）、既有固定Runtime50/49/49（0failed/ignored）、Qwen14每名每平台一次，DeepSeek57保持。全部通过名503/496/500等于旧精确37886226991集合加14新名，无遗漏/重复；watch84155、状态/完整日志下载及逐名checker均exit0。检查脚本`/tmp/caidex-qwen-basic-ci-check.py`，结果同前缀ci-result.json，日志`/tmp/caidex-ci-37888877980-{linux,windows,macos}-raw.log`及status.json/watch.log。固定Runtime回归不是实际Qwen工具/历史接线验收，商业Live/Full仍未验。
 
 ## 后续实施顺序
 
-1. 完成本步14项/相关workspace及Clippy检查，核对diff，独立源码commit/push/精确三平台CI；不借DeepSeek CI代验。
+1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
 2. 按实际Qwen wire接入显式Runtime attribution/正文控制和逐模型推理参数；随后原生function/namespace/custom、tool choice与成对结果、完整summary历史绑定/重放，验证终态后交付工具。不盲复制DeepSeek明文content或Gemini签名契约。
 3. 单独核对Lite/Code Mode、并行与本地交付策略及native能力边界，再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

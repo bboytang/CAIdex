@@ -184,4 +184,4 @@ DeepSeek固定Runtime本步本地7项/累计50项通过：Classic/Lite实际审�
 
 ## Qwen原生目录与基础Responses（F/G当前步骤）
 
-新增QwenProvider，显式地区/工作区基址与qwen API-Key引用；原生/api/v1/models分页output目录和配置交集、六方法、基础Classic文本JSON/SSE/store=false及ignored字段Key前拒绝。唯一共享生产改动是Custom元数据GET query编码/预算，旧GET与POST路径保持；没有新HTTP栈/Agent/执行器，没有改动DeepSeek或Runtime。最终14项及workspace452/0/52、全workspace/all-targets Clippy/fmt/diff本地通过，精确源码三平台证据待提交后收尾；不以目录、文本成功或旧CI标Full。原生工具/summary历史绑定/Lite/实际Qwen Runtime及商业模型仍待后续，恢复点见[Qwen设计与验收](CAIdex-Qwen-Provider-设计与验收.md)/HANDOFF。
+新增QwenProvider，显式地区/工作区基址与qwen API-Key引用；原生/api/v1/models分页output目录和配置交集、六方法、基础Classic文本JSON/SSE/store=false及ignored字段Key前拒绝。唯一共享生产改动是Custom元数据GET query编码/预算，旧GET与POST路径保持；没有新HTTP栈/Agent/执行器，没有改动DeepSeek或Runtime。最终14项及workspace452/0/52、全workspace/all-targets Clippy/fmt/diff本地通过，精确3638d13/[CI37888877980](https://github.com/bboytang/CAIdex/actions/runs/37888877980)三平台已完整收尾：workspace452/447/451、固定Runtime回归50/49/49、Qwen14每平台一次，全部通过名503/496/500等于旧CI集合+14、无遗漏/重复；不以目录、文本成功或旧CI标Full。原生工具/summary历史绑定/Lite/实际Qwen Runtime及商业模型仍待后续，恢复点见[Qwen设计与验收](CAIdex-Qwen-Provider-设计与验收.md)/HANDOFF。
