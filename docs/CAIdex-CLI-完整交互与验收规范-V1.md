@@ -2,7 +2,7 @@
 
 正式决定：2026-10-09。状态：**最终设计基准；完整 CLI 尚未实现，CLI-01～CLI-34 全部待实现、未执行**。本文不启动 CLI 编码，不改变 A–R 顺序或当前 F/G 恢复点。原 V2 仅作需求背景，冲突以 [V3](CAIdex-实施计划-V3.md)、本文及[账户/记忆/云设计](CAIdex-Account-Memory-Cloud-设计与验收-V1.md)为准。
 
-本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。2026-10-09 复核九份固定上游源码及版本/help，保留已纠正的 stdin 边界，补清观察端退出、超时结果未知和登录取消竞态；新增断言仍属待验收。
+本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。2026-10-09 再次核对九份固定上游源码，补读两份配置源码及版本/help；保留 stdin、观察端退出、超时未知和登录取消竞态规则，补清 profile 导入及账户认证端点信任边界。所有新增断言仍属待验收。
 
 ## 目录
 
@@ -50,6 +50,7 @@ Host 管理真实 Thread/Turn 与后台任务，CLI 是操作和显示端。CAId
 - [exec 配置解析与服务端请求处理](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/lib.rs)：`build_exec_config`、`handle_server_request`、stdin、interrupt、终态与退出。
 - [exec JSONL 类型](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/exec_events.rs)、[JSONL 投影](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/event_processor_with_jsonl_output.rs)。
 - [Slash commands](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/slash_command.rs)、[默认 keymap](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/keymap.rs)、[keymap bindings](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/keymap/bindings.rs)、[TUI 退出边界](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/chatwidget.rs)。
+- [配置入口与 profile 路径](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/config/mod.rs)、[配置加载、信任与约束](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/config/src/loader/mod.rs)：固定版本先加载基础用户配置，再叠加选定的 `<name>.config.toml`；同名旧 `profile`/`[profiles.<name>]` 与新 profile 选择冲突时拒绝。
 
 固定版本已有 `agents/exec/review/login/logout/mcp/plugin/app-server/remote-control/completion/update/doctor/sandbox/debug/apply/resume/queue/archive/delete/migrate-rollouts/unarchive/fork/cloud/exec-server/features`。没有顶层 `task/models/provider/credentials/config/remote/account/memory/skills/plugins/threads`；不要因存在相关协议或 Slash command 就声称已有对应顶层命令。
 
@@ -197,6 +198,8 @@ Host journal和memory.sqlite不合表、不相互自动上传。生成的Runtime
 
 命令参数/会话选择默认不持久；config set/provider default/remote use是显式写入动作。Remote情况下项目配置来自执行Host项目，客户端默认只能提出参数，Host决定可用配置。配置写入/覆盖必须拒绝秘密字段（Key、Account/Gateway token、SSH私钥），不能借通用-c/config set把它们放进普通配置。可信判定按执行端项目身份/实际路径和既有Runtime trust机制验证；项目不能声明自身可信或脚本化覆盖安全store。
 
+上游 `--profile` 的配置层语义保持，CAIdex第7.1节的 `profiles/` 路径是自身规划路径，接入时显式映射至隔离Runtime配置，不扫描或改写用户原CODEX_HOME。导入旧 `profile`/`[profiles.<name>]` 必须预览并选择迁移范围，同名旧/新格式冲突拒绝，不静默合并；保留源文件及未支持字段报告。上游只对特定Runtime/MCP命令接受 `--profile`，CAIdex也按命令声明可用范围；账户login/logout、sync开关和credentials业务不能被配置Profile重新解释或覆盖。具体适配与迁移在P验证，不宣称当前已支持。
+
 **权限、sandbox、Host管理员上限、Host ACL及账户Memory Sync不适用普通覆盖优先级。** 客户端请求不得超过Host政策；同步由认证服务版本/epoch权威决定，项目文件/环境变量/`-c`不能打开或绕过。迁移必须保存来源/schema/旧配置，拒绝无法安全理解的安全字段，不用宽松忽略实现升级。
 
 ## 8. 账户登录、令牌与会话
@@ -219,6 +222,8 @@ CAIdex CLI属于公开OAuth客户端，不能内置所谓长期保密Client Secr
 6. 安全保存令牌、关闭监听并清除一次性材料，查询账户设置。取消、超时、端口抢占或交换失败也关闭监听；不会用未校验回调当登录成功。
 
 授权范围只包含本次需要的账户/云数据能力，必须由官方后端和用户授权共同限定；认证同意不自动开启 Memory Sync、扩大项目访问、允许历史资料上传或授予 Host 权限。令牌保存失败不能显示登录成功；新建会话应尝试撤销并明确报告尚未确认的结果，不能留下可供后续启动误用的半写入登录状态。issuer/client/回调和资源 audience 的校验分别按选定成熟 OAuth/OIDC 库完成，不把 ID Token 当 API Access Token。
+
+账户认证地址属于独立信任配置，不沿模型Endpoint、项目文件或通用 `-c` 覆盖规则。授权/Device/令牌端点与验证URL必须属于经审查的官方issuer部署；HTTPS本身不证明任意域名可信。发现元数据若使用也须验证issuer与端点绑定；不向模型端点发送Account Token，也不把模型Key带到登录页。开发测试环境须显式隔离client/issuer/资源audience与安全存储，不能复用生产会话；成熟库及域名注册在I确定，两种登录入口共同遵守。
 
 ### 8.3 VPS / SSH Device Authorization Grant
 
@@ -439,6 +444,8 @@ SQLite schema与Host/账户API均版本化。迁移前检查可用空间、兼�
 CLI-15/34还须用Windows/Linux真实管道验证UTF-8/BOM、UTF-16LE/BE BOM、非法编码，以及根exec“无prompt/显式 `-` 的空stdin拒绝”和“已有prompt的空stdin忽略/非空stdin追加”三种路径；另核对resume/fork/review各自入口。不以源码阅读代替运行通过，不改变CLI-01～34编号和当前未执行状态。
 
 CLI-11/15/16/32还须验证：exec提交回应丢失、未收到Thread ID时可按原operation/Host查询而无重复执行；超时与正常终态竞态、interrupt仅受理但终态未知时75、确认中断后124；JSONL观察端Ctrl+C/SIGTERM/断管道后无工具中断或task取消，随后可按原ID/seq恢复。CLI-17/19/21注入取消/到期与授权或token返回竞态：不再轮询/接受迟到回调，不保存新登录或启动同步；若服务端已签发会话，尝试独立撤销并如实记录待确认，秘密只在安全存储。不因取消本次登录撤销另一已有效会话。
+
+CLI-17/19/21/30还须注入非官方HTTPS验证URL、issuer/资源audience不匹配、恶意项目配置及模型Endpoint替换：认证失败且无账户令牌或模型Key发往错误目标，测试/生产会话存储隔离。CLI-08/33验证基础配置与Profile层、同名旧/新格式冲突、显式导入及命令作用域；拒绝时源配置不变，账户/Host权限不被Profile覆盖。上述检查仍归原34项，不增加通过记录。
 
 ## 16. 实施时待验证的技术细节
 

@@ -1,8 +1,18 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（F/G Qwen custom/v3历史已精确三平台收尾，续接Runtime控制组合/Lite）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（正式CLI文档复核；F/G恢复点原样保留）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
+
+本轮只复核并补全正式CLI文档，不推进F/G生产源码。起点main/HEAD=origin/main=da2a99b187745c1a4094b219f87896f8299b6d2b，工作区干净，199个tracked文件已建立SHA256基线。CLI V1已存在，不重复建架构；目标仅CLI/V3/Account/UI/Credentials/README/HANDOFF七文档，保留全部历史CI/验收行与A–R顺序。
+
+已读相关方案、现有apps/cli源码/测试与固定上游。九份旧缓存重新对公开固定commit逐字核对通过；另取core config与config loader两份，确认profile叠加、旧格式冲突拒绝及trust/requirements边界。隔离CODEX_HOME六项版本/help通过，不启动TUI/认证/模型、不读用户Key。证据/tmp/caidex-cli-contract-oct09-current/{baseline.json,source-check.json,source/,*-help.txt}。
+
+已补清旧profile显式导入/同名旧新格式冲突拒绝/命令作用域，以及独立账户issuer/client/资源audience/认证端点信任与测试会话隔离；Account/UI/Credentials/V3同步，README/Account纠正Qwen custom已验恢复点。检查通过：七文档diff，16份Markdown/66本地链接/22锚点，原34项CLI/55项账户/16项UI待实施验收行及17实体/A–R阶段表逐字保持；全部其余192个tracked文件SHA256不变、凭据/历史CI保留、git diff --check通过。checker/result在/tmp/caidex-cli-contract-oct09-current/{check.py,result.json}。没有生产源码草稿/并行修改，无运行中测试；未运行Rust编译、完整CI、TUI、真实认证/模型或部署。按持续授权独立七文档commit/push，标题docs: verify CLI configuration and account trust boundaries；本轮文档无未完成项，H/I/P/R功能仍待实施。
+
+F/G真实恢复点保持：Qwen custom源码ae0b2d0及CI37939652724已完整收尾；下一步summary auto/context all_turns/include控制组合→Lite→实际固定Runtime Classic/Lite→OpenRouter，然后H/I及既定后续。CLI/H/I/P/R未实现，不因文档任务提前标完成。
+
+### 上一轮Qwen custom已验恢复点
 
 当前按持续开发目标从main/3272cbc6911de58bb4924476f7e655d5d43348da续接四份Qwen custom草稿。CLI正式设计已归档/复核，不启动CLI/账户/UI；只完成Qwen lib/tools/history/tests与README/Qwen/Gateway/HANDOFF四文档。复用ToolMap/history/Custom transport，明确custom→function(input:string)/grammar仅指导及v3政策绑定；默认与旧v1/v2不放宽，不改共享Runtime/依赖/workflow，不读用户Key/商业API，不清target。
 
@@ -144,7 +154,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- 当前branch main，已验源码ae0b2d059f83b46548388e72ad04719e25cd59f5已commit/push（feat(qwen): bind explicit custom tools to native functions），CI37939652724精确三平台已完整验收。当前收尾只README/Qwen/Gateway/HANDOFF四文档，标题docs: record Qwen custom three-platform verification；无其他并行成果/未提交生产草稿，不额外跑纯文档RustCI。恢复先核对HEAD/origin/status，从Runtime控制组合/Lite接续；CLI已在d8b2ddd/10b7ef5/3272cbc收尾。
+- 当前branch main；本轮起点HEAD/origin da2a99b187745c1a4094b219f87896f8299b6d2b，Qwen源码ae0b2d059f83b46548388e72ad04719e25cd59f5及CI37939652724已完整验收，收尾四文档已提交/push。当前仅本轮CLI/V3/Account/UI/Credentials/README/HANDOFF七文档，独立提交标题docs: verify CLI configuration and account trust boundaries；无生产源码草稿或其他并行修改。恢复核对实际HEAD/origin/status，从Qwen Runtime控制组合/Lite接续；本轮只读/文档检查不代验CLI/H/I/P/R，不额外触发完整Rust CI。
 
 - 此前工具子阶段branch main，源码HEAD/origin c5c021daf999fa1b4cff755b3633c106d88266f4已独立commit/push（`feat(qwen): bind native function tools and paired history`），精确CI37932689731已完整验收。收尾文档提交仅README/Qwen/Gateway/HANDOFF，标题`docs: record Qwen tools three-platform verification`；无其他并行成果/未完成功能草稿，恢复先核对HEAD/origin/status，后续custom/Lite/实际Runtime按既定顺序。
 

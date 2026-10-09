@@ -59,6 +59,8 @@ CLI只登录已有账户，桌面系统浏览器PKCE、VPS/SSH Device Grant在I�
 
 同样约束登录取消/到期与迟到token的竞态：不将取消流程的token保存为有效登录，不恢复记忆上传；若已签发会话，独立撤销及待确认清理只使用账户安全存储，不写模型Broker配置/普通outbox、不删其他有效会话的秘密。I/P/R按CLI-17/19/21验证；现有SecretKind支持与E阶段凭据回归不能代验该认证生命周期。
 
+账户issuer/client/资源audience及认证端点使用独立信任配置，不能被模型Endpoint、项目配置或普通Profile覆盖；Account Token不发送给模型服务，模型Key不发送给账户登录服务。测试与生产会话存储隔离。P的旧Codex Profile导入只迁移已确认非秘密配置，不复制auth.json或借配置层导入账户令牌；按CLI-08/17/19/21/30/33验证，现有credentials参数、存储行为和E阶段证据保持不变。
+
 ## iOS 原生接入契约（阶段 M）
 
 - Swift/UniFFI 适配实现 SecretStore 的 get/set/remove；Keychain generic-password 使用 CAIdex service 与完整 reference 作为账户标识。缺失返回 None，锁定/访问拒绝返回安全错误，不返回系统原始错误或秘密。

@@ -70,6 +70,8 @@ P/R的CLI-15/34须覆盖固定exec的stdin编码与空管道差异：prompt支�
 
 H/P/R补验CLI-11/15/16/32的观察、查询与超时边界：task attach JSONL观察端退出只detach，原任务可按ID/seq重连；exec提交前保存operation/Host，回应丢失可用threads status查原操作；显式exec超时只有真实Turn中断终态确认才124，仅受理/失联未知用75而不重提交。I/P/R补验CLI-17/19/21的取消/到期与授权返回竞态、迟到回调/会话清理，不能保存假登录或启动记忆同步。九份固定上游源码及六项版本/help只读核对不代替这些待实现测试；A–R阶段表、F/G恢复点和既有CI证据不变。
 
+配置复核另读取固定core config及config loader：P保留基础用户配置叠加Profile的语义，显式映射CAIdex目录；CLI-08/33验证旧/新Profile同名冲突、非秘密导入范围及命令作用域，不自动修改原Codex配置。I定义独立账户issuer/client/资源audience及官方认证端点信任配置，P接入PKCE/Device，R实测CLI-17/19/21/30；模型Endpoint、项目配置或通用覆盖不能改变账户认证目标或接收Account Token。十一份源码及help核对仅是设计依据，不代表功能验收。
+
 ## 当前协议基准与限制
 
 - 固定 Codex 0.160.1 / `d27764b82f7118f674371e6d6e76271d9d606edb`，通过 JSONL stdio 初始化和收发；不依赖 UI 专有源码。
