@@ -12,7 +12,7 @@
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，Qwen实际Runtime也已完成三平台离线验收，下一步OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter显式Runtime上下文/推理控制与原生工具历史；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter显式Runtime上下文/逐route effort的精确源码CI验收，之后原生工具/后端绑定历史；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
 
 续接复核补清无头 `exec fork` 的ForkOnly：不带prompt只创建分支，成功不代表执行任务；恢复目标不存在时不静默新建任务。此为P/R待实现契约，当前开发CLI仍无exec/fork/resume。F/G控制组合独立推进，验证结果见Qwen专属文档和HANDOFF，CLI文档核对不代验源码。
 
@@ -78,3 +78,5 @@ node scripts/codex-binary.mjs
 基础 CI 在 Linux、Windows 和 macOS 验证 Rust 工程及离线协议。iOS 应用工程建立后加入 simulator 测试和无签名 archive；目前 macOS Rust 检查不等同于 iOS 构建。
 
 上游 Codex 与归档协议遵循 `upstream/codex/LICENSE`、`NOTICE`。CAIdex 自有代码及品牌的对外分发许可证尚未确定。
+
+OpenRouter上下文/effort新增9项、本地23项与workspace533/0/59、既有Runtime57/0/0、Clippy/fmt/diff已验；默认拒绝与身份隔离保持，本步源码三平台CI待验。详情见[OpenRouter验收](docs/CAIdex-OpenRouter-Provider-设计与验收.md)。

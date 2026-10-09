@@ -37,3 +37,16 @@
 2. 继续OpenRouter显式Runtime上下文/正文与推理控制、原生工具及后端绑定历史；官方推理/工具/路由契约先核对，不复制Qwen summary或DeepSeek明文规则。
 3. 再验Lite与实际固定Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业模型兼容性另需授权。
 4. 保持V3 F/G→H/I→Windows/SSH/iOS/CLI/Relay/R；生产Host、GUI、账户/记忆及完整CLI均仍待实现。
+
+
+## 显式Runtime上下文与逐route effort（本步）
+
+2026-10-09，依据固定Codex client构造与实际Classic合成wire，核对[Responses推理](https://openrouter.ai/docs/api_reference/responses/reasoning)和[推理参数及模型差异](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)。不是Qwen summary或DeepSeek reasoning_text映射。
+
+- `with_runtime_context`显式消费session_id/x-client-request-id/x-codex-turn-metadata、字符串map的client_metadata与有效prompt_cache_key，不转发身份或提供缓存承诺；保留取消/deadline。未知header与turn-state仍拒绝，discovery使用相同身份隔离。
+- 只消费neutral text：null/空对象、format.type=text、缺省/null verbosity；有意义verbosity、结构输出、未知子字段拒绝。typed developer/user消息允许有效ID，保留完整input；system ID、缺type、空/控制字符/非字符串ID与用户status拒绝。原assistant规则保持。
+- `with_reasoning_effort_mapping(route, source, native)`逐route执行端显式配置、拒绝未知route/非法值/重复source，source只转换一次。词汇none/minimal/low/medium/high/xhigh/max仅为配置词汇，不是各后端支持承诺；OpenRouter可能继续映射预算或模型原生等级。缺配置拒绝，明确Unsupported仅允许映射结果none，Unknown不提升为已验能力。
+- 请求只接受reasoning.effort，不默默丢弃summary/context/include/max_tokens/exclude/enabled，推理输入和工具历史仍拒绝。强制require_parameters=true/allow_fallbacks=false，不保证初始后端固定、精确计算量或数据留存；后续后端绑定历史必须单独核验。
+- 编译前源预算与编译后共享预算保持；没有新HTTP栈、执行器、全局环境Key或外部依赖。默认入口保留旧14项行为。
+
+新增9项隔离HTTP验收：身份消费与GET/POST隔离、默认/turn-state拒绝、坏正文/ID/历史控制、逐route与映射一次、配置/Unsupported门控、源预算先于消费、SSE组合无损、7种显式词汇及none/能力不升级、Gateway监听与模型身份隔离。定向23/0/0已通过；完整本地workspace533/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；workspace逐名精确旧524+9、旧Runtime名完全保持，旧14项测试逐字保留，依赖/共享/其他Provider/workflow不变。本步精确源码CI待执行。日志`/tmp/caidex-openrouter-context/`。现阶段不认领工具历史/Lite/实际固定OpenRouter Runtime/商业Live或Full。

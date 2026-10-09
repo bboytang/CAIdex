@@ -1,7 +1,15 @@
 use caidex_model_core::{
-    CanonicalRequest, ContextHeaders, ProviderError, ProviderResult, ResponsesDialect,
+    CanonicalRequest, CapabilitySupport, ContextHeaders, ProviderError, ProviderResult,
+    ResponsesDialect,
 };
 use serde_json::{Value, json};
+use std::collections::HashMap;
+pub(crate) fn valid_effort(value: &str) -> bool {
+    matches!(
+        value,
+        "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
+    )
+}
 fn invalid() -> ProviderError {
     ProviderError::new(400, "openrouter_invalid_request")
 }
@@ -21,6 +29,9 @@ fn fields(v: &Value, allowed: &[&str]) -> ProviderResult<()> {
 pub(crate) fn compile(
     request: CanonicalRequest,
     budget: usize,
+    runtime_context: bool,
+    efforts: Option<&HashMap<String, String>>,
+    reasoning_support: CapabilitySupport,
 ) -> ProviderResult<CanonicalRequest> {
     if request.wire().to_string().len() > budget {
         return Err(ProviderError::new(413, "invalid_or_oversized_body"));
@@ -29,6 +40,39 @@ pub(crate) fn compile(
         return Err(ProviderError::new(400, "unsupported_dialect"));
     }
     let mut wire = request.wire().clone();
+    if runtime_context {
+        for key in ["client_metadata", "prompt_cache_key"] {
+            if let Some(value) = wire.get(key).filter(|v| !v.is_null()) {
+                let valid = if key == "client_metadata" {
+                    value
+                        .as_object()
+                        .is_some_and(|m| m.values().all(Value::is_string))
+                } else {
+                    value
+                        .as_str()
+                        .is_some_and(|s| !s.trim().is_empty() && !s.chars().any(char::is_control))
+                };
+                if !valid {
+                    return Err(invalid());
+                }
+            }
+            wire.as_object_mut().unwrap().remove(key);
+        }
+        if let Some(text) = wire.get("text").filter(|v| !v.is_null()) {
+            fields(text, &["format", "verbosity"])?;
+            if let Some(format) = text.get("format") {
+                fields(format, &["type"])?;
+                if format["type"] != "text" {
+                    return Err(unsupported());
+                }
+            }
+            if text.get("verbosity").is_some_and(|v| !v.is_null()) {
+                return Err(unsupported());
+            }
+        }
+        // Only neutral text is consumed; meaningful output controls remain fail-closed.
+        wire.as_object_mut().unwrap().remove("text");
+    }
     fields(
         &wire,
         &[
@@ -42,8 +86,20 @@ pub(crate) fn compile(
             "store",
             "previous_response_id",
             "background",
+            "reasoning",
         ],
     )?;
+    if let Some(reasoning) = wire.get("reasoning") {
+        fields(reasoning, &["effort"])?;
+        let source = reasoning["effort"].as_str().ok_or_else(invalid)?;
+        let native = efforts
+            .and_then(|m| m.get(source))
+            .ok_or_else(unsupported)?;
+        if native != "none" && reasoning_support == CapabilitySupport::Unsupported {
+            return Err(ProviderError::new(400, "unsupported_reasoning"));
+        }
+        wire["reasoning"]["effort"] = native.clone().into();
+    }
     for key in ["store", "background"] {
         if wire.get(key).is_some_and(|v| !v.is_null() && v != false) {
             return Err(unsupported());
@@ -83,7 +139,9 @@ pub(crate) fn compile(
             }
             for key in ["id", "status"] {
                 if let Some(v) = item.get(key) {
-                    if role != "assistant" || item["type"] != "message" {
+                    let runtime_id =
+                        runtime_context && key == "id" && matches!(role, "developer" | "user");
+                    if (role != "assistant" && !runtime_id) || item["type"] != "message" {
                         return Err(unsupported());
                     }
                     if key == "id"

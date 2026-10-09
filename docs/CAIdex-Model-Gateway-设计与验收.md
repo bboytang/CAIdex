@@ -219,3 +219,7 @@ Qwen后续显式控制本步只改Qwen lib/request，不改共享Gateway/传输�
 ## OpenRouter基础Adapter（三平台离线已验）
 
 独立OpenRouter Provider复用ModelProvider/Custom传输/Broker/Gateway，原生data目录完整保存且只返回配置交集，不据声明升级能力；基础Classic文本JSON/SSE/六方法与store=false、无服务端状态、固定require_parameters=true/allow_fallbacks=false门控，caller路由/未知控制/工具/媒体/推理/Lite/Runtime内部context在Key前拒绝。14项及workspace524/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff本地通过，旧workspace逐名+14/旧Runtime完全保持；精确源码9563df0/[CI38004040230](https://github.com/bboytang/CAIdex/actions/runs/38004040230)三平台完整通过：workspace524/519/523、既有Runtime57/56/56、OpenRouter14逐名一次、全通过名582/575/579精确为旧CI+14。仅新增crate/内部workspace与lock条目，无共享生产实现/其他Provider/Runtime/workflow改动，不认领实际OpenRouter Runtime或商业Live/Full；后端选择与历史绑定另验。见[OpenRouter验收](CAIdex-OpenRouter-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)。
+
+## OpenRouter显式上下文与逐route effort（本地已验，源码CI待验）
+
+显式runtime_context消费隔离header/client_metadata/prompt_cache_key和neutral text，保留typed developer/user有效ID；逐route effort显式映射一次，缺配置/明确Unsupported拒绝，none例外但不升级能力。默认入口、summary/context/include/非neutral verbosity/原生历史仍关闭；Gateway监听token/模型Key/执行端身份分离。新增9项、共23项本地通过，workspace533/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff及旧通过名精确+9保持。仅OpenRouter实现与测试/验收文档，不改共享Gateway/Custom/Broker/Runtime/其他Provider/依赖；本步精确源码三平台CI待验，既有Runtime回归不证明实际OpenRouter接线。见[OpenRouter验收](CAIdex-OpenRouter-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)。

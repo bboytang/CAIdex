@@ -1001,3 +1001,438 @@ async fn openrouter_gateway_keeps_auth_routing_and_runtime_context_local() {
     );
     gateway.shutdown().await.unwrap();
 }
+
+fn runtime_context() -> RequestContext {
+    let mut context = RequestContext::default();
+    for name in ["session_id", "x-client-request-id", "x-codex-turn-metadata"] {
+        context
+            .headers
+            .insert(name, "executor-private".into(), REQUEST_HEADERS)
+            .unwrap();
+    }
+    context
+}
+fn runtime_wire() -> Value {
+    json!({"model":"fixture", "input":[
+        {"type":"message", "role":"developer", "id":"msg_dev", "content":[{"type":"input_text", "text":"guidance"}]},
+        {"type":"message", "role":"user", "id":"msg_user", "content":"hello"}
+    ], "client_metadata":{"thread_id":"executor-private"}, "prompt_cache_key":"executor-private", "text":{"format":{"type":"text"}, "verbosity":null}})
+}
+
+#[tokio::test]
+async fn openrouter_runtime_context_consumes_identity_and_preserves_text_ids() {
+    let mut fixture =
+        Fixture::start(vec![Reply::json(response_wire()), Reply::json(catalog())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture.provider(broker, limits()).with_runtime_context();
+    let source = runtime_wire();
+    let response = provider
+        .create_response(
+            CanonicalRequest::new(source.clone(), ResponsesDialect::Classic).unwrap(),
+            runtime_context(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.response.wire(), &response_wire());
+    let captured = fixture.request().await;
+    assert_eq!(captured.body.as_ref().unwrap()["input"], source["input"]);
+    for key in ["client_metadata", "prompt_cache_key", "text"] {
+        assert!(captured.body.as_ref().unwrap().get(key).is_none());
+    }
+    assert!(!captured.headers.contains("executor-private"));
+    assert!(
+        !captured
+            .body
+            .unwrap()
+            .to_string()
+            .contains("executor-private")
+    );
+    provider.discover_models(runtime_context()).await.unwrap();
+    assert!(!fixture.request().await.headers.contains("executor-private"));
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn openrouter_runtime_context_default_and_turn_state_still_reject_before_key() {
+    let fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture.provider(broker, limits());
+    assert!(
+        provider
+            .create_response(request(false, ResponsesDialect::Classic), runtime_context())
+            .await
+            .is_err()
+    );
+    assert!(
+        provider
+            .create_response(
+                CanonicalRequest::new(runtime_wire(), ResponsesDialect::Classic).unwrap(),
+                RequestContext::default()
+            )
+            .await
+            .is_err()
+    );
+    let provider = provider.with_runtime_context();
+    let mut context = runtime_context();
+    context
+        .headers
+        .insert("x-codex-turn-state", "opaque".into(), REQUEST_HEADERS)
+        .unwrap();
+    assert_eq!(
+        provider
+            .create_response(request(false, ResponsesDialect::Classic), context)
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "openrouter_unsupported_context"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_runtime_body_validation_keeps_history_and_non_neutral_controls_closed() {
+    let fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture.provider(broker, limits()).with_runtime_context();
+    for (key, value) in [
+        ("client_metadata", json!({"thread_id":42})),
+        ("client_metadata", json!([])),
+        ("prompt_cache_key", json!("")),
+        ("prompt_cache_key", json!("bad\n")),
+        ("prompt_cache_key", json!(42)),
+        ("text", json!({"verbosity":"low"})),
+        ("text", json!({"format":{"type":"json_object"}})),
+        ("text", json!({"format":{"type":"text", "future":true}})),
+        ("text", json!({"future":true})),
+        ("include", json!(["reasoning.encrypted_content"])),
+        ("reasoning", json!({"summary":"auto"})),
+        ("reasoning", json!({"context":"all_turns"})),
+        ("service_tier", json!("priority")),
+        ("provider", json!({"allow_fallbacks":true})),
+        ("session_id", json!("native-sticky")),
+    ] {
+        let mut wire = runtime_wire();
+        wire[key] = value;
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    runtime_context()
+                )
+                .await
+                .is_err(),
+            "{key}"
+        );
+    }
+    for item in [
+        json!({"type":"message","role":"system","id":"msg_sys","content":"x"}),
+        json!({"role":"user","id":"msg_user","content":"x"}),
+        json!({"type":"message","role":"user","id":"","content":"x"}),
+        json!({"type":"message","role":"user","id":"bad\n","content":"x"}),
+        json!({"type":"message","role":"user","id":42,"content":"x"}),
+        json!({"type":"message","role":"user","status":"completed","content":"x"}),
+        json!({"type":"reasoning","encrypted_content":"foreign"}),
+    ] {
+        let mut wire = runtime_wire();
+        wire["input"] = json!([item]);
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    runtime_context()
+                )
+                .await
+                .is_err()
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_effort_mapping_is_explicit_per_route_and_applied_once() {
+    let mut fixture = Fixture::start(vec![Reply::json(response_wire()); 2]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_reasoning_effort_mapping("fixture".into(), "high".into(), "low".into())
+        .unwrap()
+        .with_reasoning_effort_mapping("fixture".into(), "low".into(), "medium".into())
+        .unwrap();
+    for (source, native) in [("high", "low"), ("low", "medium")] {
+        let wire = json!({"model":"fixture","input":"text","reasoning":{"effort":source}});
+        provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        let captured = fixture.request().await.body.unwrap();
+        assert_eq!(captured["reasoning"], json!({"effort":native}));
+        assert_eq!(
+            captured["provider"],
+            json!({"require_parameters":true,"allow_fallbacks":false})
+        );
+    }
+    for wire in [
+        json!({"model":"not-visible","input":[],"reasoning":{"effort":"high"}}),
+        json!({"model":"fixture","input":[],"reasoning":{"effort":"medium"}}),
+        json!({"model":"fixture","input":[],"reasoning":{"effort":"high","exclude":true}}),
+        json!({"model":"fixture","input":[],"reasoning":{"effort":"high","summary":null}}),
+        json!({"model":"fixture","input":[],"reasoning":null}),
+    ] {
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    RequestContext::default()
+                )
+                .await
+                .is_err()
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn openrouter_effort_configuration_and_unsupported_capability_fail_closed() {
+    let fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    for (route, source, native) in [
+        ("absent", "high", "low"),
+        ("fixture", "bad", "low"),
+        ("fixture", "high", "bad"),
+    ] {
+        assert!(
+            fixture
+                .provider(broker.clone(), limits())
+                .with_reasoning_effort_mapping(route.into(), source.into(), native.into())
+                .is_err()
+        );
+    }
+    assert!(
+        fixture
+            .provider(broker.clone(), limits())
+            .with_reasoning_effort_mapping("fixture".into(), "high".into(), "low".into())
+            .unwrap()
+            .with_reasoning_effort_mapping("fixture".into(), "high".into(), "medium".into())
+            .is_err()
+    );
+    let mut metadata = model("fixture", "native-fixture");
+    metadata.capabilities.reasoning = CapabilitySupport::Unsupported;
+    let provider = OpenRouterProvider::new(
+        OpenRouterConfig::new(reference())
+            .unwrap()
+            .with_base_url(&fixture.base)
+            .unwrap(),
+        vec![metadata],
+        broker,
+        limits(),
+    )
+    .unwrap()
+    .with_reasoning_effort_mapping("fixture".into(), "high".into(), "low".into())
+    .unwrap();
+    let wire = json!({"model":"fixture","input":[],"reasoning":{"effort":"high"}});
+    assert_eq!(
+        provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default()
+            )
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "unsupported_reasoning"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_runtime_source_budget_precedes_local_identity_consumption() {
+    let fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let mut configured = limits();
+    configured.request_bytes = 256;
+    let provider = fixture.provider(broker, configured).with_runtime_context();
+    let wire = json!({"model":"fixture","input":[],"client_metadata":{"private":"x".repeat(257)}});
+    assert_eq!(
+        provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default()
+            )
+            .await
+            .err()
+            .unwrap()
+            .code,
+        "invalid_or_oversized_body"
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_runtime_context_effort_sse_combination_preserves_native_events() {
+    let event = json!({"type":"response.reasoning.delta", "delta":"opaque-native", "future":18446744073709551616_u128});
+    let terminal = json!({"type":"response.completed", "response":response_wire()});
+    let mut fixture = Fixture::start(vec![Reply::stream(format!(
+        "{CREATED}data: {event}\n\ndata: {terminal}\n\n"
+    ))])
+    .await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_runtime_context()
+        .with_reasoning_effort_mapping("fixture".into(), "xhigh".into(), "high".into())
+        .unwrap();
+    let mut wire = runtime_wire();
+    wire["stream"] = true.into();
+    wire["reasoning"] = json!({"effort":"xhigh"});
+    let mut events = provider
+        .stream_response(
+            CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap(),
+            runtime_context(),
+        )
+        .await
+        .unwrap()
+        .events;
+    let captured = fixture.request().await;
+    assert_eq!(
+        captured.body.as_ref().unwrap()["reasoning"],
+        json!({"effort":"high"})
+    );
+    assert!(!captured.headers.contains("executor-private"));
+    let mut actual = Vec::new();
+    while let Some(next) = events.next().await {
+        if let ProviderStreamEvent::Model(model) = next.unwrap() {
+            actual.push(model.response.wire().clone());
+        }
+    }
+    assert!(actual.contains(&event));
+    assert!(actual.contains(&terminal));
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn openrouter_explicit_effort_levels_and_none_do_not_upgrade_capabilities() {
+    let mut fixture = Fixture::start(vec![Reply::json(response_wire()); 7]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let mut metadata = model("fixture", "native-fixture");
+    metadata.capabilities.reasoning = CapabilitySupport::Unsupported;
+    let none = OpenRouterProvider::new(
+        OpenRouterConfig::new(reference())
+            .unwrap()
+            .with_base_url(&fixture.base)
+            .unwrap(),
+        vec![metadata],
+        broker.clone(),
+        limits(),
+    )
+    .unwrap()
+    .with_reasoning_effort_mapping("fixture".into(), "none".into(), "none".into())
+    .unwrap();
+    let mut provider = fixture.provider(broker, limits());
+    for level in ["minimal", "low", "medium", "high", "xhigh", "max"] {
+        provider = provider
+            .with_reasoning_effort_mapping("fixture".into(), level.into(), level.into())
+            .unwrap();
+    }
+    for level in ["none", "minimal", "low", "medium", "high", "xhigh", "max"] {
+        let selected = if level == "none" { &none } else { &provider };
+        selected
+            .create_response(
+                CanonicalRequest::new(
+                    json!({"model":"fixture","input":[],"reasoning":{"effort":level}}),
+                    ResponsesDialect::Classic,
+                )
+                .unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            fixture.request().await.body.unwrap()["reasoning"],
+            json!({"effort":level})
+        );
+    }
+    assert_eq!(
+        none.capabilities("fixture").unwrap().reasoning,
+        CapabilitySupport::Unsupported
+    );
+    assert_eq!(
+        provider.capabilities("fixture").unwrap().reasoning,
+        CapabilitySupport::Unknown
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 7);
+}
+
+#[tokio::test]
+async fn openrouter_explicit_context_gateway_keeps_listener_and_model_identity_separate() {
+    let mut fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = Arc::new(
+        fixture
+            .provider(broker.clone(), limits())
+            .with_runtime_context()
+            .with_reasoning_effort_mapping("fixture".into(), "high".into(), "medium".into())
+            .unwrap(),
+    );
+    let gateway = caidex_model_gateway::start_with_provider(provider, broker.redactor(), limits())
+        .await
+        .unwrap();
+    let client = reqwest::Client::builder().no_proxy().build().unwrap();
+    let url = format!("http://{}/v1/responses", gateway.address());
+    let mut wire = runtime_wire();
+    wire["reasoning"] = json!({"effort":"high"});
+    let denied = client
+        .post(&url)
+        .bearer_auth("wrong")
+        .header("content-type", "application/json")
+        .body(serde_json::to_vec(&wire).unwrap())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(denied.status(), 401);
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    let response = client
+        .post(&url)
+        .bearer_auth(gateway.token().expose())
+        .header("session_id", "executor-private")
+        .header("x-client-request-id", "executor-private")
+        .header("x-codex-turn-metadata", "executor-private")
+        .header("x-api-key", "attacker")
+        .header("cookie", "attacker")
+        .header("content-type", "application/json")
+        .body(serde_json::to_vec(&wire).unwrap())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 200);
+    let captured = fixture.request().await;
+    assert_eq!(
+        captured.header("authorization"),
+        Some(format!("Bearer {KEY}").as_str())
+    );
+    assert!(!captured.headers.contains(gateway.token().expose()));
+    assert!(!captured.headers.contains("executor-private"));
+    assert!(!captured.headers.contains("attacker"));
+    assert_eq!(
+        captured.body.as_ref().unwrap()["reasoning"],
+        json!({"effort":"medium"})
+    );
+    assert!(
+        !captured
+            .body
+            .unwrap()
+            .to_string()
+            .contains("executor-private")
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+    gateway.shutdown().await.unwrap();
+}
