@@ -181,3 +181,7 @@ DeepSeek Lite本步新增显式with_lite_options，公开dialect保留原配置�
 
 
 DeepSeek固定Runtime本步本地7项/累计50项通过：Classic/Lite实际审批执行隔离marker、磁盘重启精确原生历史/实际工具结果回放不重跑、默认及不完整策略Key前拒绝、多调用拒绝、socket interrupt、过期审批拒绝和真实Cancel中断；未提供的Decline不能发送。仅复用共享测试Harness及内部dev接线，Provider/Gateway/Runtime生产源码未改。新源码1b501ba/[CI37886226991](https://github.com/bboytang/CAIdex/actions/runs/37886226991)已精确三平台验收：workspace438/433/437、固定Runtime50/49/49（新增7每平台一次），完整通过名489/482/486为旧CI集合+7；不借82cfab8旧Runtime43/42/42代验；商业Live/Full与H生产Host仍未验，详DeepSeek文档/HANDOFF。
+
+## Qwen原生目录与基础Responses（F/G当前步骤）
+
+新增QwenProvider，显式地区/工作区基址与qwen API-Key引用；原生/api/v1/models分页output目录和配置交集、六方法、基础Classic文本JSON/SSE/store=false及ignored字段Key前拒绝。唯一共享生产改动是Custom元数据GET query编码/预算，旧GET与POST路径保持；没有新HTTP栈/Agent/执行器，没有改动DeepSeek或Runtime。最终14项及workspace452/0/52、全workspace/all-targets Clippy/fmt/diff本地通过，精确源码三平台证据待提交后收尾；不以目录、文本成功或旧CI标Full。原生工具/summary历史绑定/Lite/实际Qwen Runtime及商业模型仍待后续，恢复点见[Qwen设计与验收](CAIdex-Qwen-Provider-设计与验收.md)/HANDOFF。

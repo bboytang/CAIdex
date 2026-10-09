@@ -108,7 +108,17 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
         configuration: &CustomResponses,
         context: RequestContext,
     ) -> ProviderResult<serde_json::Value> {
-        self.json_request(configuration, None, context).await
+        self.json_request(configuration, None, &[], context).await
+    }
+    /// Executor-owned, non-secret metadata query parameters. Endpoint validation
+    /// remains unchanged; keys and values are URL-encoded before authentication.
+    pub async fn get_json_with_query(
+        &self,
+        configuration: &CustomResponses,
+        query: &[(&str, &str)],
+        context: RequestContext,
+    ) -> ProviderResult<serde_json::Value> {
+        self.json_request(configuration, None, query, context).await
     }
     /// Bounded native metadata POST to an executor-owned endpoint. This shares
     /// the GET/inference authentication, limits and cancellation, without
@@ -119,15 +129,26 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
         body: serde_json::Value,
         context: RequestContext,
     ) -> ProviderResult<serde_json::Value> {
-        self.json_request(configuration, Some(body), context).await
+        self.json_request(configuration, Some(body), &[], context)
+            .await
     }
     async fn json_request(
         &self,
         configuration: &CustomResponses,
         body: Option<serde_json::Value>,
+        query: &[(&str, &str)],
         context: RequestContext,
     ) -> ProviderResult<serde_json::Value> {
         let deadline = request_deadline(&self.state, &context)?;
+        let mut endpoint = configuration.endpoint.clone();
+        if !query.is_empty() {
+            endpoint
+                .query_pairs_mut()
+                .extend_pairs(query.iter().copied());
+            if endpoint.as_str().len() > self.state.limits.request_bytes {
+                return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+            }
+        }
         let body = body.map(|body| serde_json::to_vec(&body).expect("valid JSON"));
         if body
             .as_ref()
@@ -145,10 +166,10 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
             Some(body) => self
                 .state
                 .client
-                .post(configuration.endpoint.clone())
+                .post(endpoint.clone())
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(body),
-            None => self.state.client.get(configuration.endpoint.clone()),
+            None => self.state.client.get(endpoint),
         }
         .header(header::ACCEPT, "application/json");
         let upstream = execute(&self.state, outgoing, configuration, &context, deadline).await?;

@@ -1,10 +1,12 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（CLI最终规范复核收尾；F/G恢复点仍为Qwen/OpenRouter）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（F/G Qwen原生目录/基础Responses离线契约开发中）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
-本轮仅复核用户指定的CLI最终设计，不开展F/G或CLI编码。完整规范及V3/Account/UI/Credentials/README已在ab98333、272c88e正式归档；本轮仅修正CLI阶段表和本文件过时恢复描述，34项CLI验收仍全部待实现/未执行。只读比对固定d27764b的CLI main、exec lib/cli/events、SlashCommand、keymap六份原文，codex0.160.1版本及顶层/exec/login/resume/fork help通过；官方OpenAI Docs参考成功读取，仅导航。网络沙箱首次DNS失败后经授权只读核对成功，不是功能失败。云环境状态工具和网络策略快照在当前会话不可用，不推断其配置。证据 /tmp/caidex-cli-final-audit/{baseline.json,source-check.json,check.py,result.json}。
+F/G Qwen原生目录/基础Responses本地已验：新增model/providers/qwen六方法、显式地域/工作区基址与qwen API-Key、/api/v1/models原生分页output目录、Classic文本JSON/SSE/store=false；共享Custom新增非秘密metadata GET query编码/预算，旧GET/POST保留，Cargo仅新增内部crate。定向35171为13/0/0；补充能力门控/完整assistant消息后workspace54851 exit0：452/0/52、Qwen14每名一次、DeepSeek57/Custom7保持；Clippy全workspace/all-targets-D warnings86201 exit0、fmt/diff通过。本轮不重跑未改的实际Runtime源码，精确三平台CI会独立验证全部现有Runtime用例。首次46479未编译成功及38347的3项夹具/期望失败已修正，不作为有效生产RED。日志/tmp/caidex-qwen-basic-{first,green,boundaries,workspace,clippy}.log；新docs/Qwen、README/Gateway/HANDOFF记录范围，CLI34仍全待实施。最终local-check.py通过：13任务路径、16Markdown/57本地链接/21锚点、原438通过名+14新名、第三方lock与其他文件/CLI/A–R/旧CI保持；旧credentials父子输出有一行okok交错，按两个明确ok规范化副本核对，原始日志保留。下一步独立commit/push/精确三平台完整逐名验收；商业Live/Full、工具/summary绑定history/Lite/实际Qwen Runtime仍待后续；不读用户Key/商业API、不清target。
+
+上轮CLI文档任务仅复核最终设计，未开展F/G或CLI编码。完整规范及V3/Account/UI/Credentials/README已在ab98333、272c88e正式归档；本轮仅修正CLI阶段表和本文件过时恢复描述，34项CLI验收仍全部待实现/未执行。只读比对固定d27764b的CLI main、exec lib/cli/events、SlashCommand、keymap六份原文，codex0.160.1版本及顶层/exec/login/resume/fork help通过；官方OpenAI Docs参考成功读取，仅导航。网络沙箱首次DNS失败后经授权只读核对成功，不是功能失败。云环境状态工具和网络策略快照在当前会话不可用，不推断其配置。证据 /tmp/caidex-cli-final-audit/{baseline.json,source-check.json,check.py,result.json}。
 
 F/G实际DeepSeek Classic/Lite接线已独立提交/push源码`1b501bac72d11fa2b2f36a73e5410180e9b0b6af`，精确[CI37886226991](https://github.com/bboytang/CAIdex/actions/runs/37886226991)整体completed/success。真实0.160.1与既有Harness/Custom传输/Broker，新增7项合成原生API测试，覆盖审批/隔离执行/磁盘resume不重跑、默认与部分policy Key前拒绝、Lite多调用拒绝、stream/等待审批interrupt、未提供Decline拒绝和有效Cancel中断；生产Provider/Runtime/Gateway未改，不是商业模型/生产Host验收。
 
@@ -61,7 +63,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 1. DeepSeek Lite Adapter57项/82cfab8及实际Classic/Lite Runtime7项/1b501ba均已独立三平台收尾。实际Runtime50/49/49完整通过，不重跑未改动源码/旧CI，也不重写已验函数/namespace/native历史/effort/apply_patch。独立生产Host journal/跨端竞争在H，商业Live/Full未验；完整native JSON carrier不是加密/来源认证。
 
-2. 接Qwen，然后OpenRouter。 Qwen已只读核对官方[Responses](https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-responses)、[目录](https://www.alibabacloud.com/help/en/model-studio/list-models)、[端点](https://www.alibabacloud.com/help/en/model-studio/base-url)：未列字段被忽略、默认store=true/输入可自动截断；目录为/api/v1/models分页output结构，不是兼容路径下OpenAI list；地域/工作区/计费计划Key边界必须显式。尚无Qwen代码/fixture，不从目录或Codex接入说明授Full，不读取Key/调API。每一步定向/相关回归、精确源码CI及交接；无源码变化不重跑已验本地全套/旧CI，不派重复独立审查。未经另行授权不调用商业API或下载模型。
+2. Qwen原生目录/基础Responses六方法本地14项及workspace/Clippy已通过，先按当前任务完成独立commit/push与精确源码三平台CI收尾，然后Qwen显式Runtime控制、逐模型推理、原生工具/summary历史绑定、Lite及实际固定Runtime；OpenRouter随后。官方Responses/目录/端点链接与具体边界见docs/CAIdex-Qwen-Provider-设计与验收.md；目录不授Full，输入自动截断风险仍须实测。每步定向/相关回归与交接，不重跑未改源码/旧CI，不派重复独立审查；未经明确授权不读用户Key/商业API或下载模型。
 3. 按V3继续H Host/SQLite journal/安全证据契约 → I官方账户/PostgreSQL/独立Chat/Memory/同步/邮件/本机恢复 → Windows → SSH/iOS → CLI → Relay → R；新设计第12/13节为I内部顺序和全部待验矩阵。iOS在GitHub建立真正simulator测试/无签名archive，Rust macOS CI不代表iOS。文档任务结束不自动开始账户实现，已确认架构不重新询问/规划。
 
 ## 重要架构决定
@@ -88,7 +90,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；开始时HEAD/origin为71ba218f8c997178cfa503500eaf9a4067009ab1且工作区干净，该提交已完成DeepSeek Runtime交接收尾；源码1b501ba及CLI文档272c88e均已push。本轮仅HANDOFF和CLI规范两份文档修正，独立提交标题为`docs: align CLI specification with current F/G recovery point`，提交/push结果以实际HEAD/origin和git status为准；生产源码/依赖/workflow保持开始基线。15份Markdown/54本地链接/21锚点、34项待验、A–R顺序、历史CI证据、其他tracked文件SHA256保持和diff检查通过；不编译或dispatch纯文档三平台CI。恢复时先核对git log -1、HEAD/origin和git status；无未完成源码草稿。用户授权本地通过直接commit/push，无须额外询问。
+- branch main；本轮开始HEAD/origin9015ff67f306969b34236da8e96aa793b928f2b6、工作区干净，CLI最终复核已push。当前未提交：新增Qwen crate/测试/设计文档，Cargo成员/内部lock条目、Custom元数据query方法及README/Gateway/HANDOFF；其他Provider、Runtime、账户/CLI架构与workflow保持。拟独立提交`feat(qwen): integrate native catalog and basic Responses`；本地通过直接commit/push并核对精确三平台CI已获用户持续授权。恢复时先核对HEAD/origin/status及记录的运行handle，不借旧CI或文档HEAD代验。
 
 
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约8.9G可用，修改前先df，不清源码/凭据/保护目录。

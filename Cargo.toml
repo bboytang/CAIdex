@@ -1,5 +1,5 @@
 [workspace]
-members = ["runtime/bridge", "apps/cli", "credentials/core", "model/core", "model/gateway", "model/providers/custom", "model/providers/openai", "model/providers/anthropic", "model/providers/google", "model/providers/ollama", "model/providers/deepseek"]
+members = ["runtime/bridge", "apps/cli", "credentials/core", "model/core", "model/gateway", "model/providers/custom", "model/providers/openai", "model/providers/anthropic", "model/providers/google", "model/providers/ollama", "model/providers/deepseek", "model/providers/qwen"]
 resolver = "3"
 
 [workspace.package]
