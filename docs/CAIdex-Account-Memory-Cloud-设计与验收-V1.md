@@ -67,6 +67,8 @@ Device流程遵RFC8628：秘密高熵device_code、短时随机user_code、HTTPS
 
 CLI认证授权范围不能隐含Host执行权、Memory Sync启用或旧本地数据上传许可；ID Token不作数据API Access Token。token保存失败不得显示成功，尝试撤销本次新会话并报告实际结果；退出重试材料若含凭据仍只在独立安全存储，普通同步队列仅记公开操作状态。具体原子存储/撤销重试策略由I验证，不能借补交退出恢复已停账户正文传输。
 
+CLI登录取消/到期须停止轮询并使本次回调上下文失效；迟到批准或令牌返回不能创建本机“已登录”状态、解除待确认停传意图或启动同步。若认证服务已签发本次会话，尝试仅撤销该会话，未确认则准确报告并将必要秘密留在安全存储，不误撤销已有其他有效会话。I建立公开客户端一次性授权/会话清理契约，P/R用CLI-17/19/21验证竞态；无需改动既有数据库实体、epoch或墓碑语义。
+
 ## 5. PostgreSQL 与逻辑数据模型
 
 采用版本化迁移；服务初期单实例，应用与数据库接口保留未来分离能力。以下为逻辑实体及最低不变量，具体表名/字段格式在 I 验证，但不能省略其语义。本节不是已经执行的建表 SQL。
@@ -224,7 +226,7 @@ CLI不维护另一套独立默认开关，重新安装/登录/换设备先读取
 
 | 阶段 | 本次纳入的工作 | 必须保留的边界 |
 | --- | --- | --- |
-| F/G | 继续 DeepSeek 工具/绑定历史、后续 Qwen/OpenRouter 与既定验收 | 不改已经验证的 Provider/Gateway，不因文档任务重做或运行付费 API |
+| F/G | 按HANDOFF继续Qwen custom/Lite/实际固定Runtime，OpenRouter随后；保留DeepSeek及Qwen已验范围 | 不改已经验证的 Provider/Gateway，不因文档任务重做或运行付费 API |
 | H | 真实后台 Host、SQLite journal、恢复/审批；必要的证据引用与安全共享数据契约 | 不将 Host 改成云端 Agent，不把账户等同 Host 授权，不迁移活动线程 |
 | I | 共享 Rust/API/迁移契约；官方账户 + PostgreSQL；认证/Passkey/会话设备；Chat 与 memory 模型；Memory Engine/授权模型编排；混合检索/Embedding 版本；账户级同步开关/删除；EmailSender；本机备份/恢复 | 核心契约及安全/失败验证先于 GUI；首版采用最终数据库和协议语义，允许分步交付但不能用临时设计代替 |
 | J/K Windows | 既定 Tauri 布局加入应用内注册/登录、账户与会话、记忆/Provider 权限、独立同步开关与异常状态 | J 接账户/Chat/记忆，K 核对 Codex/Host 独立授权；Windows runner 与真实桌面验证 |

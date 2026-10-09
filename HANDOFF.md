@@ -1,10 +1,16 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（F/G Qwen function/namespace工具精确三平台已验，下一步custom/Lite及实际Runtime）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（CLI正式文档复核；F/G仍从Qwen custom/Lite及实际Runtime续接）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
-本轮从main/ffcbd5ccb821bd6d2e4316d913fd7de2a01ba4a4干净工作区续接。Qwen with_native_tools显式Classic function/namespace、named/allowed_tools选择与成对结果已独立验收；保留v1无工具历史，v2绑定source声明/choice/parallel政策和native声明，完整终态校验后才交付调用。原生required单工具限制、结果紧随调用的契约编译；call顺序与非call显示项保留，纯文本结果数组以换行拼接，媒体拒绝。strict/deferred/parallel false/custom仍Key前拒绝，后续custom/Lite/真实Runtime继续按原计划；不授Full。不改Core/Custom/Gateway/Runtime/依赖/workflow，不读用户Key/商业API、不清target。
+本轮仅响应CLI正式文档指令，起点main/151202386d5fb4f688669b1abe2c9bb5cd3fe777、工作区干净。指定CLI V1已存在且完整覆盖命令/模型/配置/PKCE/Device/无注册/统一Memory Sync/审批与H/I/P/R，不重复创建架构。补清JSONL观察端退出只detach、显式超时真实中断终态124/未知75、exec操作回应丢失用threads status按原operation/Host查询，以及登录取消或到期的迟到授权/令牌清理竞态；账户/V3/UI/Credentials/README同步必要说明，Account阶段表消除过时DeepSeek恢复点。CLI-01～34原行及待实现/未执行状态保留；I共享认证/账户同步、H持久Host、P完整CLI、R真实平台/多设备仍未实现，不启动编码/登录/TUI/模型/部署。
+
+只读核对九份固定d27764b源码与GitHub原文逐字一致，隔离目录内codex0.160.1及顶层/exec/login/resume/fork help六项通过，OpenAI Docs仅作导航；不读取用户凭据。初次核对把stderr的隔离目录缺失警告混入版本断言，创建隔离目录并分别保存stdout/stderr后通过，不是功能失败。证据/tmp/caidex-cli-final-oct09-review/{baseline.json,source-check.json,source/,*-help.txt,check.py,result.json}。检查通过：7份相关文档、16Markdown/64本地链接/22锚点、CLI34/账户55/UI16原验收行及17实体/V3 A–R原阶段表保留，192个其他tracked文件SHA256不变、凭据/历史CI证据不变、git diff --check通过。本轮未运行Rust编译/三平台CI，workflow纯文档路径不触发，旧CI不代验CLI；成熟认证库/参数、Host接线/协议、真实终端/认证/多设备/迁移仍在H/I/P/R验证。
+
+F/G恢复点保持：Qwen原生function/namespace及v2历史c5c021d/CI37932689731已精确三平台收尾，下一步custom显式受限策略→Lite/固定Runtime控制组合与实际接线→OpenRouter→H/I及既定后续阶段，不重跑未修改的已验Adapter。无本轮生产代码草稿或并行未提交成果。
+
+此前function阶段从main/ffcbd5ccb821bd6d2e4316d913fd7de2a01ba4a4干净工作区续接。Qwen with_native_tools显式Classic function/namespace、named/allowed_tools选择与成对结果已独立验收；保留v1无工具历史，v2绑定source声明/choice/parallel政策和native声明，完整终态校验后才交付调用。原生required单工具限制、结果紧随调用的契约编译；call顺序与非call显示项保留，纯文本结果数组以换行拼接，媒体拒绝。strict/deferred/parallel false/custom仍Key前拒绝，后续custom/Lite/真实Runtime继续按原计划；不授Full。不改Core/Custom/Gateway/Runtime/依赖/workflow，不读用户Key/商业API、不清target。
 
 有效RED89161编译成功实际400 qwen_unsupported_request；GREEN56077 Qwen33/0/0；边界77970 Qwen38/0/0。追加测试初轮括号错误未编译，不算功能RED；修正后61856 Qwen43/0/0，旧32名保持、新11名。范围：JSON/SSE namespace回放、named/allowed_tools/string choice、21种坏source、13种坏native JSON/SSE、13种坏参数流真实socket/slot、14种policy/整组/序列化篡改Key前拒绝、direct结果、工具半流取消/Drop/deadline、capability/默认/预算/原生error及Gateway两轮凭据隔离。日志/tmp/caidex-qwen-tools-{red,green,boundaries,security,security-fixed}.log；基线/tmp/caidex-qwen-tools/baseline.json。本轮仅Qwen lib/history/history_stream/tests及新tools.rs与README/Qwen/Gateway/HANDOFF四文档，首轮workspace67484及加强取消/编译预算后55696均通过、Clippy50181通过；追加三轮复现69255编译成功实际qwen_history_prefix_mismatch，为有效RED。已在每个载体前对已完成native调用/结果统一pair，最终workspace58356 exit0：481/0/52（旧470通过名+11精确保持，Qwen43每名一次）、全workspace/all-targets Clippy-D warnings52143 exit0及fmt/diff通过。local-check通过：9路径/16Markdown/64本地链接/22锚点、旧32测试原文/全部非任务tracked文件/依赖/workflow/CLI34/A–R/历史CI保持，checker /tmp/caidex-qwen-tools-local-check.py及local-result.json，最终日志workspace-third-turn-fixed/clippy-final。不借上轮a3e7e6d/CI37929549601代验；源码c5c021daf999fa1b4cff755b3633c106d88266f4已独立commit/push；精确[CI37932689731](https://github.com/bboytang/CAIdex/actions/runs/37932689731)completed/success，完整原始日志已逐名核对，不借旧CI。
 
@@ -120,7 +126,9 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- 本轮工具子阶段branch main，源码HEAD/origin c5c021daf999fa1b4cff755b3633c106d88266f4已独立commit/push（`feat(qwen): bind native function tools and paired history`），精确CI37932689731已完整验收。收尾文档提交仅README/Qwen/Gateway/HANDOFF，标题`docs: record Qwen tools three-platform verification`；无其他并行成果/未完成功能草稿，恢复先核对HEAD/origin/status，后续custom/Lite/实际Runtime按既定顺序。
+- 本轮branch main，基线HEAD/origin 151202386d5fb4f688669b1abe2c9bb5cd3fe777；仅CLI规范、V3、Account/Memory、UI、Credentials、README、HANDOFF七份文档修改，无并行未提交成果。按已有授权通过检查后独立提交/push，标题`docs: complete CLI recovery and authentication contracts`；恢复先核对实际HEAD/origin/status，不借纯文档提交标记CLI功能完成，F/G继续Qwen后续步骤。
+
+- 此前工具子阶段branch main，源码HEAD/origin c5c021daf999fa1b4cff755b3633c106d88266f4已独立commit/push（`feat(qwen): bind native function tools and paired history`），精确CI37932689731已完整验收。收尾文档提交仅README/Qwen/Gateway/HANDOFF，标题`docs: record Qwen tools three-platform verification`；无其他并行成果/未完成功能草稿，恢复先核对HEAD/origin/status，后续custom/Lite/实际Runtime按既定顺序。
 
 - 此前summary阶段branch main，源码HEAD/origin a3e7e6de88145c780c25698cdb0e5bf2d79d3cb0已commit/push（`feat(qwen): preserve bound native summary history`），CI37929549601已完整验收。收尾文档提交仅README/Qwen/Gateway验收及HANDOFF，标题`docs: record Qwen history three-platform verification`；无其他并行修改/未完成功能草稿，不启动CLI实现。恢复先核对HEAD/origin/status。此前CLI四文档已以e78f7bc（`docs: verify final CLI contract against pinned stdin behavior`）提交/push，无新增Rust CI。
 

@@ -68,6 +68,8 @@ H先落实共享Host持久任务/事件/审批/幂等恢复；I实现账户公�
 
 P/R的CLI-15/34须覆盖固定exec的stdin编码与空管道差异：prompt支持UTF-8及带BOM的UTF-16，已有位置参数prompt时空管道不应被错误拒绝；credentials秘密输入仍沿现有UTF-8契约。精确规则见[CLI输入输出规范](CAIdex-CLI-完整交互与验收规范-V1.md#12-输入输出jsonl错误与退出码)，当前仅源码核对，未运行完整CLI验收。
 
+H/P/R补验CLI-11/15/16/32的观察、查询与超时边界：task attach JSONL观察端退出只detach，原任务可按ID/seq重连；exec提交前保存operation/Host，回应丢失可用threads status查原操作；显式exec超时只有真实Turn中断终态确认才124，仅受理/失联未知用75而不重提交。I/P/R补验CLI-17/19/21的取消/到期与授权返回竞态、迟到回调/会话清理，不能保存假登录或启动记忆同步。九份固定上游源码及六项版本/help只读核对不代替这些待实现测试；A–R阶段表、F/G恢复点和既有CI证据不变。
+
 ## 当前协议基准与限制
 
 - 固定 Codex 0.160.1 / `d27764b82f7118f674371e6d6e76271d9d606edb`，通过 JSONL stdio 初始化和收发；不依赖 UI 专有源码。

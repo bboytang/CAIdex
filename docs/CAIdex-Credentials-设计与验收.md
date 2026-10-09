@@ -57,6 +57,8 @@ CLI只登录已有账户，桌面系统浏览器PKCE、VPS/SSH Device Grant在I�
 
 未来登录令牌须以会话为单位安全保存，失败不能出现半写入的“已登录”状态；撤销待确认所需秘密不能落入普通同步outbox。可复用backend并不意味着复用模型CredentialRef、允许credentials手工导入账户Token或共享Host权限。原子保存、刷新并发和失败恢复由I/P验证，以上现有模型凭据命令及验证记录保持原样。
 
+同样约束登录取消/到期与迟到token的竞态：不将取消流程的token保存为有效登录，不恢复记忆上传；若已签发会话，独立撤销及待确认清理只使用账户安全存储，不写模型Broker配置/普通outbox、不删其他有效会话的秘密。I/P/R按CLI-17/19/21验证；现有SecretKind支持与E阶段凭据回归不能代验该认证生命周期。
+
 ## iOS 原生接入契约（阶段 M）
 
 - Swift/UniFFI 适配实现 SecretStore 的 get/set/remove；Keychain generic-password 使用 CAIdex service 与完整 reference 作为账户标识。缺失返回 None，锁定/访问拒绝返回安全错误，不返回系统原始错误或秘密。

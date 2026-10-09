@@ -2,7 +2,7 @@
 
 正式决定：2026-10-09。状态：**最终设计基准；完整 CLI 尚未实现，CLI-01～CLI-34 全部待实现、未执行**。本文不启动 CLI 编码，不改变 A–R 顺序或当前 F/G 恢复点。原 V2 仅作需求背景，冲突以 [V3](CAIdex-实施计划-V3.md)、本文及[账户/记忆/云设计](CAIdex-Account-Memory-Cloud-设计与验收-V1.md)为准。
 
-本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。2026-10-09 再次核对六份固定上游源码及版本/help，仅纠正第12节 stdin 编码和空输入边界，新增断言仍属待验收。
+本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。2026-10-09 复核九份固定上游源码及版本/help，保留已纠正的 stdin 边界，补清观察端退出、超时结果未知和登录取消竞态；新增断言仍属待验收。
 
 ## 目录
 
@@ -49,11 +49,11 @@ Host 管理真实 Thread/Turn 与后台任务，CLI 是操作和显示端。CAId
 - [CLI 命令树](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/cli/src/main.rs)、[exec 参数](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/cli.rs)。
 - [exec 配置解析与服务端请求处理](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/lib.rs)：`build_exec_config`、`handle_server_request`、stdin、interrupt、终态与退出。
 - [exec JSONL 类型](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/exec_events.rs)、[JSONL 投影](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/exec/src/event_processor_with_jsonl_output.rs)。
-- [Slash commands](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/slash_command.rs)、[默认 keymap](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/keymap.rs)、[TUI 退出边界](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/chatwidget.rs)。
+- [Slash commands](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/slash_command.rs)、[默认 keymap](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/keymap.rs)、[keymap bindings](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/keymap/bindings.rs)、[TUI 退出边界](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/tui/src/chatwidget.rs)。
 
 固定版本已有 `agents/exec/review/login/logout/mcp/plugin/app-server/remote-control/completion/update/doctor/sandbox/debug/apply/resume/queue/archive/delete/migrate-rollouts/unarchive/fork/cloud/exec-server/features`。没有顶层 `task/models/provider/credentials/config/remote/account/memory/skills/plugins/threads`；不要因存在相关协议或 Slash command 就声称已有对应顶层命令。
 
-2026-10-09 复核：上述 CLI main、exec lib、SlashCommand 三份缓存与 GitHub 固定 commit 原文逐字一致，二进制为 `codex-cli 0.160.1`，顶层及 exec/login/resume/fork help 与契约对应。上游还有平台门控的 `app`（Windows/macOS）及部分隐藏维护入口；不透传启动原生 Codex Desktop，也不因此增加 CAIdex macOS GUI。上游 `debug models` 仅为目录/诊断能力，不能代替正式 `models` 的 Host Registry、凭据状态及兼容证据。
+2026-10-09 复核：上述 CLI main、exec cli/lib/exec_events/JSONL processor、SlashCommand、keymap及其bindings、chatwidget九份缓存与 GitHub 固定 commit 原文逐字一致，二进制为 `codex-cli 0.160.1`，顶层及 exec/login/resume/fork help 与契约对应。上游还有平台门控的 `app`（Windows/macOS）及部分隐藏维护入口；不透传启动原生 Codex Desktop，也不因此增加 CAIdex macOS GUI。上游 `debug models` 仅为目录/诊断能力，不能代替正式 `models` 的 Host Registry、凭据状态及兼容证据。
 
 | 冲突 / 等效能力 | 采用的正式规范 |
 | --- | --- |
@@ -78,7 +78,7 @@ caidex [PROMPT]
 caidex exec [PROMPT]                 # includes resume / fork / review
 caidex resume [THREAD_ID] [PROMPT]
 caidex fork [THREAD_ID] [PROMPT]
-caidex threads
+caidex threads [list|status]         # default: list
 caidex task submit|list|status|attach|cancel
 caidex models
 caidex provider
@@ -105,7 +105,7 @@ caidex --help
 | `caidex` | 默认 TUI 已有 | 当前 cwd 与选定 Host；可带初始 prompt；无 TTY 拒绝并提示 exec，不自动开始别的运行模式 |
 | `exec` | 已有，别名 `e` 保留 | 继承 prompt/stdin、`--json`、`--color`、`--output-schema`、`-o/--output-last-message`、`--ephemeral`、`--skip-git-repo-check`；CAIdex 增加 `--host` 和显式 `--timeout <seconds>`；审批/结果见第11/12节 |
 | `resume/fork` | 已有 | 显式 Thread ID，或 TTY picker/`--last`；保留 `--all` 与 resume `--include-non-interactive`；筛选只在授权 Host 内，headless 无 ID/last 报参数错误，不弹 picker；fork 返回新的 Thread ID与父引用 |
-| `threads` | 顶层新增；agents 不完全等效 | `--host`、可选 `--project <id>`、`--limit <n>`、`--cursor <opaque>`、`--json`；默认当前 Host/cwd，分页大小按 Host 有界默认；显示真实状态/cwd/worktree与ID |
+| `threads [list\|status]` | 顶层新增；agents 不完全等效 | 无子命令默认list；`--host`、list可选 `--project <id>`、`--limit <n>`、`--cursor <opaque>`、`--json`；默认当前 Host/cwd，分页有界，显示真实状态/cwd/worktree与ID。status使用Thread ID或互斥 `--operation-id <id>`，只读查询真实Thread/Turn及操作状态，不创建Task或重提交；无权/不存在不泄漏资料 |
 | `task submit` | 新增；Codex Cloud 不等效 | prompt/stdin 与显式 Host/cwd/model、`--operation-id <id>`；客户端首次生成幂等 ID并保存，重试复用同ID；受理后返回Task/Thread ID、状态与event sequence；无持久确认返回结果未知 |
 | `task list/status` | 新增 | list 分页/Host筛选；status须Task ID或互斥 `--operation-id <id>`（用于提交回应丢失时查原操作），只读真实状态/Turn/待请求/最后seq；无权限或不存在不泄漏实体资料 |
 | `task attach` | 新增；remote TUI是传输基础 | Task ID、`--after-seq <n>`；恢复快照/缺口，再进入TUI；无TTY只能显式 `--json` 观察事件。关闭观察端不取消任务 |
@@ -239,6 +239,8 @@ CAIdex Account access/refresh token与模型Key、Gateway token、Host SSH/Relay
 
 CLI会话出现在Windows/iOS“设置 → 账户与安全 → 已登录设备”，显示当前设备/平台/登录及活动时间，可独立撤销/退出其他设备；名称/随机安装ID仅展示。注销/敏感撤销按后端重认证规则；不提供CLI注册或终端密码登录绕过。
 
+取消/到期使本次授权上下文失效并停止轮询，不能接受迟到回调、将迟到token保存为有效登录或启动记忆同步。若后端已签发本次会话，尝试仅撤销该会话并清理临时材料；未确认的撤销按独立安全存储规则报告pending，不误删另一已有效会话。后端一次性消费、截止校验及取消竞态在I验证，CLI处理在P接入。
+
 核验账户及权威设置后可显示以下**未来文案示例**：
 
 ```text
@@ -301,6 +303,10 @@ Linux CLI正式采用本地SQLite记忆与同步缓存，Windows CLI与GUI在同
 
 提交请求ID/幂等操作、载荷hash、Host/Thread/Turn归属先落盘，事件落盘后广播。网络超时先查同操作结果，不能重造ID重新执行工具；工具副作用结果未知时不自动重跑，不承诺外部exactly-once。SSH断开、Host重启、事件缺口需要可信快照/seq重建并展示未知项；保留Diff/工具结果与项目归属。Host任务等待审批/用户输入需明确有界资源、阻塞/过期规则，由H按Runtime支持设计，不自动批准、不无限忙轮询。
 
+exec也需在提交前保存原Host及客户端生成的operation ID；Host将该操作关联真实Thread/Turn，回应丢失仍可用 `threads status --operation-id <id> --host <id>` 查原操作。已知Thread时用 `threads status <thread-id>`。查询只读，不把exec改造成持久task；unknown诊断保留已有公开ID，无Task就不造Task ID，临时运行也保留必要的最少幂等记录。Host状态恢复未确认前不重新发执行请求。
+
+`task attach --json` 是纯观察端：Ctrl+C、可处理的SIGTERM或管道消费者关闭只停止订阅，不发送TurnInterrupt、task cancel或Host shutdown。TUI attach仍沿第5节处理编辑/明确中断/退出，不把其快捷键套到JSONL观察端；需要取消任务必须显式 `task cancel`。正常结束观察可返回0，OS强制终止保持实际平台退出状态；两者均不表示任务完成。观察重连使用原Task ID和最后seq，不能再次submit。
+
 ## 11. 审批与非交互安全
 
 ### 11.1 交互TUI
@@ -352,10 +358,12 @@ CAIdex扩展事件使用显式 `exec --json --json-format caidex-v1`，task atta
 | 3 / 4 | CAIdex新增管理命令需要账户认证/会话失效 / 权限或策略禁止；exec为兼容仍1，细类写安全error |
 | 5 / 6 | 新增管理命令依赖/Host/安全store不可用 / 版本或revision/settings冲突；exec兼容仍1并输出具体分类 |
 | 75 | CAIdex扩展提交/中断结果未知，须查原operation/任务，禁止盲重试；不同于可安全重新执行的一般失败 |
-| 124 | 显式CAIdex等待超时，报告已确认中断或结果未知，不是Host任务已经成功/取消证明 |
+| 124 | 显式CAIdex等待超时且真实Turn中断终态已确认；不是副作用回滚或整个Host任务取消证明；结果未知用75 |
 | 128+signal | 由OS/shell强制终止或显式信号退出产生的平台状态，不包装成Runtime终态；非Windows通用约定 |
 
 安全错误分类至少有invalid_argument、authentication_required/session_revoked、host_unauthorized/policy_denied、credential_missing/store_unavailable、model_unsupported、interaction_unavailable、user_denied/cancelled、host_offline、rate_limited、timeout、protocol_incompatible、conflict、operation_unknown。保留Host/Thread/Task公开ID、是否可查询/安全重试，不返回Provider原始body、token/Key/敏感路径或未授权实体。diagnostics可显示配置来源，不导出秘密；模型/工具正文属于用户输出，不作为可公开诊断上传。
+
+CAIdex显式超时的判定顺序：返回前已确认正常终态（包括截止/中断竞态中实际完成）按真实成功/失败返回；截止触发后若确认对应Turn为interrupted则124；只收到interrupt受理回复、失联或无法确定执行结果则75，`operation_unknown` 优先于 `timeout`。诊断提供已有operation/Thread/Turn ID与查询方式，不造Task ID，不重提交。普通未使用CAIdex超时选项的exec保留固定上游退出语义；此为未来CAIdex等待契约，不宣称上游已有124/75逻辑。
 
 ## 13. 扩展能力、安装与迁移
 
@@ -429,6 +437,8 @@ SQLite schema与Host/账户API均版本化。迁移前检查可用空间、兼�
 复核补充断言仍归以上原编号，不算新增通过：CLI-16/32在task受理和恢复时核对真实policy/reviewer/sandbox，exec不会被改成跨端人工等待；CLI-17/21注入安全store写失败，确认无半写入成功状态，新增会话撤销失败明确pending，撤销重试秘密不进普通outbox；CLI-24/26/32在离线关闭后重新登录Enabled账户及CAS冲突，确认本机仍停传、旧队列不自动恢复、用户意图不被默默覆盖。
 
 CLI-15/34还须用Windows/Linux真实管道验证UTF-8/BOM、UTF-16LE/BE BOM、非法编码，以及根exec“无prompt/显式 `-` 的空stdin拒绝”和“已有prompt的空stdin忽略/非空stdin追加”三种路径；另核对resume/fork/review各自入口。不以源码阅读代替运行通过，不改变CLI-01～34编号和当前未执行状态。
+
+CLI-11/15/16/32还须验证：exec提交回应丢失、未收到Thread ID时可按原operation/Host查询而无重复执行；超时与正常终态竞态、interrupt仅受理但终态未知时75、确认中断后124；JSONL观察端Ctrl+C/SIGTERM/断管道后无工具中断或task取消，随后可按原ID/seq恢复。CLI-17/19/21注入取消/到期与授权或token返回竞态：不再轮询/接受迟到回调，不保存新登录或启动同步；若服务端已签发会话，尝试独立撤销并如实记录待确认，秘密只在安全存储。不因取消本次登录撤销另一已有效会话。
 
 ## 16. 实施时待验证的技术细节
 

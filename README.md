@@ -12,7 +12,7 @@
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，下一步Qwen/OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接。本次复核补正固定exec的stdin编码/空管道边界，34项CLI验收仍全部待实现、未执行；Qwen原生summary历史已独立验收，原生function/namespace、choice/成对结果及v2工具历史已独立三平台验收，当前F/G恢复点为custom/Lite及固定Runtime入口接线，精确源码和CI证据见HANDOFF。
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin编码/空管道边界保留，本次补清JSONL任务观察端只detach、显式超时的已确认/未知退出码及登录取消竞态。34项CLI验收仍全部待实现、未执行；Qwen原生summary历史已独立验收，原生function/namespace、choice/成对结果及v2工具历史已独立三平台验收，当前F/G恢复点为custom/Lite及固定Runtime入口接线，精确源码和CI证据见HANDOFF。
 
 ## 开发与验证
 
