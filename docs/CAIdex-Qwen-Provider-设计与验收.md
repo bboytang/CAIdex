@@ -66,9 +66,21 @@ ModelProvider 六方法全部接入：
 
 精确源码`311224bfcf0cf8019f511cf03e48397f45216715`/[CI37890668777](https://github.com/bboytang/CAIdex/actions/runs/37890668777) completed/success。Linux113690641367、Windows113690641093、macOS113690641378各17steps成功或条件跳过，完整raw2066/1752/1763行；workspace459/454/458（0failed，ignored52/50/50）、既有固定Runtime50/49/49（0failed/ignored）、Qwen21及新增7每名每平台一次，DeepSeek57保持。全通过名510/503/507等于精确旧37888877980集合+7，无遗漏/重复。watch34953、状态/下载和逐名checker均exit0；`/tmp/caidex-qwen-controls-ci-check.py`/同前缀ci-result.json，完整日志`/tmp/caidex-ci-37890668777-{linux,windows,macos}-raw.log`及status.json/watch.log。此Runtime回归不是实际Qwen工具/历史接线或商业模型验收，不授Full。
 
+## 显式原生summary绑定历史（当前子阶段）
+
+`with_native_history()`独立启用Classic无工具历史，默认未绑定reasoning/工具拒绝不变；不开放服务端conversation/previous_response_id、summary/context/include控制或Lite。复用原有Custom传输/Broker，不执行工具、另建Agent或变更真实Runtime。
+
+- NativeHistory v1保存完整native request/response；SSE同时保存所有原生JSON chunks及source类型，包括未知扩展、大数、summary分段和非秘密执行端引用。载体绑定base、CredentialRef.owner/provider/profile/kind、native模型、编译后的input/instructions及完整显示输出组。序列化再加载仍检查，跨端点/Profile/model或截断、重排、修改显示组在Key/POST前拒绝。它是敏感明文JSON，不是加密、签名或来源认证，不自动进入账户Memory/云同步。
+- native reasoning的summary数组原样保存；每个reasoning item在显示端投影一个拼接summary_text，统一reasoning载体置于output_index=0。SSE flat reasoning_text无需content_index，映射summary_index；正文保留真实content_index，非reasoning output偏移一位。交错/尚未到达的前置位置有界等待，未知indexed扩展留在载体而不伪造canonical索引；默认未启用history时仍保留原生wire。
+- 完整completed终态重建验证added/delta/done、ID/索引、正文和summary一致后才交付载体；native failed/incomplete仍保留真实状态而不生成成功载体。坏流、EOF、超限、取消/截止及Drop关闭native socket并释放共享slot。流仍增量交付显示，不等全部推理才开始显示。
+- 原生已知message只接受assistant/合法文本，拒绝角色抬升、重复/冲突ID及混用content reasoning/加密历史；未知item的字段整对象保留/比对，不按未来id/status猜语义。输出工具发现/MCP也属于未授权工具，不能当普通扩展交付。generation effort在本次请求只映射一次，旧native请求不重新映射；改变compiled instructions/前缀必须新建历史。
+- byte预算覆盖源、编译/展开、完整历史与投影、raw chunks/待交付事件和frame；不是token预算，不保证原生服务未截断。载体嵌套前缀增长在H持久化前由有界预算拒绝，不静默截掉历史；实际长上下文、真实模型和Runtime接线仍待验证。
+
+本地新增11项/共32项：JSON/SSE完整回放、三轮及序列化、两reasoning item/多summary part/交错、21种坏流及真实slot/socket、端点/Profile/模型/compiled前缀/整组篡改、一次effort与优先指令、取消/Drop/deadline、预算/非成功终态、角色/ID/坏summary、默认工具发现拒绝及Gateway两轮独立token。有效RED51870为编译成功但缺载体；首次实现编译错误不算功能RED，夹具索引/尾部断言错误按真实流修正。新unknown id/status正例进一步暴露回放误约束，已修正已知/未知类型边界。最终workspace470/0/52、Clippy全workspace/all-targets-D warnings/fmt/diff通过；全部原459通过名+11精确保持，新源码三平台CI待执行，不使用旧21项CI代验；精确结果见HANDOFF及/tmp/caidex-qwen-history-*。工具声明/choice/结果、Lite、实际Qwen Runtime及商业Live/Full均未验。
+
 ## 后续实施顺序
 
 1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
-2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；下一步原生function/namespace/custom、tool choice与成对结果、完整summary历史绑定/重放，验证终态后交付工具。不盲复制DeepSeek明文content或Gemini签名契约。
+2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史正在本轮独立收尾；下一步原生function/namespace/custom、tool choice与成对结果，复用并绑定工具声明/策略到完整native历史，验证终态后交付工具。不盲复制DeepSeek明文content或Gemini签名契约。
 3. 单独核对Lite/Code Mode、并行与本地交付策略及native能力边界，再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

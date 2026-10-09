@@ -1596,3 +1596,910 @@ async fn consumed_context_retains_cancellation_deadline_and_stream_socket_lifeti
     fixture.disconnected().await;
     assert_eq!(reads.load(Ordering::SeqCst), 2);
 }
+
+#[tokio::test]
+async fn native_summary_history_roundtrips_full_wire_and_compiled_prefix() {
+    let mut first = native();
+    first["output"][2]["id"] = json!(18446744073709551616_u128);
+    first["output"][2]["status"] = "future_phase".into();
+    first["output"][0]["summary"] = json!([
+        {"type":"summary_text","text":"First ","future":{"n":18446744073709551616_u128}},
+        {"type":"summary_text","text":"second"}
+    ]);
+    let mut fixture = Fixture::start(vec![Reply::json(first.clone()), Reply::json(native())]).await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_history();
+    let source = json!({"model":"fixture","input":[{"role":"developer","content":"Keep the rules"},{"role":"user","content":"Start"}],"instructions":"Original instructions"});
+    let response = provider
+        .create_response(request(source.clone()), RequestContext::default())
+        .await
+        .unwrap();
+    let sent = fixture.captured().await.body.unwrap();
+    let carrier = &response.response.output()[0];
+    let encoded = carrier["encrypted_content"]
+        .as_str()
+        .expect("bound native carrier");
+    let capsule: Value = serde_json::from_str(
+        encoded
+            .strip_prefix("caidex.qwen.native-history.v1:")
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(capsule["response"], first);
+    assert_eq!(capsule["request"], sent);
+    assert_eq!(
+        carrier["summary"],
+        json!([{"type":"summary_text","text":"First second"}])
+    );
+    assert!(!encoded.contains(KEY));
+    let mut followup = source;
+    let input = followup["input"].as_array_mut().unwrap();
+    input.extend(
+        serde_json::from_str::<Vec<Value>>(
+            &serde_json::to_string(response.response.output()).unwrap(),
+        )
+        .unwrap(),
+    );
+    input.push(json!({"role":"user","content":"Next"}));
+    provider
+        .create_response(request(followup), RequestContext::default())
+        .await
+        .unwrap();
+    let second = fixture.captured().await.body.unwrap();
+    let mut expected = sent["input"].as_array().unwrap().clone();
+    expected.extend(first["output"].as_array().unwrap().clone());
+    expected.push(json!({"role":"user","content":"Next"}));
+    assert_eq!(second["input"], json!(expected));
+    assert_eq!(second["store"], false);
+    assert_eq!(second["model"], "native-fixture");
+}
+
+fn capsule(output: &[Value]) -> Value {
+    serde_json::from_str(
+        output[0]["encrypted_content"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("caidex.qwen.native-history.v1:")
+            .unwrap(),
+    )
+    .unwrap()
+}
+fn followup(source: &Value, output: &[Value]) -> Value {
+    let mut next = source.clone();
+    if let Some(text) = next["input"].as_str() {
+        next["input"] = json!([{"role":"user","content":text}]);
+    }
+    next["input"]
+        .as_array_mut()
+        .unwrap()
+        .extend(output.iter().cloned());
+    next["input"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"role":"user","content":"Follow-up"}));
+    next
+}
+fn summary_events(response: &Value) -> Vec<Value> {
+    let mut events = vec![
+        json!({"type":"response.created","response":{"id":"fixture","status":"in_progress","output":[]}}),
+    ];
+    for (index, item) in response["output"].as_array().unwrap().iter().enumerate() {
+        let mut added = item.clone();
+        if item["type"] == "reasoning" {
+            added["summary"] = json!([]);
+        } else if item["type"] == "message" {
+            added["content"] = json!([]);
+        } else {
+            continue;
+        }
+        added.as_object_mut().unwrap().remove("status");
+        events.push(json!({"type":"response.output_item.added","output_index":index,"item":added}));
+        if item["type"] == "reasoning" {
+            let text: String = item["summary"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| p["text"].as_str().unwrap())
+                .collect();
+            events.push(json!({"type":"response.reasoning_text.delta","output_index":index,"item_id":item["id"],"delta":text}));
+            events.push(json!({"type":"response.reasoning_text.done","output_index":index,"item_id":item["id"],"text":text}));
+        } else {
+            for (part, content) in item["content"].as_array().unwrap().iter().enumerate() {
+                events.push(json!({"type":"response.content_part.added","output_index":index,"content_index":part,"item_id":item["id"],"part":{"type":"output_text","text":"","annotations":[]}}));
+                events.push(json!({"type":"response.output_text.delta","output_index":index,"content_index":part,"item_id":item["id"],"delta":content["text"]}));
+                events.push(json!({"type":"response.output_text.done","output_index":index,"content_index":part,"item_id":item["id"],"text":content["text"]}));
+                events.push(json!({"type":"response.content_part.done","output_index":index,"content_index":part,"item_id":item["id"],"part":content}));
+            }
+        }
+        events.push(json!({"type":"response.output_item.done","output_index":index,"item":item}));
+    }
+    events.push(json!({"type":"response.completed","response":response}));
+    for (index, event) in events.iter_mut().enumerate() {
+        event["sequence_number"] = index.into();
+    }
+    events
+}
+fn events_body(events: &[Value]) -> String {
+    events.iter().cloned().map(event).collect()
+}
+
+#[tokio::test]
+async fn native_summary_stream_projects_flat_parts_and_replays_exact_raw_chunks() {
+    for interleaved in [false, true] {
+        let mut response = native();
+        response["output"][2]["id"] = json!(18446744073709551616_u128);
+        response["output"][2]["status"] = "future_phase".into();
+        response["output"][0]["summary"] = json!([
+            {"type":"summary_text","text":"First ","native_extension":18446744073709551616_u128},
+            {"type":"summary_text","text":"second"}
+        ]);
+        response["output"].as_array_mut().unwrap().insert(2,json!({"type":"reasoning","id":"rs_two","summary":[{"type":"summary_text","text":"Third"}],"future":true}));
+        let mut events = summary_events(&response);
+        if interleaved {
+            // Add/delta for the later reasoning before earlier output positions.
+            let later: Vec<_> = events.drain(11..15).collect();
+            events.splice(1..1, later);
+        }
+        events.insert(3,json!({"type":"response.future_metadata","output_index":2,"item_id":"rs_two","raw":18446744073709551616_u128}));
+        for (index, event) in events.iter_mut().enumerate() {
+            event["sequence_number"] = index.into();
+        }
+        let mut fixture = Fixture::start(vec![
+            Reply::stream(events_body(&events)),
+            Reply::json(native()),
+        ])
+        .await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_history();
+        let source = basic(true);
+        let mut stream = provider
+            .stream_response(request(source.clone()), RequestContext::default())
+            .await
+            .unwrap();
+        let mut shown = Vec::new();
+        let mut last = None;
+        while let Some(value) = stream.events.next().await {
+            if let ProviderStreamEvent::Model(value) = value.unwrap() {
+                if value.response.kind() == "response.completed" {
+                    last = Some(value.response.wire()["response"].clone());
+                }
+                shown.push(value.response.wire().clone());
+            }
+        }
+        let last = last.unwrap();
+        let output = last["output"].as_array().unwrap();
+        assert_eq!(
+            output[0]["summary"],
+            json!([{"type":"summary_text","text":"First second"},{"type":"summary_text","text":"Third"}])
+        );
+        let history = capsule(output);
+        assert_eq!(history["response"], response);
+        assert_eq!(history["chunks"], json!(events));
+        assert_eq!(history["source"], "sse");
+        let deltas: Vec<_> = shown
+            .iter()
+            .filter(|v| v["type"] == "response.reasoning_summary_text.delta")
+            .collect();
+        assert_eq!(deltas.len(), 2);
+        for delta in deltas {
+            assert_eq!(delta["output_index"], 0);
+            let i = delta["summary_index"].as_u64().unwrap() as usize;
+            assert_eq!(delta["delta"], output[0]["summary"][i]["text"]);
+            assert_eq!(delta["item_id"], output[0]["id"]);
+        }
+        assert!(
+            shown
+                .iter()
+                .filter(|v| v["type"] == "response.output_text.delta")
+                .all(|v| v["output_index"] == 1 && v["content_index"] == 0)
+        );
+        let carrier_done = shown
+            .iter()
+            .position(|v| !v["item"]["encrypted_content"].is_null())
+            .unwrap();
+        assert_eq!(shown[carrier_done]["type"], "response.output_item.done");
+        assert!(
+            shown[..carrier_done]
+                .iter()
+                .all(|v| v["item"]["encrypted_content"].is_null())
+        );
+        assert!(
+            shown[..carrier_done]
+                .iter()
+                .any(|v| v["type"] == "response.output_text.delta")
+        );
+        let mut parser = caidex_model_core::ResponsesStream::new(limits().frame_bytes).unwrap();
+        parser.push(events_body(&shown).as_bytes()).unwrap();
+        assert_eq!(
+            parser.finish().unwrap(),
+            caidex_model_core::StreamState::Completed
+        );
+        let sent = fixture.captured().await.body.unwrap();
+        let mut next = followup(&source, output);
+        next["stream"] = false.into();
+        provider
+            .create_response(request(next), RequestContext::default())
+            .await
+            .unwrap();
+        let restored = fixture.captured().await.body.unwrap();
+        let mut expected = vec![json!({"role":"user","content":source["input"]})];
+        expected.extend(response["output"].as_array().unwrap().clone());
+        expected.push(json!({"role":"user","content":"Follow-up"}));
+        assert_eq!(restored["input"], json!(expected));
+        assert_eq!(history["request"], sent);
+    }
+}
+
+#[tokio::test]
+async fn summary_history_scope_prefix_and_complete_group_are_checked_before_keys() {
+    let mut fixture = Fixture::start(vec![Reply::json(native())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_history();
+    let source = json!({"model":"fixture","input":[{"role":"developer","content":"Priority"},{"role":"user","content":"Start"}],"instructions":"Original"});
+    let first = provider
+        .create_response(request(source.clone()), RequestContext::default())
+        .await
+        .unwrap();
+    fixture.captured().await;
+    let good = followup(&source, first.response.output());
+    let initial_reads = reads.load(Ordering::SeqCst);
+    let mut bad = Vec::new();
+    let mut v = good.clone();
+    v["instructions"] = "Changed".into();
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"][0]["content"] = "Changed".into();
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"][2]["summary"][0]["text"] = "Changed".into();
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"][4]["n"] = 1.into();
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"].as_array_mut().unwrap().remove(3);
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"].as_array_mut().unwrap().swap(3, 4);
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"][2]["status"] = "incomplete".into();
+    bad.push(v);
+    let mut v = good.clone();
+    v["input"][2]["id"] = "\n".into();
+    bad.push(v);
+    for mutation in [
+        "version",
+        "scope",
+        "native_model",
+        "source",
+        "response",
+        "request",
+    ] {
+        let mut v = good.clone();
+        let mut history = capsule(first.response.output());
+        match mutation {
+            "version" => history["version"] = 2.into(),
+            "scope" => history["scope"]["credential"]["profile"] = "other".into(),
+            "native_model" => history["native_model"] = "other".into(),
+            "source" => history["source"] = "other".into(),
+            "response" => history["response"]["output"][0]["summary"][0]["text"] = "Changed".into(),
+            "request" => history["request"]["store"] = true.into(),
+            _ => unreachable!(),
+        }
+        v["input"][2]["encrypted_content"] =
+            format!("caidex.qwen.native-history.v1:{history}").into();
+        bad.push(v);
+    }
+    for v in bad {
+        let error = provider
+            .create_response(request(v), RequestContext::default())
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.http_status, 400);
+        assert_eq!(reads.load(Ordering::SeqCst), initial_reads);
+    }
+    for (base, r, native) in [
+        (
+            format!("{}/other", fixture.base),
+            reference(),
+            "native-fixture",
+        ),
+        (
+            fixture.base.clone(),
+            CredentialRef {
+                profile: Id::new("other").unwrap(),
+                ..reference()
+            },
+            "native-fixture",
+        ),
+        (fixture.base.clone(), reference(), "other-native"),
+    ] {
+        let other = QwenProvider::new(
+            QwenConfig::new(&base, r).unwrap(),
+            vec![metadata("fixture", native)],
+            broker.clone(),
+            limits(),
+        )
+        .unwrap()
+        .with_native_history();
+        assert_eq!(
+            other
+                .create_response(request(good.clone()), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), initial_reads);
+    }
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn native_history_never_remaps_previous_effort_or_drops_compiled_instructions() {
+    let mut fixture = Fixture::start(vec![Reply::json(native())]).await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_runtime_context()
+        .with_native_history()
+        .with_verbosity_instruction("low".into(), "Be brief".into())
+        .unwrap()
+        .with_reasoning_effort_mapping("fixture".into(), "high".into(), "xhigh".into())
+        .unwrap()
+        .with_reasoning_effort_mapping("fixture".into(), "xhigh".into(), "none".into())
+        .unwrap();
+    let mut source = runtime_request(false);
+    source["reasoning"] = json!({"effort":"high"});
+    source["text"]["verbosity"] = "low".into();
+    let first = provider
+        .create_response(request(source.clone()), runtime_context())
+        .await
+        .unwrap();
+    let sent = fixture.captured().await;
+    assert_eq!(sent.body.as_ref().unwrap()["reasoning"]["effort"], "xhigh");
+    assert_eq!(sent.header("session_id"), None);
+    let old = capsule(first.response.output());
+    assert_eq!(
+        old["request"]["instructions"],
+        sent.body.unwrap()["instructions"]
+    );
+    assert_eq!(old["request"]["reasoning"]["effort"], "xhigh");
+    assert!(old["request"].get("client_metadata").is_none());
+    let mut second = followup(&source, first.response.output());
+    second["reasoning"]["effort"] = "xhigh".into();
+    let response = provider
+        .create_response(request(second.clone()), runtime_context())
+        .await
+        .unwrap();
+    let sent = fixture.captured().await.body.unwrap();
+    assert_eq!(sent["reasoning"]["effort"], "none");
+    assert_eq!(sent["instructions"], old["request"]["instructions"]);
+    assert_eq!(capsule(response.response.output())["request"], sent);
+    let third = followup(&second, response.response.output());
+    provider
+        .create_response(request(third), runtime_context())
+        .await
+        .unwrap();
+    let third = fixture.captured().await.body.unwrap();
+    assert_eq!(
+        third["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|v| v["type"] == "reasoning")
+            .count(),
+        2
+    );
+    assert!(!third.to_string().contains("caidex.qwen.native-history"));
+}
+
+#[tokio::test]
+async fn inconsistent_summary_streams_never_publish_carriers_and_release_slots() {
+    for case in 0..21 {
+        let mut events = summary_events(&native());
+        match case {
+            0 => events[2]["delta"] = "Wrong".into(),
+            1 => events[3]["text"] = "Wrong".into(),
+            2 => events[4]["item"]["summary"][0]["text"] = "Wrong".into(),
+            3 => events[1]["item"]["id"] = "Wrong".into(),
+            4 => events[2]["item_id"] = "Wrong".into(),
+            5 => events[2]["output_index"] = 100.into(),
+            6 => {
+                events.insert(4, events[2].clone());
+            }
+            7 => events[4]["output_index"] = 1.into(),
+            8 => {
+                events.remove(0);
+            }
+            9 => {
+                events.insert(1, events[0].clone());
+            }
+            10 => events[2]["content_index"] = 1.into(),
+            11 => events[7]["item_id"] = "rs_one".into(),
+            12 => events[9]["part"]["text"] = "Wrong".into(),
+            13 => {
+                events.insert(7, events[6].clone());
+            }
+            14 => events.last_mut().unwrap()["response"]["model"] = "other-native".into(),
+            15 => {
+                events.last_mut().unwrap()["response"]["output"][0]["encrypted_content"] =
+                    "opaque".into()
+            }
+            16 => {
+                events.last_mut().unwrap()["response"]["output"].as_array_mut().unwrap().push(json!({"type":"function_call","id":"fc","call_id":"call","name":"shell","arguments":"{}"}));
+            }
+            17 => {
+                events.pop();
+            }
+            18 => {
+                events.insert(4, events[4].clone());
+            }
+            19 => events[5]["item"]["id"] = "rs_fixture_native".into(),
+            20 => events[5]["item"]["id"] = "rs_one".into(),
+            _ => unreachable!(),
+        }
+        for (i, e) in events.iter_mut().enumerate() {
+            e["sequence_number"] = i.into();
+        }
+        let mut broken = Reply::stream(events_body(&events));
+        broken.stall = 2;
+        let mut fixture = Fixture::start(vec![broken, Reply::json(native())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_history();
+        let mut response = provider
+            .stream_response(request(basic(true)), RequestContext::default())
+            .await
+            .unwrap();
+        let mut failed = false;
+        while let Some(e) = response.events.next().await {
+            match e {
+                Err(error) => {
+                    assert!(error.http_status >= 500, "case {case}");
+                    failed = true;
+                    break;
+                }
+                Ok(ProviderStreamEvent::Model(e)) => {
+                    assert_ne!(e.response.kind(), "response.completed", "case {case}");
+                    assert!(
+                        e.response.wire()["item"]["encrypted_content"].is_null(),
+                        "case {case}"
+                    );
+                    assert!(
+                        e.response.wire()["item"]["type"] != "function_call",
+                        "case {case}"
+                    );
+                }
+                _ => (),
+            }
+        }
+        assert!(failed, "case {case}");
+        assert!(response.events.next().await.is_none());
+        fixture.captured().await;
+        fixture.disconnected().await;
+        let valid = provider
+            .create_response(request(basic(false)), RequestContext::default())
+            .await
+            .unwrap();
+        assert_eq!(valid.response.wire()["status"], "completed");
+        fixture.captured().await;
+    }
+}
+
+#[tokio::test]
+async fn incremental_summary_display_remains_cancellable_and_droppable_before_terminal() {
+    let events = summary_events(&native());
+    let mut stalled = Reply::stream(events_body(&events[..3]));
+    stalled.stall = 2;
+    let mut fixture = Fixture::start(vec![stalled]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_history();
+    for action in ["cancel", "deadline", "drop"] {
+        let cancellation = CancellationToken::new();
+        let context = RequestContext {
+            cancellation: cancellation.clone(),
+            deadline: (action == "deadline")
+                .then(|| std::time::Instant::now() + Duration::from_millis(300)),
+            headers: ContextHeaders::default(),
+        };
+        let mut response = provider
+            .stream_response(request(basic(true)), context)
+            .await
+            .unwrap();
+        loop {
+            let next = tokio::time::timeout(WAIT, response.events.next())
+                .await
+                .unwrap()
+                .unwrap()
+                .unwrap();
+            if let ProviderStreamEvent::Model(next) = next {
+                assert!(next.response.wire()["item"]["encrypted_content"].is_null());
+                if next.response.kind() == "response.reasoning_summary_text.delta" {
+                    assert_eq!(next.response.wire()["delta"], "Native thinking");
+                    break;
+                }
+            }
+        }
+        fixture.captured().await;
+        if action == "drop" {
+            drop(response);
+        } else {
+            if action == "cancel" {
+                cancellation.cancel();
+            } else {
+                tokio::time::sleep(Duration::from_millis(310)).await;
+            }
+            let error = response.events.next().await.unwrap().err().unwrap();
+            assert_eq!(
+                error.code,
+                if action == "cancel" {
+                    "provider_cancelled"
+                } else {
+                    "provider_timeout"
+                }
+            );
+            assert!(response.events.next().await.is_none());
+        }
+        fixture.disconnected().await;
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 3);
+}
+
+#[tokio::test]
+async fn history_policy_keeps_unsupported_tools_and_unbound_items_before_authentication() {
+    let fixture = Fixture::start(vec![Reply::json(native())]).await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_history();
+    for item in [
+        json!({"type":"reasoning","id":"rs","summary":[]}),
+        json!({"type":"function_call","id":"fc","call_id":"call","name":"shell","arguments":"{}"}),
+        json!({"type":"future_item","n":18446744073709551616_u128}),
+        json!({"role":"user","content":[{"type":"input_image","image_url":"https://example.com"}]}),
+    ] {
+        let mut source = basic(false);
+        source["input"] = json!([item]);
+        assert_eq!(
+            provider
+                .create_response(request(source), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+    }
+    for key in [
+        "tools",
+        "tool_choice",
+        "parallel_tool_calls",
+        "include",
+        "previous_response_id",
+    ] {
+        let mut source = basic(false);
+        source[key] = if key == "tools" {
+            json!([])
+        } else {
+            true.into()
+        };
+        assert_eq!(
+            provider
+                .create_response(request(source), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn oversized_or_noncompleted_native_history_is_never_a_successful_carrier() {
+    for streaming in [false, true] {
+        for state in ["completed", "failed", "incomplete"] {
+            let mut response = native();
+            response["status"] = state.into();
+            let reply = if streaming {
+                Reply::stream(created() + &terminal(response.clone()))
+            } else {
+                Reply::json(response.clone())
+            };
+            let mut fixture = Fixture::start(vec![reply]).await;
+            let (broker, _) = fixture_broker(Some(KEY));
+            let mut limits = limits();
+            if state == "completed" {
+                limits.request_bytes = 900;
+            }
+            let provider = fixture
+                .provider(broker, vec![metadata("fixture", "native-fixture")], limits)
+                .with_native_history();
+            if streaming {
+                let mut stream = provider
+                    .stream_response(request(basic(true)), RequestContext::default())
+                    .await
+                    .unwrap();
+                let mut error = false;
+                let mut terminal = None;
+                while let Some(value) = stream.events.next().await {
+                    match value {
+                        Err(e) => {
+                            assert_eq!(e.code, "qwen_history_too_large");
+                            error = true;
+                        }
+                        Ok(ProviderStreamEvent::Model(e)) => {
+                            assert!(e.response.wire()["item"]["encrypted_content"].is_null());
+                            if e.response.terminal().is_some() {
+                                terminal = Some(e.response.wire()["response"].clone());
+                            }
+                        }
+                        _ => (),
+                    }
+                }
+                if state == "completed" {
+                    assert!(error);
+                    assert!(terminal.is_none());
+                } else {
+                    assert!(!error);
+                    assert_eq!(terminal, Some(response));
+                }
+            } else {
+                let result = provider
+                    .create_response(request(basic(false)), RequestContext::default())
+                    .await;
+                if state == "completed" {
+                    assert_eq!(result.err().unwrap().code, "qwen_history_too_large");
+                } else {
+                    assert_eq!(*result.unwrap().response.wire(), response);
+                }
+            }
+            fixture.captured().await;
+        }
+    }
+}
+
+#[tokio::test]
+async fn native_history_refuses_role_escalation_identity_collisions_and_bad_summaries() {
+    for streaming in [false, true] {
+        for case in 0..9 {
+            let mut response = native();
+            match case {
+                0 => response["output"][1]["role"] = "developer".into(),
+                1 => response["output"][1]["id"] = "rs_fixture_native".into(),
+                2 => response["output"][1]["id"] = "rs_one".into(),
+                3 => response["output"][0]["summary"][0]["type"] = "reasoning_text".into(),
+                4 => response["output"][0]["summary"][0]["text"] = false.into(),
+                5 => response["output"][1]["content"][0]["type"] = "input_text".into(),
+                6 => response["id"] = "\n".into(),
+                7 => response["output"][1]["status"] = "incomplete".into(),
+                8 => {
+                    response["output"][0]["content"] =
+                        json!([{"type":"reasoning_text","text":"Unbound"}])
+                }
+                _ => unreachable!(),
+            }
+            let reply = if streaming {
+                Reply::stream(created() + &terminal(response))
+            } else {
+                Reply::json(response)
+            };
+            let fixture = Fixture::start(vec![reply]).await;
+            let (broker, _) = fixture_broker(Some(KEY));
+            let provider = fixture
+                .provider(
+                    broker,
+                    vec![metadata("fixture", "native-fixture")],
+                    limits(),
+                )
+                .with_native_history();
+            if streaming {
+                let mut stream = provider
+                    .stream_response(request(basic(true)), RequestContext::default())
+                    .await
+                    .unwrap();
+                let mut failed = false;
+                while let Some(e) = stream.events.next().await {
+                    match e {
+                        Err(error) => {
+                            assert_eq!(error.http_status, 502);
+                            failed = true;
+                        }
+                        Ok(ProviderStreamEvent::Model(e)) => {
+                            assert_ne!(e.response.kind(), "response.completed");
+                            assert!(e.response.wire()["item"]["encrypted_content"].is_null());
+                        }
+                        _ => (),
+                    }
+                }
+                assert!(failed, "case {case}");
+            } else {
+                assert_eq!(
+                    provider
+                        .create_response(request(basic(false)), RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                        .http_status,
+                    502,
+                    "case {case}"
+                );
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn native_tool_search_and_mcp_outputs_are_not_display_only_extensions() {
+    for history in [false, true] {
+        for output in [
+            json!({"type":"tool_search_output","id":"ts","status":"completed","execution":"server","tools":[]}),
+            json!({"type":"mcp_list_tools","id":"mcp","server_label":"unknown","tools":[]}),
+        ] {
+            let mut wire = native();
+            wire["output"].as_array_mut().unwrap().push(output);
+            let fixture = Fixture::start(vec![
+                Reply::json(wire.clone()),
+                Reply::stream(created() + &terminal(wire)),
+            ])
+            .await;
+            let (broker, _) = fixture_broker(Some(KEY));
+            let mut provider = fixture.provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            );
+            if history {
+                provider = provider.with_native_history();
+            }
+            assert_eq!(
+                provider
+                    .create_response(request(basic(false)), RequestContext::default())
+                    .await
+                    .err()
+                    .unwrap()
+                    .code,
+                "qwen_unexpected_tool"
+            );
+            let mut stream = provider
+                .stream_response(request(basic(true)), RequestContext::default())
+                .await
+                .unwrap();
+            let mut failed = false;
+            while let Some(e) = stream.events.next().await {
+                match e {
+                    Err(error) => {
+                        assert_eq!(error.code, "qwen_unexpected_tool");
+                        failed = true;
+                    }
+                    Ok(ProviderStreamEvent::Model(e)) => {
+                        assert_ne!(e.response.kind(), "response.completed");
+                    }
+                    _ => (),
+                }
+            }
+            assert!(failed);
+        }
+    }
+}
+
+#[tokio::test]
+async fn gateway_reuses_bound_summary_history_without_forwarding_listener_identity() {
+    let events = summary_events(&native());
+    let mut fixture = Fixture::start(vec![
+        Reply::stream(events_body(&events)),
+        Reply::json(native()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker.clone(),
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_runtime_context()
+        .with_native_history();
+    let gateway =
+        caidex_model_gateway::start_with_provider(Arc::new(provider), broker.redactor(), limits())
+            .await
+            .unwrap();
+    let client = reqwest::Client::builder().no_proxy().build().unwrap();
+    let source = basic(true);
+    let response = client
+        .post(format!("http://{}/v1/responses", gateway.address()))
+        .bearer_auth(gateway.token().expose())
+        .header("content-type", "application/json")
+        .header("session_id", "LOCAL_GATEWAY_SESSION")
+        .body(source.to_string())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 200);
+    let raw = response.text().await.unwrap();
+    assert!(!raw.contains(KEY));
+    assert!(!raw.contains(gateway.token().expose()));
+    let mut parser = caidex_model_core::ResponsesStream::new(limits().frame_bytes).unwrap();
+    let parsed = parser.push(raw.as_bytes()).unwrap();
+    assert_eq!(
+        parser.finish().unwrap(),
+        caidex_model_core::StreamState::Completed
+    );
+    let end = parsed.last().unwrap().response.wire()["response"].clone();
+    let first = fixture.captured().await;
+    assert!(!first.headers.contains(gateway.token().expose()));
+    assert!(!first.headers.contains("LOCAL_GATEWAY_SESSION"));
+    let mut next = followup(&source, end["output"].as_array().unwrap());
+    next["stream"] = false.into();
+    let response = client
+        .post(format!("http://{}/v1/responses", gateway.address()))
+        .bearer_auth(gateway.token().expose())
+        .header("content-type", "application/json")
+        .body(next.to_string())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 200);
+    let body: Value = serde_json::from_str(&response.text().await.unwrap()).unwrap();
+    assert_eq!(
+        capsule(body["output"].as_array().unwrap())["response"],
+        native()
+    );
+    let second = fixture.captured().await;
+    assert_eq!(
+        second.header("authorization"),
+        Some(format!("Bearer {KEY}").as_str())
+    );
+    assert!(
+        !second
+            .body
+            .unwrap()
+            .to_string()
+            .contains("caidex.qwen.native-history")
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+    gateway.shutdown().await.unwrap();
+}

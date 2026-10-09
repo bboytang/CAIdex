@@ -37,6 +37,7 @@ pub(crate) fn compile(
     verbosity_instructions: &HashMap<String, String>,
     reasoning_efforts: Option<&HashMap<String, String>>,
     reasoning_support: CapabilitySupport,
+    native_history: bool,
 ) -> ProviderResult<CanonicalRequest> {
     if request.dialect() != ResponsesDialect::Classic {
         return Err(ProviderError::new(400, "unsupported_dialect"));
@@ -160,65 +161,9 @@ pub(crate) fn compile(
             }
         }
     }
-    if let Some(input) = wire["input"].as_array() {
+    if !native_history && let Some(input) = wire["input"].as_array() {
         for item in input {
-            fields(item, &["type", "role", "content", "id", "status"])?;
-            let role = item["role"].as_str().ok_or_else(invalid)?;
-            if item.get("type").is_some_and(|v| v != "message")
-                || !matches!(role, "user" | "assistant" | "system" | "developer")
-            {
-                return Err(unsupported());
-            }
-            for key in ["id", "status"] {
-                if let Some(value) = item.get(key) {
-                    if role != "assistant" || item["type"] != "message" {
-                        return Err(unsupported());
-                    }
-                    if key == "id"
-                        && value
-                            .as_str()
-                            .is_none_or(|s| s.trim().is_empty() || s.chars().any(char::is_control))
-                    {
-                        return Err(invalid());
-                    }
-                    if key == "status" && value != "completed" {
-                        return Err(unsupported());
-                    }
-                }
-            }
-            if (item.get("id").is_some() || item.get("status").is_some())
-                && (item.get("id").is_none()
-                    || item.get("status").is_none()
-                    || !item["content"].is_array())
-            {
-                return Err(invalid());
-            }
-            match &item["content"] {
-                Value::String(_) => (),
-                Value::Array(parts) => {
-                    for part in parts {
-                        fields(part, &["type", "text", "annotations"])?;
-                        if part["type"]
-                            != if role == "assistant" {
-                                "output_text"
-                            } else {
-                                "input_text"
-                            }
-                        {
-                            return Err(unsupported());
-                        }
-                        if !part["text"].is_string() {
-                            return Err(invalid());
-                        }
-                        if part.get("annotations").is_some_and(|v| {
-                            role != "assistant" || v.as_array().is_none_or(|a| !a.is_empty())
-                        }) {
-                            return Err(unsupported());
-                        }
-                    }
-                }
-                _ => return Err(invalid()),
-            }
+            validate_message(item)?;
         }
     }
     wire["store"] = false.into();
@@ -229,4 +174,63 @@ pub(crate) fn compile(
         return Err(ProviderError::new(413, "invalid_or_oversized_body"));
     }
     Ok(compiled)
+}
+
+pub(crate) fn validate_message(item: &Value) -> ProviderResult<()> {
+    fields(item, &["type", "role", "content", "id", "status"])?;
+    let role = item["role"].as_str().ok_or_else(invalid)?;
+    if item.get("type").is_some_and(|v| v != "message")
+        || !matches!(role, "user" | "assistant" | "system" | "developer")
+    {
+        return Err(unsupported());
+    }
+    for key in ["id", "status"] {
+        if let Some(value) = item.get(key) {
+            if role != "assistant" || item["type"] != "message" {
+                return Err(unsupported());
+            }
+            if key == "id"
+                && value
+                    .as_str()
+                    .is_none_or(|s| s.trim().is_empty() || s.chars().any(char::is_control))
+            {
+                return Err(invalid());
+            }
+            if key == "status" && value != "completed" {
+                return Err(unsupported());
+            }
+        }
+    }
+    if (item.get("id").is_some() || item.get("status").is_some())
+        && (item.get("id").is_none() || item.get("status").is_none() || !item["content"].is_array())
+    {
+        return Err(invalid());
+    }
+    match &item["content"] {
+        Value::String(_) => (),
+        Value::Array(parts) => {
+            for part in parts {
+                fields(part, &["type", "text", "annotations"])?;
+                if part["type"]
+                    != if role == "assistant" {
+                        "output_text"
+                    } else {
+                        "input_text"
+                    }
+                {
+                    return Err(unsupported());
+                }
+                if !part["text"].is_string() {
+                    return Err(invalid());
+                }
+                if part.get("annotations").is_some_and(|v| {
+                    role != "assistant" || v.as_array().is_none_or(|a| !a.is_empty())
+                }) {
+                    return Err(unsupported());
+                }
+            }
+        }
+        _ => return Err(invalid()),
+    }
+    Ok(())
 }

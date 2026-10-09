@@ -29,6 +29,9 @@ impl QwenConfig {
         let endpoint = self.base.join(path).map_err(|_| Error::InvalidEndpoint)?;
         CustomResponses::new(endpoint.as_str(), Some(self.credential.clone()))
     }
+    pub(crate) fn replay_scope(&self) -> serde_json::Value {
+        serde_json::json!({"base":self.base.as_str(),"credential":self.credential})
+    }
 }
 impl fmt::Debug for QwenConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
