@@ -23,7 +23,7 @@
 
 - Anthropic 接线当前离线范围三平台通过：Lite两轮v3/落盘、Code Mode真实审批后临时执行/结果回放、interrupt socket；经典显式禁用网页后真实注册表发现→原生 inline→MCP执行、实际app-server重启/disk resume。默认经典cached网页明确失败且不读Key/不POST；不是网页支持正例。本地完整 Runtime30通过，无 skip；源码b403b0d的CI37653194672仅Lite两轮路径词法断言失败，目录别名复现RED→GREEN后以canonicalize两方检查隔离；修复源码e27e9035eb41fec89eeda5dab43b1fd10640ed38的[CI37654366666](https://github.com/bboytang/CAIdex/actions/runs/37654366666)三平台completed/success，实际Runtime Linux30/WindowsmacOS29、HTTP50及workspace/fmt/Clippy/native credentials/schema/doctor通过，商业模型/生产Host未验。详见 [Anthropic 作用域与验收](CAIdex-Anthropic-Provider-设计与验收.md)。
 
-- DeepSeek实际Classic/Lite本地接线新增7项、累计Runtime50项通过：真实审批/隔离执行/磁盘resume不重跑、多调用与默认门控拒绝、stream/待审批取消、未提供Decline拒绝且Cancel按真实决策中断。新源码三平台仍待验，不改生产Runtime，也不认领H持久Host或商业模型Full；见[DeepSeek当前验收](CAIdex-DeepSeek-Provider-设计与验收.md)。
+- DeepSeek实际Classic/Lite本地接线新增7项、累计Runtime50项通过：真实审批/隔离执行/磁盘resume不重跑、多调用与默认门控拒绝、stream/待审批取消、未提供Decline拒绝且Cancel按真实决策中断。新源码1b501ba/[CI37886226991](https://github.com/bboytang/CAIdex/actions/runs/37886226991)三平台已精确验收，Runtime50/49/49、workspace438/433/437及全部新旧通过名核对正确；不改生产Runtime，也不认领H持久Host或商业模型Full；见[DeepSeek当前验收](CAIdex-DeepSeek-Provider-设计与验收.md)。
 
 ## D 边界验收
 

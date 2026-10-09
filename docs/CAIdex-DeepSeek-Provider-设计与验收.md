@@ -29,7 +29,7 @@
 
 上述经典基础目录/JSON/SSE/Gateway范围三平台通过；新增上下文适配亦三平台通过。Classic函数/namespace与history新范围见末节，不借旧CI认领新范围。custom工具/其他高级参数/媒体/剩余推理控制/Lite/实际DeepSeek Runtime/Live/Full仍待。整体F/G与H–R未完成，测试fixture不证明真实模型能力。
 
-基础源码`2967f56a7788ee90375f1e970e4500567a61cfd3`/[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)整体completed/success，各3job/17steps成功或条件跳过。完整raw Linux1962/Windows1649/macOS1660行，workspace391/386/390（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored），Linux native credentials1；DeepSeek10/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每名每平台一次。watch77797、下载98157及normalize/check/available均exit0；原始/标注日志 `/tmp/caidex-ci-37824041219-{linux,windows,macos}-raw.log`及同前缀.log/status.json/watch.log，校验脚本 `/tmp/caidex-deepseek-basic-ci-{normalize,check,available}.py`在精确2967f56归档执行。这不验证后续上下文适配或DeepSeek实际Runtime/Live。
+基础源码`2967f56a7788ee90375f1e970e4500567a61cfd3`/[CI37824041219](https://github.com/bboytang/CAIdex/actions/runs/37824041219)整体completed/success，3job各17steps成功或条件跳过。完整raw Linux1962/Windows1649/macOS1660行，workspace391/386/390（0failed，ignored45/43/43）、旧固定Runtime43/42/42（0failed/ignored），Linux native credentials1；DeepSeek10/Ollama69/OpenAI11/Custom7/Google90及全部Runtime每名每平台一次。watch77797、下载98157及normalize/check/available均exit0；原始/标注日志 `/tmp/caidex-ci-37824041219-{linux,windows,macos}-raw.log`及同前缀.log/status.json/watch.log，校验脚本 `/tmp/caidex-deepseek-basic-ci-{normalize,check,available}.py`在精确2967f56归档执行。这不验证后续上下文适配或DeepSeek实际Runtime/Live。
 
 ## 已验收上下文适配（三平台通过）
 
@@ -147,12 +147,14 @@ v3完整绑定Lite来源和单调用策略、源/native声明、执行端owner/p
 Lite三平台收尾：精确源码82cfab860d67ed5dd3edeeffded279cb03db65c4/[CI37867150335](https://github.com/bboytang/CAIdex/actions/runs/37867150335)整体completed/success；Linux113616480992/Windows113616481222/macOS113616481210各17steps成功或条件跳过，完整raw2009/1696/1707行。workspace438/433/437（0failed，ignored45/43/43）、DeepSeek57每名每平台一次、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。全通过名482/475/479等于e04d944基线加11新名，无遗漏/重复；watch83687及完整日志下载/normalize/ci-check均exit0。checker /tmp/caidex-deepseek-lite-ci-check.py从git show精确源码取名核对，结果/tmp/caidex-deepseek-lite-ci-result.json；日志/tmp/caidex-ci-37867150335-{linux,windows,macos}-raw.log及标注.log/status.json/watch.log。只认领本步离线Adapter，不认领实际DeepSeek Runtime接线、商业API、Host落盘恢复或Live/Full。
 
 
-## 固定Runtime Classic/Lite接线（2026-10-09，本地验证）
+## 固定Runtime Classic/Lite接线（2026-10-09，三平台已验收）
 
 复用真实Codex 0.160.1、共享Harness、Gateway/Custom传输和Broker；新增内部path dev-dependency，不改变Provider/Runtime生产实现或工作流。专用离线catalog选择Classic/Lite Code Mode、HTTP和有限effort，执行端明确禁用web与tool_search；这是合成测试配置，不是商业模型能力声明。原生夹具只接受flat function声明和明文reasoning，未知大数扩展、原始参数及SSE chunks完整保留，内部Lite/header/本地控制不透传。
 
 新增7项真实Runtime用例：①Classic函数审批后实际执行隔离marker，②Lite custom exec经同一真实审批/工具执行，二者均再重启app-server从磁盘resume、原生3轮request/response/chunks与实际工具结果精确回放且不重复写入；③默认/不完整policy在Key/POST前拒绝；④Lite两调用整轮失败，无审批/工具/完整carrier；⑤Classic/Lite interrupt关闭native socket；⑥等待审批interrupt使迟到批准NotPending；⑦仅按真实availableDecisions取消审批，无marker，终态interrupted，未提供Decline返回Protocol而不消费有效请求。没有创建Agent、审批引擎或工具执行器。
 
-初轮Classic夹具误用command而实际工具是exec_command/cmd；边界夹具写错默认错误码并假定提供Decline，均只修测试，不能计为生产缺陷RED。定向7/0/0（/tmp/caidex-deepseek-runtime-boundaries-fixed.log），完整固定Runtime50/0/0（旧43名+7新名，/tmp/caidex-deepseek-runtime-regression.log）本地通过。完整workspace438/0/52（DeepSeek57保持）及全workspace/all-targets Clippy-D warnings、fmt/Python AST/catalog JSON/diff通过，日志同前缀{workspace,clippy}.log；新源码三平台待验，不能借82cfab8旧CI代验这7项。
+初轮Classic夹具误用command而实际工具是exec_command/cmd；边界夹具写错默认错误码并假定提供Decline，均只修测试，不能计为生产缺陷RED。定向7/0/0（/tmp/caidex-deepseek-runtime-boundaries-fixed.log），完整固定Runtime50/0/0（旧43名+7新名，/tmp/caidex-deepseek-runtime-regression.log）本地通过。完整workspace438/0/52（DeepSeek57保持）及全workspace/all-targets Clippy-D warnings、fmt/Python AST/catalog JSON/diff通过，日志同前缀{workspace,clippy}.log；新源码1b501ba已独立三平台验收，见下方精确证据，不能借82cfab8旧CI代验这7项。
 
 该证据验证真实固定Runtime与合成原生API的链路；不代表商业DeepSeek Live/Full、生产Host journal/多端审批或真实服务器灾难恢复。按V3继续本次本地/精确CI收尾，再Qwen/OpenRouter；不开始H/I/CLI编码。旧阶段及CI记录均保留其当时范围。
+
+精确源码`1b501bac72d11fa2b2f36a73e5410180e9b0b6af`/[CI37886226991](https://github.com/bboytang/CAIdex/actions/runs/37886226991)整体completed/success，3job各17steps成功或条件跳过；Linux113676727719/Windows113676727715/macOS113676727581完整raw2025/1711/1722行。workspace438/433/437（0failed，ignored52/50/50），固定Runtime50/49/49（0failed/ignored），DeepSeek Adapter57每平台保持；新增7项每平台每名一次，全通过名489/482/486等于82cfab8旧CI完整集合加7新名，无遗漏/重复。watch50133、最终status79663、完整日志下载及source-bound checker均exit0，全部句柄结束。日志/tmp/caidex-ci-37886226991-{linux,windows,macos}-raw.log、status.json/watch.log；checker /tmp/caidex-deepseek-runtime-ci-check.py及同前缀ci-result.json。本机全workspace/Clippy/fmt/逐名与54本地链接/21锚点检查均通过，不重复旧无改动测试。下一步Qwen/OpenRouter，保持V3；商业DeepSeek/Full、生产Host、多端审批仍待。
