@@ -4,6 +4,18 @@
 
 ## 当前任务
 
+### CLI正式指令本轮复核（纯文档）
+
+2026-10-09起点main/HEAD=origin/main=0858493baf30917f0f536c1f70f474507d39e4ae；已有README、Qwen/Gateway验收及本文件四份未提交F/G收尾文档。当前只复核CLI正式规范，不继续Provider或CLI编码。CLI V1及V3/Account/UI/Credentials/README已在前轮归档，本轮复用，不重新规划；34项CLI验收仍全部待实现/未执行。
+
+已读指定文档、原V2相关需求、apps/cli源码/测试与固定上游；十一份缓存再次与公开d27764b原文逐字核对，隔离数据目录版本/五项help共六项通过，未启动TUI/认证/模型。PKCE/Device公开客户端、无注册、token分离、账户sync继承/首次旧资料上传许可、exec实际审批策略/持久task/独立Host跨端审批及H/I/P/R职责均已覆盖。仅修正Account阶段表的过时F/G恢复点：控制组合已验，下一步Lite/实际Runtime，再OpenRouter；不改数据库/epoch/墓碑/默认关闭/本机备份或原阶段顺序。
+
+本轮检查通过：16Markdown/68本地链接/22锚点、CLI34/账户55/UI16待实施矩阵及A–R保持；197个非本任务tracked文件SHA256不变，原HANDOFF收尾内容完整保留，生产源码/依赖/workflow/历史CI/凭据证据未改，git diff --check通过。证据/tmp/caidex-cli-formal-audit-final/{baseline.json,source-result.json,result.json,check.py}。未运行Rust编译/完整CI、账户服务或付费模型，已有CI不代验CLI。
+
+本轮独立提交标题`docs: audit final CLI contract and preserve F/G handoff`，仅Account一行与本节，不纳入已有README/Qwen/Gateway/HANDOFF四份F/G修改；推送后核对HEAD/origin及剩余工作区，结果同目录final-git-result.json。既有Qwen控制组合0858493/CI37974303497已验（62项离线fixture，非实际Qwen Runtime/商业Live/Full），四份收尾文档仍未提交；下一次先核对/提交这些收尾diff，再Qwen Lite/实际Runtime→OpenRouter。完整CLI/认证/本地记忆/同步留H/I/P/R，本轮文档要求无未完成项，不提前实现或跳过F/G。
+
+### F/G恢复点（保留原收尾内容）
+
 本轮从main/38debdfd59ea6ad4b5c7f3989c25c421cd9757c1（origin一致）续接两份Qwen草稿；上一轮CLI文档92c5529/38debdf已push，不继续CLI编码。范围为Qwen request/history/tests及README/Qwen/Gateway/HANDOFF四文档，复用现有传输/工具/历史，不改共享Runtime/Core/依赖/workflow、不读用户Key/商业API、不清target。
 
 中断前两项失败已定位并修正：native流夹具应寻找reasoning_text.delta而非投影summary事件；有效RED36230 exit101（编译成功7通过/1失败，v1 case6接受坏carrier）证实NativeHistory仅校验reasoning根名称、漏内部契约。最小增加9行，在v1/v2/v3统一拒绝非单一合法native effort对象，不重新映射effort；新增测试扩展15类carrier坏输入JSON/SSE。定向14628 exit0：Qwen62/0/0，旧54名保留。日志/tmp/caidex-qwen-history-controls/{resume-red-fixed-fixture,resume-green}.log；基线resume-baseline.json（首轮Git中文路径脚本已用-z修正，不算产品失败）。

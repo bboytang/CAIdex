@@ -228,7 +228,7 @@ CLI不维护另一套独立默认开关，重新安装/登录/换设备先读取
 
 | 阶段 | 本次纳入的工作 | 必须保留的边界 |
 | --- | --- | --- |
-| F/G | 按HANDOFF继续Qwen Runtime控制组合/Lite/实际固定Runtime，OpenRouter随后；custom已验，保留DeepSeek及Qwen已验范围 | 不改已经验证的 Provider/Gateway，不因文档任务重做或运行付费 API |
+| F/G | 按HANDOFF继续Qwen Lite/实际固定Runtime，OpenRouter随后；custom及Runtime/history控制组合已验，保留DeepSeek及Qwen已验范围 | 不改已经验证的 Provider/Gateway，不因文档任务重做或运行付费 API |
 | H | 真实后台 Host、SQLite journal、恢复/审批；必要的证据引用与安全共享数据契约 | 不将 Host 改成云端 Agent，不把账户等同 Host 授权，不迁移活动线程 |
 | I | 共享 Rust/API/迁移契约；官方账户 + PostgreSQL；认证/Passkey/会话设备；Chat 与 memory 模型；Memory Engine/授权模型编排；混合检索/Embedding 版本；账户级同步开关/删除；EmailSender；本机备份/恢复 | 核心契约及安全/失败验证先于 GUI；首版采用最终数据库和协议语义，允许分步交付但不能用临时设计代替 |
 | J/K Windows | 既定 Tauri 布局加入应用内注册/登录、账户与会话、记忆/Provider 权限、独立同步开关与异常状态 | J 接账户/Chat/记忆，K 核对 Codex/Host 独立授权；Windows runner 与真实桌面验证 |
