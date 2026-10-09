@@ -11,6 +11,7 @@ use std::{
 
 const PREFIX: &str = "caidex.qwen.native-history.v1:";
 const TOOLS_PREFIX: &str = "caidex.qwen.native-history.v2:";
+const CUSTOM_PREFIX: &str = "caidex.qwen.native-history.v3:";
 pub(crate) fn invalid() -> ProviderError {
     ProviderError::new(400, "qwen_invalid_history")
 }
@@ -57,7 +58,7 @@ impl NativeHistory {
     ) -> ProviderResult<Self> {
         let mut wire = json!({"provider":"qwen","version":1,"scope":scope,"native_model":request.model(),"request":request.wire(),"response":response.wire(),"source":if chunks.is_some(){"sse"}else{"json"}});
         if let Some(tools) = tools {
-            wire["version"] = 2.into();
+            wire["version"] = tools.history_version().into();
             wire["tool_mapping"] = tools.source().clone();
         }
         if let Some(chunks) = chunks {
@@ -68,14 +69,18 @@ impl NativeHistory {
     fn new(wire: Value, limit: usize) -> ProviderResult<Self> {
         size(&wire, limit)?;
         if wire["provider"] != "qwen"
-            || !matches!(wire["version"].as_u64(), Some(1 | 2))
+            || !matches!(wire["version"].as_u64(), Some(1..=3))
             || !wire["scope"].is_object()
             || wire["request"]["model"] != wire["native_model"]
         {
             return Err(invalid());
         }
-        let tools = if wire["version"] == 2 {
-            Some(ToolMap::from_source(wire["tool_mapping"].clone())?)
+        let tools = if wire["version"] != 1 {
+            let tools = ToolMap::from_source(wire["tool_mapping"].clone())?;
+            if wire["version"] != tools.history_version() {
+                return Err(invalid());
+            }
+            Some(tools)
         } else {
             if wire.get("tool_mapping").is_some() {
                 return Err(invalid());
@@ -182,7 +187,7 @@ impl NativeHistory {
         size(&self.0, limit)?;
         let response =
             CanonicalResponse::new(self.native_response().clone()).map_err(|_| invalid())?;
-        let response = if self.0["version"] == 2 {
+        let response = if self.0["version"] != 1 {
             ToolMap::from_source(self.0["tool_mapping"].clone())?.project(&response)?
         } else {
             response
@@ -206,7 +211,9 @@ impl NativeHistory {
             .collect::<ProviderResult<Vec<_>>>()?;
         // shortcut: nested prefixes grow quadratically; byte budgets refuse
         // overflow until Host persistence can deduplicate full native history.
-        let prefix = if self.0["version"] == 2 {
+        let prefix = if self.0["version"] == 3 {
+            CUSTOM_PREFIX
+        } else if self.0["version"] == 2 {
             TOOLS_PREFIX
         } else {
             PREFIX
@@ -240,13 +247,15 @@ impl NativeHistory {
         }
         let (encoded, version) = if let Some(wire) = capsule.strip_prefix(PREFIX) {
             (wire, 1)
+        } else if let Some(wire) = capsule.strip_prefix(CUSTOM_PREFIX) {
+            (wire, 3)
         } else {
             (capsule.strip_prefix(TOOLS_PREFIX).ok_or_else(invalid)?, 2)
         };
         let history = Self::new(serde_json::from_str(encoded).map_err(|_| invalid())?, limit)
             .map_err(|_| invalid())?;
         if history.0["version"] != version
-            || history.0["version"] != if tools.is_some() { 2 } else { 1 }
+            || history.0["version"] != tools.map_or(1, ToolMap::history_version)
             || tools.is_some_and(|t| history.0["tool_mapping"] != *t.source())
         {
             return Err(invalid());
@@ -269,7 +278,7 @@ impl NativeHistory {
         {
             let known = matches!(
                 actual["type"].as_str(),
-                Some("reasoning" | "message" | "function_call")
+                Some("reasoning" | "message" | "function_call" | "custom_tool_call")
             );
             if known
                 && (actual.get("id").is_some_and(|v| !valid_id(v))
@@ -291,7 +300,7 @@ fn without_identity(item: &Value) -> Value {
     let mut item = item.clone();
     if matches!(
         item["type"].as_str(),
-        Some("reasoning" | "message" | "function_call")
+        Some("reasoning" | "message" | "function_call" | "custom_tool_call")
     ) && let Some(object) = item.as_object_mut()
     {
         object.remove("id");
@@ -345,10 +354,15 @@ pub(crate) fn expand(
         } else if tools.is_some()
             && matches!(
                 input[index]["type"].as_str(),
-                Some("function_call" | "function_call_output")
+                Some(
+                    "function_call"
+                        | "function_call_output"
+                        | "custom_tool_call"
+                        | "custom_tool_call_output"
+                )
             )
         {
-            native.push(tools.unwrap().compile_item(&input[index])?);
+            native.push(tools.unwrap().compile_item(&input[index], &native)?);
             index += 1;
         } else {
             crate::request::validate_message(&input[index])?;

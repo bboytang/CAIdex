@@ -1,6 +1,6 @@
 # CAIdex Qwen Provider：设计与验收
 
-阶段 F/G；2026-10-09。代码 `model/providers/qwen`。当前包括原生目录/基础 Responses、显式 Runtime 控制/逐模型推理和原生summary绑定历史接入，沿用既定 ModelProvider/Custom transport/Credential Broker/Gateway；不另造 HTTP 框架、Agent 或工具执行器。完整 Qwen Codex 兼容性、商业 Live/Full 和生产 Host **尚未验收**，不能因目录或文本请求成功升级兼容等级。
+阶段 F/G；2026-10-09。代码 `model/providers/qwen`。当前包括原生目录/基础 Responses、显式 Runtime 控制/逐模型推理和原生summary绑定历史、function/namespace和显式custom映射接入，沿用既定 ModelProvider/Custom transport/Credential Broker/Gateway；不另造 HTTP 框架、Agent 或工具执行器。完整 Qwen Codex 兼容性、商业 Live/Full 和生产 Host **尚未验收**，不能因目录或文本请求成功升级兼容等级。
 
 ## 官方契约与执行端配置
 
@@ -80,9 +80,9 @@ ModelProvider 六方法全部接入：
 
 精确a3e7e6de88145c780c25698cdb0e5bf2d79d3cb0/[CI37929549601](https://github.com/bboytang/CAIdex/actions/runs/37929549601)整体completed/success；Linux113816614618、Windows113816614855、macOS113816614917各17steps成功或条件跳过，完整raw2077/1763/1774行。workspace470/465/469（0failed，ignored52/50/50）、既有固定Runtime50/49/49（0failed/ignored）、Qwen32和DeepSeek57每名每平台一次。全通过名521/514/518精确等于旧CI37890668777集合+11新名，无遗漏/重复；watch16858 exit0、状态/完整日志下载和逐名checker通过，全部句柄结束。checker `/tmp/caidex-qwen-history-ci-check.py`及同前缀ci-result.json；日志`/tmp/caidex-ci-37929549601-{linux,windows,macos}-raw.log`及status.json/watch.log。checker首次仅误从单文件按async计DeepSeek57，修正为固定源码46项+lite模块11项后精确逐名通过；不算生产失败，不修改原日志。此Runtime回归仍不是实际Qwen Runtime接线或商业Live/Full验收。
 
-## 显式function/namespace与工具历史（当前子阶段）
+## 显式function/namespace与工具历史（已验子阶段）
 
-`with_native_tools()`独立启用Classic原生function并启用绑定历史，沿用Custom传输/Broker；不执行工具或改变真实Runtime审批。默认路径及仅with_native_history仍拒绝tools。当前不开放custom、deferred、服务商MCP/内置工具或Lite，这些能力不能由文本成功或命令名称推断已验。
+`with_native_tools()`独立启用Classic原生function并启用绑定历史，沿用Custom传输/Broker；不执行工具或改变真实Runtime审批。默认路径及仅with_native_history仍拒绝tools。单独该策略不开放custom、deferred、服务商MCP/内置工具或Lite，这些能力不能由文本成功或命令名称推断已验。
 
 - 函数名按原生ASCII字母/数字/下划线/连字符与64字节界限校验，参数对象原样保留；description缺省补空字符串，namespace说明追加到成员说明。namespace成员按原声明顺序编译为唯一`caidex_ns_<index>`，重名/alias冲突在Key前拒绝；返回端恢复源name/namespace、完整arguments及未知JSON。`strict=true`、`defer_loading=true`及未知声明字段拒绝；不宣称原生Schema强制验证。
 - `auto`、`none`和nullable choice保持原生语义；`required`只有一项原生声明时接受。指定function选择器编译为单项`allowed_tools/required`并限制原生声明集；源allowed_tools的auto/required按所选已声明身份编译，required仍限定单项。空/重复/未知/多项required选择在Key前拒绝；返回必须属于所选集合，none不交付调用，completed必选却未调用也拒绝，不替模型编造调用。
@@ -96,9 +96,21 @@ ModelProvider 六方法全部接入：
 
 精确c5c021daf999fa1b4cff755b3633c106d88266f4/[CI37932689731](https://github.com/bboytang/CAIdex/actions/runs/37932689731)整体completed/success。Linux113827035486、Windows113827035140、macOS113827035343各17steps成功或条件跳过，完整raw2088/1774/1785行；workspace481/476/480（0failed，ignored52/50/50）、既有固定Runtime50/49/49（0failed/ignored）、Qwen43及DeepSeek57每名每平台一次。全通过名532/525/529精确等于旧37929549601集合+11新名，无遗漏/重复；watch73323 exit0，状态/完整原始日志下载及逐名checker通过，全部句柄结束。checker `/tmp/caidex-qwen-tools-ci-check.py`及ci-result.json，日志`/tmp/caidex-ci-37932689731-{linux,windows,macos}-raw.log`及status.json/watch.log。此Runtime回归不是实际Qwen Runtime接线或商业Live/Full验收。
 
+## 显式custom→function与v3历史（当前子阶段）
+
+2026-10-09核对官方Responses页面：原生function声明/结果契约明确，SSE列表包含custom input事件，但未完整建立generic custom声明、约束及回放契约。不能声称原生custom一定不存在，也不能据事件名称直接开放。采用CAIdex明确的`with_custom_tool_mapping()`：复用当前ToolMap、绑定历史与Custom传输，不新建HTTP层/Agent/执行器；默认、单独history/native_tools仍拒绝custom。
+
+- 开启该策略同时启用native_tools/history。根/namespace内custom可无format或使用text、lark/regex grammar；格式字段、非空definition、名称、重复身份/alias、selector类型均校验。编译为native function，仅接受`{input: string}`，required input、additionalProperties=false；格式与原说明只进入指导文本，**不承诺服务端grammar强制约束**。strict/parameters等无效custom字段、deferred和parallel=false仍拒绝。
+- 指定custom选择器及allowed_tools复用实际function选择策略，required仍单项；不能用function身份冒充custom或反向冒充。返回验证必须是已授权native function，arguments必须准确包含一个string input，拒绝额外字段、坏JSON、未授权name/namespace/ID、非完成调用与重复call_id。验证通过后还原原custom_tool_call/input/name/namespace，普通function保持原形；Unicode、换行、空格、引号/反斜杠和未知native扩展保留。
+- direct custom调用/结果按同call_id和源类型编译为native function对；孤儿、错类型、重复、未完成、媒体结果拒绝。纯文本结果保持既有换行拼接/紧邻配对；回放与显示不执行工具。真实Runtime负责freeform解析、安全审批和执行，模型指导不放宽其规则。
+- 新载体`caidex.qwen.native-history.v3:`绑定`custom_as_function=true`、原始tools/format/choice/parallel、native schema及完整请求/结果/显示组，SSE保留raw chunks；继续绑定执行端/Profile/Endpoint/model/前缀。v1/v2/v3双向拒绝策略混用，不自动升级。载体仍是敏感明文JSON，不是加密或来源认证，不进入账户Memory/云同步。
+- 复用已有SSE校验/终态交付：参数流暂扣，完整completed重建后才产生投影custom调用和成功载体；raw原生custom事件仍作为未验证契约拒绝。坏流/半流取消/Drop/截止/预算溢出不交付工具，真实socket断开/slot释放；源和编译/载体预算及能力门控保持，Gateway token/Runtime attribution不去native，模型Key只在执行端Broker。
+
+新增11项（含中断前1项），共54项，全部隔离loopback/合成Key：JSON/SSE及raw chunks、序列化三轮、text/lark/regex/namespace/choice、18种非法source、15种坏native JSON/SSE、15种坏参数流/raw custom及slot、18种policy/载体/显示篡改与v1/v2/v3双向隔离、direct结果、取消/Drop/deadline、源/编译预算/能力/error、Gateway两轮凭据隔离。中断前RED为编译成功实际qwen_unsupported_tools，44项GREEN仅早期定向；本次定向32610为54/0/0，首次Clippy94766仅范围pattern风格失败，等价改为1..=3后60531 exit0（全workspace/all-targets-D warnings）。最终workspace52456 exit0：492/0/52，原481通过名+11精确保持，Qwen54每名一次；8任务路径/16Markdown/66本地链接/22锚点、非任务tracked文件/依赖/workflow/CLI34/A–R/旧CI保留及fmt/diff通过。证据/tmp/caidex-qwen-custom-resume/{first,workspace-final,clippy-final}.log及local-check.py/local-result.json；精确源码三平台CI尚待，旧43项CI不代验。本步不改Core/Custom/Gateway/Runtime/依赖/workflow，Lite/实际Qwen Runtime/商业Live/Full仍待。
+
 ## 后续实施顺序
 
 1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
-2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；下一步核对custom的原生边界并采用显式受限策略，再Lite与实际固定Runtime。不盲复制DeepSeek明文content或Gemini签名契约。
+2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，尚待独立源码/精确CI；收尾后继续Lite与实际固定Runtime。不盲复制DeepSeek明文content或Gemini签名契约。
 3. 单独核对Lite/Code Mode、并行与本地交付策略及native能力边界；固定Runtime的summary/context/include等组合目前仍拒绝，接线前需单独核对和显式适配，再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

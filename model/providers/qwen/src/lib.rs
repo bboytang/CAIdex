@@ -36,6 +36,7 @@ pub struct QwenProvider<S: SecretStore> {
     runtime_context: bool,
     native_history: bool,
     native_tools: bool,
+    custom_tool_mapping: bool,
     verbosity_instructions: HashMap<String, String>,
     reasoning_efforts: HashMap<String, HashMap<String, String>>,
 }
@@ -85,6 +86,7 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             runtime_context: false,
             native_history: false,
             native_tools: false,
+            custom_tool_mapping: false,
             verbosity_instructions: HashMap::new(),
             reasoning_efforts: HashMap::new(),
         })
@@ -103,6 +105,11 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
     pub fn with_native_tools(mut self) -> Self {
         self.native_tools = true;
         self.with_native_history()
+    }
+    /// Explicit CAIdex freeform-to-function guidance, not native grammar enforcement.
+    pub fn with_custom_tool_mapping(mut self) -> Self {
+        self.custom_tool_mapping = true;
+        self.with_native_tools()
     }
     /// Executor guidance; does not promise a provider-native verbosity scale.
     pub fn with_verbosity_instruction(
@@ -209,7 +216,10 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             return Err(ProviderError::new(413, "invalid_or_oversized_body"));
         }
         let tools = if self.native_tools {
-            Some(tools::ToolMap::from_request(&request)?)
+            Some(tools::ToolMap::from_request(
+                &request,
+                self.custom_tool_mapping,
+            )?)
         } else {
             None
         };
