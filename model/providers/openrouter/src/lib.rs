@@ -27,6 +27,8 @@ pub struct OpenRouterProvider<S: SecretStore> {
     limits: Limits,
     runtime_context: bool,
     reasoning_efforts: HashMap<String, HashMap<String, String>>,
+    verbosity_instructions: HashMap<String, HashMap<String, String>>,
+    service_tiers: HashMap<String, HashMap<String, String>>,
 }
 impl<S: SecretStore + 'static> OpenRouterProvider<S> {
     pub fn new(
@@ -74,6 +76,8 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             limits,
             runtime_context: false,
             reasoning_efforts: HashMap::new(),
+            verbosity_instructions: HashMap::new(),
+            service_tiers: HashMap::new(),
         })
     }
     /// Consume executor-local attribution and neutral text; do not forward identity or enable caching.
@@ -102,6 +106,59 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             .entry(model)
             .or_default()
             .insert(effort, native);
+        Ok(self)
+    }
+    /// Per-route executor guidance, not a native verbosity scale or structured output.
+    pub fn with_verbosity_instruction(
+        mut self,
+        model: String,
+        verbosity: String,
+        instruction: String,
+    ) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !matches!(verbosity.as_str(), "low" | "medium" | "high")
+            || instruction.trim().is_empty()
+            || self
+                .verbosity_instructions
+                .get(&model)
+                .is_some_and(|m| m.contains_key(&verbosity))
+        {
+            return Err(ProviderError::new(
+                400,
+                "openrouter_invalid_verbosity_mapping",
+            ));
+        }
+        self.verbosity_instructions
+            .entry(model)
+            .or_default()
+            .insert(verbosity, instruction);
+        Ok(self)
+    }
+    /// Explicit native tier request policy, not a guarantee of capacity, price or backend identity.
+    pub fn with_service_tier_mapping(
+        mut self,
+        model: String,
+        source: String,
+        native: String,
+    ) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !matches!(
+            (source.as_str(), native.as_str()),
+            ("auto" | "default", "auto" | "default")
+                | ("flex", "flex")
+                | ("priority" | "fast", "priority" | "fast")
+                | ("ultrafast", "ultrafast")
+        ) || self
+            .service_tiers
+            .get(&model)
+            .is_some_and(|m| m.contains_key(&source))
+        {
+            return Err(ProviderError::new(400, "openrouter_invalid_tier_mapping"));
+        }
+        self.service_tiers
+            .entry(model)
+            .or_default()
+            .insert(source, native);
         Ok(self)
     }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
@@ -133,12 +190,16 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
     fn prepare(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
         let metadata = self.responses.metadata(request.model())?;
         let efforts = self.reasoning_efforts.get(request.model());
+        let verbosity = self.verbosity_instructions.get(request.model());
+        let tiers = self.service_tiers.get(request.model());
         request::compile(
             request,
             self.limits.request_bytes,
             self.runtime_context,
             efforts,
             metadata.capabilities.reasoning,
+            verbosity,
+            tiers,
         )
     }
 }

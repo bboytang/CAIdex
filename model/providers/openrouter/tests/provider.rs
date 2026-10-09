@@ -1436,3 +1436,393 @@ async fn openrouter_explicit_context_gateway_keeps_listener_and_model_identity_s
     assert_eq!(reads.load(Ordering::SeqCst), 1);
     gateway.shutdown().await.unwrap();
 }
+
+#[tokio::test]
+async fn openrouter_verbosity_guidance_is_per_route_and_keeps_original_instructions() {
+    let mut fixture = Fixture::start(vec![Reply::json(response_wire()); 3]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_runtime_context()
+        .with_verbosity_instruction("fixture".into(), "low".into(), "Concise 中文🙂".into())
+        .unwrap()
+        .with_verbosity_instruction("fixture".into(), "medium".into(), "Balanced".into())
+        .unwrap()
+        .with_verbosity_instruction("fixture".into(), "high".into(), "Detailed".into())
+        .unwrap();
+    for (level, guidance, original) in [
+        ("low", "Concise 中文🙂", json!("Original")),
+        ("medium", "Balanced", Value::Null),
+        ("high", "Detailed", json!("")),
+    ] {
+        let mut wire = runtime_wire();
+        wire["instructions"] = original.clone();
+        wire["text"]["verbosity"] = level.into();
+        provider
+            .create_response(
+                CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap(),
+                runtime_context(),
+            )
+            .await
+            .unwrap();
+        let captured = fixture.request().await.body.unwrap();
+        assert_eq!(captured["input"], wire["input"]);
+        assert_eq!(
+            captured["instructions"],
+            if original == "Original" {
+                format!("Original\n{guidance}")
+            } else {
+                guidance.into()
+            }
+        );
+        assert!(captured.get("text").is_none());
+        assert!(captured.get("client_metadata").is_none());
+    }
+    let wire = json!({"model":"not-visible","input":[],"text":{"verbosity":"low"}});
+    assert!(
+        provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default()
+            )
+            .await
+            .is_err()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 3);
+}
+
+#[tokio::test]
+async fn openrouter_verbosity_mapping_does_not_enable_runtime_identity_or_structured_output() {
+    let mut fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_verbosity_instruction("fixture".into(), "low".into(), "Concise".into())
+        .unwrap();
+    let wire = json!({"model":"fixture", "input":"plain", "text":{"verbosity":"low"}});
+    provider
+        .create_response(
+            CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap(),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        fixture.request().await.body.unwrap()["instructions"],
+        "Concise"
+    );
+    assert!(
+        provider
+            .create_response(
+                CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap(),
+                runtime_context()
+            )
+            .await
+            .is_err()
+    );
+    for (key, value) in [
+        ("client_metadata", json!({"thread_id":"private"})),
+        ("text", json!({"format":{"type":"text"},"verbosity":"low"})),
+        (
+            "text",
+            json!({"format":{"type":"json_schema"},"verbosity":"low"}),
+        ),
+        ("text", Value::Null),
+    ] {
+        let mut invalid = wire.clone();
+        invalid[key] = value;
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(invalid, ResponsesDialect::Classic).unwrap(),
+                    RequestContext::default()
+                )
+                .await
+                .is_err()
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn openrouter_body_control_configuration_rejects_bad_routes_values_and_duplicates() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    for (route, level, guidance) in [
+        ("absent", "low", "guide"),
+        ("fixture", "bad", "guide"),
+        ("fixture", "low", " "),
+    ] {
+        assert!(
+            fixture
+                .provider(broker.clone(), limits())
+                .with_verbosity_instruction(route.into(), level.into(), guidance.into())
+                .is_err()
+        );
+    }
+    assert!(
+        fixture
+            .provider(broker.clone(), limits())
+            .with_verbosity_instruction("fixture".into(), "low".into(), "guide".into())
+            .unwrap()
+            .with_verbosity_instruction("fixture".into(), "low".into(), "other".into())
+            .is_err()
+    );
+    for (route, source, native) in [
+        ("absent", "default", "default"),
+        ("fixture", "bad", "default"),
+        ("fixture", "default", "bad"),
+        ("fixture", "priority", "default"),
+        ("fixture", "flex", "priority"),
+        ("fixture", "scale", "auto"),
+    ] {
+        assert!(
+            fixture
+                .provider(broker.clone(), limits())
+                .with_service_tier_mapping(route.into(), source.into(), native.into())
+                .is_err()
+        );
+    }
+    assert!(
+        fixture
+            .provider(broker, limits())
+            .with_service_tier_mapping("fixture".into(), "priority".into(), "fast".into())
+            .unwrap()
+            .with_service_tier_mapping("fixture".into(), "priority".into(), "priority".into())
+            .is_err()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_configured_body_controls_reject_invalid_and_history_controls_before_key() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_runtime_context()
+        .with_verbosity_instruction("fixture".into(), "low".into(), "guide".into())
+        .unwrap()
+        .with_service_tier_mapping("fixture".into(), "priority".into(), "fast".into())
+        .unwrap();
+    for (key, value) in [
+        ("text", json!({"verbosity":42})),
+        ("text", json!({"verbosity":"high"})),
+        ("text", json!({"verbosity":"low","future":true})),
+        (
+            "text",
+            json!({"verbosity":"low","format":{"type":"json_object"}}),
+        ),
+        (
+            "text",
+            json!({"verbosity":"low","format":{"type":"text","future":true}}),
+        ),
+        ("instructions", json!([])),
+        ("service_tier", json!(42)),
+        ("service_tier", json!("default")),
+        ("service_tier", json!("bad")),
+        ("provider", json!({"allow_fallbacks":true})),
+        ("speed", json!("fast")),
+        ("include", json!(["reasoning.encrypted_content"])),
+        ("reasoning", json!({"summary":"auto"})),
+        (
+            "input",
+            json!([{"type":"reasoning","encrypted_content":"foreign"}]),
+        ),
+    ] {
+        let mut wire = runtime_wire();
+        wire["text"]["verbosity"] = "low".into();
+        wire["service_tier"] = "priority".into();
+        wire[key] = value;
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    runtime_context()
+                )
+                .await
+                .is_err(),
+            "{key}"
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_service_tier_mapping_is_per_route_once_and_preserves_actual_tier() {
+    let mut native = response_wire();
+    native["service_tier"] = "default".into();
+    let mut fixture = Fixture::start(vec![Reply::json(native.clone()); 6]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let mut provider = fixture.provider(broker, limits());
+    for (source, target) in [
+        ("auto", "default"),
+        ("default", "auto"),
+        ("flex", "flex"),
+        ("priority", "fast"),
+        ("fast", "priority"),
+        ("ultrafast", "ultrafast"),
+    ] {
+        provider = provider
+            .with_service_tier_mapping("fixture".into(), source.into(), target.into())
+            .unwrap();
+    }
+    for (source, target) in [
+        ("auto", "default"),
+        ("default", "auto"),
+        ("flex", "flex"),
+        ("priority", "fast"),
+        ("fast", "priority"),
+        ("ultrafast", "ultrafast"),
+    ] {
+        let wire = json!({"model":"fixture","input":[],"service_tier":source});
+        let response = provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.response.wire(), &native);
+        let sent = fixture.request().await.body.unwrap();
+        assert_eq!(sent["service_tier"], target);
+        assert_eq!(
+            sent["provider"],
+            json!({"require_parameters":true,"allow_fallbacks":false})
+        );
+    }
+    let wire = json!({"model":"not-visible","input":[],"service_tier":"priority"});
+    assert!(
+        provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default()
+            )
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        provider.capabilities("fixture").unwrap().reasoning,
+        CapabilitySupport::Unknown
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 6);
+}
+
+#[tokio::test]
+async fn openrouter_verbosity_guidance_source_and_compiled_budgets_precede_credentials() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let mut configured = limits();
+    configured.request_bytes = 256;
+    let provider = fixture
+        .provider(broker, configured)
+        .with_runtime_context()
+        .with_verbosity_instruction("fixture".into(), "low".into(), "g".repeat(257))
+        .unwrap();
+    for wire in [
+        json!({"model":"fixture","input":[],"text":{"verbosity":"low"}}),
+        json!({"model":"fixture","input":[],"text":{"verbosity":"low"},"client_metadata":{"private":"x".repeat(257)}}),
+    ] {
+        assert_eq!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    RequestContext::default()
+                )
+                .await
+                .err()
+                .unwrap()
+                .code,
+            "invalid_or_oversized_body"
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_body_context_effort_sse_combination_keeps_terminal_tier_and_native_output() {
+    let mut native = response_wire();
+    native["service_tier"] = "default".into();
+    let terminal = json!({"type":"response.completed","response":native});
+    let mut fixture = Fixture::start(vec![Reply::stream(format!(
+        "{CREATED}data: {terminal}\n\n"
+    ))])
+    .await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_runtime_context()
+        .with_verbosity_instruction("fixture".into(), "low".into(), "Concise".into())
+        .unwrap()
+        .with_service_tier_mapping("fixture".into(), "priority".into(), "fast".into())
+        .unwrap()
+        .with_reasoning_effort_mapping("fixture".into(), "xhigh".into(), "high".into())
+        .unwrap();
+    let mut wire = runtime_wire();
+    wire["stream"] = true.into();
+    wire["text"]["verbosity"] = "low".into();
+    wire["service_tier"] = "priority".into();
+    wire["reasoning"] = json!({"effort":"xhigh"});
+    let mut events = provider
+        .stream_response(
+            CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap(),
+            runtime_context(),
+        )
+        .await
+        .unwrap()
+        .events;
+    let sent = fixture.request().await;
+    assert_eq!(sent.body.as_ref().unwrap()["instructions"], "Concise");
+    assert_eq!(
+        sent.body.as_ref().unwrap()["reasoning"],
+        json!({"effort":"high"})
+    );
+    assert_eq!(sent.body.as_ref().unwrap()["service_tier"], "fast");
+    assert_eq!(sent.body.as_ref().unwrap()["input"], wire["input"]);
+    assert!(!sent.headers.contains("executor-private"));
+    let mut actual = Vec::new();
+    while let Some(next) = events.next().await {
+        if let ProviderStreamEvent::Model(model) = next.unwrap() {
+            actual.push(model.response.wire().clone());
+        }
+    }
+    assert!(actual.contains(&terminal));
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn openrouter_body_controls_do_not_enable_null_tier_or_unconfigured_default() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture.provider(broker.clone(), limits());
+    for value in [json!("priority"), Value::Null] {
+        let wire = json!({"model":"fixture","input":[],"service_tier":value});
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    RequestContext::default()
+                )
+                .await
+                .is_err()
+        );
+    }
+    let provider = provider
+        .with_verbosity_instruction("fixture".into(), "low".into(), "guide".into())
+        .unwrap();
+    let wire = json!({"model":"fixture","input":[],"service_tier":null,"text":{"verbosity":"low"}});
+    assert!(
+        provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default()
+            )
+            .await
+            .is_err()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}

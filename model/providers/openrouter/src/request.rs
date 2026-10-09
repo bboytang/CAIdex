@@ -32,6 +32,8 @@ pub(crate) fn compile(
     runtime_context: bool,
     efforts: Option<&HashMap<String, String>>,
     reasoning_support: CapabilitySupport,
+    verbosity: Option<&HashMap<String, String>>,
+    tiers: Option<&HashMap<String, String>>,
 ) -> ProviderResult<CanonicalRequest> {
     if request.wire().to_string().len() > budget {
         return Err(ProviderError::new(413, "invalid_or_oversized_body"));
@@ -58,19 +60,45 @@ pub(crate) fn compile(
             }
             wire.as_object_mut().unwrap().remove(key);
         }
-        if let Some(text) = wire.get("text").filter(|v| !v.is_null()) {
+    }
+    if let Some(text) = wire.get("text") {
+        if !runtime_context && verbosity.is_none() {
+            return Err(unsupported());
+        }
+        if !text.is_null() {
             fields(text, &["format", "verbosity"])?;
             if let Some(format) = text.get("format") {
+                if !runtime_context {
+                    return Err(unsupported());
+                }
                 fields(format, &["type"])?;
                 if format["type"] != "text" {
                     return Err(unsupported());
                 }
             }
-            if text.get("verbosity").is_some_and(|v| !v.is_null()) {
-                return Err(unsupported());
+            if let Some(level) = text.get("verbosity")
+                && !(level.is_null() && runtime_context)
+            {
+                let level = level.as_str().ok_or_else(invalid)?;
+                let instruction = verbosity
+                    .and_then(|m| m.get(level))
+                    .ok_or_else(unsupported)?;
+                let original = match wire.get("instructions") {
+                    None | Some(Value::Null) => "",
+                    Some(Value::String(value)) => value,
+                    _ => return Err(invalid()),
+                };
+                wire["instructions"] = if original.is_empty() {
+                    instruction.clone()
+                } else {
+                    format!("{original}\n{instruction}")
+                }
+                .into();
             }
+        } else if !runtime_context {
+            return Err(unsupported());
         }
-        // Only neutral text is consumed; meaningful output controls remain fail-closed.
+        // Only explicit guidance and neutral text are consumed; structured output stays closed.
         wire.as_object_mut().unwrap().remove("text");
     }
     fields(
@@ -87,8 +115,14 @@ pub(crate) fn compile(
             "previous_response_id",
             "background",
             "reasoning",
+            "service_tier",
         ],
     )?;
+    if let Some(tier) = wire.get("service_tier") {
+        let source = tier.as_str().ok_or_else(invalid)?;
+        let native = tiers.and_then(|m| m.get(source)).ok_or_else(unsupported)?;
+        wire["service_tier"] = native.clone().into();
+    }
     if let Some(reasoning) = wire.get("reasoning") {
         fields(reasoning, &["effort"])?;
         let source = reasoning["effort"].as_str().ok_or_else(invalid)?;

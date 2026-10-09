@@ -52,3 +52,15 @@
 新增9项隔离HTTP验收：身份消费与GET/POST隔离、默认/turn-state拒绝、坏正文/ID/历史控制、逐route与映射一次、配置/Unsupported门控、源预算先于消费、SSE组合无损、7种显式词汇及none/能力不升级、Gateway监听与模型身份隔离。定向23/0/0已通过；完整本地workspace533/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；workspace逐名精确旧524+9、旧Runtime名完全保持，旧14项测试逐字保留，依赖/共享/其他Provider/workflow不变。本步精确源码三平台CI已验，见下段。日志`/tmp/caidex-openrouter-context/`。现阶段不认领工具历史/Lite/实际固定OpenRouter Runtime/商业Live或Full。
 
 精确源码`92d0612a50bd23dd13c0d69e2536636e7c6320b1`/[CI38005373396](https://github.com/bboytang/CAIdex/actions/runs/38005373396)整体completed/success。Linux114072825747/Windows114072825607/macOS114072825701各17steps成功或条件跳过；完整raw2175/1861/1872行，workspace533/528/532（failed0，ignored59/57/57）、既有固定Runtime57/56/56（failed/ignored0），OpenRouter23、Qwen72、DeepSeek57每名每平台一次。全通过名591/584/588精确为旧CI38004040230集合+9，无遗漏/重复；既有Runtime通过名完全保持。watch及三份完整日志下载exit0，ci-check通过；日志`/tmp/caidex-ci-38005373396-{linux,windows,macos}-raw.log`及status.json，checker/result在`/tmp/caidex-openrouter-context/`。这些Runtime回归不代验实际OpenRouter接线或商业Live/Full，也不代验iOS应用。
+
+
+## 逐route正文控制（本步）
+
+2026-10-09；依据固定Runtime text/verbosity与service_tier构造，以及[Responses请求参考](https://openrouter.ai/docs/api/api-reference/responses/create-responses)和[Service Tiers](https://openrouter.ai/docs/guides/features/service-tiers)。直接请求参考页面本轮404，官方搜索缓存可读；实时Service Tiers明确支持Responses及实际tier/路由差异，不用Chat兼容性推测完整Responses。
+
+- `with_verbosity_instruction(route, source, instruction)`仅接受low/medium/high和非空指导，route必须配置且source不重复。原instructions保留，追加一次换行+指导；缺省/null/空instructions直接使用指导，不重复编译或改变input/稳定ID。此为执行端显式文本指导，不是原生verbosity精确等级、结构输出或输出长度承诺。只消费当前已支持的text形状，未知字段/JSON结构输出拒绝；没有runtime_context时身份与text.format仍拒绝。
+- `with_service_tier_mapping(route, source, native)`允许auto/default组内部显式映射、flex同值、priority/fast别名组、ultrafast同值；不将priority/flex显式请求静默降级default，scale/未知/跨组/重复/空/未配置拒绝。Null不提供隐式默认；只映射一次，原生返回实际service_tier保留，JSON/SSE不伪造SLA、账单或供应商身份。
+- tier值是请求政策，不保证有对应模型端点或实际按请求档服务；官方有按可用池改变实际服务tier的行为。require_parameters=true/allow_fallbacks=false保持，不把tier或model slug当稳定后端；后端身份/原生工具/推理历史另验。无真实模型调用或计费。
+- 源预算先于身份消费/指导追加，编译后共享预算仍在Key/POST前校验。默认未配置text/tier行为、取消/deadline、turn-state拒绝、summary/context/include/原生推理输入/工具门控保持；仅OpenRouter源码/测试，不改共享传输/Broker/Gateway/Runtime/其他Provider/依赖/workflow。
+
+新增8项覆盖逐route/三种指导/原instructions、非Runtime身份/结构输出拒绝、配置/坏值/重复/跨档门控、源与编译预算先于凭据、tier别名映射一次及实际返回保留、context+effort+正文SSE组合、默认/Null拒绝。首轮30/1为SSE夹具未设置stream=true，补齐后定向31/0/0；旧23项测试逐字保留。完整本地workspace541/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过，workspace旧533通过名精确+8、旧Runtime完全保持；依赖/共享/其他Provider/Runtime/workflow未改。本步精确源码三平台CI待验，日志`/tmp/caidex-openrouter-body/`；不认领原生工具历史/Lite/实际OpenRouter Runtime/商业Live/Full。
