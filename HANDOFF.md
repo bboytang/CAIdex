@@ -1,8 +1,20 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（正式CLI文档复核；F/G恢复点原样保留）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（CLI正式文档复核，保留F/G未提交恢复点）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
+
+本轮按用户CLI正式指令只复核设计，不继续F/G源码或CLI编码。起点main/HEAD=origin/main=1d64acbb1600b000926b033f32171a354f4b8ece；已有未提交HANDOFF与Qwen request.rs/tests/provider.rs，逐文件SHA256基线保存在/tmp/caidex-cli-docs-current-audit/baseline.json。CLI V1及V3/Account/UI/Credentials/README已在98b9075/1d64acb归档，保留既有架构/历史CI/34项待实施矩阵，不重复新建。
+
+已读取指定方案、CLI源码/测试及固定上游；十一份d27764b源码重新与公开固定commit逐字核对、隔离CODEX_HOME版本及五项help检查通过（共六项），未启动TUI/登录/模型。普通exec Never/AutoReview例外、MCP elicitation Cancel、PKCE/Device/无注册、统一账户sync继承/首次历史上传许可、独立Host权限均保持。补清exec fork无prompt的ForkOnly只创建分支/无Turn，0不当任务成功；记录固定exec resume无候选的新建分支，CAIdex明确目标恢复契约须拒绝并展示新建入口，不静默启动新任务。CLI/V3/README/HANDOFF为本轮修改；Account/UI/Credentials已覆盖要求，无直接冲突，原样保留。
+
+F/G中断点（未完成）：Qwen仅双runtime_context+native_history策略消费summary auto/context all_turns/include，复用v1/v2/v3及一次effort/source预算。有效RED41560 exit101；GREEN4223 exit0、定向1通过；完整Qwen72331 exit101：60通过/2失败/0忽略。失败为runtime_history_controls_cannot_weaken_carrier_scope_prefix_version_or_tool_policy（provider.rs:5117）及runtime_history_controls_stream_cancel_drop_and_deadline_never_publish_tools_or_carriers（:4942），均Option::unwrap(None)；根因尚未定位，不宣称生产安全缺陷或完整通过。三份日志/tmp/caidex-qwen-history-controls/{red,green,boundaries}.log，基线同目录baseline.json；本轮只读核对日志，不重跑/修复。两份草稿原字节保留、不纳入文档提交，无运行中测试；workspace/Clippy/新源码三平台CI尚未执行。
+
+下一次F/G续接先核对两份diff与上述失败，定位夹具/源绑定/流事件原因，最小修复并完成定向边界、workspace/Clippy/fmt/diff及精确源码三平台CI；通过后再Lite/实际固定Qwen Runtime→OpenRouter→H/I及既定后续。不借ae0b2d0/CI37939652724代验未提交控制组合，不启动账户/CLI/UI、不读用户Key/付费API、不清target。完整CLI/H/I/P/R功能仍待实现；H持久Host/审批，I共享认证/账户memory，P终端整合，R真实平台/认证/多端验收。
+
+文档最终检查通过：16份Markdown/66本地链接/22锚点，CLI34/账户55/UI16验收行及17实体/A–R阶段表原样保持，历史CI/凭据证据保留；195个其他tracked文件（含两份Qwen草稿）SHA256不变，git diff --check通过。检查脚本/结果/tmp/caidex-cli-docs-current-audit/{check.py,result.json}，固定源码/版本help证据同目录source-check.json及*-help.txt。未运行Rust编译、完整CI、TUI、真实认证或模型；纯文档workflow路径不触发CI。按已有授权仅四文档独立提交/push，标题docs: clarify CLI fork-only and preserve F/G recovery；不提交两份Qwen草稿。恢复先核对实际HEAD/origin/status，本轮文档无待补需求，下一步仍先处理上述F/G失败。
+
+### 上一轮CLI文档已完成
 
 本轮只复核并补全正式CLI文档，不推进F/G生产源码。起点main/HEAD=origin/main=da2a99b187745c1a4094b219f87896f8299b6d2b，工作区干净，199个tracked文件已建立SHA256基线。CLI V1已存在，不重复建架构；目标仅CLI/V3/Account/UI/Credentials/README/HANDOFF七文档，保留全部历史CI/验收行与A–R顺序。
 
@@ -154,7 +166,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- 当前branch main；本轮起点HEAD/origin da2a99b187745c1a4094b219f87896f8299b6d2b，Qwen源码ae0b2d059f83b46548388e72ad04719e25cd59f5及CI37939652724已完整验收，收尾四文档已提交/push。七文档已以98b90756a1fec4a146a13c915acd5aad5395776b提交/push，标题docs: verify CLI configuration and account trust boundaries；推送后HEAD/origin一致且工作区干净已核对，当前收尾仅本文件记录，标题docs: record CLI documentation handoff；无生产源码草稿或其他并行修改。恢复核对实际HEAD/origin/status，从Qwen Runtime控制组合/Lite接续；本轮只读/文档检查不代验CLI/H/I/P/R，不额外触发完整Rust CI。
+- 当前branch main；文档复核起点HEAD/origin 1d64acbb1600b000926b033f32171a354f4b8ece。未提交Qwen request.rs/tests/provider.rs是F/G控制组合草稿，已知60通过/2失败，未完成workspace/Clippy/精确源码CI；本轮不修改/提交。另CLI/V3/README/HANDOFF四文档本轮收尾，按既有授权独立提交/push，不额外运行纯文档Rust CI。原Qwen custom ae0b2d0/CI37939652724及CLI98b9075/1d64acb证据保持。最终实际HEAD/origin/status在文档提交后核对。
 
 - 此前工具子阶段branch main，源码HEAD/origin c5c021daf999fa1b4cff755b3633c106d88266f4已独立commit/push（`feat(qwen): bind native function tools and paired history`），精确CI37932689731已完整验收。收尾文档提交仅README/Qwen/Gateway/HANDOFF，标题`docs: record Qwen tools three-platform verification`；无其他并行成果/未完成功能草稿，恢复先核对HEAD/origin/status，后续custom/Lite/实际Runtime按既定顺序。
 

@@ -14,6 +14,8 @@ CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通e
 
 完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为Runtime控制组合、Lite及实际固定Runtime接线，再OpenRouter；精确源码和CI证据见HANDOFF。
 
+续接复核补清无头 `exec fork` 的ForkOnly：不带prompt只创建分支，成功不代表执行任务；恢复目标不存在时不静默新建任务。此为P/R待实现契约，当前开发CLI仍无exec/fork/resume。Qwen控制组合的未提交草稿及未通过测试保留在HANDOFF，不由本次文档核对代验。
+
 ## 开发与验证
 
 需要 Rust 1.99.0、Python 3、Codex CLI 0.160.1。Node 22.23.3 用于 CI 工具。

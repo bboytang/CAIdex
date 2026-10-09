@@ -126,6 +126,8 @@ caidex --help
 | `plugins` | 上游 `plugin` 已有 | 沿用实际管理能力与权限，保留singular别名；远程作用在Host，不隐式本机安装 |
 | `doctor/--version/--help` | 上游有同名；CAIdex自有已实现 | 当前doctor只离线元数据；完整doctor后续增加脱敏分项，云不可用与本地故障分别报告。版本显示CAIdex及锁定Runtime；help英文且只标实际实现状态 |
 
+`exec` 子命令不能套用顶层TUI picker：固定 `exec fork <THREAD_ID> [PROMPT]` 必须指定来源，不支持TUI的 `--last` 选择；省略prompt且没有图片/output-schema/output-last-message/ephemeral时是 **ForkOnly**，只确认新线程，不启动Turn。带图片、输出选项或ephemeral而无prompt则拒绝；显式 `-` 才按stdin读取fork prompt。`exec resume` 的 `--last` 位置参数重解释及prompt/stdin沿固定解析；源码在找不到resume候选时有新建线程分支，CAIdex接入须按本节明确目标/授权Host的恢复契约拒绝不存在或不明确的目标，不能静默把恢复失败变成新任务。此差异要在P展示错误及新建入口，不能声称上游本来就拒绝。
+
 参数错误在读取秘密/提交工具前拒绝；远程写入须独立 Host ACL，不因为 `--owner` 或 `--host` 字符串获得授权。未来管理命令的 `--json` 为版本化对象；task attach是JSONL事件。凡交互确认必需且无TTY的命令，要求明确范围与操作选项，否则失败，不能猜用户选择。
 
 `task submit` 使用 Host 允许的持久任务审批配置，受理结果显示实际 policy/reviewer/sandbox，不能复制 exec 的无头 Never 默认值后假称能等待跨端人工审批。自动化提交也不能擅自提升该配置；Host 不支持持久受理或所需审批能力时明确拒绝。`exec` 仍等待最终结果，不因已有手机客户端在线就改变审批模式。
@@ -357,7 +359,7 @@ CAIdex扩展事件使用显式 `exec --json --json-format caidex-v1`，task atta
 
 | 码 | 范围 / 含义 |
 | --- | --- |
-| 0 | 操作确认成功；exec仅真实成功终态，submit仅持久受理，attach仅正常detach/观察结束；status成功读到failed任务仍可0，任务状态在payload |
+| 0 | 操作确认成功；启动Turn的exec仅真实成功终态，exec fork的ForkOnly仅确认分支创建，submit仅持久受理，attach仅正常detach/观察结束；status成功读到failed任务仍可0，任务状态在payload |
 | 1 | 已有CLI运行/参数错误保持现状；正式exec沿固定上游一般失败/被中断终态1，不承诺Ctrl+C总是130 |
 | 2 | 未来clap参数/缺非交互确认选项错误，与运行失败区分；现有手写credentials/main目前仍1 |
 | 3 / 4 | CAIdex新增管理命令需要账户认证/会话失效 / 权限或策略禁止；exec为兼容仍1，细类写安全error |
@@ -446,6 +448,8 @@ CLI-15/34还须用Windows/Linux真实管道验证UTF-8/BOM、UTF-16LE/BE BOM、�
 CLI-11/15/16/32还须验证：exec提交回应丢失、未收到Thread ID时可按原operation/Host查询而无重复执行；超时与正常终态竞态、interrupt仅受理但终态未知时75、确认中断后124；JSONL观察端Ctrl+C/SIGTERM/断管道后无工具中断或task取消，随后可按原ID/seq恢复。CLI-17/19/21注入取消/到期与授权或token返回竞态：不再轮询/接受迟到回调，不保存新登录或启动同步；若服务端已签发会话，尝试独立撤销并如实记录待确认，秘密只在安全存储。不因取消本次登录撤销另一已有效会话。
 
 CLI-17/19/21/30还须注入非官方HTTPS验证URL、issuer/资源audience不匹配、恶意项目配置及模型Endpoint替换：认证失败且无账户令牌或模型Key发往错误目标，测试/生产会话存储隔离。CLI-08/33验证基础配置与Profile层、同名旧/新格式冲突、显式导入及命令作用域；拒绝时源配置不变，账户/Host权限不被Profile覆盖。上述检查仍归原34项，不增加通过记录。
+
+CLI-11/15/34须分别验证TUI fork与无头exec fork：无prompt的ForkOnly仅产生已确认新线程/父关联，不产生Turn、模型请求或伪turn.completed，0只表示分支创建；无prompt搭配图片/输出选项/ephemeral和不存在来源应拒绝。exec resume目标不存在或 `--last` 无授权候选时不进入新建任务分支；带prompt、显式 `-` 及 `--last` 位置参数分别核对，不能用help成功代替实际恢复测试。以上仍待实现/未执行，固定源码依据为第3节exec cli/lib。
 
 ## 16. 实施时待验证的技术细节
 

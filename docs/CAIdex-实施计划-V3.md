@@ -72,6 +72,8 @@ H/P/R补验CLI-11/15/16/32的观察、查询与超时边界：task attach JSONL�
 
 配置复核另读取固定core config及config loader：P保留基础用户配置叠加Profile的语义，显式映射CAIdex目录；CLI-08/33验证旧/新Profile同名冲突、非秘密导入范围及命令作用域，不自动修改原Codex配置。I定义独立账户issuer/client/资源audience及官方认证端点信任配置，P接入PKCE/Device，R实测CLI-17/19/21/30；模型Endpoint、项目配置或通用覆盖不能改变账户认证目标或接收Account Token。十一份源码及help核对仅是设计依据，不代表功能验收。
 
+P/R的CLI-11/15/34另验无头exec fork的ForkOnly例外：无prompt时仅确认分支、无Turn/模型调用，0不代表任务执行；图片/输出选项/ephemeral无prompt拒绝，与TUI picker分开。固定exec resume找不到候选可新建线程，CAIdex接入按明确目标/Host恢复契约拒绝，避免静默开始新任务；保留显式新建入口及参数解析，差异须有实际证据。详见CLI第4/12/15节，仍待实施，不改H/I认证/同步或A–R顺序。
+
 ## 当前协议基准与限制
 
 - 固定 Codex 0.160.1 / `d27764b82f7118f674371e6d6e76271d9d606edb`，通过 JSONL stdio 初始化和收发；不依赖 UI 专有源码。
