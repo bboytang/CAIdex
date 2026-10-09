@@ -1,6 +1,6 @@
 # CAIdex Qwen Provider：设计与验收
 
-阶段 F/G；2026-10-09。代码 `model/providers/qwen`。本步为原生目录及基础 Responses 接入，沿用既定 ModelProvider/Custom transport/Credential Broker/Gateway；不另造 HTTP 框架、Agent 或工具执行器。完整 Qwen Codex 兼容性、商业 Live/Full 和生产 Host **尚未验收**，不能因目录或文本请求成功升级兼容等级。
+阶段 F/G；2026-10-09。代码 `model/providers/qwen`。当前包括原生目录/基础 Responses 及显式 Runtime 控制/逐模型推理接入，沿用既定 ModelProvider/Custom transport/Credential Broker/Gateway；不另造 HTTP 框架、Agent 或工具执行器。完整 Qwen Codex 兼容性、商业 Live/Full 和生产 Host **尚未验收**，不能因目录或文本请求成功升级兼容等级。
 
 ## 官方契约与执行端配置
 
@@ -27,7 +27,7 @@ ModelProvider 六方法全部接入：
 
 本步支持文本字符串或user/assistant/system/developer消息、instructions、stream、max_output_tokens及合法temperature/top_p。结构化文本按角色校验，developer保持原角色和顺序，不沿用DeepSeek的降级规则；完整assistant输出消息要求id/status/completed/content数组，半成品历史拒绝。
 
-服务会忽略未列控制且默认store=true，因此本步采用允许字段校验并显式写store=false。背景false只表示本地前台语义，在发送前消费；store=true/background=true、服务端conversation/previous_response_id、tools/choice/parallel、reasoning控制、text/verbosity/结构输出、include、client/cache元数据、媒体及未知字段均在Key前拒绝，不能静默变成普通聊天。源请求与补充store后的请求各自受字节预算约束；原生max_output_tokens最低16。nullable普通可选参数保持原值，store null仍编译false。
+服务会忽略未列控制且默认store=true，因此本步采用允许字段校验并显式写store=false。背景false只表示本地前台语义，在发送前消费；默认策略下，store=true/background=true、服务端conversation/previous_response_id、tools/choice/parallel、reasoning控制、text/verbosity/结构输出、include、client/cache元数据、媒体及未知字段均在Key前拒绝（以下显式策略仅开放列出的本地控制/推理映射），不能静默变成普通聊天。源请求与补充store后的请求各自受字节预算约束；原生max_output_tokens最低16。nullable普通可选参数保持原值，store null仍编译false。
 
 原生message/reasoning summary、usage和未知扩展按完整JSON/SSE保留。未声明function/custom/MCP/内置工具调用及相关事件拒绝，流关闭真实socket/释放slot，不交付可执行工具；不把reasoning summary当OpenAI加密载体。原生turn-state头拒绝，未绑定reasoning输入不能用于继续线程。本步不建立签名、历史来源认证或原生历史回放。
 
@@ -52,9 +52,21 @@ ModelProvider 六方法全部接入：
 
 精确源码`3638d13863b339e230aa884820a8ff4b840526e6`/[CI37888877980](https://github.com/bboytang/CAIdex/actions/runs/37888877980)已completed/success。Linux113685036842、Windows113685037198、macOS113685037053各17steps成功或条件跳过，完整raw2059/1745/1756行；workspace452/447/451（0failed，ignored52/50/50）、既有固定Runtime50/49/49（0failed/ignored）、Qwen14每名每平台一次，DeepSeek57保持。全部通过名503/496/500等于旧精确37886226991集合加14新名，无遗漏/重复；watch84155、状态/完整日志下载及逐名checker均exit0。检查脚本`/tmp/caidex-qwen-basic-ci-check.py`，结果同前缀ci-result.json，日志`/tmp/caidex-ci-37888877980-{linux,windows,macos}-raw.log`及status.json/watch.log。固定Runtime回归不是实际Qwen工具/历史接线验收，商业Live/Full仍未验。
 
+
+## 显式Runtime控制与逐模型推理（当前子阶段）
+
+配置入口独立opt-in，默认严格路径不变：
+
+- `with_runtime_context()`仅在执行端消费`session_id/x-client-request-id/x-codex-turn-metadata`及body `client_metadata/prompt_cache_key`。metadata只能是字符串值对象，cache key须合法非空字符串，可选null不启用功能；取消token和绝对deadline保留。普通模型目录可消费同一attribution，绝不转发身份给供应商、不启用DashScope服务端缓存。输入/输出未绑定turn-state仍拒绝。
+- 本地中性`text.format={type:text}`在该策略下消费，不宣称结构化输出。`with_verbosity_instruction(level, instruction)`接受low/medium/high到非空执行端指令的一次映射，追加既有instructions，保留原顺序和developer角色；不是原生verbosity尺度保证。未知/重复映射、JSON格式或未知text字段拒绝。没有Runtime策略时，单独verbosity配置不接受中性format或local metadata。
+- `with_reasoning_effort_mapping(model, source, native)`绑定已配置的route/model ID，不按名称猜测、不对其他模型继承。源与目标只允许none/minimal/low/medium/high/xhigh/max；缺失、未知、重复、未映射值或summary/context控制在Key前拒绝。官方原生模型可能进一步归一化这些值；执行端须按实际model/version建立兼容报告，显式映射不是等效推理强度保证。已声明reasoning Unsupported时拒绝非none，none可明确关闭；Unknown仍不提升为Supported/Full。不替用户编造默认effort，也不使用已弃用的enable_thinking/thinking_budget。
+- 原请求在消费控制前先做字节预算，补充store/映射/指令后再检查；native model替换仍受共享传输预算。未知安全、工具、历史、加密include不会因任何单独策略而被忽略。本步不实现工具或summary历史回放。
+
+新增7项合成loopback测试覆盖JSON/SSE完整native保留、nullable控制、所有7级及两个route不同映射/无回退、能力禁用、坏控制与不完整策略Key/POST为零、配置失败、原始/扩展预算、目录及Gateway元数据/Bearer隔离、deadline/取消/Drop真实socket。首次37935测试误用错误字段名导致编译失败，不算RED；修正后50156编译成功实际400 qwen_unsupported_context，为有效RED。47136为20/1（取消分类误期望499），39269为20/1（stall模式不发header导致超时），按共享现有契约修正夹具；48999定向21/0/0通过。日志`/tmp/caidex-qwen-controls-{red,valid-red,green,boundaries,boundaries-fixed,workspace,clippy}.log`；两处新增if风格按Clippy要求修正，最终workspace75208 exit0：459/0/52、Qwen21每名一次、原452通过名保持；全workspace/all-targets Clippy-D warnings exit0，fmt/diff及7任务路径/16Markdown/58本地链接/21锚点检查通过。源码/依赖/workflow及其他文档与01f70ad逐字节相同（本任务7路径除外）；CLI34待实施、A–R、旧CI证据保持。checker `/tmp/caidex-qwen-controls-local-check.py`及同前缀local-result.json。新源码精确三平台CI待提交后验收，不借14项旧CI代验21项。
+
 ## 后续实施顺序
 
 1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
-2. 按实际Qwen wire接入显式Runtime attribution/正文控制和逐模型推理参数；随后原生function/namespace/custom、tool choice与成对结果、完整summary历史绑定/重放，验证终态后交付工具。不盲复制DeepSeek明文content或Gemini签名契约。
+2. 当前显式Runtime attribution/正文控制和逐模型推理参数21项及workspace/Clippy本地通过，先完成新源码精确三平台验收；随后原生function/namespace/custom、tool choice与成对结果、完整summary历史绑定/重放，验证终态后交付工具。不盲复制DeepSeek明文content或Gemini签名契约。
 3. 单独核对Lite/Code Mode、并行与本地交付策略及native能力边界，再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

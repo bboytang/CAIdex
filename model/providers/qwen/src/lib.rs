@@ -18,12 +18,19 @@ use caidex_model_core::{
 use caidex_provider_custom::{ConfiguredModel, CustomResponses, CustomResponsesProvider};
 use futures_util::{StreamExt, stream};
 use serde_json::Value;
-use std::{collections::HashSet, sync::Arc, time::Instant};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Instant,
+};
 
 pub struct QwenProvider<S: SecretStore> {
     responses: CustomResponsesProvider<S>,
     models_endpoint: CustomResponses,
     limits: Limits,
+    runtime_context: bool,
+    verbosity_instructions: HashMap<String, String>,
+    reasoning_efforts: HashMap<String, HashMap<String, String>>,
 }
 impl<S: SecretStore + 'static> QwenProvider<S> {
     pub fn new(
@@ -67,13 +74,59 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             )?,
             models_endpoint,
             limits,
+            runtime_context: false,
+            verbosity_instructions: HashMap::new(),
+            reasoning_efforts: HashMap::new(),
         })
+    }
+    /// Consume executor-local attribution and neutral text controls, not caching.
+    pub fn with_runtime_context(mut self) -> Self {
+        self.runtime_context = true;
+        self
+    }
+    /// Executor guidance; does not promise a provider-native verbosity scale.
+    pub fn with_verbosity_instruction(
+        mut self,
+        verbosity: String,
+        instruction: String,
+    ) -> ProviderResult<Self> {
+        if !matches!(verbosity.as_str(), "low" | "medium" | "high")
+            || instruction.trim().is_empty()
+            || self.verbosity_instructions.contains_key(&verbosity)
+        {
+            return Err(ProviderError::new(400, "qwen_invalid_verbosity_mapping"));
+        }
+        self.verbosity_instructions.insert(verbosity, instruction);
+        Ok(self)
+    }
+    /// Per-route, executor-owned mapping; do not infer support from model names.
+    pub fn with_reasoning_effort_mapping(
+        mut self,
+        model: String,
+        effort: String,
+        native: String,
+    ) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !request::valid_effort(&effort)
+            || !request::valid_effort(&native)
+            || self
+                .reasoning_efforts
+                .get(&model)
+                .is_some_and(|m| m.contains_key(&effort))
+        {
+            return Err(ProviderError::new(400, "qwen_invalid_effort_mapping"));
+        }
+        self.reasoning_efforts
+            .entry(model)
+            .or_default()
+            .insert(effort, native);
+        Ok(self)
     }
     pub async fn discover_models(
         &self,
-        mut context: RequestContext,
+        context: RequestContext,
     ) -> ProviderResult<Vec<NativeModel>> {
-        validate_context(&context)?;
+        let mut context = self.native_context(context)?;
         // One absolute budget covers the whole scan, not a fresh timeout per page.
         context.deadline = Some(
             context
@@ -124,19 +177,33 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
         Err(ProviderError::new(413, "qwen_catalog_limit"))
     }
     fn prepare(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
-        if self.responses.metadata(request.model())?.capabilities.text
-            == CapabilitySupport::Unsupported
-        {
+        let capabilities = self.responses.metadata(request.model())?.capabilities;
+        if capabilities.text == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_text"));
         }
-        request::compile(request, self.limits.request_bytes)
+        let efforts = self.reasoning_efforts.get(request.model());
+        request::compile(
+            request,
+            self.limits.request_bytes,
+            self.runtime_context,
+            &self.verbosity_instructions,
+            efforts,
+            capabilities.reasoning,
+        )
     }
-}
-fn validate_context(context: &RequestContext) -> ProviderResult<()> {
-    if context.headers.iter().next().is_some() {
-        return Err(ProviderError::new(400, "qwen_unsupported_context"));
+    fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
+        if context.headers.iter().any(|(name, _)| {
+            !self.runtime_context
+                || !matches!(
+                    name,
+                    "session_id" | "x-client-request-id" | "x-codex-turn-metadata"
+                )
+        }) {
+            return Err(ProviderError::new(400, "qwen_unsupported_context"));
+        }
+        context.headers = ContextHeaders::default();
+        Ok(context)
     }
-    Ok(())
 }
 fn response_headers(headers: &ContextHeaders) -> ProviderResult<()> {
     if headers.get("x-codex-turn-state").is_some() {
@@ -211,7 +278,7 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
-            validate_context(&context)?;
+            let context = self.native_context(context)?;
             let request = self.prepare(request)?;
             let response = self.responses.create_response(request, context).await?;
             response_headers(&response.headers)?;
@@ -225,7 +292,7 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
-            validate_context(&context)?;
+            let context = self.native_context(context)?;
             let request = self.prepare(request)?;
             let mut response = self.responses.stream_response(request, context).await?;
             response_headers(&response.headers)?;
