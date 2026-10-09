@@ -12,7 +12,7 @@
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，下一步Qwen/OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接。本次复核补正固定exec的stdin编码/空管道边界，34项CLI验收仍全部待实现、未执行；当前F/G恢复点保持Qwen原生工具与summary历史绑定，精确源码和CI证据见HANDOFF。
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接。本次复核补正固定exec的stdin编码/空管道边界，34项CLI验收仍全部待实现、未执行；Qwen原生summary历史已独立验收，当前F/G恢复点为原生工具/choice/成对结果，精确源码和CI证据见HANDOFF。
 
 ## 开发与验证
 
@@ -45,7 +45,7 @@ node scripts/codex-binary.mjs
 - `model/providers/google`：Gemini 原生 Models/generateContent、媒体/推理/结构输出和绑定历史；Gateway 与固定经典/Lite Runtime 离线接线已三平台验收，商业模型兼容性待验。
 - `model/providers/ollama`：复用共享传输的原生 Responses 适配，六方法、能力/推理、媒体/结构输出、绑定历史和 deferred 工具发现已三平台离线验收；固定经典 Runtime MCP 执行/重启及 Lite Code Mode 审批/执行/取消/磁盘恢复亦已三平台验证，真实 daemon/模型兼容性待验。
 - `model/providers/deepseek`：原生 Models 目录、六方法和经典文本 JSON/SSE，复用共享传输与独立执行端凭据；基础 Gateway、显式本地上下文、developer 优先指令与 verbosity 编译已三平台离线验收；新增显式 Classic 函数/namespace、明文推理绑定历史及执行端 effort 映射也已分别完成精确三平台离线验收；新增独立显式 custom apply_patch 与 v2 历史绑定（grammar 仅作指导）已精确三平台离线验收；显式 Runtime+history 组合新增本地 summary auto/context all_turns/include 控制，DeepSeek42 项及 workspace423/418/422 已精确三平台离线验收；多 reasoning/content-part 与交错流索引及未知扩展边界已精确三平台离线验收（DeepSeek46 项，workspace427/422/426）；显式 Lite custom→function、本地单调用及 v3 原生历史绑定已精确三平台离线验收（新增11项/共57项，workspace438/433/437）；默认仍 Classic-only，grammar 不承诺原生约束。其他高级控制和真实模型兼容性待验；固定Classic/Lite实际Runtime新增7项、累计Runtime50项本地通过（审批/临时执行/磁盘恢复/拒绝与取消），新接线已以1b501ba/[CI37886226991](https://github.com/bboytang/CAIdex/actions/runs/37886226991)独立三平台通过（Runtime50/49/49），不代表生产Host或Live/Full。
-- `model/providers/qwen`：原生分页目录/六方法、显式地域工作区与执行端Key、基础Classic文本JSON/SSE；复用Custom传输，默认不存服务端历史，不支持控制Key前拒绝。基础14项及workspace/Clippy本地通过，精确3638d13/[CI37888877980](https://github.com/bboytang/CAIdex/actions/runs/37888877980)三平台离线通过（workspace452/447/451，既有固定Runtime回归50/49/49）；新增显式本地Runtime控制、verbosity指令及逐route effort映射，7项新增/21项及workspace459/0/52、Clippy/fmt本地通过，精确311224b/[CI37890668777](https://github.com/bboytang/CAIdex/actions/runs/37890668777)三平台已验（workspace459/454/458，既有Runtime回归50/49/49）；本轮显式原生summary绑定历史新增11项/共32项本地定向通过，workspace470/0/52及Clippy/fmt/diff已通过，新源码CI待执行；工具/Lite/实际Qwen Runtime及商业Live/Full尚未验收，详见[Qwen设计与验收](docs/CAIdex-Qwen-Provider-设计与验收.md)。
+- `model/providers/qwen`：原生分页目录/六方法、显式地域工作区与执行端Key、基础Classic文本JSON/SSE；复用Custom传输，默认不存服务端历史，不支持控制Key前拒绝。基础14项及workspace/Clippy本地通过，精确3638d13/[CI37888877980](https://github.com/bboytang/CAIdex/actions/runs/37888877980)三平台离线通过（workspace452/447/451，既有固定Runtime回归50/49/49）；新增显式本地Runtime控制、verbosity指令及逐route effort映射，7项新增/21项及workspace459/0/52、Clippy/fmt本地通过，精确311224b/[CI37890668777](https://github.com/bboytang/CAIdex/actions/runs/37890668777)三平台已验（workspace459/454/458，既有Runtime回归50/49/49）；本轮显式原生summary绑定历史新增11项/共32项本地定向通过，workspace470/0/52及Clippy/fmt/diff已通过，精确a3e7e6d/[CI37929549601](https://github.com/bboytang/CAIdex/actions/runs/37929549601)三平台完整通过（workspace470/465/469，既有Runtime50/49/49，Qwen32每名一次）；工具/Lite/实际Qwen Runtime及商业Live/Full尚未验收，详见[Qwen设计与验收](docs/CAIdex-Qwen-Provider-设计与验收.md)。
 - `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和剩余兼容 API 接入待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。

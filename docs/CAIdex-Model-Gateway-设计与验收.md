@@ -191,4 +191,4 @@ Qwen后续显式控制本步只改Qwen lib/request，不改共享Gateway/传输�
 
 ## Qwen原生summary历史续接
 
-当前新增显式Classic无工具NativeHistory v1与增量投影：完整原生summary/未知JSON/SSE chunks、执行端/模型/compiled前缀/整组绑定、终态重建后载体、默认工具及MCP/tool-search拒绝、取消/Drop/socket/预算。只改Qwen，仍共享Custom传输/Broker，Gateway/Runtime实现未改；本地新增11项/共32项定向通过，workspace470/0/52及Clippy/fmt/diff本地通过，新源码CI待执行，旧311224b/CI37890668777不代验。具体契约与最终证据见[Qwen验收文档](CAIdex-Qwen-Provider-设计与验收.md)和[HANDOFF](../HANDOFF.md)。这不是实际Qwen Runtime工具接线/商业Live/Full；后续仍工具/choice/结果→Lite→固定Runtime→OpenRouter，不提前H/I/CLI。
+当前新增显式Classic无工具NativeHistory v1与增量投影：完整原生summary/未知JSON/SSE chunks、执行端/模型/compiled前缀/整组绑定、终态重建后载体、默认工具及MCP/tool-search拒绝、取消/Drop/socket/预算。只改Qwen，仍共享Custom传输/Broker，Gateway/Runtime实现未改；本地新增11项/共32项定向通过，workspace470/0/52及Clippy/fmt/diff本地通过，精确a3e7e6d/[CI37929549601](https://github.com/bboytang/CAIdex/actions/runs/37929549601)三平台完整通过：workspace470/465/469、既有Runtime50/49/49均0failed，Qwen32每名每平台一次，全通过名521/514/518精确为旧CI+11无遗漏/重复；旧311224b/CI37890668777不代验。具体契约与最终证据见[Qwen验收文档](CAIdex-Qwen-Provider-设计与验收.md)和[HANDOFF](../HANDOFF.md)。这不是实际Qwen Runtime工具接线/商业Live/Full；后续仍工具/choice/结果→Lite→固定Runtime→OpenRouter，不提前H/I/CLI。
