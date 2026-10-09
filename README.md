@@ -2,11 +2,13 @@
 
 基于真实 Codex Runtime 的 Windows、iOS 和 CLI 多模型客户端，目标支持独立 Chat、远程 Codex、官方统一 CAIdex 账户、跨模型长期记忆与可选云同步。当前仍处于基础工程开发阶段，完整客户端及账户/记忆/云服务尚未实现。
 
-正式目标架构：CAIdex 统一运营账户及 PostgreSQL + pgvector 云服务；Windows/iOS 本地缓存/记忆与 Host journal 保留 SQLite。记忆同步默认关闭，独立于自动记忆和 Chat 历史同步，首次开启须登录并确认范围；关闭采用账户级权威状态，支持保留或删除原云端记忆。记忆归属不可变 user_id，Chat/整合/Embedding 模型分开，跨模型共享不迁移活动 Codex 线程。账户登录不授予 Host 执行权限，用户模型 API Key 仍留在执行端；未登录/云故障时本地能力按既有权限继续。
+正式目标架构：CAIdex 统一运营账户及 PostgreSQL + pgvector 云服务；Windows/iOS/Linux CLI本地缓存/记忆与Host journal保留SQLite且逻辑分离。记忆同步默认关闭，独立于自动记忆和 Chat 历史同步，首次开启须登录并确认范围；关闭采用账户级权威状态，支持保留或删除原云端记忆。记忆归属不可变 user_id，Chat/整合/Embedding 模型分开，跨模型共享不迁移活动Codex线程。CLI只登录已有账户（Windows/iOS注册），桌面用浏览器PKCE、VPS/SSH用Device Code；登录继承账户已有记忆同步状态，Enabled不等于自动上传未授权历史本地数据。账户登录不授予 Host 执行权限，用户模型 API Key 仍留在执行端；未登录/云故障时本地能力按既有权限继续。
 
 规划云服务使用可替换 EmailSender（Brevo 优先、Resend 备用）及早期单实例 VPS，只做本机有限备份与用户导出，无异地备份；整台 VPS/磁盘损坏可能数据库和备份全损，本地缓存不保证全量恢复。详细边界与全部待实施验收见[Account/Memory/Cloud 设计](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)，按 V3 在 H/I 及后续客户端阶段实现，不代表当前已有账户/Memory Engine/UI。
 
 当前可以运行：执行端凭据 Broker、脱敏及 CLI 凭据状态/保存/删除，固定版本 app-server 的双向 JSONL 适配、Runtime facade（线程/轮次/Steer/interrupt、能力门控、审批/输入转交）、协议回归测试与离线 `caidex doctor`。完整协议调用入口保留常规和实验方法；具体模型/工具能力仍需逐项验证，详见能力对照。doctor 只创建隔离的临时线程，不启动模型轮次、不执行项目命令、不读取用户 Codex 登录配置。
+
+完整CLI目标是共享真实Host/固定Codex Runtime的英文TUI、无头exec、持久task、模型/Provider/Profile、账户会话、本地及跨端记忆、Remote与扩展管理；账户认证不代Host审批权限，exec与后台任务语义分开。详见[CLI完整交互与验收规范V1](docs/CAIdex-CLI-完整交互与验收规范-V1.md)，H/I提供底层契约，P整合CLI，R实测。**这些是规划，当前可执行CLI仍仅doctor、credentials status/set/remove、版本/帮助，CLI-01～34均未执行。**
 
 ## 开发与验证
 
@@ -45,6 +47,7 @@ node scripts/codex-binary.mjs
 - `upstream/codex`：版本/源码锁定、协议基准和上游许可证。
 - `assets/brand`：用户指定的品牌原件。
 - `docs/CAIdex-实施计划-V3.md`：阶段顺序与验收条件。
+- `docs/CAIdex-CLI-完整交互与验收规范-V1.md`：完整英文CLI/命令契约、PKCE/Device登录、账户级记忆同步、Host/审批/exec与34项待实施验收。
 - `docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md`：官方账户/PostgreSQL、长期记忆、账户级同步开关、隐私/删除/本机备份及待实施验收矩阵。
 - `docs/CAIdex-Model-Gateway-设计与验收.md`：模型协议/真实 wire 验证与 Gateway 恢复点。
 - `docs/CAIdex-OpenAI-Provider-设计与验收.md`：原生模型发现、认证/存储边界与离线验收。

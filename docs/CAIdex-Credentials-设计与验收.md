@@ -47,6 +47,14 @@ cargo run -p caidex-cli -- credentials --help
 cargo run -p caidex-cli -- credentials status --owner local --provider custom --profile main --store system
 ```
 
+## CLI完整配置与账户Token边界（I/P待实现）
+
+完整CLI规划Provider/Profile/Endpoint、模型发现/连接测试、默认配置及不回显Key交互输入，便捷入口复用现有Broker。保留上述credentials status/set/remove及--stdin和全部已验收证据；现有--profile仍是CredentialRef.profile，完整CLI顶层--profile/-p则沿上游配置层语义，用--credential-profile选择模型凭据。当前无掩码输入/Remote凭据管理/账户Token业务，不能将generic SecretKind支持当认证已实现。
+
+未来CAIdex Account access/refresh token使用独立namespace和会话归属，与用户模型API Key、Gateway随机token、Host SSH/Relay凭据隔离；可复用安全存储backend/脱敏能力，但不把账户Token存入模型CredentialRef或普通同步数据库，不用credentials命令手工替代官方登录/轮换。账户登录不授予模型Key读取或Host执行权限。Windows系统安全store，Linux优先Secret Service，无服务VPS须明确选Git外0700/0600受保护明文文件，不偷偷降级。
+
+CLI只登录已有账户，桌面系统浏览器PKCE、VPS/SSH Device Grant在I建立公开客户端协议/会话撤销，P实现终端入口；密码不进入CLI，令牌不回显、不作为argv、不进项目config/Chat/Memory/diagnostics。Endpoint改变不能向新未授权地址发送原Profile Key；GUI/CLI同执行端仅按权限共享引用，Remote不复制他端Key。完整规范见[CLI设计](CAIdex-CLI-完整交互与验收规范-V1.md)。账户/记忆隔离和认证安全另验，现有E阶段回归不代验未来CLI-06/07/21/30。
+
 ## iOS 原生接入契约（阶段 M）
 
 - Swift/UniFFI 适配实现 SecretStore 的 get/set/remove；Keychain generic-password 使用 CAIdex service 与完整 reference 作为账户标识。缺失返回 None，锁定/访问拒绝返回安全错误，不返回系统原始错误或秘密。

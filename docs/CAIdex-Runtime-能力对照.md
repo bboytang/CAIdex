@@ -80,13 +80,13 @@
 
 ## CLI 对照
 
-固定二进制 `codex --help` 已核对，但 CAIdex CLI 当前仅 doctor/help/version。TUI/exec/remote attach 等在 P 阶段整合，不能将协议保留标为 CLI 命令已实现。
+固定二进制 `codex --help` 已核对，CAIdex CLI当前仅doctor、credentials status/set/remove、help/version。TUI/exec/remote attach等在P阶段整合，不能将协议保留标为CLI命令已实现；正式命名/认证/记忆/审批契约见[CLI独立规范](CAIdex-CLI-完整交互与验收规范-V1.md)。
 
 | 上游入口 | 当前 CAIdex 与后续计划 |
 | --- | --- |
 | 无子命令交互 TUI、--remote、--remote-auth-token-env | P：保留上游英文，明确共享 Host/remote attach |
 | agents、exec、review、resume、queue、archive、delete、unarchive、fork | D 协议入口保留；P 原生命令接入待实现 |
-| login、logout、mcp、plugin、features | E/F 及 P：执行端凭据与原生配置/管理 |
+| login、logout、mcp、plugin、features | E/F及P：模型凭据/原生管理；CAIdex login/logout正式只管理CAIdex Account，不透传上游认证；MCP自身OAuth与账户独立 |
 | app-server、remote-control、exec-server | B/D 基础协议；H/L/Q/P 接入真实 Host/Remote |
 | sandbox、apply、--worktree | K/P：平台 sandbox、真实 Git/worktree 验收 |
 | completion、doctor、debug | CAIdex 自有基础 doctor 已实现，其余原生入口 P 对照 |
