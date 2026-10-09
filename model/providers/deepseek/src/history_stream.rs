@@ -15,6 +15,12 @@ fn invalid() -> ProviderError {
     ProviderError::new(502, "deepseek_invalid_history_stream")
 }
 
+struct NativeItem {
+    kind: String,
+    id: Value,
+    parts: Option<u64>,
+}
+
 /// Incremental text uses the existing native I/O. Tool calls are delivered
 /// only after terminal validation and exact native-history reconstruction.
 pub(crate) struct HistoryStream {
@@ -28,12 +34,11 @@ pub(crate) struct HistoryStream {
     chunks: Vec<Value>,
     pending: VecDeque<StreamEvent>,
     pending_bytes: usize,
-    indices: HashMap<u64, u64>,
+    items: HashMap<u64, NativeItem>,
+    pending_content: Vec<usize>,
     added: HashSet<String>,
-    next_index: u64,
     sequence: u64,
     reasoning_id: Option<String>,
-    native_reasoning_index: Option<u64>,
     terminal: bool,
 }
 impl HistoryStream {
@@ -56,12 +61,11 @@ impl HistoryStream {
             chunks: Vec::new(),
             pending: VecDeque::new(),
             pending_bytes: 0,
-            indices: HashMap::new(),
+            items: HashMap::new(),
+            pending_content: Vec::new(),
             added: HashSet::new(),
-            next_index: 1,
             sequence: 0,
             reasoning_id: None,
-            native_reasoning_index: None,
             terminal: false,
         }
     }
@@ -88,6 +92,68 @@ impl HistoryStream {
         });
         Ok(())
     }
+    fn emit_content(&mut self, chunk: usize) -> ProviderResult<bool> {
+        let mut wire = self.chunks[chunk].clone();
+        let source = wire["output_index"].as_u64().ok_or_else(invalid)?;
+        let item = self.items.get(&source).ok_or_else(invalid)?;
+        let reasoning = item.kind == "reasoning";
+        let mut output_index = 1u64;
+        let mut summary_index = wire["content_index"].as_u64().unwrap_or(0);
+        for index in 0..source {
+            let Some(previous) = self.items.get(&index) else {
+                return Ok(false);
+            };
+            if previous.kind == "reasoning" {
+                if reasoning {
+                    let Some(parts) = previous.parts else {
+                        return Ok(false);
+                    };
+                    summary_index = summary_index.checked_add(parts).ok_or_else(invalid)?;
+                }
+            } else {
+                output_index = output_index.checked_add(1).ok_or_else(invalid)?;
+            }
+        }
+        if reasoning {
+            wire["type"] = match wire["type"].as_str() {
+                Some("response.content_part.added") => "response.reasoning_summary_part.added",
+                Some("response.content_part.done") => "response.reasoning_summary_part.done",
+                Some("response.reasoning_text.delta") => "response.reasoning_summary_text.delta",
+                Some("response.reasoning_text.done") => "response.reasoning_summary_text.done",
+                _ => return Err(invalid()),
+            }
+            .into();
+            wire["output_index"] = 0.into();
+            wire["item_id"] = self
+                .reasoning_id
+                .as_ref()
+                .ok_or_else(invalid)?
+                .clone()
+                .into();
+            wire["summary_index"] = summary_index.into();
+            wire.as_object_mut().unwrap().remove("content_index");
+            if wire.get("part").is_some() {
+                wire["part"]["type"] = "summary_text".into();
+            }
+        } else {
+            wire["output_index"] = output_index.into();
+            if wire["type"] == "response.output_item.added" {
+                self.added
+                    .insert(item.id.as_str().ok_or_else(invalid)?.to_owned());
+            }
+        }
+        self.emit(wire)?;
+        Ok(true)
+    }
+    fn flush_content(&mut self) -> ProviderResult<()> {
+        // Reuse bounded native chunks; later reasoning waits for prior part counts.
+        for chunk in std::mem::take(&mut self.pending_content) {
+            if !self.emit_content(chunk)? {
+                self.pending_content.push(chunk);
+            }
+        }
+        Ok(())
+    }
     fn push(&mut self, event: StreamEvent) -> ProviderResult<()> {
         self.remaining = self
             .remaining
@@ -111,74 +177,96 @@ impl HistoryStream {
                 wire["response"]["output"] = json!([]);
                 self.emit(wire)?;
             }
-            "response.output_item.added" => match wire["item"]["type"].as_str() {
-                Some("reasoning") => {
-                    // shortcut: reject multiple native reasoning items until
-                    // their summary indices have an explicit streaming mapping.
-                    let index = wire["output_index"].as_u64().ok_or_else(invalid)?;
-                    if self.native_reasoning_index.replace(index).is_some() {
-                        return Err(invalid());
-                    }
-                }
-                Some(kind)
-                    if kind.ends_with("_call")
-                        && !matches!(kind, "function_call" | "custom_tool_call") =>
-                {
-                    return Err(invalid());
-                }
-                _ => {
-                    let source = wire["output_index"].as_u64().ok_or_else(invalid)?;
-                    if self.indices.insert(source, self.next_index).is_some() {
-                        return Err(invalid());
-                    }
-                    wire["output_index"] = self.next_index.into();
-                    self.next_index = self.next_index.checked_add(1).ok_or_else(invalid)?;
-                    if wire["item"]["type"] == "message" {
-                        self.added
-                            .insert(wire["item"]["id"].as_str().ok_or_else(invalid)?.to_owned());
-                        self.emit(wire)?;
-                    }
-                }
-            },
-            "response.output_text.delta" | "response.content_part.added" => {
+            "response.output_item.added" => {
                 let source = wire["output_index"].as_u64().ok_or_else(invalid)?;
-                wire["output_index"] = self
-                    .indices
-                    .get(&source)
-                    .copied()
-                    .ok_or_else(invalid)?
-                    .into();
-                self.emit(wire)?;
-            }
-            "response.reasoning_text.delta" => {
-                if wire["output_index"].as_u64() != self.native_reasoning_index
-                    || self.native_reasoning_index.is_none()
+                let kind = wire["item"]["type"].as_str().ok_or_else(invalid)?;
+                if kind.ends_with("_call") && !matches!(kind, "function_call" | "custom_tool_call")
                 {
                     return Err(invalid());
                 }
-                wire["type"] = "response.reasoning_summary_text.delta".into();
-                wire["output_index"] = 0.into();
-                wire["item_id"] = self
-                    .reasoning_id
-                    .as_ref()
-                    .ok_or_else(invalid)?
-                    .clone()
-                    .into();
-                wire["summary_index"] = wire["content_index"].clone();
-                wire.as_object_mut().unwrap().remove("content_index");
-                self.emit(wire)?;
+                if self
+                    .items
+                    .insert(
+                        source,
+                        NativeItem {
+                            kind: kind.into(),
+                            id: wire["item"]["id"].clone(),
+                            parts: None,
+                        },
+                    )
+                    .is_some()
+                {
+                    return Err(invalid());
+                }
+                if kind == "message" {
+                    self.pending_content.push(self.chunks.len() - 1);
+                }
+                self.flush_content()?;
             }
-            "response.output_item.done"
-            | "response.function_call_arguments.delta"
+            "response.output_text.delta"
+            | "response.output_text.done"
+            | "response.content_part.added"
+            | "response.content_part.done"
+            | "response.reasoning_text.delta"
+            | "response.reasoning_text.done" => {
+                let source = wire["output_index"].as_u64().ok_or_else(invalid)?;
+                let item = self.items.get(&source).ok_or_else(invalid)?;
+                if item.parts.is_some()
+                    || wire["item_id"] != item.id
+                    || wire["content_index"].as_u64().is_none()
+                    || !matches!(item.kind.as_str(), "message" | "reasoning")
+                    || event.response.kind().starts_with("response.reasoning_text")
+                        && item.kind != "reasoning"
+                    || event.response.kind().starts_with("response.output_text")
+                        && item.kind != "message"
+                {
+                    return Err(invalid());
+                }
+                if event.response.kind().starts_with("response.content_part")
+                    && (wire["part"]["type"]
+                        != if item.kind == "reasoning" {
+                            "reasoning_text"
+                        } else {
+                            "output_text"
+                        }
+                        || !wire["part"]["text"].is_string())
+                    || event.response.kind().ends_with(".delta") && !wire["delta"].is_string()
+                    || event.response.kind().ends_with("text.done") && !wire["text"].is_string()
+                {
+                    return Err(invalid());
+                }
+                let chunk = self.chunks.len() - 1;
+                if !self.emit_content(chunk)? {
+                    self.pending_content.push(chunk);
+                }
+            }
+            "response.output_item.done" => {
+                let source = wire["output_index"].as_u64().ok_or_else(invalid)?;
+                let item = self.items.get_mut(&source).ok_or_else(invalid)?;
+                if item.parts.is_some()
+                    || wire["item"]["id"] != item.id
+                    || wire["item"]["type"] != item.kind
+                {
+                    return Err(invalid());
+                }
+                item.parts = Some(if item.kind == "reasoning" || item.kind == "message" {
+                    wire["item"]["content"]
+                        .as_array()
+                        .ok_or_else(invalid)?
+                        .len() as u64
+                } else {
+                    0
+                });
+                self.flush_content()?;
+            }
+            "response.function_call_arguments.delta"
             | "response.function_call_arguments.done"
             | "response.custom_tool_call_input.delta"
-            | "response.custom_tool_call_input.done"
-            | "response.output_text.done"
-            | "response.content_part.done"
-            | "response.reasoning_text.done" => (),
+            | "response.custom_tool_call_input.done" => (),
             kind if kind.starts_with("response.custom_tool_call")
                 || kind.starts_with("response.tool_search")
-                || kind.starts_with("response.reasoning_summary") =>
+                || kind.starts_with("response.reasoning_summary")
+                || kind.starts_with("response.reasoning_text") =>
             {
                 return Err(invalid());
             }
@@ -203,6 +291,22 @@ impl HistoryStream {
                     .map_err(crate::history::native_error)?
                     .to_responses(budget)
                     .map_err(crate::history::native_error)?;
+                    for (index, item) in response.output().iter().enumerate() {
+                        let state = self
+                            .items
+                            .entry(index as u64)
+                            .or_insert_with(|| NativeItem {
+                                kind: item["type"].as_str().unwrap().into(),
+                                id: item["id"].clone(),
+                                parts: None,
+                            });
+                        state.parts =
+                            Some(item["content"].as_array().map_or(0, |v| v.len() as u64));
+                    }
+                    self.flush_content()?;
+                    if !self.pending_content.is_empty() {
+                        return Err(invalid());
+                    }
                     for (index, item) in projected.output().iter().enumerate() {
                         if item["type"] != "reasoning"
                             && !item["id"]
@@ -253,6 +357,8 @@ impl HistoryStream {
         self.pending.clear();
         self.pending_bytes = 0;
         self.chunks.clear();
+        self.pending_content.clear();
+        self.items.clear();
         self.native.take();
         self.terminal = true;
         Poll::Ready(Some(Err(error)))

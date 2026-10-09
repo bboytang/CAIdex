@@ -1933,12 +1933,12 @@ async fn invalid_native_tool_stream_never_delivers_calls_closes_io_and_releases_
         if corrupt == 0 {
             wire["output"][2]["name"] = "undeclared".into();
         }
-        if corrupt == 2 {
-            let mut reasoning = wire["output"][0].clone();
-            reasoning["id"] = "rs_second".into();
-            wire["output"].as_array_mut().unwrap().insert(1, reasoning);
-        }
         let mut chunks = native_chunks(&wire);
+        if corrupt == 2 {
+            let duplicate = chunks[1].clone();
+            chunks.insert(2, duplicate);
+            resequence(&mut chunks);
+        }
         if corrupt == 1 {
             chunks
                 .iter_mut()
@@ -3396,4 +3396,507 @@ async fn gateway_runtime_history_controls_preserve_priority_local_token_and_boun
     assert!(!next.to_string().contains("caidex.deepseek.native-history"));
     assert_eq!(reads.load(Ordering::SeqCst), 2);
     gateway.shutdown().await.unwrap();
+}
+
+fn complex_native() -> Value {
+    let mut wire = patch_native();
+    wire["output"][0]["content"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"type":"reasoning_text","text":"第二段🙂"}));
+    wire["output"][1]["content"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"type":"output_text","text":"More text","annotations":[]}));
+    let mut second = wire["output"][0].clone();
+    second["id"] = "rs_two".into();
+    second["content"] = json!([{"type":"reasoning_text","text":""},{"type":"reasoning_text","text":"Later thinking"}]);
+    wire["output"].as_array_mut().unwrap().insert(2, second);
+    let mut empty = wire["output"][0].clone();
+    empty["id"] = "rs_empty".into();
+    empty["content"] = json!([]);
+    wire["output"].as_array_mut().unwrap().insert(3, empty);
+    wire
+}
+fn complex_chunks(wire: &Value) -> Vec<Value> {
+    let mut chunks = Vec::new();
+    for mut chunk in native_chunks(wire) {
+        if chunk["type"] == "response.reasoning_text.delta"
+            || chunk["type"] == "response.output_text.delta"
+        {
+            let index = chunk["output_index"].as_u64().unwrap() as usize;
+            let item = &wire["output"][index];
+            for (part_index, part) in item["content"].as_array().unwrap().iter().enumerate() {
+                chunks.push(json!({"type":"response.content_part.added","output_index":index,"item_id":item["id"],"content_index":part_index,"part":{"type":part["type"],"text":""}}));
+                chunk["content_index"] = part_index.into();
+                chunk["delta"] = part["text"].clone();
+                chunks.push(chunk.clone());
+                let kind = if item["type"] == "reasoning" {
+                    "response.reasoning_text.done"
+                } else {
+                    "response.output_text.done"
+                };
+                chunks.push(json!({"type":kind,"output_index":index,"item_id":item["id"],"content_index":part_index,"text":part["text"]}));
+                chunks.push(json!({"type":"response.content_part.done","output_index":index,"item_id":item["id"],"content_index":part_index,"part":part}));
+            }
+        } else {
+            chunks.push(chunk);
+        }
+    }
+    chunks
+}
+fn resequence(chunks: &mut [Value]) {
+    for (index, chunk) in chunks.iter_mut().enumerate() {
+        chunk["sequence_number"] = index.into();
+    }
+}
+
+#[tokio::test]
+async fn complex_reasoning_parts_and_interleaved_items_keep_canonical_indices_and_exact_replay() {
+    let native = complex_native();
+    for ordering in 0..4 {
+        let mut chunks = complex_chunks(&native);
+        if ordering == 1 || ordering == 2 {
+            let first_done = chunks
+                .iter()
+                .position(|c| c["type"] == "response.output_item.done" && c["output_index"] == 0)
+                .unwrap();
+            let done = chunks.remove(first_done);
+            if ordering == 1 {
+                let later_done = chunks
+                    .iter()
+                    .position(|c| {
+                        c["type"] == "response.output_item.done" && c["output_index"] == 2
+                    })
+                    .unwrap();
+                chunks.insert(later_done + 1, done);
+            }
+            // ordering 2 relies on the authoritative terminal item to close the offset gap.
+        }
+        // The later reasoning item may be announced before earlier items.
+        if ordering == 2 {
+            let index = chunks
+                .iter()
+                .position(|c| c["type"] == "response.output_item.added" && c["output_index"] == 2)
+                .unwrap();
+            let item = chunks.remove(index);
+            chunks.insert(1, item);
+        }
+        if ordering == 3 {
+            let mut message = Vec::new();
+            chunks.retain(|c| {
+                if c["output_index"] == 1 {
+                    message.push(c.clone());
+                    false
+                } else {
+                    true
+                }
+            });
+            chunks.splice(1..1, message);
+        }
+        resequence(&mut chunks);
+        let mut fixture = Fixture::start(vec![
+            Reply::stream(chunks.iter().cloned().map(event).collect()),
+            Reply::json(history_text()),
+        ])
+        .await;
+        let (broker, reads) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_apply_patch();
+        let original = patch_wire(true);
+        let mut stream = provider
+            .stream_response(request(original.clone()), RequestContext::default())
+            .await
+            .unwrap();
+        let mut parser = caidex_model_core::ResponsesStream::new(limits().frame_bytes).unwrap();
+        let mut summaries = vec![String::new(); 4];
+        let mut added = Vec::new();
+        let mut done = Vec::new();
+        let mut text_done = Vec::new();
+        let mut text = vec![String::new(); 2];
+        let mut final_wire = None;
+        while let Some(event) = stream.events.next().await {
+            if let ProviderStreamEvent::Model(event) = event.unwrap() {
+                parser
+                    .push(format!("data: {}\n\n", event.frame.data).as_bytes())
+                    .unwrap();
+                let wire = event.response.wire();
+                match event.response.kind() {
+                    "response.reasoning_summary_part.added"
+                    | "response.reasoning_summary_part.done"
+                    | "response.reasoning_summary_text.delta"
+                    | "response.reasoning_summary_text.done" => {
+                        assert_eq!(wire["output_index"], 0);
+                        assert_eq!(wire["item_id"], "rs_fixture_native");
+                        assert!(wire.get("content_index").is_none());
+                        let index = wire["summary_index"].as_u64().unwrap() as usize;
+                        assert!(index < 4);
+                        match event.response.kind() {
+                            "response.reasoning_summary_part.added" => {
+                                assert_eq!(wire["part"]["type"], "summary_text");
+                                added.push(index);
+                            }
+                            "response.reasoning_summary_part.done" => {
+                                assert_eq!(wire["part"]["type"], "summary_text");
+                                done.push((index, wire["part"]["text"].clone()));
+                            }
+                            "response.reasoning_summary_text.done" => {
+                                text_done.push((index, wire["text"].clone()))
+                            }
+                            _ => summaries[index].push_str(wire["delta"].as_str().unwrap()),
+                        }
+                    }
+                    "response.output_text.delta" => {
+                        assert_eq!(wire["output_index"], 1);
+                        let index = wire["content_index"].as_u64().unwrap() as usize;
+                        text[index].push_str(wire["delta"].as_str().unwrap());
+                    }
+                    "response.content_part.added"
+                    | "response.content_part.done"
+                    | "response.output_text.done" => {
+                        assert_eq!(wire["output_index"], 1);
+                        assert_eq!(wire["item_id"], "msg_one");
+                    }
+                    "response.output_item.added" if wire["item"]["type"] == "function_call" => {
+                        assert_eq!(wire["output_index"], 2)
+                    }
+                    "response.output_item.added" if wire["item"]["type"] == "custom_tool_call" => {
+                        assert_eq!(wire["output_index"], 3)
+                    }
+                    "response.completed" => final_wire = Some(wire["response"].clone()),
+                    _ => (),
+                }
+            }
+        }
+        parser.finish().unwrap();
+        let expected = ["Native thinking", "第二段🙂", "", "Later thinking"];
+        assert_eq!(summaries, expected);
+        assert_eq!(added, [0, 1, 2, 3]);
+        assert_eq!(
+            done,
+            expected
+                .iter()
+                .enumerate()
+                .map(|(i, t)| (i, json!(t)))
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(text_done, done);
+        assert_eq!(text, ["中文🙂", "More text"]);
+        let final_wire = final_wire.unwrap();
+        assert_eq!(
+            final_wire["output"][0]["summary"],
+            json!(
+                expected
+                    .iter()
+                    .map(|t| json!({"type":"summary_text","text":t}))
+                    .collect::<Vec<_>>()
+            )
+        );
+        let history = patch_capsule(&final_wire["output"][0]);
+        assert_eq!(history["chunks"], json!(chunks));
+        assert_eq!(history["response"], native);
+        assert!(!history.to_string().contains(KEY));
+        fixture.captured().await;
+        let next = patch_followup(&original, final_wire["output"].as_array().unwrap());
+        provider
+            .create_response(request(next), RequestContext::default())
+            .await
+            .unwrap();
+        let next = fixture.captured().await.body.unwrap();
+        assert_eq!(
+            &next["input"].as_array().unwrap()[1..7],
+            native["output"].as_array().unwrap()
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}
+
+#[tokio::test]
+async fn malformed_complex_content_never_delivers_tools_or_history_and_releases_io() {
+    for corrupt in 0..17 {
+        let wire = complex_native();
+        let mut chunks = complex_chunks(&wire);
+        let kind = match corrupt {
+            0..=3 | 10 => "response.reasoning_text.delta",
+            4 | 5 | 16 => "response.reasoning_text.done",
+            6 | 7 | 11 => "response.content_part.done",
+            8 | 9 | 12 => "response.content_part.added",
+            13 => "response.output_text.delta",
+            _ => "response.output_item.done",
+        };
+        let index = chunks.iter().position(|c| c["type"] == kind).unwrap();
+        match corrupt {
+            0 => chunks[index]["content_index"] = json!(18446744073709551616_u128),
+            1 => chunks[index]["output_index"] = json!(u64::MAX),
+            2 | 5 | 7 | 9 => chunks[index]["item_id"] = "other".into(),
+            3 => chunks[index]["delta"] = "wrong".into(),
+            4 => chunks[index]["text"] = "wrong".into(),
+            6 => chunks[index]["part"]["text"] = "wrong".into(),
+            8 => chunks[index]["part"]["type"] = "output_text".into(),
+            10 => chunks[index]["type"] = "response.output_text.delta".into(),
+            11 | 12 | 14 | 16 => {
+                let duplicate = chunks[index].clone();
+                chunks.insert(index + 1, duplicate);
+            }
+            13 => chunks[index]["type"] = "response.reasoning_text.delta".into(),
+            _ => {
+                let delta = chunks
+                    .iter()
+                    .find(|c| c["type"] == "response.reasoning_text.delta")
+                    .unwrap()
+                    .clone();
+                chunks.insert(index + 1, delta);
+            }
+        }
+        resequence(&mut chunks);
+        let mut reply = Reply::stream(chunks.into_iter().map(event).collect());
+        reply.stall = 2;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+        let (broker, reads) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_apply_patch();
+        let mut stream = provider
+            .stream_response(request(patch_wire(true)), RequestContext::default())
+            .await
+            .unwrap();
+        let mut failed = 0;
+        while let Some(event) = stream.events.next().await {
+            match event {
+                Err(error) => {
+                    assert_eq!(error.http_status, 502, "corrupt={corrupt}");
+                    failed += 1;
+                }
+                Ok(ProviderStreamEvent::Model(event)) => {
+                    assert!(!matches!(
+                        event.response.wire()["item"]["type"].as_str(),
+                        Some("function_call" | "custom_tool_call")
+                    ));
+                    assert!(!event.response.kind().starts_with("response.function_call"));
+                    assert!(
+                        !event
+                            .response
+                            .kind()
+                            .starts_with("response.custom_tool_call")
+                    );
+                    assert_ne!(event.response.kind(), "response.completed");
+                    assert!(
+                        event.response.wire()["item"]
+                            .get("encrypted_content")
+                            .is_none()
+                    );
+                }
+                _ => (),
+            }
+        }
+        assert_eq!(failed, 1, "corrupt={corrupt}");
+        fixture.disconnected().await;
+        fixture.captured().await;
+        provider
+            .create_response(request(patch_wire(false)), RequestContext::default())
+            .await
+            .unwrap();
+        fixture.captured().await;
+        assert_eq!(reads.load(Ordering::SeqCst), 2);
+    }
+}
+
+#[tokio::test]
+async fn complex_serialized_history_revalidates_content_done_and_lifecycle_before_key() {
+    let native = complex_native();
+    let mut chunks = complex_chunks(&native);
+    resequence(&mut chunks);
+    let mut fixture = Fixture::start(vec![
+        Reply::stream(chunks.into_iter().map(event).collect()),
+        Reply::json(history_text()),
+    ])
+    .await;
+    let (broker, reads) = fixture_broker(Some(KEY));
+    let provider = fixture
+        .provider(
+            broker,
+            vec![metadata("fixture", "native-fixture")],
+            limits(),
+        )
+        .with_native_apply_patch();
+    let original = patch_wire(true);
+    let mut stream = provider
+        .stream_response(request(original.clone()), RequestContext::default())
+        .await
+        .unwrap();
+    let mut output = None;
+    while let Some(event) = stream.events.next().await {
+        if let ProviderStreamEvent::Model(event) = event.unwrap()
+            && event.response.kind() == "response.completed"
+        {
+            output = Some(
+                event.response.wire()["response"]["output"]
+                    .as_array()
+                    .unwrap()
+                    .clone(),
+            );
+        }
+    }
+    fixture.captured().await;
+    let good = patch_followup(&original, &output.unwrap());
+    for corrupt in 0..5 {
+        let mut next = good.clone();
+        let mut history = patch_capsule(&next["input"][1]);
+        let chunks = history["chunks"].as_array_mut().unwrap();
+        let kind = if corrupt == 0 {
+            "response.reasoning_text.done"
+        } else if corrupt == 1 {
+            "response.content_part.done"
+        } else {
+            "response.content_part.added"
+        };
+        let index = chunks.iter().position(|c| c["type"] == kind).unwrap();
+        match corrupt {
+            0 => chunks[index]["text"] = "wrong".into(),
+            1 => chunks[index]["part"]["text"] = "wrong".into(),
+            2 => chunks[index]["item_id"] = "other".into(),
+            3 => chunks[index]["part"]["type"] = "output_text".into(),
+            _ => {
+                let duplicate = chunks[index].clone();
+                chunks.insert(index + 1, duplicate);
+                resequence(chunks);
+            }
+        }
+        next["input"][1]["encrypted_content"] =
+            format!("caidex.deepseek.native-history.v2:{history}").into();
+        assert_eq!(
+            provider
+                .create_response(request(next), RequestContext::default())
+                .await
+                .err()
+                .unwrap()
+                .http_status,
+            400
+        );
+        assert_eq!(reads.load(Ordering::SeqCst), 1);
+        assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
+    }
+    provider
+        .create_response(
+            request(serde_json::from_str(&good.to_string()).unwrap()),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    let sent = fixture.captured().await.body.unwrap();
+    assert_eq!(
+        &sent["input"].as_array().unwrap()[1..7],
+        native["output"].as_array().unwrap()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+fn deferred_reasoning_chunks() -> Vec<Value> {
+    vec![
+        json!({"type":"response.created","response":{"id":"fixture","status":"in_progress","output":[]}}),
+        json!({"type":"response.output_item.added","output_index":0,"item":{"type":"reasoning","id":"early","content":[],"summary":[]}}),
+        json!({"type":"response.output_item.added","output_index":1,"item":{"type":"reasoning","id":"later","content":[],"summary":[]}}),
+        json!({"type":"response.reasoning_text.delta","output_index":1,"content_index":0,"item_id":"later","delta":"Do not guess its summary index"}),
+        json!({"type":"response.output_item.added","output_index":2,"item":{"type":"message","id":"progress","role":"assistant","content":[]}}),
+        json!({"type":"response.output_text.delta","output_index":2,"content_index":0,"item_id":"progress","delta":"Visible while reasoning waits"}),
+    ]
+}
+
+#[tokio::test]
+async fn deferred_reasoning_keeps_text_incremental_and_obeys_cancel_drop_and_budget() {
+    for cancel in [false, true] {
+        let chunks = deferred_reasoning_chunks();
+        let mut reply = Reply::stream(chunks.into_iter().map(event).collect());
+        reply.stall = 2;
+        let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+        let (broker, _) = fixture_broker(Some(KEY));
+        let provider = fixture
+            .provider(
+                broker,
+                vec![metadata("fixture", "native-fixture")],
+                limits(),
+            )
+            .with_native_history();
+        let context = RequestContext::default();
+        let cancellation = context.cancellation.clone();
+        let mut stream = provider
+            .stream_response(request(basic(true)), context)
+            .await
+            .unwrap();
+        loop {
+            if let ProviderStreamEvent::Model(event) = stream.events.next().await.unwrap().unwrap()
+            {
+                assert_ne!(
+                    event.response.kind(),
+                    "response.reasoning_summary_text.delta"
+                );
+                if event.response.kind() == "response.output_text.delta" {
+                    assert_eq!(event.response.wire()["output_index"], 1);
+                    break;
+                }
+            }
+        }
+        if cancel {
+            cancellation.cancel();
+            assert_eq!(
+                stream.events.next().await.unwrap().err().unwrap().code,
+                "provider_cancelled"
+            );
+            assert!(stream.events.next().await.is_none());
+        }
+        drop(stream);
+        fixture.disconnected().await;
+        provider
+            .create_response(request(basic(false)), RequestContext::default())
+            .await
+            .unwrap();
+    }
+    let mut chunks = deferred_reasoning_chunks();
+    let mut delta = chunks[3].clone();
+    delta["delta"] = "x".repeat(256).into();
+    for _ in 0..12 {
+        chunks.insert(4, delta.clone());
+    }
+    let mut reply = Reply::stream(chunks.into_iter().map(event).collect());
+    reply.stall = 2;
+    let mut fixture = Fixture::start(vec![reply, Reply::json(history_text())]).await;
+    let (broker, _) = fixture_broker(Some(KEY));
+    let mut small = limits();
+    small.request_bytes = 2048;
+    let provider = fixture
+        .provider(broker, vec![metadata("fixture", "native-fixture")], small)
+        .with_native_history();
+    let mut stream = provider
+        .stream_response(request(basic(true)), RequestContext::default())
+        .await
+        .unwrap();
+    let mut failed = false;
+    while let Some(event) = stream.events.next().await {
+        match event {
+            Err(error) => {
+                assert_eq!(error.code, "deepseek_history_too_large");
+                failed = true;
+            }
+            Ok(ProviderStreamEvent::Model(event)) => assert_ne!(
+                event.response.kind(),
+                "response.reasoning_summary_text.delta"
+            ),
+            _ => (),
+        }
+    }
+    assert!(failed);
+    fixture.disconnected().await;
+    provider
+        .create_response(request(basic(false)), RequestContext::default())
+        .await
+        .unwrap();
 }

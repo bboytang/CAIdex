@@ -1,12 +1,14 @@
 # CAIdex 项目交接
 
-更新：2026-10-08 23:53 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09 00:02 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
+当前续接（main/cc30145）：已实现DeepSeek多reasoning/content-part按原生顺序映射，偏移未知复用bounded raw chunk索引等待，终态补全；正文增量与工具终态校验保持。新增4项/共46项、旧42名保留，原shortcut负例改成重复index；有效RED→46/0/0、workspace427/0/45、全workspace Clippy/fmt/diff通过，精确三平台尚待commit/push。未放松原工具结果配对；只history/history_stream生产及tests/provider和4文档（7路径）。日志/tmp/caidex-deepseek-complex-{red,green,workspace,clippy}.log。
+
 F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现）；DeepSeek Classic函数/namespace与完整native推理历史dba1c90123b31e89f50c871e225afc817765ca7e/[CI37851276859](https://github.com/bboytang/CAIdex/actions/runs/37851276859)，后续显式effort映射32a9f3fdae8aed7519a867c1d32a8cf911f5ce09/[CI37851939704](https://github.com/bboytang/CAIdex/actions/runs/37851939704)，均已提交/push且精确三平台完整验收。此前effort范围DeepSeek29、workspace410/405/409、旧固定Runtime43/42/42通过；这不是实际DeepSeek Runtime接线或Live/Full。
 
-当前custom apply_patch已提交/push df98a54bb247f947d9ce4014f7007c9d192056b1，精确[CI37854138352](https://github.com/bboytang/CAIdex/actions/runs/37854138352)三平台完整验收：DeepSeek37、workspace418/413/417及旧Runtime43/42/42均通过；当前summary/context/include本地编译新增5项/共42项通过，workspace423/0/45、Clippy/fmt/diff通过，已提交/push 3c1ea05a4bc5a00da503603aa4528d8fc06048fb，独立[CI37855947093](https://github.com/bboytang/CAIdex/actions/runs/37855947093)已精确三平台完整验收：workspace423/418/422、DeepSeek42及旧Runtime43/42/42通过；然后复杂流索引，再Classic/Lite真实固定Runtime审批/执行/取消/磁盘恢复，随后Qwen/OpenRouter；不重做已验Adapter、不跳H/I。用户已明确授权今后本地检查通过直接commit/push并执行三平台CI，逐步记录，不再额外等待。仍不读取用户Key/调用商业模型/部署。
+当前custom apply_patch已提交/push df98a54bb247f947d9ce4014f7007c9d192056b1，精确[CI37854138352](https://github.com/bboytang/CAIdex/actions/runs/37854138352)三平台完整验收：DeepSeek37、workspace418/413/417及旧Runtime43/42/42均通过；当前summary/context/include本地编译新增5项/共42项通过，workspace423/0/45、Clippy/fmt/diff通过，已提交/push 3c1ea05a4bc5a00da503603aa4528d8fc06048fb，独立[CI37855947093](https://github.com/bboytang/CAIdex/actions/runs/37855947093)已精确三平台完整验收：workspace423/418/422、DeepSeek42及旧Runtime43/42/42通过；复杂流索引本地已通过待精确三平台，随后Lite和Classic/Lite真实固定Runtime审批/执行/取消/磁盘恢复，随后Qwen/OpenRouter；不重做已验Adapter、不跳H/I。用户已明确授权今后本地检查通过直接commit/push并执行三平台CI，逐步记录，不再额外等待。仍不读取用户Key/调用商业模型/部署。
 
 ## 已完成 / 验证
 
@@ -33,7 +35,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## 下一步顺序
 
-1. dba1c90/CI37851276859、32a9f3f/CI37851939704及df98a54/CI37854138352均已独立完整收尾，无源码变化不重跑。先核对当前Git/交接；本轮summary/context/include精确3c1ea05/CI37855947093已完整收尾，不重复运行；继续复杂reasoning流及content-part索引映射，不能用全量明文投影冒称原生精简summary/加密。固定Runtime include/summary请求参考runtime/bridge/tests/real_runtime.rs现有Gemini/Ollama接线与配置；DeepSeek尚未接线，不新增第二Agent/HTTP栈。每个新增范围定向验证/精确CI/交接，已验函数/namespace/native历史/effort/apply_patch不重写；原生忽略字段须显式编译或拒绝。
+1. dba1c90/CI37851276859、32a9f3f/CI37851939704及df98a54/CI37854138352均已独立完整收尾，无源码变化不重跑。先核对当前Git/交接；本轮summary/context/include精确3c1ea05/CI37855947093已完整收尾，不重复运行；多reasoning/content-part本地46项已通过，先提交/push并精确三平台收尾，然后Lite custom Code Mode/单调用；不能用全量明文投影冒称原生精简summary/加密。固定Runtime include/summary请求参考runtime/bridge/tests/real_runtime.rs现有Gemini/Ollama接线与配置；DeepSeek尚未接线，不新增第二Agent/HTTP栈。每个新增范围定向验证/精确CI/交接，已验函数/namespace/native历史/effort/apply_patch不重写；原生忽略字段须显式编译或拒绝。
 
 
 2. 随后Lite custom Code Mode/本地单调用交付、固定实际DeepSeek Runtime审批/执行/取消/磁盘重启，再Qwen/OpenRouter。每一步定向/相关回归、精确源码CI及交接；无源码变化不重跑已验本地全套/旧CI，不派重复独立审查。未经另行授权不调用商业API或下载模型。
@@ -55,7 +57,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## 问题 / 阻塞
 
-- 当前无审批/实现阻塞；apply_patch及summary/context/include三平台均完整收尾；无运行中测试/CI，旧watch句柄缺失以GitHub终态为准。2026-10-08用户明确授权本次及后续本地检查通过直接commit/push/三平台CI，覆盖此前文档任务的暂不push限制，不重复询问。离线合成fixture及旧Runtime临时marker仍获准；不读取用户Key/调用商业API/运行官方安装脚本。
+- 当前无审批/实现阻塞；apply_patch及summary/context/include三平台均完整收尾，复杂流本地通过待精确三平台；旧watch句柄缺失以GitHub终态为准。2026-10-08用户明确授权本次及后续本地检查通过直接commit/push/三平台CI，覆盖此前文档任务的暂不push限制，不重复询问。离线合成fixture及旧Runtime临时marker仍获准；不读取用户Key/调用商业API/运行官方安装脚本。
 
 - 商业Key/真实模型/签名真实性/Full、生产Host权限/UI/iOS/真机/Windows UAC/签名未验。同步SecretStore开始后不可强停，仅保证取消后不POST；comment-only native chunk与实际Runtime下游idle单独未验。
 - 既有Minor保留在Provider文档：Gemini thought-call/无tools/未opt-in none覆盖、prefix-only整组互换、projection/满槽取消、ProtoJSON整数/空ID、部分usage/thought-only phase；Anthropic重启第三轮/完整Lite custom结果覆盖。不派重复独立审查，不把暂缓项改标为修复。
@@ -63,7 +65,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；源码3c1ea05a4bc5a00da503603aa4528d8fc06048fb已提交/push且CI37855947093三平台完整验收；本次仅README、DeepSeek/Gateway验收和HANDOFF四文档收尾修改，提交后工作区应干净、以实际Git为准。此前df98a54/5024eab、32a9f3f/dba1c90、架构81debdb保留。本轮生产只DeepSeek lib/request，无依赖/其他Provider/共享生产源码/Runtime/workflow改动；不借旧37项CI代验42项。
+- branch main；本轮从已push cc30145续接，当前未提交仅DeepSeek history/history_stream/tests及README/DeepSeek/Gateway/HANDOFF4文档（7路径，无新文件）；46项及workspace427/0/45/Clippy/fmt/diff通过，下一步commit/push/精确三平台。旧3c1ea05/CI37855947093已完整收尾；其他旧成果保留，没有其他用户修改、依赖/共享生产源码/Runtime/workflow变化。以实际Git为准，不借旧42项CI代验46项。
 
 
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约9.4G可用，修改前先df，不清源码/凭据/保护目录。

@@ -4,7 +4,10 @@ use caidex_model_core::{
     ResponsesStream,
 };
 use serde_json::{Value, json};
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
 const PREFIX: &str = "caidex.deepseek.native-history.v1:";
 const PATCH_PREFIX: &str = "caidex.deepseek.native-history.v2:";
@@ -279,6 +282,11 @@ fn validate_chunks(
     let mut parser = ResponsesStream::new(max_bytes).map_err(|_| invalid())?;
     let mut terminal = None;
     let mut deltas: HashMap<(usize, usize, String), String> = HashMap::new();
+    let mut added = HashSet::new();
+    let mut done = HashSet::new();
+    let mut parts_added = HashSet::new();
+    let mut parts_done = HashSet::new();
+    let mut text_done = HashSet::new();
     for chunk in chunks {
         for event in parser
             .push(format!("data: {chunk}\n\n").as_bytes())
@@ -286,6 +294,81 @@ fn validate_chunks(
         {
             if event.response.terminal().is_some() {
                 terminal = event.response.wire().get("response").cloned();
+            }
+        }
+        let kind = chunk["type"].as_str().ok_or_else(invalid)?;
+        if matches!(
+            kind,
+            "response.output_item.added" | "response.output_item.done"
+        ) {
+            let index = chunk["output_index"].as_u64().ok_or_else(invalid)?;
+            if kind == "response.output_item.added" {
+                if !added.insert(index) {
+                    return Err(invalid());
+                }
+            } else if !added.contains(&index) || !done.insert(index) {
+                return Err(invalid());
+            }
+        }
+        if matches!(
+            kind,
+            "response.reasoning_text.delta"
+                | "response.reasoning_text.done"
+                | "response.output_text.delta"
+                | "response.output_text.done"
+                | "response.content_part.added"
+                | "response.content_part.done"
+        ) {
+            let index = chunk["output_index"].as_u64().ok_or_else(invalid)?;
+            let part = chunk["content_index"].as_u64().ok_or_else(invalid)?;
+            let item = response
+                .output()
+                .get(usize::try_from(index).map_err(|_| invalid())?)
+                .ok_or_else(invalid)?;
+            let content = item["content"]
+                .as_array()
+                .and_then(|v| v.get(usize::try_from(part).ok()?))
+                .ok_or_else(invalid)?;
+            let expected_type = match item["type"].as_str() {
+                Some("reasoning") if !kind.starts_with("response.output_text") => "reasoning_text",
+                Some("message") if !kind.starts_with("response.reasoning_text") => "output_text",
+                _ => return Err(invalid()),
+            };
+            if !added.contains(&index)
+                || done.contains(&index)
+                || chunk["item_id"] != item["id"]
+                || content["type"] != expected_type
+                || !content["text"].is_string()
+            {
+                return Err(invalid());
+            }
+            let key = (index, part);
+            match kind {
+                "response.content_part.added" => {
+                    if !parts_added.insert(key)
+                        || parts_done.contains(&key)
+                        || text_done.contains(&key)
+                        || chunk["part"]["type"] != expected_type
+                        || !chunk["part"]["text"].is_string()
+                    {
+                        return Err(invalid());
+                    }
+                }
+                "response.content_part.done" => {
+                    if !parts_done.insert(key) || chunk["part"] != *content {
+                        return Err(invalid());
+                    }
+                }
+                "response.reasoning_text.done" | "response.output_text.done" => {
+                    if !text_done.insert(key)
+                        || parts_done.contains(&key)
+                        || chunk["text"] != content["text"]
+                    {
+                        return Err(invalid());
+                    }
+                }
+                _ if parts_done.contains(&key) || text_done.contains(&key) => return Err(invalid()),
+                _ => (),
             }
         }
         if matches!(
