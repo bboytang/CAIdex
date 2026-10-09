@@ -11,6 +11,7 @@ use std::{
 
 const PREFIX: &str = "caidex.qwen.native-history.v1:";
 const TOOLS_PREFIX: &str = "caidex.qwen.native-history.v2:";
+const LITE_PREFIX: &str = "caidex.qwen.native-history.v4:";
 const CUSTOM_PREFIX: &str = "caidex.qwen.native-history.v3:";
 pub(crate) fn invalid() -> ProviderError {
     ProviderError::new(400, "qwen_invalid_history")
@@ -69,7 +70,7 @@ impl NativeHistory {
     fn new(wire: Value, limit: usize) -> ProviderResult<Self> {
         size(&wire, limit)?;
         if wire["provider"] != "qwen"
-            || !matches!(wire["version"].as_u64(), Some(1..=3))
+            || !matches!(wire["version"].as_u64(), Some(1..=4))
             || !wire["scope"].is_object()
             || wire["request"]["model"] != wire["native_model"]
         {
@@ -220,7 +221,9 @@ impl NativeHistory {
             .collect::<ProviderResult<Vec<_>>>()?;
         // shortcut: nested prefixes grow quadratically; byte budgets refuse
         // overflow until Host persistence can deduplicate full native history.
-        let prefix = if self.0["version"] == 3 {
+        let prefix = if self.0["version"] == 4 {
+            LITE_PREFIX
+        } else if self.0["version"] == 3 {
             CUSTOM_PREFIX
         } else if self.0["version"] == 2 {
             TOOLS_PREFIX
@@ -256,6 +259,8 @@ impl NativeHistory {
         }
         let (encoded, version) = if let Some(wire) = capsule.strip_prefix(PREFIX) {
             (wire, 1)
+        } else if let Some(wire) = capsule.strip_prefix(LITE_PREFIX) {
+            (wire, 4)
         } else if let Some(wire) = capsule.strip_prefix(CUSTOM_PREFIX) {
             (wire, 3)
         } else {
@@ -374,7 +379,7 @@ pub(crate) fn expand(
             native.push(tools.unwrap().compile_item(&input[index], &native)?);
             index += 1;
         } else {
-            crate::request::validate_message(&input[index])?;
+            crate::request::validate_message(&input[index], tools.is_some_and(ToolMap::lite))?;
             native.push(input[index].clone());
             index += 1;
         }

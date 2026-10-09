@@ -60,10 +60,20 @@ pub(crate) struct ToolMap {
     required: bool,
 }
 impl ToolMap {
-    pub(crate) fn from_request(request: &CanonicalRequest, custom: bool) -> ProviderResult<Self> {
+    pub(crate) fn from_request(
+        request: &CanonicalRequest,
+        custom: bool,
+        lite_policy: Option<Value>,
+    ) -> ProviderResult<Self> {
         let mut source = json!({"tools":request.wire()["tools"],"tool_choice":request.wire()["tool_choice"],"parallel_tool_calls":request.wire()["parallel_tool_calls"]});
         if custom {
             source["custom_as_function"] = true.into();
+        }
+        if let Some(policy) = lite_policy {
+            source
+                .as_object_mut()
+                .unwrap()
+                .extend(policy.as_object().unwrap().clone());
         }
         Self::from_source(source)
     }
@@ -75,9 +85,23 @@ impl ToolMap {
                 "tool_choice",
                 "parallel_tool_calls",
                 "custom_as_function",
+                "lite_single_tool_call",
+                "additional_tools_id",
             ],
         )?;
         if source.get("custom_as_function").is_some_and(|v| v != true) {
+            return Err(invalid());
+        }
+        if source
+            .get("lite_single_tool_call")
+            .is_some_and(|v| !v.is_boolean())
+            || source.get("additional_tools_id").is_some_and(|v| {
+                !crate::history::valid_id(v) || source.get("lite_single_tool_call").is_none()
+            })
+            || source.get("lite_single_tool_call").is_some()
+                && (source["custom_as_function"] != true
+                    || !source["parallel_tool_calls"].is_null())
+        {
             return Err(invalid());
         }
         if !source["parallel_tool_calls"].is_null() && source["parallel_tool_calls"] != true {
@@ -301,8 +325,13 @@ impl ToolMap {
     pub(crate) fn source(&self) -> &Value {
         &self.source
     }
+    pub(crate) fn lite(&self) -> bool {
+        self.source.get("lite_single_tool_call").is_some()
+    }
     pub(crate) fn history_version(&self) -> u64 {
-        if self.source["custom_as_function"] == true {
+        if self.lite() {
+            4
+        } else if self.source["custom_as_function"] == true {
             3
         } else {
             2
@@ -492,6 +521,9 @@ impl ToolMap {
                     return Err(invalid());
                 }
                 count += 1;
+            }
+            if self.source["lite_single_tool_call"] == true && count > 1 {
+                return Err(invalid());
             }
             if response.state() == StreamState::Completed && self.required && count == 0 {
                 return Err(invalid());

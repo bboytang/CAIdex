@@ -37,10 +37,23 @@ pub struct QwenProvider<S: SecretStore> {
     native_history: bool,
     native_tools: bool,
     custom_tool_mapping: bool,
+    lite: bool,
+    model_dialects: HashMap<String, Vec<ResponsesDialect>>,
     verbosity_instructions: HashMap<String, String>,
     reasoning_efforts: HashMap<String, HashMap<String, String>>,
 }
 impl<S: SecretStore + 'static> QwenProvider<S> {
+    /// Explicit Lite compilation and local single-call delivery, not native
+    /// generation constraints. Native transport and history remain stateless.
+    pub fn with_lite_options(
+        config: QwenConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+    ) -> Result<Self, Error> {
+        Ok(Self::build(config, models, broker, limits, options, true)?.with_custom_tool_mapping())
+    }
     pub fn new(
         config: QwenConfig,
         models: Vec<ModelMetadata>,
@@ -56,14 +69,27 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
         limits: Limits,
         options: ClientOptions,
     ) -> Result<Self, Error> {
+        Self::build(config, models, broker, limits, options, false)
+    }
+    fn build(
+        config: QwenConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+        lite: bool,
+    ) -> Result<Self, Error> {
         let models_endpoint = config.endpoint("api/v1/models")?;
+        let mut model_dialects = HashMap::new();
         let routes = models
             .into_iter()
-            .map(|model| {
+            .map(|mut model| {
                 model.validate().map_err(|_| Error::InvalidRoute)?;
-                if model.dialects != [ResponsesDialect::Classic] {
+                if !lite && model.dialects != [ResponsesDialect::Classic] {
                     return Err(Error::InvalidRoute);
                 }
+                model_dialects.insert(model.id.clone(), model.dialects.clone());
+                model.dialects = vec![ResponsesDialect::Classic];
                 ConfiguredModel::new(
                     model.id.clone(),
                     model.native_model.clone(),
@@ -87,6 +113,8 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             native_history: false,
             native_tools: false,
             custom_tool_mapping: false,
+            lite,
+            model_dialects,
             verbosity_instructions: HashMap::new(),
             reasoning_efforts: HashMap::new(),
         })
@@ -205,9 +233,12 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
     }
     fn prepare(
         &self,
-        mut request: CanonicalRequest,
+        request: CanonicalRequest,
     ) -> ProviderResult<(CanonicalRequest, Option<tools::ToolMap>)> {
-        let model = self.responses.metadata(request.model())?;
+        let model = self.metadata(request.model())?;
+        if !model.dialects.contains(&request.dialect()) {
+            return Err(ProviderError::new(400, "unsupported_dialect"));
+        }
         let capabilities = model.capabilities;
         if capabilities.text == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_text"));
@@ -215,10 +246,12 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
         if request.wire().to_string().len() > self.limits.request_bytes {
             return Err(ProviderError::new(413, "invalid_or_oversized_body"));
         }
+        let (mut request, lite_policy) = request::classic(request, self.lite)?;
         let tools = if self.native_tools {
             Some(tools::ToolMap::from_request(
                 &request,
                 self.custom_tool_mapping,
+                lite_policy,
             )?)
         } else {
             None
@@ -358,6 +391,7 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
                     if !available.contains(&model.native_model) {
                         return None;
                     }
+                    model.dialects = self.model_dialects[&model.id].clone();
                     model.source = EvidenceSource::ProviderCatalog;
                     Some(model)
                 })
@@ -365,7 +399,9 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
         })
     }
     fn metadata(&self, model: &str) -> ProviderResult<ModelMetadata> {
-        self.responses.metadata(model)
+        let mut metadata = self.responses.metadata(model)?;
+        metadata.dialects = self.model_dialects[model].clone();
+        Ok(metadata)
     }
     fn capabilities(&self, model: &str) -> ProviderResult<ModelCapabilities> {
         self.responses.capabilities(model)

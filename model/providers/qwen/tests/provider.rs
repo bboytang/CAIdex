@@ -5145,3 +5145,5 @@ async fn runtime_history_controls_cannot_weaken_carrier_scope_prefix_version_or_
         assert_eq!(reads.load(Ordering::SeqCst), 2);
     }
 }
+
+mod lite;

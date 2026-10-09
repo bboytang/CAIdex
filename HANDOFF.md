@@ -1,10 +1,10 @@
 # CAIdex 开发交接
 
-更新：2026-10-09，会话结束交接。**当前开发暂停，等待用户在新会话要求继续。** 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-09，新会话已恢复，正在开发 Qwen Lite Adapter。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
 
-当前处于 **F/G 多模型与 Gateway**，不是 CLI 编码阶段。Qwen Runtime/history 控制组合源码已提交、推送，并完成精确三平台离线验收；**Qwen Lite Adapter 尚未开始实现**。上一轮被用户中断时，只读取了源码和交接检查脚本，没有编辑源码、启动测试、提交或推送。CLI 正式文档任务已完成，不重复设计或开展账户/CLI/UI编码。
+当前处于 **F/G 多模型与 Gateway**。三份旧F/G文档已收尾推送`165d905`；**Qwen Lite Adapter已实现并本地完整通过，精确新源码三平台CI待验**。显式`with_lite_options`、Lite additional_tools/developer稳定ID、ToolMap本地单调用政策和v4历史绑定，新增8项/Qwen70、workspace508/0/52、既有固定Runtime50/0/0、Clippy/fmt/diff通过。下一步提交推送本阶段并检查精确三平台完整日志，随后实际Qwen Classic/Lite Runtime接线。CLI正式文档已完成，不开展账户/CLI/UI编码。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 
@@ -39,8 +39,8 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## 未完成与下一步顺序
 
-1. **先收尾三份已有F/G文档修改**：README、Qwen/Gateway验收文档只是记录0858493/CI37974303497已取得结果；核对diff、链接、源码未改后按既有授权独立提交/push，不为纯文档启动完整Rust CI。原HANDOFF的全部收尾内容已收入历史记录，当前恢复事实在本文件。
-2. **Qwen Lite Adapter**：先核对固定Runtime真实Lite wire（additional_tools/developer、稳定ID、parallel=false、summary/context/include）与Qwen原生契约，再沿现有ToolMap/NativeHistory/Custom传输实现显式Lite适配、本地单调用交付及历史策略绑定。当前lib/routes与request仍Classic-only，ToolMap/history只支持v1/v2/v3；新政策/版本须明确验证，不能松绑旧历史或把本地拒绝多调用当原生生成约束。尚无Lite源码草稿或新测试。
+1. **三份F/G文档已收尾**：README、Qwen/Gateway验收文档核对79本地链接/22锚点、源码与0858493一致、完整旧CI日志逐名检查和GitHub源码/成功终态通过；纯文档提交`165d905`已推送，不启动Rust CI。
+2. **Qwen Lite Adapter**：先核对固定Runtime真实Lite wire（additional_tools/developer、稳定ID、parallel=false、summary/context/include）与Qwen原生契约，再沿现有ToolMap/NativeHistory/Custom传输实现显式Lite适配、本地单调用交付及历史策略绑定。默认入口保持Classic-only，显式Lite源码和v4历史政策已写入，新增8项测试在`tests/lite/mod.rs`；本地完整通过、精确三平台待验，不能松绑旧历史或把本地拒绝多调用当原生生成约束。
 3. Lite适配验证后，接**实际固定Qwen Classic/Lite Runtime**：真实审批、隔离执行、工具结果、取消、重启与磁盘恢复不重跑未知工具；离线fixture先验，商业Live/Full另需明确授权。不要借既有50/49/49回归代验新接线。
 4. Qwen之后OpenRouter，继续F/G未完范围；满足V3门槛后再 **H → I → J/K Windows → L SSH → M/N/O iOS → P CLI → Q Relay → R**。不因账户/CLI文档存在跳过Provider或提前标完成。
 5. H：持久Host/SQLite journal/事件恢复/审批竞争/幂等；I：官方账户/PostgreSQL、独立Chat/Memory/同步/邮件/本机恢复共享核心；P：完整英文TUI/exec/task/登录/记忆/Remote整合；R：真实平台、认证、多端、迁移与性能。Windows/iOS客户端、生产Host/Remote/Relay、账户服务、Memory Engine、同步及完整CLI均尚未实现。
@@ -64,15 +64,15 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## 问题与阻塞
 
-- 当前没有已知未修复测试失败或运行中的本轮编译/测试/CI；本次/proc只读检查未发现cargo/rustc/clippy/gh/caidex任务，仅会话基础进程。CI37974303497三job均终态。上轮中断不留下已确认存活的任务，不盲目重启旧handle。
-- Qwen Lite、实际Qwen Runtime、OpenRouter等是未实现工作，不是阻塞。Qwen原生输入自动截断风险待真实模型验证；本地预算不能替代token/context能力。商业模型/签名真实性/Full、生产权限、多端Host、Windows桌面/UAC、iOS真机/签名未验。
+- 本会话本地验证序列session55870已exit0，无已知失败；旧CI37974303497终态。新Lite精确三平台CI待验，日志`/tmp/caidex-qwen-lite/{workspace-final,clippy-final,runtime-regression}.log`及local-result.json。首轮编译绑定和新夹具错误均已修正，不是剩余源码阻塞。
+- Qwen Lite本地通过、精确三平台待验；实际Qwen Runtime、OpenRouter仍未实现，不是阻塞。Qwen原生输入自动截断风险待真实模型验证；本地预算不能替代token/context能力。商业模型/签名真实性/Full、生产权限、多端Host、Windows桌面/UAC、iOS真机/签名未验。
 - 既有Minor/覆盖空缺保留在Provider文档：Gemini thought-call/无tools/none、整组载体互换、projection/满槽取消、整数/空ID、usage/thought-only等；Anthropic重启第三轮/完整Lite custom结果等。不是本轮已修复项，不派重复审查或无关重构。
 - 同步SecretStore调用开始后不能强停，只保证取消后不POST；comment-only native chunk/实际Runtime下游idle单独未验。jsonschema0.58.6离线retriever虽有字节/regex限制但无硬CPU抢占，留H隔离；不自动重试/修补坏回答。
 
 ## Git、环境与操作授权
 
-- 分支 **main**，交接检查基线HEAD=origin/main=`c766d93f35acb1a4fafa60118834ae42b23e18df`。源码与已验0858493一致，无未提交Rust/TS/Swift、依赖或workflow修改，无暂存或未跟踪源码。
-- 交接前未提交4文档：HANDOFF、README、Qwen/Gateway验收。**本次仅将HANDOFF更新与其完整历史归档独立提交**，标题`docs: hand off CAIdex session at Qwen Lite boundary`；最终提交SHA以`git log -1`为准，避免自引用提交号。交接提交后仍保留README、Qwen/Gateway三份原修改，逐字不改、不纳入此次提交；新会话先核对实际Git状态再收尾它们。
+- 分支 **main**，恢复后HEAD=origin/main=`165d905`；恢复基线为`df1255d`。当前待提交HANDOFF/README/Qwen/Gateway文档、Qwen四份生产源码/lib/request/tools/history、provider测试的mod声明及新tests/lite/mod.rs；无共享Runtime/传输/依赖/workflow改动。
+- 新会话用户已明确授权本次核验通过的文档与Qwen Lite源码提交推送main及源码三平台CI；首次推送曾因自动审批不认可旧交接授权被拒，取得本会话明确授权后推送成功。
 - 用户2026-10-08持续授权本地检查通过后直接commit/push、源码三平台CI，不再重复询问；纯文档不运行完整Rust CI。离线合成fixture/临时marker已授权；未授权读取用户Key、商业API/邮件/生产部署/模型下载或购买服务。
 - `.git`普通沙箱只读，Git写入/push需授权执行环境。push使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局凭据或输出秘密。
 - loopback测试用授权环境，`TMPDIR=/var/tmp`；保留`/tmp/.git`、target/测试成果/用户数据，不用reset --hard、clean -fdx或清缓存。Rust1.99.0、Codex0.160.1、Node22.23.3按锁定；本机缺平台依赖交给CI。磁盘剩余约7.6GB（交接时），实际修改前重查df。

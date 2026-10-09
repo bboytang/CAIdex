@@ -28,6 +28,55 @@ fn fields(value: &Value, allowed: &[&str]) -> ProviderResult<()> {
     }
     Ok(())
 }
+/// Source has already been bounded; consume only the explicit Lite tool prefix.
+pub(crate) fn classic(
+    request: CanonicalRequest,
+    enabled: bool,
+) -> ProviderResult<(CanonicalRequest, Option<Value>)> {
+    if request.dialect() == ResponsesDialect::Classic {
+        return Ok((request, None));
+    }
+    if !enabled {
+        return Err(ProviderError::new(400, "unsupported_dialect"));
+    }
+    let mut wire = request.wire().clone();
+    let single = match wire.get("parallel_tool_calls") {
+        None | Some(Value::Bool(true)) => false,
+        Some(Value::Bool(false)) => true,
+        _ => return Err(invalid()),
+    };
+    wire.as_object_mut().unwrap().remove("parallel_tool_calls");
+    let mut policy = serde_json::json!({"lite_single_tool_call":single});
+    let mut declarations = Vec::new();
+    let input = wire["input"].as_array_mut().ok_or_else(invalid)?;
+    for (index, item) in input.iter().enumerate() {
+        if item["type"] != "additional_tools" {
+            continue;
+        }
+        fields(item, &["type", "id", "role", "tools"])?;
+        if index != 0
+            || item["role"] != "developer"
+            || item.get("id").is_some_and(|v| !crate::history::valid_id(v))
+        {
+            return Err(invalid());
+        }
+        if let Some(id) = item.get("id") {
+            policy["additional_tools_id"] = id.clone();
+        }
+        declarations = item["tools"].as_array().ok_or_else(invalid)?.clone();
+    }
+    if input
+        .first()
+        .is_some_and(|item| item["type"] == "additional_tools")
+    {
+        input.remove(0);
+    }
+    wire["tools"] = declarations.into();
+    Ok((
+        CanonicalRequest::new(wire, ResponsesDialect::Classic).map_err(|_| invalid())?,
+        Some(policy),
+    ))
+}
 /// Native Responses ignores unknown controls. Bound and validate the source
 /// before credentials; never silently drop safety, tools or history fields.
 pub(crate) fn compile(
@@ -200,7 +249,7 @@ pub(crate) fn compile(
     }
     if !native_history && let Some(input) = wire["input"].as_array() {
         for item in input {
-            validate_message(item)?;
+            validate_message(item, false)?;
         }
     }
     wire["store"] = false.into();
@@ -213,7 +262,7 @@ pub(crate) fn compile(
     Ok(compiled)
 }
 
-pub(crate) fn validate_message(item: &Value) -> ProviderResult<()> {
+pub(crate) fn validate_message(item: &Value, lite: bool) -> ProviderResult<()> {
     fields(item, &["type", "role", "content", "id", "status"])?;
     let role = item["role"].as_str().ok_or_else(invalid)?;
     if item.get("type").is_some_and(|v| v != "message")
@@ -223,7 +272,9 @@ pub(crate) fn validate_message(item: &Value) -> ProviderResult<()> {
     }
     for key in ["id", "status"] {
         if let Some(value) = item.get(key) {
-            if role != "assistant" || item["type"] != "message" {
+            if (role != "assistant" && !(lite && role == "developer" && key == "id"))
+                || item["type"] != "message"
+            {
                 return Err(unsupported());
             }
             if key == "id"
@@ -238,7 +289,8 @@ pub(crate) fn validate_message(item: &Value) -> ProviderResult<()> {
             }
         }
     }
-    if (item.get("id").is_some() || item.get("status").is_some())
+    if role == "assistant"
+        && (item.get("id").is_some() || item.get("status").is_some())
         && (item.get("id").is_none() || item.get("status").is_none() || !item["content"].is_array())
     {
         return Err(invalid());
