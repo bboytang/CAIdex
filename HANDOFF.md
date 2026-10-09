@@ -1,10 +1,10 @@
 # CAIdex 开发交接
 
-更新：2026-10-09，新会话已恢复，正在开发 Qwen Lite Adapter。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-09，Qwen Lite Adapter精确三平台验收完成，下一步实际Qwen Runtime接线。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
 
-当前处于 **F/G 多模型与 Gateway**。三份旧F/G文档已收尾推送`165d905`；**Qwen Lite Adapter已实现并本地完整通过，精确新源码三平台CI待验**。显式`with_lite_options`、Lite additional_tools/developer稳定ID、ToolMap本地单调用政策和v4历史绑定，新增8项/Qwen70、workspace508/0/52、既有固定Runtime50/0/0、Clippy/fmt/diff通过。下一步提交推送本阶段并检查精确三平台完整日志，随后实际Qwen Classic/Lite Runtime接线。CLI正式文档已完成，不开展账户/CLI/UI编码。
+当前处于 **F/G 多模型与 Gateway**。旧三份F/G文档已收尾推送`165d905`；**Qwen Lite Adapter已实现并完成精确三平台离线验收**，源码`3ec8ca7c2d429ccfdad403134d6450acff2f5163`/[CI37978406850](https://github.com/bboytang/CAIdex/actions/runs/37978406850)。下一步 **实际固定Qwen Classic/Lite Runtime接线**：真实审批、隔离执行、工具结果、取消、重启与磁盘恢复。当前Runtime50/49/49仍是既有回归，不能代验Qwen接线。CLI正式文档已完成，不开展账户/CLI/UI编码。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 
@@ -13,7 +13,7 @@
 - [实施计划 V3](docs/CAIdex-实施计划-V3.md)：A–R 阶段与验收门槛；原 V2 仅用于需求背景，不覆盖新决定。
 - [账户/记忆/云设计](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI完整规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)、[UI规范](docs/CAIdex-UI-规范-V1.md)、[凭据设计](docs/CAIdex-Credentials-设计与验收.md)：已确定产品行为，尚未实现部分明确待验。
 - [Qwen验收](docs/CAIdex-Qwen-Provider-设计与验收.md)、[Gateway设计](docs/CAIdex-Model-Gateway-设计与验收.md)、[Runtime能力对照](docs/CAIdex-Runtime-能力对照.md)：当前技术契约、证据与限制。其他 Provider 的细节在各自 `docs/CAIdex-*-Provider-设计与验收.md`。
-- 下一步源码：`model/providers/qwen/src/{lib,request,tools,history,history_stream}.rs`、`model/providers/qwen/tests/provider.rs`；已验 Lite 参考为 `model/providers/deepseek/src/{lib,request,tools,history}.rs` 与 `tests/lite/mod.rs`，不能盲目复制原生推理/历史契约。
+- 下一步接线：`runtime/bridge/tests/real_runtime.rs`、`runtime/bridge/tests/fixtures/responses_server.py`、独立Qwen Runtime用例与catalog fixture、`runtime/bridge/Cargo.toml`；已验参考为`runtime/bridge/tests/deepseek/mod.rs`。Qwen适配源码及`model/providers/qwen/tests/lite/mod.rs`已验，Qwen仅summary契约，不能复制DeepSeek reasoning_text/content原生输出。
 - 共享实现：`model/core`、`model/providers/custom`、`model/gateway`、`credentials/core`；实际固定 Runtime 测试位于 `runtime/bridge/tests/real_runtime.rs` 与 fixtures。锁定信息在 `upstream/codex/lock.json`，品牌原件在 `assets/brand`。
 
 ## 已完成及实际证据
@@ -22,10 +22,10 @@
 - F/G 共享模型核心、Registry门槛、Custom传输及本地Responses Gateway已有离线验证；OpenAI原生适配、Anthropic/Gemini/Ollama适配及固定Classic/Lite Runtime离线接线已有各自三平台证据。商业模型兼容性不由合成fixture证明。
 - DeepSeek Adapter 57项已验；实际Classic/Lite Runtime新增7项涉及真实审批、隔离执行、取消及磁盘恢复，源码 `1b501ba` / [CI37886226991](https://github.com/bboytang/CAIdex/actions/runs/37886226991)三平台通过，Runtime50/49/49。生产Host与商业Live/Full未验。
 - Qwen基础14项→上下文/effort21项→summary历史32项→function/namespace/v2历史43项→custom映射/v3历史54项均已分别三平台验收。custom源码 `ae0b2d0` / [CI37939652724](https://github.com/bboytang/CAIdex/actions/runs/37939652724)；不重做已验适配。
-- 最新Qwen源码 **`0858493baf30917f0f536c1f70f474507d39e4ae`**：双runtime_context/native_history显式消费summary auto/context all_turns/include；source先预算、effort只映射一次；统一验证v1/v2/v3 carrier的native effort内部契约。新增8项，总62项。默认/部分策略仍拒绝，完整summary/JSON载体不宣传为精简、加密或来源认证。
+- 上一已验控制组合源码 **`0858493baf30917f0f536c1f70f474507d39e4ae`**：双runtime_context/native_history显式消费summary auto/context all_turns/include；source先预算、effort只映射一次；统一验证v1/v2/v3 carrier的native effort内部契约。新增8项，总62项。默认/部分策略仍拒绝，完整summary/JSON载体不宣传为精简、加密或来源认证。
 - 中断前Qwen60通过/2失败已修正，不是当前阻塞：流夹具误把投影summary事件当native reasoning_text事件；NativeHistory缺内部reasoning契约校验。有效RED7/1后最小修复，最终定向62/0/0；workspace500/0/52，Clippy全workspace/all-targets `-D warnings`、fmt/diff通过。旧492通过名+8新名精确保持。
 
-最新精确源码 [CI37974303497](https://github.com/bboytang/CAIdex/actions/runs/37974303497) 已 completed/success，本次交接再次只读核对GitHub三job终态，并重验保存的完整日志与源码绑定：
+控制组合精确源码 [CI37974303497](https://github.com/bboytang/CAIdex/actions/runs/37974303497) 已 completed/success，本次交接再次只读核对GitHub三job终态，并重验保存的完整日志与源码绑定：
 
 | 平台 / job | workspace 通过/失败/忽略 | 既有固定Runtime 通过/失败/忽略 |
 | --- | --- | --- |
@@ -37,11 +37,18 @@
 
 CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b23e18df` 已push。固定上游11份源码及隔离版本/5项help共6项核对通过；CLI-01～34、账户55项、UI16项仍待实现/未执行。当前 `apps/cli` 只有doctor、credentials status/set/remove、version/help。
 
+## 本会话Qwen Lite验收
+
+- 显式`with_lite_options`按route保留Classic/Lite元数据，native传输始终Classic；默认入口不放宽。消费首项developer additional_tools并绑定稳定ID，Lite developer message有效ID保留在native输入/完整前缀；复用custom→function指导和既有工具选择/结果配对，不改Runtime执行器。
+- Lite parallel=false是本地最多交付一个调用，JSON/SSE终态多调用502且不提前交付；缺省/true仍绑定Lite政策。v4绑定完整scope/endpoint/model/前缀/原工具/format/稳定ID；不混用旧v1/v2/v3或Classic，非加密/来源认证。summary/context/include仍须runtime_context+history显式消费，effort一次映射。
+- 新增8项/Qwen70；本地workspace508/0/52、既有固定Runtime50/0/0、Clippy全workspace/all-targets-D warnings、fmt/diff通过。旧62项测试正文逐字保留，全workspace旧500+8精确保持；仅四份Qwen生产源码/lib/request/tools/history及测试变化，共享Core/Gateway/Custom/Broker/Runtime/依赖/workflow未改。
+- 精确CI37978406850 completed/success，Linux113982424514/Windows113982424527/macOS113982424369各17steps成功或条件跳过。完整日志2115/1801/1812行；workspace508/503/507（failed0，ignored52/50/50）、既有Runtime50/49/49（failed/ignored0），Qwen70和DeepSeek57每名一次；全通过名559/552/556精确旧CI+8，无遗漏/重复。watch和三份下载exit0，ci-check通过。这不是实际Qwen Runtime接线或商业Live/Full。
+
 ## 未完成与下一步顺序
 
 1. **三份F/G文档已收尾**：README、Qwen/Gateway验收文档核对79本地链接/22锚点、源码与0858493一致、完整旧CI日志逐名检查和GitHub源码/成功终态通过；纯文档提交`165d905`已推送，不启动Rust CI。
-2. **Qwen Lite Adapter**：先核对固定Runtime真实Lite wire（additional_tools/developer、稳定ID、parallel=false、summary/context/include）与Qwen原生契约，再沿现有ToolMap/NativeHistory/Custom传输实现显式Lite适配、本地单调用交付及历史策略绑定。默认入口保持Classic-only，显式Lite源码和v4历史政策已写入，新增8项测试在`tests/lite/mod.rs`；本地完整通过、精确三平台待验，不能松绑旧历史或把本地拒绝多调用当原生生成约束。
-3. Lite适配验证后，接**实际固定Qwen Classic/Lite Runtime**：真实审批、隔离执行、工具结果、取消、重启与磁盘恢复不重跑未知工具；离线fixture先验，商业Live/Full另需明确授权。不要借既有50/49/49回归代验新接线。
+2. **Qwen Lite Adapter已收尾**：固定Runtime真实wire及Qwen官方契约已核对，显式Lite/v4策略、70项测试与3ec8ca7/CI37978406850精确三平台已验；保留证据，不重复已验适配。
+3. 下一步接**实际固定Qwen Classic/Lite Runtime**：真实审批、隔离执行、工具结果、取消、重启与磁盘恢复不重跑未知工具；离线fixture先验，商业Live/Full另需明确授权。不要借既有50/49/49回归代验新接线。
 4. Qwen之后OpenRouter，继续F/G未完范围；满足V3门槛后再 **H → I → J/K Windows → L SSH → M/N/O iOS → P CLI → Q Relay → R**。不因账户/CLI文档存在跳过Provider或提前标完成。
 5. H：持久Host/SQLite journal/事件恢复/审批竞争/幂等；I：官方账户/PostgreSQL、独立Chat/Memory/同步/邮件/本机恢复共享核心；P：完整英文TUI/exec/task/登录/记忆/Remote整合；R：真实平台、认证、多端、迁移与性能。Windows/iOS客户端、生产Host/Remote/Relay、账户服务、Memory Engine、同步及完整CLI均尚未实现。
 
@@ -64,14 +71,14 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## 问题与阻塞
 
-- 本会话本地验证序列session55870已exit0，无已知失败；旧CI37974303497终态。新Lite精确三平台CI待验，日志`/tmp/caidex-qwen-lite/{workspace-final,clippy-final,runtime-regression}.log`及local-result.json。首轮编译绑定和新夹具错误均已修正，不是剩余源码阻塞。
-- Qwen Lite本地通过、精确三平台待验；实际Qwen Runtime、OpenRouter仍未实现，不是阻塞。Qwen原生输入自动截断风险待真实模型验证；本地预算不能替代token/context能力。商业模型/签名真实性/Full、生产权限、多端Host、Windows桌面/UAC、iOS真机/签名未验。
+- 当前无已知失败或运行中的本轮测试/CI；本地序列、watch及三平台日志下载均exit0，CI37978406850终态。首轮编译绑定、新SSE ID/预算/Gateway header夹具错误已修正，最终workspace与CI通过，不是剩余阻塞。
+- 实际Qwen Runtime、OpenRouter仍未实现，不是阻塞。Qwen原生输入自动截断风险待真实模型验证；本地预算不能替代token/context能力。商业模型/签名真实性/Full、生产权限、多端Host、Windows桌面/UAC、iOS真机/签名未验。
 - 既有Minor/覆盖空缺保留在Provider文档：Gemini thought-call/无tools/none、整组载体互换、projection/满槽取消、整数/空ID、usage/thought-only等；Anthropic重启第三轮/完整Lite custom结果等。不是本轮已修复项，不派重复审查或无关重构。
 - 同步SecretStore调用开始后不能强停，只保证取消后不POST；comment-only native chunk/实际Runtime下游idle单独未验。jsonschema0.58.6离线retriever虽有字节/regex限制但无硬CPU抢占，留H隔离；不自动重试/修补坏回答。
 
 ## Git、环境与操作授权
 
-- 分支 **main**，恢复后HEAD=origin/main=`165d905`；恢复基线为`df1255d`。当前待提交HANDOFF/README/Qwen/Gateway文档、Qwen四份生产源码/lib/request/tools/history、provider测试的mod声明及新tests/lite/mod.rs；无共享Runtime/传输/依赖/workflow改动。
+- 分支 **main**，最新源码基线`3ec8ca7`已在origin/main，文档收尾前HEAD=origin/main=`3ec8ca7`；恢复基线为`df1255d`。源码已提交推送，收尾前仅HANDOFF/README/Qwen/Gateway四份验收文档更新，独立纯文档收尾提交号以git log -1为准；无共享Runtime/传输/依赖/workflow改动。
 - 新会话用户已明确授权本次核验通过的文档与Qwen Lite源码提交推送main及源码三平台CI；首次推送曾因自动审批不认可旧交接授权被拒，取得本会话明确授权后推送成功。
 - 用户2026-10-08持续授权本地检查通过后直接commit/push、源码三平台CI，不再重复询问；纯文档不运行完整Rust CI。离线合成fixture/临时marker已授权；未授权读取用户Key、商业API/邮件/生产部署/模型下载或购买服务。
 - `.git`普通沙箱只读，Git写入/push需授权执行环境。push使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局凭据或输出秘密。
@@ -79,6 +86,8 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## 交接检查与证据位置
 
-本次只复核项目文档/相关源码、Git、已有完整日志与GitHubCI状态，整理恢复文件；不启动新开发、不重跑Rust编译或CI。交接检查通过：17份Markdown/79本地链接/22锚点、git diff --check、旧HANDOFF归档逐字及SHA256一致；除HANDOFF之外198个既有tracked文件未变（包括三份未提交F/G文档）。提交仅HANDOFF与历史归档，推送后核对HEAD/origin及剩余三文档状态，最终结果在 `/tmp/caidex-session-handoff-oct09/`。临时日志只是补充，跨机器续接应依本文件、项目docs、固定源码与公开CI链接，不能要求原会话或/tmp仍存在。
+上一会话仅复核与归档；该次交接检查通过：17份Markdown/79本地链接/22锚点、git diff --check、旧HANDOFF归档逐字及SHA256一致；除HANDOFF之外198个既有tracked文件未变（包括三份未提交F/G文档）。提交仅HANDOFF与历史归档，推送后核对HEAD/origin及剩余三文档状态，最终结果在 `/tmp/caidex-session-handoff-oct09/`。临时日志只是补充，跨机器续接应依本文件、项目docs、固定源码与公开CI链接，不能要求原会话或/tmp仍存在。
 
 本机补充：`/tmp/caidex-qwen-history-controls/{local-result,ci-result}.json`及workspace-final/clippy-final/resume-green.log；`/tmp/caidex-ci-37974303497-{linux,windows,macos}-raw.log`及status.json；CLI只读核对在`/tmp/caidex-cli-formal-audit-final/`。全部重要结论、SHA、CI编号和下一步已保存在项目文件中。
+
+本会话补充日志：`/tmp/caidex-qwen-lite/{workspace-final,clippy-final,runtime-regression,ci-watch}.log`、local-result.json/ci-result.json；完整CI日志为`/tmp/caidex-ci-37978406850-{linux,windows,macos}-raw.log`与status.json。源码/CI/数量/边界已写入仓库文档，续接不依赖/tmp。
