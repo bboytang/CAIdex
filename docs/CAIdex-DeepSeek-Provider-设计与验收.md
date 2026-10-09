@@ -130,7 +130,7 @@ apply_patch三平台收尾：精确源码df98a54bb247f947d9ce4014f7007c9d192056b
 
 复杂流修正版三平台收尾：精确e04d94402e63d43337533ba22396f8fb8fd84a55/[CI37862956680](https://github.com/bboytang/CAIdex/actions/runs/37862956680)整体completed/success；Linux113602819911/Windows113602820108/macOS113602820877各17steps成功或条件跳过，完整raw1998/1685/1696行。workspace427/422/426（0failed，ignored45/43/43）、DeepSeek46每名每平台一次、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。全workspace/credentials/Runtime/compile-fail doc-test通过名集合471/464/468等于6742b15基线加30新名，无遗漏/重复；watch15755、完整日志下载与normalize/available/full-names均exit0，全部handle结束，在/tmp/caidex-deepseek-complex-ci-source精确归档核对。日志/tmp/caidex-ci-37862956680-{linux,windows,macos}-raw.log及标注.log/status.json/watch.log；checker /tmp/caidex-deepseek-complex-ci-{normalize,available}.py和/tmp/caidex-deepseek-ci-full-names.py。旧Runtime回归不是DeepSeek实际Runtime接线；全文推理不是原生摘要/加密，Lite/实际DeepSeek Runtime/商业模型与整体F/G、H–R仍待。
 
-## Lite custom Code Mode 与本地单调用（本地57项通过，新源码CI待验）
+## Lite custom Code Mode 与本地单调用（57项已精确三平台通过）
 
 2026-10-09再次核对[官方Responses兼容表](https://api-docs.deepseek.com/guides/responses_api/)：原生仅接受apply_patch custom，并忽略parallel_tool_calls。本步显式 `with_lite_options` 复用Ollama的已验证模式，公开metadata/目录保留执行端配置的Classic/Lite dialect，shared Custom传输只收到编译后的Classic；默认constructor依旧Classic-only。只改DeepSeek lib/request/tools/history，无新HTTP栈、Agent、执行器、依赖或共享Gateway改动。
 
@@ -140,6 +140,8 @@ Lite在完整源字节预算检查后消费可选首个developer additional_tool
 
 v3完整绑定Lite来源和单调用策略、源/native声明、执行端owner/profile/端点/native model、原始前缀、原生JSON或SSE chunks；不同dialect、显示篡改或策略变化不得复用，即使工具全部是函数。旧v1/v2不升级；carrier仍是敏感明文JSON，无加密/来源认证，预算仍可能因完整前缀增长拒绝。串行化回放不是Host磁盘恢复。
 
-新增11项离线回归覆盖JSON/SSE三轮精确原生回放、参数/能力/原始预算零Key-POST、各终态多调用与slot释放、允许多调用/grammar/named choice、坏原生参数/类型/choice/流增量、历史篡改及作用域/错误结果、调用者历史类型配对、Lite-only纯文本metadata/目录、部分流取消/Drop/编译后预算、Gateway SSE→JSON及令牌隔离/一次effort、纯函数Classic/Lite双向拒绝。旧46名保持。有效RED为新正例编译成功后InvalidRoute失败（/tmp/caidex-deepseek-lite-valid-red.log），上轮未编译草稿不算RED；最终workspace438/0/45（DeepSeek57每名一次）、全workspace/all-targets Clippy-D warnings/fmt/diff通过，10变更路径/53本地链接/21锚点与原架构/CLI/旧CI证据检查通过。日志/tmp/caidex-deepseek-lite-{workspace,clippy}.log，checker /tmp/caidex-deepseek-lite-local-check.py；新源码三平台仍待，未借旧46项CI代验57项。
+新增11项离线回归覆盖JSON/SSE三轮精确原生回放、参数/能力/原始预算零Key-POST、各终态多调用与slot释放、允许多调用/grammar/named choice、坏原生参数/类型/choice/流增量、历史篡改及作用域/错误结果、调用者历史类型配对、Lite-only纯文本metadata/目录、部分流取消/Drop/编译后预算、Gateway SSE→JSON及令牌隔离/一次effort、纯函数Classic/Lite双向拒绝。旧46名保持。有效RED为新正例编译成功后InvalidRoute失败（/tmp/caidex-deepseek-lite-valid-red.log），上轮未编译草稿不算RED；最终workspace438/0/45（DeepSeek57每名一次）、全workspace/all-targets Clippy-D warnings/fmt/diff通过，10变更路径/53本地链接/21锚点与原架构/CLI/旧CI证据检查通过。日志/tmp/caidex-deepseek-lite-{workspace,clippy}.log，checker /tmp/caidex-deepseek-lite-local-check.py；新源码82cfab8/CI37867150335已独立三平台完整验收，未借旧46项CI代验57项。
 
-恢复顺序：先完成本步本地/精确三平台CI，再固定DeepSeek Classic/Lite实际Runtime审批、执行、取消、磁盘恢复，然后Qwen/OpenRouter；商业模型Live/Full与整体F/G、H–R仍待。
+恢复顺序：本步本地/精确三平台CI已完成，下一步固定DeepSeek Classic/Lite实际Runtime审批、执行、取消、磁盘恢复，然后Qwen/OpenRouter；商业模型Live/Full与整体F/G、H–R仍待。
+
+Lite三平台收尾：精确源码82cfab860d67ed5dd3edeeffded279cb03db65c4/[CI37867150335](https://github.com/bboytang/CAIdex/actions/runs/37867150335)整体completed/success；Linux113616480992/Windows113616481222/macOS113616481210各17steps成功或条件跳过，完整raw2009/1696/1707行。workspace438/433/437（0failed，ignored45/43/43）、DeepSeek57每名每平台一次、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。全通过名482/475/479等于e04d944基线加11新名，无遗漏/重复；watch83687及完整日志下载/normalize/ci-check均exit0。checker /tmp/caidex-deepseek-lite-ci-check.py从git show精确源码取名核对，结果/tmp/caidex-deepseek-lite-ci-result.json；日志/tmp/caidex-ci-37867150335-{linux,windows,macos}-raw.log及标注.log/status.json/watch.log。只认领本步离线Adapter，不认领实际DeepSeek Runtime接线、商业API、Host落盘恢复或Live/Full。
