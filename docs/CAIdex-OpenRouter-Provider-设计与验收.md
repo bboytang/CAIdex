@@ -34,7 +34,7 @@
 ## 后续顺序
 
 1. 本步完整本地检查、差异审查、源码9563df0推送与CI38004040230精确三平台已完成；保留证据，不重复基础适配。
-2. 继续OpenRouter显式Runtime上下文/正文与推理控制、原生工具及后端绑定历史；官方推理/工具/路由契约先核对，不复制Qwen summary或DeepSeek明文规则。
+2. 显式上下文/neutral text/effort已三平台收尾；继续逐route非neutral正文控制、原生工具及后端绑定历史；官方推理/工具/路由契约先核对，不复制Qwen summary或DeepSeek明文规则。
 3. 再验Lite与实际固定Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业模型兼容性另需授权。
 4. 保持V3 F/G→H/I→Windows/SSH/iOS/CLI/Relay/R；生产Host、GUI、账户/记忆及完整CLI均仍待实现。
 
@@ -49,4 +49,6 @@
 - 请求只接受reasoning.effort，不默默丢弃summary/context/include/max_tokens/exclude/enabled，推理输入和工具历史仍拒绝。强制require_parameters=true/allow_fallbacks=false，不保证初始后端固定、精确计算量或数据留存；后续后端绑定历史必须单独核验。
 - 编译前源预算与编译后共享预算保持；没有新HTTP栈、执行器、全局环境Key或外部依赖。默认入口保留旧14项行为。
 
-新增9项隔离HTTP验收：身份消费与GET/POST隔离、默认/turn-state拒绝、坏正文/ID/历史控制、逐route与映射一次、配置/Unsupported门控、源预算先于消费、SSE组合无损、7种显式词汇及none/能力不升级、Gateway监听与模型身份隔离。定向23/0/0已通过；完整本地workspace533/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；workspace逐名精确旧524+9、旧Runtime名完全保持，旧14项测试逐字保留，依赖/共享/其他Provider/workflow不变。本步精确源码CI待执行。日志`/tmp/caidex-openrouter-context/`。现阶段不认领工具历史/Lite/实际固定OpenRouter Runtime/商业Live或Full。
+新增9项隔离HTTP验收：身份消费与GET/POST隔离、默认/turn-state拒绝、坏正文/ID/历史控制、逐route与映射一次、配置/Unsupported门控、源预算先于消费、SSE组合无损、7种显式词汇及none/能力不升级、Gateway监听与模型身份隔离。定向23/0/0已通过；完整本地workspace533/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；workspace逐名精确旧524+9、旧Runtime名完全保持，旧14项测试逐字保留，依赖/共享/其他Provider/workflow不变。本步精确源码三平台CI已验，见下段。日志`/tmp/caidex-openrouter-context/`。现阶段不认领工具历史/Lite/实际固定OpenRouter Runtime/商业Live或Full。
+
+精确源码`92d0612a50bd23dd13c0d69e2536636e7c6320b1`/[CI38005373396](https://github.com/bboytang/CAIdex/actions/runs/38005373396)整体completed/success。Linux114072825747/Windows114072825607/macOS114072825701各17steps成功或条件跳过；完整raw2175/1861/1872行，workspace533/528/532（failed0，ignored59/57/57）、既有固定Runtime57/56/56（failed/ignored0），OpenRouter23、Qwen72、DeepSeek57每名每平台一次。全通过名591/584/588精确为旧CI38004040230集合+9，无遗漏/重复；既有Runtime通过名完全保持。watch及三份完整日志下载exit0，ci-check通过；日志`/tmp/caidex-ci-38005373396-{linux,windows,macos}-raw.log`及status.json，checker/result在`/tmp/caidex-openrouter-context/`。这些Runtime回归不代验实际OpenRouter接线或商业Live/Full，也不代验iOS应用。

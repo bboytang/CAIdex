@@ -12,7 +12,7 @@
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，Qwen实际Runtime也已完成三平台离线验收，下一步OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter显式Runtime上下文/逐route effort的精确源码CI验收，之后原生工具/后端绑定历史；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter逐route正文控制及原生工具/后端绑定历史，上下文/neutral text/effort已三平台验收；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
 
 续接复核补清无头 `exec fork` 的ForkOnly：不带prompt只创建分支，成功不代表执行任务；恢复目标不存在时不静默新建任务。此为P/R待实现契约，当前开发CLI仍无exec/fork/resume。F/G控制组合独立推进，验证结果见Qwen专属文档和HANDOFF，CLI文档核对不代验源码。
 
@@ -52,7 +52,7 @@ node scripts/codex-binary.mjs
 - Qwen Runtime/history组合：双策略显式本地消费summary/context/include，统一验证v1/v2/v3 carrier的native effort内部契约，旧effort不再次映射。8项新增/62项定向及workspace500/0/52、Clippy/fmt/diff本地通过；精确源码0858493/[CI37974303497](https://github.com/bboytang/CAIdex/actions/runs/37974303497)三平台完整通过（workspace500/495/499、既有Runtime50/49/49，Qwen62逐名一次），不授实际Qwen Runtime/Live/Full。Lite及实际Qwen Runtime独立验收见下条。
 - Qwen显式Lite Adapter：`with_lite_options`编译additional_tools/developer稳定ID，复用custom→function与本地最多单调用交付，v4绑定Lite历史政策；默认Classic不放宽，grammar/parallel不宣称原生生成约束。新增8项/Qwen70、workspace508/0/52、既有固定Runtime50/0/0及Clippy/fmt/diff本地通过；精确源码3ec8ca7c2d429ccfdad403134d6450acff2f5163/[CI37978406850](https://github.com/bboytang/CAIdex/actions/runs/37978406850)三平台完整通过（workspace508/503/507、既有Runtime50/49/49、Qwen70逐名一次），该CI不涵盖实际Qwen Runtime，当前证据见下条；商业Live/Full未验。
 - Qwen实际Classic/Lite固定Runtime：新增7项真实审批/隔离工具执行、磁盘恢复不重跑、拒绝与取消；最小修复显式runtime_context下typed developer/user消息稳定ID，新增Provider2项。精确bf94c9d/[CI37982550340](https://github.com/bboytang/CAIdex/actions/runs/37982550340)三平台完整通过：workspace510/505/509、实际Runtime57/56/56、Qwen72；旧通过名精确+2/+7。Codex仍是唯一执行/审批真源，商业Live/Full、生产Host及iOS构建未验。
-- `model/providers/openrouter`：原生目录/六方法、基础Classic文本JSON/SSE，固定无状态与路由策略，复用Custom传输与执行端Broker；14项及workspace524/0/59、既有Runtime57/0/0、Clippy/fmt本地通过，精确9563df0/[CI38004040230](https://github.com/bboytang/CAIdex/actions/runs/38004040230)三平台完整通过（workspace524/519/523、既有Runtime57/56/56，OpenRouter14逐名一次）。工具/推理历史/Lite/实际OpenRouter Runtime及商业Live/Full仍待。
+- `model/providers/openrouter`：原生目录/六方法、基础Classic文本JSON/SSE，固定无状态与路由策略，复用Custom传输与执行端Broker；14项及workspace524/0/59、既有Runtime57/0/0、Clippy/fmt本地通过，精确9563df0/[CI38004040230](https://github.com/bboytang/CAIdex/actions/runs/38004040230)三平台完整通过（workspace524/519/523、既有Runtime57/56/56，OpenRouter14逐名一次）。工具/推理历史/Lite/实际OpenRouter Runtime及商业Live/Full仍待。OpenRouter上下文/effort新增9项、本地23项与workspace533/0/59、既有Runtime57/0/0、Clippy/fmt/diff已验；默认拒绝与身份隔离保持，精确92d0612/[CI38005373396](https://github.com/bboytang/CAIdex/actions/runs/38005373396)三平台已验（workspace533/528/532、既有Runtime57/56/56，OpenRouter23逐名保持）。
 - `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和剩余兼容 API 接入待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
@@ -78,5 +78,3 @@ node scripts/codex-binary.mjs
 基础 CI 在 Linux、Windows 和 macOS 验证 Rust 工程及离线协议。iOS 应用工程建立后加入 simulator 测试和无签名 archive；目前 macOS Rust 检查不等同于 iOS 构建。
 
 上游 Codex 与归档协议遵循 `upstream/codex/LICENSE`、`NOTICE`。CAIdex 自有代码及品牌的对外分发许可证尚未确定。
-
-OpenRouter上下文/effort新增9项、本地23项与workspace533/0/59、既有Runtime57/0/0、Clippy/fmt/diff已验；默认拒绝与身份隔离保持，本步源码三平台CI待验。详情见[OpenRouter验收](docs/CAIdex-OpenRouter-Provider-设计与验收.md)。
