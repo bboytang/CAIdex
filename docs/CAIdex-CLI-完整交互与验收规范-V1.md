@@ -2,7 +2,7 @@
 
 正式决定：2026-10-09。状态：**最终设计基准；完整 CLI 尚未实现，CLI-01～CLI-34 全部待实现、未执行**。本文不启动 CLI 编码，不改变 A–R 顺序或当前 F/G 恢复点。原 V2 仅作需求背景，冲突以 [V3](CAIdex-实施计划-V3.md)、本文及[账户/记忆/云设计](CAIdex-Account-Memory-Cloud-设计与验收-V1.md)为准。
 
-本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。
+本次续接复核沿用已归档的 V1，不重建架构。后续命令实现须同时核对本规范、执行 Host 的实际能力和版本；目录、help 或设计文档存在均不是功能通过证据。2026-10-09 再次核对六份固定上游源码及版本/help，仅纠正第12节 stdin 编码和空输入边界，新增断言仍属待验收。
 
 ## 目录
 
@@ -327,7 +327,8 @@ Host先持久化真实请求和授权上下文，绑定Host/Thread/Turn/Request 
 
 ### 12.1 终端与流
 
-- TUI要求TTY，不能把pipe输入当交互批准。exec可无TTY；无prompt或显式 `-` 从stdin读UTF-8到EOF，有prompt同时pipe则按固定上游追加 `<stdin>`上下文，空/坏编码失败。prompt与Key输入通道不同，不能猜输入是秘密。
+- TUI要求TTY，不能把pipe输入当交互批准。exec可无TTY；无prompt或显式 `-` 从stdin读到EOF，空或仅空白输入失败。根exec已有位置参数prompt时，非空pipe按固定上游追加 `<stdin>`上下文，空或仅空白pipe忽略并保留原prompt；resume/fork/review分别沿其真实参数解析，不假定全部附加stdin。prompt与Key输入通道不同，不能猜输入是秘密。
+- prompt解码沿固定 `decode_prompt_bytes`：UTF-8（可带BOM）、带BOM的UTF-16LE/BE；拒绝UTF-32 BOM、非法UTF-8、UTF-16奇数字节或无效代理对，不猜测无BOM的UTF-16编码。这不改变现有credentials set的UTF-8/长度/仅移除一个末尾换行规则，不能对秘密套用prompt裁剪。
 - 人类exec：最终助手内容stdout，进度/诊断stderr；`-o`输出最终消息文件，写失败须报告，文件可能含私人项目内容。schema约束与模型能力遵真实结果，不保证无能力模型自动满足。`--ephemeral`沿原生不保存会话正文，不取消Host用于幂等/安全恢复的最少操作状态，帮助明确范围；不以它擦掉审批审计或改为第二Runtime。
 - `--json`：stdout仅JSONL，无ANSI/欢迎词/登录日志混入；stderr诊断脱敏。`--color auto|always|never`继承固定exec，NO_COLOR及非TTY行为在P实测，always不污染JSONL。
 - 默认无CAIdex额外任务总超时（沿上游）；Host/Provider已有有界传输/阻塞策略仍有效。可显式 `--timeout <positive seconds>` 设置客户端等待及向Host中断的期限；到时不声称副作用回滚。中断确认失败标unknown，可用status查同Task/Turn，不重提交。
@@ -426,6 +427,8 @@ SQLite schema与Host/账户API均版本化。迁移前检查可用空间、兼�
 | CLI-34 | P/R；T/H/A/D | Windows11 Terminal、Linux SSH/VPS、无TTY CI实际全链路；resize/ANSI/nocolor/paste/中文路径/signals | 各平台实运行报告，keymap上下文正确，headless无prompt死等、恢复准确；无真实覆盖的层级保留未验 |
 
 复核补充断言仍归以上原编号，不算新增通过：CLI-16/32在task受理和恢复时核对真实policy/reviewer/sandbox，exec不会被改成跨端人工等待；CLI-17/21注入安全store写失败，确认无半写入成功状态，新增会话撤销失败明确pending，撤销重试秘密不进普通outbox；CLI-24/26/32在离线关闭后重新登录Enabled账户及CAS冲突，确认本机仍停传、旧队列不自动恢复、用户意图不被默默覆盖。
+
+CLI-15/34还须用Windows/Linux真实管道验证UTF-8/BOM、UTF-16LE/BE BOM、非法编码，以及根exec“无prompt/显式 `-` 的空stdin拒绝”和“已有prompt的空stdin忽略/非空stdin追加”三种路径；另核对resume/fork/review各自入口。不以源码阅读代替运行通过，不改变CLI-01～34编号和当前未执行状态。
 
 ## 16. 实施时待验证的技术细节
 

@@ -1,8 +1,12 @@
 # CAIdex 项目交接
 
-更新：2026-10-09（F/G Qwen显式Runtime控制/逐模型推理三平台离线验收完成）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09（CLI正式文档指令复核，F/G恢复点不变）。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
+
+本轮只复核用户CLI正式文档指令。完整CLI V1及V3/Account/UI/Credentials/README已有正式契约，不重复新建或重写。六份固定d27764b源码与GitHub原文逐字一致，codex0.160.1及顶层/exec/login/resume/fork help六项只读核对通过；发现原stdin“仅UTF-8/空输入一律失败”不准确，已在CLI第12节改为UTF-8或BOM UTF-16、根exec有prompt时忽略空pipe，并给CLI-15/34补待验断言；V3/README同步。未启动TUI/登录/模型，未改生产代码。PKCE/Device公开客户端、无注册、独立会话/Host权限、账户sync继承/默认关/历史上传许可、exec与持久task审批分离仍按现有规范，H/I/P/R职责及A–R顺序不变。认证库/参数、Host接线、真实终端/多设备与迁移仍待相应实施阶段验证；34项CLI全部待实现/未执行。
+
+本轮起点main/62884439ab565baa334a4c172cd455e471c984eb，工作区干净。仅CLI规范、V3、README、HANDOFF四文档修改；Account/UI/Credentials的已有正式CLI要求与历史证据逐字保留。检查通过：16份Markdown/59本地链接/22锚点、34项CLI原表及A–R阶段表、历史CI、所有非任务tracked文件SHA256不变、git diff --check。checker首轮仅误要求中文待确认文案，修正为规范已有英文后通过，不是功能失败。核对/check.py/result.json在/tmp/caidex-cli-oct09-audit；纯文档不跑Rust编译或三平台CI。按已有授权独立commit/push，恢复先核对HEAD/origin/status；不将本次文档核对记作新CLI功能或Provider验收。
 
 F/G Qwen显式Runtime控制/逐模型推理源码`311224bfcf0cf8019f511cf03e48397f45216715`已提交/push，精确[CI37890668777](https://github.com/bboytang/CAIdex/actions/runs/37890668777)整体completed/success。只改Qwen lib/request/tests及4相关文档：显式本地attribution/cache元数据和neutral text消费、执行端verbosity指令追加、逐route effort一次映射（不按名称猜测、不跨模型回退、developer保持），源/编译预算、能力禁用、取消deadline和Gateway/Broker隔离保持。当前下一步原生function/namespace/custom、tool choice/成对结果及summary历史绑定，再Lite/实际固定Runtime，OpenRouter随后；不提前开始H/I/CLI。
 
@@ -102,7 +106,9 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；源码311224bfcf0cf8019f511cf03e48397f45216715已commit/push并精确三平台验收；watch34953及所有检查/下载句柄结束。当前收尾仅README、Qwen/Gateway验收及HANDOFF四文档，源码/依赖/workflow与已验311224b一致；检查后独立文档提交标题`docs: record Qwen controls three-platform verification`，纯文档按workflow路径不触发完整CI。恢复先核对HEAD/origin/status，从已验后续步骤接续，不借旧CI、不重复启动。用户持续commit/push/三平台CI授权保持。
+- 本轮CLI指令复核从main/62884439干净工作区开始；仅四文档，提交标题`docs: verify final CLI contract against pinned stdin behavior`，按已授权commit/push，不为纯文档触发完整CI；最终SHA/origin以Git为准。无F/G源码或其他并行未提交修改；后续继续Qwen原生工具/summary历史，不启动CLI实现。
+
+- branch main；源码311224bfcf0cf8019f511cf03e48397f45216715已commit/push并精确三平台验收；watch34953及所有检查/下载句柄结束。Qwen收尾四文档已以62884439提交/push（`docs: record Qwen controls three-platform verification`），源码/依赖/workflow与已验311224b一致。当前CLI复核为独立纯文档提交，按workflow路径不触发完整CI。恢复先核对HEAD/origin/status，从已验后续步骤接续，不借旧CI、不重复启动。用户持续commit/push/三平台CI授权保持。
 
 
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约7.9G可用，修改前先df，不清源码/凭据/保护目录。

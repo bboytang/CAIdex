@@ -12,6 +12,8 @@
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，下一步Qwen/OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接。本次复核补正固定exec的stdin编码/空管道边界，34项CLI验收仍全部待实现、未执行；当前F/G恢复点保持Qwen原生工具与summary历史绑定，精确源码和CI证据见HANDOFF。
+
 ## 开发与验证
 
 需要 Rust 1.99.0、Python 3、Codex CLI 0.160.1。Node 22.23.3 用于 CI 工具。
