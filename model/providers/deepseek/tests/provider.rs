@@ -1,4 +1,5 @@
 //! Offline native HTTP/SSE; synthetic executor key and isolated loopback only.
+mod lite;
 use caidex_credentials::{Broker, CredentialRef, Id, Secret, SecretKind, SecretStore};
 use caidex_model_core::{
     CancellationToken, CanonicalRequest, CapabilitySupport, ContextHeaders, CredentialRequirement,

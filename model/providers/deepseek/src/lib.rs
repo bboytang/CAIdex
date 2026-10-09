@@ -39,8 +39,22 @@ pub struct DeepSeekProvider<S: SecretStore> {
     native_history: bool,
     native_tools: bool,
     native_apply_patch: bool,
+    lite: bool,
+    model_dialects: HashMap<String, Vec<ResponsesDialect>>,
 }
 impl<S: SecretStore + 'static> DeepSeekProvider<S> {
+    /// Explicit Lite custom-to-function compilation and local single-call
+    /// delivery. Native transport remains Classic; history binds this policy.
+    pub fn with_lite_options(
+        config: DeepSeekConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+    ) -> Result<Self, Error> {
+        Ok(Self::build(config, models, broker, limits, options, true)?.with_native_tools())
+    }
+
     pub fn new(
         config: DeepSeekConfig,
         models: Vec<ModelMetadata>,
@@ -56,13 +70,27 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         limits: Limits,
         options: ClientOptions,
     ) -> Result<Self, Error> {
+        Self::build(config, models, broker, limits, options, false)
+    }
+    fn build(
+        config: DeepSeekConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+        lite: bool,
+    ) -> Result<Self, Error> {
         let models_endpoint = config.endpoint("models")?;
+        let mut model_dialects = HashMap::new();
         let routes = models
             .into_iter()
-            .map(|model| {
-                if model.dialects != [ResponsesDialect::Classic] {
+            .map(|mut model| {
+                model.validate().map_err(|_| Error::InvalidRoute)?;
+                if !lite && model.dialects != [ResponsesDialect::Classic] {
                     return Err(Error::InvalidRoute);
                 }
+                model_dialects.insert(model.id.clone(), model.dialects.clone());
+                model.dialects = vec![ResponsesDialect::Classic];
                 ConfiguredModel::new(
                     model.id.clone(),
                     model.native_model.clone(),
@@ -90,6 +118,8 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
             native_history: false,
             native_tools: false,
             native_apply_patch: false,
+            lite,
+            model_dialects,
         })
     }
     /// Explicit local attribution and leading developer-to-system policy.
@@ -181,14 +211,20 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         &self,
         request: CanonicalRequest,
     ) -> ProviderResult<(CanonicalRequest, Option<tools::ToolMap>)> {
-        let model = self.responses.metadata(request.model())?;
+        let model = self.metadata(request.model())?;
         if !model.dialects.contains(&request.dialect()) {
             return Err(ProviderError::new(400, "unsupported_dialect"));
         }
         if model.capabilities.text == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_text"));
         }
-        if self.native_tools && model.capabilities.native_tools == CapabilitySupport::Unsupported {
+        let (request, lite_single) = request::classic(request, self.lite, self.request_bytes)?;
+        if self.native_tools
+            && request.wire()["tools"]
+                .as_array()
+                .is_some_and(|v| !v.is_empty())
+            && model.capabilities.native_tools == CapabilitySupport::Unsupported
+        {
             return Err(ProviderError::new(400, "unsupported_tools"));
         }
         let request = request::compile_history_controls(
@@ -218,7 +254,7 @@ impl<S: SecretStore + 'static> DeepSeekProvider<S> {
         if !self.native_history {
             return Ok((request, None));
         }
-        let tools = tools::ToolMap::from_request(&request, self.native_apply_patch)?;
+        let tools = tools::ToolMap::from_request(&request, self.native_apply_patch, lite_single)?;
         let mut request = tools.compile(request)?;
         let mut wire = request.wire().clone();
         wire["model"] = model.native_model.into();
@@ -297,13 +333,16 @@ impl<S: SecretStore + 'static> ModelProvider for DeepSeekProvider<S> {
                         return None;
                     }
                     model.source = EvidenceSource::ProviderCatalog;
+                    model.dialects = self.model_dialects[&model.id].clone();
                     Some(model)
                 })
                 .collect())
         })
     }
     fn metadata(&self, model: &str) -> ProviderResult<ModelMetadata> {
-        self.responses.metadata(model)
+        let mut metadata = self.responses.metadata(model)?;
+        metadata.dialects = self.model_dialects[model].clone();
+        Ok(metadata)
     }
     fn capabilities(&self, model: &str) -> ProviderResult<ModelCapabilities> {
         self.responses.capabilities(model)

@@ -39,36 +39,53 @@ fn id(value: &Value) -> ProviderResult<&str> {
         .ok_or_else(invalid)
 }
 
-/// Original declarations and explicit apply_patch policy remain bound beside
-/// the exact native aliases and tool kinds. Lite is not enabled.
+/// Source declarations, dialect and delivery policy bind the native tool map.
 pub(crate) struct ToolMap {
     source: Value,
     native: Vec<Value>,
     identities: HashMap<(Option<String>, String), String>,
+    mapped_custom: HashSet<String>,
 }
 impl ToolMap {
     pub(crate) fn from_request(
         request: &CanonicalRequest,
         apply_patch: bool,
+        lite_single: Option<bool>,
     ) -> ProviderResult<Self> {
         let mut source = json!({"tools":request.wire()["tools"], "tool_choice":request.wire()["tool_choice"], "parallel_tool_calls":request.wire()["parallel_tool_calls"]});
         if apply_patch {
             source["apply_patch"] = true.into();
+        }
+        if let Some(single) = lite_single {
+            source["lite_single_tool_call"] = single.into();
         }
         Self::from_source(source)
     }
     pub(crate) fn from_source(source: Value) -> ProviderResult<Self> {
         fields(
             &source,
-            &["tools", "tool_choice", "parallel_tool_calls", "apply_patch"],
+            &[
+                "tools",
+                "tool_choice",
+                "parallel_tool_calls",
+                "apply_patch",
+                "lite_single_tool_call",
+            ],
         )?;
         if source.get("apply_patch").is_some_and(|v| v != true) {
+            return Err(invalid());
+        }
+        if source
+            .get("lite_single_tool_call")
+            .is_some_and(|v| !v.is_boolean())
+        {
             return Err(invalid());
         }
         let mut map = Self {
             source,
             native: Vec::new(),
             identities: HashMap::new(),
+            mapped_custom: HashSet::new(),
         };
         let declarations = map.source["tools"].clone();
         if !declarations.is_null() {
@@ -91,8 +108,7 @@ impl ToolMap {
         }
         if !map.source["parallel_tool_calls"].is_null() && map.source["parallel_tool_calls"] != true
         {
-            // Native always permits parallel calls; false cannot be enforced by
-            // echoing an ignored flag. Lite gets its own delivery policy later.
+            // Classic cannot claim the ignored native flag enforces false.
             return Err(unsupported());
         }
         map.choice()?;
@@ -116,7 +132,8 @@ impl ToolMap {
             },
         )?;
         if custom {
-            if self.source["apply_patch"] != true || tool["name"] != "apply_patch" {
+            if !self.lite() && (self.source["apply_patch"] != true || tool["name"] != "apply_patch")
+            {
                 return Err(unsupported());
             }
             if let Some(format) = tool.get("format") {
@@ -150,7 +167,8 @@ impl ToolMap {
             }
         }
         let identity = (namespace.map(str::to_owned), member.to_owned());
-        let alias = if namespace.is_some() && !custom {
+        let mapped = custom && self.lite();
+        let alias = if namespace.is_some() && (!custom || mapped) {
             format!("caidex_ns_{}", self.native.len())
         } else {
             member.to_owned()
@@ -161,7 +179,7 @@ impl ToolMap {
             return Err(invalid());
         }
         let mut native = tool.clone();
-        native["name"] = alias.into();
+        native["name"] = alias.clone().into();
         if !guidance.is_empty() {
             native["description"] = format!(
                 "Namespace description: {guidance}\n{}",
@@ -171,8 +189,9 @@ impl ToolMap {
         }
         if custom && let Some(format) = tool.get("format") {
             native["description"] = format!(
-                "{}\nOriginal apply_patch input format (guidance only): {format}",
-                native["description"].as_str().unwrap_or("")
+                "{}\nOriginal {} input format (guidance only): {format}",
+                native["description"].as_str().unwrap_or(""),
+                if mapped { "custom tool" } else { "apply_patch" },
             )
             .into();
         }
@@ -180,6 +199,16 @@ impl ToolMap {
         object.remove("format");
         object.remove("strict");
         object.remove("defer_loading");
+        if mapped {
+            native["type"] = "function".into();
+            native["parameters"] = json!({"type":"object", "properties":{"input":{"type":"string"}}, "required":["input"], "additionalProperties":false});
+            native["description"] = format!(
+                "{}\nReturn the original freeform input as the input string.",
+                native["description"].as_str().unwrap_or("")
+            )
+            .into();
+            self.mapped_custom.insert(alias);
+        }
         self.native.push(native);
         Ok(())
     }
@@ -193,9 +222,14 @@ impl ToolMap {
             .get(&(namespace, name(&item["name"])?.to_owned()))
             .map(String::as_str)
             .filter(|alias| {
-                self.native
-                    .iter()
-                    .any(|tool| tool["name"] == *alias && tool["type"] == kind)
+                self.native.iter().any(|tool| {
+                    tool["name"] == *alias
+                        && if self.mapped_custom.contains(*alias) {
+                            kind == "custom"
+                        } else {
+                            tool["type"] == kind
+                        }
+                })
             })
             .ok_or_else(invalid)
     }
@@ -213,13 +247,26 @@ impl ToolMap {
             return Ok(choice.clone());
         }
         fields(choice, &["type", "name", "namespace"])?;
-        if choice["type"] != "function" {
+        let kind = choice["type"].as_str().ok_or_else(invalid)?;
+        if kind != "function" && !(kind == "custom" && self.lite()) {
             return Err(unsupported());
         }
-        Ok(json!({"type":"function", "name":self.alias(choice, "function")?}))
+        Ok(json!({"type":"function", "name":self.alias(choice, kind)?}))
     }
     pub(crate) fn source(&self) -> &Value {
         &self.source
+    }
+    fn lite(&self) -> bool {
+        self.source.get("lite_single_tool_call").is_some()
+    }
+    pub(crate) fn history_version(&self) -> u8 {
+        if self.lite() {
+            3
+        } else if self.source["apply_patch"] == true {
+            2
+        } else {
+            1
+        }
     }
     pub(crate) fn compile(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
         let mut wire = request.wire().clone();
@@ -246,7 +293,7 @@ impl ToolMap {
         }
         Ok(())
     }
-    pub(crate) fn compile_item(&self, item: &Value) -> ProviderResult<Value> {
+    pub(crate) fn compile_item(&self, item: &Value, prefix: &[Value]) -> ProviderResult<Value> {
         let mut item = item.clone();
         if matches!(
             item["type"].as_str(),
@@ -273,8 +320,35 @@ impl ToolMap {
                     },
                 ],
             )?;
-            item["name"] = self.alias(&item, kind)?.into();
+            let alias = self.alias(&item, kind)?.to_owned();
+            if self.mapped_custom.contains(&alias) {
+                if !item["input"].is_string() {
+                    return Err(invalid());
+                }
+                item["type"] = "function_call".into();
+                item["arguments"] = json!({"input":item["input"]}).to_string().into();
+                item.as_object_mut().unwrap().remove("input");
+            }
+            item["name"] = alias.into();
             item.as_object_mut().unwrap().remove("namespace");
+        } else if self.lite()
+            && matches!(
+                item["type"].as_str(),
+                Some("function_call_output" | "custom_tool_call_output")
+            )
+        {
+            let call_id = id(&item["call_id"])?;
+            let call = prefix
+                .iter()
+                .rev()
+                .find(|call| call["type"] == "function_call" && call["call_id"] == call_id)
+                .ok_or_else(invalid)?;
+            if (item["type"] == "custom_tool_call_output")
+                != self.mapped_custom.contains(name(&call["name"])?)
+            {
+                return Err(invalid());
+            }
+            item["type"] = "function_call_output".into();
         }
         Ok(item)
     }
@@ -314,6 +388,9 @@ impl ToolMap {
                         id(&item["id"])?;
                         if kind == "function" {
                             arguments(item)?;
+                            if self.mapped_custom.contains(alias) {
+                                custom_input(item)?;
+                            }
                         } else if !item["input"].is_string() {
                             return Err(invalid());
                         }
@@ -335,6 +412,9 @@ impl ToolMap {
                 }
             }
             let choice = self.choice()?;
+            if self.source["lite_single_tool_call"] == true && count > 1 {
+                return Err(invalid());
+            }
             if choice == "none" && count != 0
                 || response.state() == StreamState::Completed
                     && (choice == "required" || choice.is_object())
@@ -370,6 +450,11 @@ impl ToolMap {
                 item["type"].as_str(),
                 Some("function_call" | "custom_tool_call")
             ) {
+                if self.mapped_custom.contains(name(&item["name"])?) {
+                    item["input"] = custom_input(item)?.into();
+                    item["type"] = "custom_tool_call".into();
+                    item.as_object_mut().unwrap().remove("arguments");
+                }
                 let ((namespace, member), _) = self
                     .identities
                     .iter()
@@ -383,6 +468,17 @@ impl ToolMap {
         }
         CanonicalResponse::new(wire).map_err(|_| invalid())
     }
+}
+fn custom_input(item: &Value) -> ProviderResult<String> {
+    let value: Value = serde_json::from_str(item["arguments"].as_str().ok_or_else(invalid)?)
+        .map_err(|_| invalid())?;
+    if value.as_object().is_none_or(|v| v.len() != 1) {
+        return Err(invalid());
+    }
+    value["input"]
+        .as_str()
+        .map(str::to_owned)
+        .ok_or_else(invalid)
 }
 fn arguments(item: &Value) -> ProviderResult<()> {
     let value: Value = serde_json::from_str(item["arguments"].as_str().ok_or_else(invalid)?)

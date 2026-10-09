@@ -11,6 +11,7 @@ use std::{
 
 const PREFIX: &str = "caidex.deepseek.native-history.v1:";
 const PATCH_PREFIX: &str = "caidex.deepseek.native-history.v2:";
+const LITE_PREFIX: &str = "caidex.deepseek.native-history.v3:";
 fn invalid() -> ProviderError {
     ProviderError::new(400, "deepseek_invalid_history")
 }
@@ -35,7 +36,7 @@ impl NativeHistory {
         chunks: Option<&[Value]>,
         max_bytes: usize,
     ) -> ProviderResult<Self> {
-        let mut wire = json!({"provider":"deepseek", "version":if tools.source()["apply_patch"] == true {2} else {1}, "scope":scope, "native_model":request.model(), "request":request.wire(), "response":response.wire(), "tool_mapping":tools.source(), "source":if chunks.is_some() {"sse"} else {"json"}});
+        let mut wire = json!({"provider":"deepseek", "version":tools.history_version(), "scope":scope, "native_model":request.model(), "request":request.wire(), "response":response.wire(), "tool_mapping":tools.source(), "source":if chunks.is_some() {"sse"} else {"json"}});
         if let Some(chunks) = chunks {
             wire["chunks"] = json!(chunks);
         }
@@ -45,12 +46,6 @@ impl NativeHistory {
         let history = Self(wire);
         history.check_size(max_bytes)?;
         if history.0["provider"] != "deepseek"
-            || history.0["version"]
-                != if history.0["tool_mapping"]["apply_patch"] == true {
-                    2
-                } else {
-                    1
-                }
             || !history.0["scope"].is_object()
             || history.0["request"]["model"] != history.0["native_model"]
         {
@@ -68,6 +63,9 @@ impl NativeHistory {
             return Err(invalid());
         }
         let tools = ToolMap::from_source(history.0["tool_mapping"].clone())?;
+        if history.0["version"] != tools.history_version() {
+            return Err(invalid());
+        }
         tools.matches(&request)?;
         tools.validate_response(&request, &response)?;
         for item in response
@@ -129,10 +127,11 @@ impl NativeHistory {
             .collect();
         // shortcut: full prefixes grow quadratically; bounded budgets reject
         // overflow until Host persistence can deduplicate native history.
-        let prefix = if self.0["version"] == 2 {
-            PATCH_PREFIX
-        } else {
-            PREFIX
+        let prefix = match self.0["version"].as_u64() {
+            Some(1) => PREFIX,
+            Some(2) => PATCH_PREFIX,
+            Some(3) => LITE_PREFIX,
+            _ => return Err(invalid()),
         };
         let mut output = vec![
             json!({"type":"reasoning", "id":format!("rs_{}_native", response.id()), "summary":summary, "encrypted_content":format!("{prefix}{}", self.0)}),
@@ -163,8 +162,10 @@ impl NativeHistory {
         }
         let (encoded, version) = if let Some(wire) = capsule.strip_prefix(PREFIX) {
             (wire, 1)
+        } else if let Some(wire) = capsule.strip_prefix(PATCH_PREFIX) {
+            (wire, 2)
         } else {
-            (capsule.strip_prefix(PATCH_PREFIX).ok_or_else(invalid)?, 2)
+            (capsule.strip_prefix(LITE_PREFIX).ok_or_else(invalid)?, 3)
         };
         let wire = serde_json::from_str(encoded).map_err(|_| invalid())?;
         let history = Self::new(wire, max_bytes).map_err(|_| invalid())?;
@@ -263,7 +264,7 @@ pub(crate) fn expand(
             );
             index += count;
         } else {
-            native.push(tools.compile_item(&input[index])?);
+            native.push(tools.compile_item(&input[index], &native)?);
             index += 1;
         }
     }
