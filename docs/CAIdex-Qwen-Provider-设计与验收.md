@@ -132,7 +132,7 @@ ModelProvider 六方法全部接入：
 
 精确源码`3ec8ca7c2d429ccfdad403134d6450acff2f5163`/[CI37978406850](https://github.com/bboytang/CAIdex/actions/runs/37978406850)整体completed/success。Linux113982424514/Windows113982424527/macOS113982424369各17steps成功或条件跳过；完整raw2115/1801/1812行，workspace508/503/507（0failed，ignored52/50/50）、既有Runtime50/49/49（0failed/ignored），Qwen70/DeepSeek57每名每平台一次。全通过名559/552/556精确为旧37974303497集合+8，无遗漏/重复。watch及三份完整日志下载均exit0，ci-check通过；日志`/tmp/caidex-ci-37978406850-{linux,windows,macos}-raw.log`与status.json，checker及ci-result.json在`/tmp/caidex-qwen-lite/`。既有Runtime回归不是实际Qwen Runtime接线或Live/Full证据。
 
-## 实际固定Classic/Lite Runtime（本地已验，源码CI待验）
+## 实际固定Classic/Lite Runtime（三平台离线已验）
 
 复用固定Codex 0.160.1 / d27764b82f7118f674371e6d6e76271d9d606edb、既有Gateway/Broker和隔离app-server测试Harness，新增Qwen独立catalog/native Responses SSE fixture及7项实际Runtime回归。Classic exec_command与Lite functions::exec由真实Runtime发审批、批准后执行临时marker；真实结果与完整原生summary/未知扩展/大数/raw chunks分别保存到v3/v4。移除marker后重启app-server、从磁盘恢复线程，逐项核对原生前缀与结果，不重复审批或执行。Lite结果按既有契约把input_text数组拼成native字符串，磁盘保留原数组。
 
@@ -140,11 +140,13 @@ ModelProvider 六方法全部接入：
 
 7项另验default/部分策略Key与POST前拒绝、Lite双调用终态失败且无审批/执行/载体、半流含完整参数但无终态时取消关闭原生socket且不交付调用、待审批interrupt拒绝迟到Accept、未提供Decline不发送及真实Cancel无副作用。显式profile禁用未验证web/tool_search，effort逐route映射一次，原生只发送Classic；合成配置不授LiveRuntime/Full。
 
-新增Provider2项验证ID策略、JSON/SSE、带/不带history、前缀ID/role/text篡改Key前拒绝；Qwen72/0/0、新实际Runtime7/0/0、完整本地workspace510/0/59、实际Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过。通过名精确等于旧workspace+2、旧Runtime+7。仅Qwen生产校验及内部Runtime测试dev依赖/接线/fixtures变化，无新外部依赖，Runtime/Core/Gateway/Broker生产源码及workflow保持。源码三平台CI待本次提交后核验，旧Lite CI不代验本节；商业Live/Full、生产Host与iOS构建未验。
+新增Provider2项验证ID策略、JSON/SSE、带/不带history、前缀ID/role/text篡改Key前拒绝；Qwen72/0/0、新实际Runtime7/0/0、完整本地workspace510/0/59、实际Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过。通过名精确等于旧workspace+2、旧Runtime+7。仅Qwen生产校验及内部Runtime测试dev依赖/接线/fixtures变化，无新外部依赖，Runtime/Core/Gateway/Broker生产源码及workflow保持。本次源码三平台CI已完整核验，详下段；旧Lite CI不代验本节；商业Live/Full、生产Host与iOS构建未验。
+
+精确源码`bf94c9d3041b75806470ae06ca4b658d2966228b`/[CI37982550340](https://github.com/bboytang/CAIdex/actions/runs/37982550340)整体completed/success。Linux113996415936/Windows113996416140/macOS113996416351各17steps成功或条件跳过；完整raw2132/1818/1829行，workspace510/505/509（failed0，ignored59/57/57）、实际固定Runtime57/56/56（failed/ignored0），Qwen72、DeepSeek57及新增Qwen Runtime7每名每平台一次。全通过名568/561/565精确为旧CI37978406850集合+2 Provider+7 Runtime，无遗漏/重复。watch及三份完整日志下载exit0，ci-check通过；完整日志`/tmp/caidex-ci-37982550340-{linux,windows,macos}-raw.log`及status.json，checker/result在`/tmp/caidex-qwen-runtime/`。本节证明固定Runtime离线链路，不授商业Live/Full、生产Host或iOS应用验收。
 
 ## 后续实施顺序
 
 1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
-2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，源码ae0b2d0/CI37939652724精确三平台已收尾；Runtime/history控制组合62项、完整本地及0858493/CI37974303497精确三平台已收尾；Lite70项及3ec8ca7/CI37978406850精确三平台已收尾；实际固定Runtime本地57项已验、精确源码CI待验。不盲复制DeepSeek明文content或Gemini签名契约。
-3. 实际固定Classic/Lite审批/执行/取消/磁盘恢复7项已本地通过，下一步完成本次源码三平台CI；summary/context/include仍仅在双策略显式消费，默认拒绝。实验/网页/模型服务端工具不得冒充Runtime工具。
+2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，源码ae0b2d0/CI37939652724精确三平台已收尾；Runtime/history控制组合62项、完整本地及0858493/CI37974303497精确三平台已收尾；Lite70项及3ec8ca7/CI37978406850精确三平台已收尾；实际固定Runtime57/56/56项及bf94c9d/CI37982550340精确三平台已验。不盲复制DeepSeek明文content或Gemini签名契约。
+3. 实际固定Classic/Lite审批/执行/取消/磁盘恢复7项已精确三平台通过，下一步OpenRouter；summary/context/include仍仅在双策略显式消费，默认拒绝。实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

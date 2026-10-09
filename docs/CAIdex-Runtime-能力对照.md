@@ -403,6 +403,6 @@ cargo test -p caidex-runtime --test real_runtime --locked -- --ignored
 
 本轮本地实际Runtime37/0/0与workspace312/0/39通过。源码56f9789/[CI37717424972](https://github.com/bboytang/CAIdex/actions/runs/37717424972)三平台success：实际Runtime Linux37/WindowsmacOS36，Google7各一次；workspace Linux312/Windows307/macOS311，0失败；Google90各一次，Clippy/fmt/native credentials/schema/doctor通过。非商业Full、不证明动态发现/网页/所有原生能力；运行状态真源和V3 H–R顺序不变，Rust macOS也不代表iOS应用构建。
 
-## Qwen实际Classic/Lite Runtime（本地已验，源码CI待验）
+## Qwen实际Classic/Lite Runtime（三平台离线已验）
 
-新增7项真实固定Runtime离线回归：Classic/Lite审批批准后临时执行、原生summary/v3/v4与工具结果落盘、重启恢复完整前缀且不重跑、默认/部分策略Key前拒绝、双调用及半流不交付、stream/待审批取消、迟到审批拒绝及真实Cancel。Runtime两路径提供developer/user消息ID，Qwen仅在显式runtime_context下接受typed数组消息有效ID并保留完整绑定；默认/状态门控不放宽，新增Provider2项与Qwen72通过。完整本地workspace510/0/59、实际Runtime57/0/0、Clippy/fmt/diff通过，精确源码三平台CI待提交后核验；旧Lite CI不代验。仅Qwen生产校验及Runtime测试dev接线变化，无新外部依赖或共享生产实现/workflow改动；商业Live/Full、H生产Host及iOS构建未验。详[Qwen验收](CAIdex-Qwen-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)。
+新增7项真实固定Runtime离线回归：Classic/Lite审批批准后临时执行、原生summary/v3/v4与工具结果落盘、重启恢复完整前缀且不重跑、默认/部分策略Key前拒绝、双调用及半流不交付、stream/待审批取消、迟到审批拒绝及真实Cancel。Runtime两路径提供developer/user消息ID，Qwen仅在显式runtime_context下接受typed数组消息有效ID并保留完整绑定；默认/状态门控不放宽，新增Provider2项与Qwen72通过。完整本地workspace510/0/59、实际Runtime57/0/0、Clippy/fmt/diff通过，精确源码bf94c9d/[CI37982550340](https://github.com/bboytang/CAIdex/actions/runs/37982550340)三平台完整通过（workspace510/505/509、实际Runtime57/56/56、Qwen72/新增Qwen Runtime7逐名一次、全通过名568/561/565精确为旧CI+2/+7）；旧Lite CI不代验。仅Qwen生产校验及Runtime测试dev接线变化，无新外部依赖或共享生产实现/workflow改动；商业Live/Full、H生产Host及iOS构建未验。详[Qwen验收](CAIdex-Qwen-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)。
