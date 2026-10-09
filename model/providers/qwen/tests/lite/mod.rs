@@ -258,7 +258,7 @@ async fn invalid_prefix_tools_controls_and_default_route_refuse_before_credentia
             }
             9 => wire["input"][1]["id"] = "bad\n".into(),
             10 => wire["input"][1]["status"] = "completed".into(),
-            11 => wire["input"][1]["role"] = "user".into(),
+            11 => wire["input"][1]["role"] = "system".into(),
             12 => wire["input"][0]["tools"][0]["tools"][0]["defer_loading"] = true.into(),
             13 => {
                 wire["input"][0]["tools"][0]["tools"][0]["format"] =

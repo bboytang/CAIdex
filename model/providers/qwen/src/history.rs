@@ -339,6 +339,7 @@ pub(crate) fn expand(
     request: CanonicalRequest,
     config: &QwenConfig,
     tools: Option<&ToolMap>,
+    runtime_context: bool,
     limit: usize,
 ) -> ProviderResult<CanonicalRequest> {
     let Some(input) = request.wire()["input"].as_array() else {
@@ -379,7 +380,11 @@ pub(crate) fn expand(
             native.push(tools.unwrap().compile_item(&input[index], &native)?);
             index += 1;
         } else {
-            crate::request::validate_message(&input[index], tools.is_some_and(ToolMap::lite))?;
+            crate::request::validate_message(
+                &input[index],
+                tools.is_some_and(ToolMap::lite),
+                runtime_context,
+            )?;
             native.push(input[index].clone());
             index += 1;
         }

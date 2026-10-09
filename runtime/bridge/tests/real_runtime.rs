@@ -1,5 +1,6 @@
 //! Real pinned app-server and scripted loopback Responses; no paid model or key.
 mod deepseek;
+mod qwen;
 
 use std::{
     collections::HashMap,
@@ -87,6 +88,14 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-qwen-classic"
+            | "gateway-qwen-context-classic"
+            | "gateway-qwen-native-tools-classic"
+            | "gateway-qwen-tools-classic" => "native-qwen-tools-classic",
+            "gateway-qwen-lite" | "gateway-qwen-tools-lite" => "native-qwen-tools-lite",
+            "gateway-qwen-multi-lite" => "native-qwen-multi-lite",
+            "gateway-qwen-stall-classic" => "native-qwen-stall-classic",
+            "gateway-qwen-stall-lite" => "native-qwen-stall-lite",
             "gateway-deepseek-classic"
             | "gateway-deepseek-context-classic"
             | "gateway-deepseek-native-tools-classic" => "native-deepseek-tools-classic",
@@ -191,7 +200,14 @@ impl Harness {
             "gateway-ollama-tools-lite" | "gateway-ollama-multi-lite" | "gateway-ollama-stall-lite"
         );
         let deepseek = mode.starts_with("gateway-deepseek-");
-        let model = if deepseek {
+        let qwen = mode.starts_with("gateway-qwen-");
+        let model = if qwen {
+            if mode.ends_with("-lite") {
+                "caidex-qwen-lite-fixture"
+            } else {
+                "caidex-qwen-classic-fixture"
+            }
+        } else if deepseek {
             if mode.ends_with("-lite") {
                 "caidex-deepseek-lite-fixture"
             } else {
@@ -249,7 +265,9 @@ impl Harness {
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
-                provider: Id::new(if deepseek {
+                provider: Id::new(if qwen {
+                    "qwen"
+                } else if deepseek {
                     "deepseek"
                 } else if native_openai {
                     "openai"
@@ -270,7 +288,70 @@ impl Harness {
                 owner,
                 GatewayFixtureStore(credential_reads.clone()),
             ));
-            if deepseek {
+            if qwen {
+                use caidex_provider_qwen::{QwenConfig, QwenProvider};
+                let config =
+                    QwenConfig::new(&format!("http://127.0.0.1:{port}/"), credential).unwrap();
+                let models = vec![caidex_model_core::ModelMetadata::configured(
+                    model.into(),
+                    "native-fixture".into(),
+                    vec![if mode.ends_with("-lite") && mode != "gateway-qwen-lite" {
+                        ResponsesDialect::Lite
+                    } else {
+                        ResponsesDialect::Classic
+                    }],
+                )];
+                let mut provider = if mode.ends_with("-lite") && mode != "gateway-qwen-lite" {
+                    QwenProvider::with_lite_options(
+                        config,
+                        models,
+                        broker.clone(),
+                        Limits::default(),
+                        Default::default(),
+                    )
+                } else {
+                    QwenProvider::new(config, models, broker.clone(), Limits::default())
+                }
+                .unwrap();
+                if mode != "gateway-qwen-classic" {
+                    provider = provider.with_runtime_context();
+                }
+                if mode != "gateway-qwen-classic"
+                    && mode != "gateway-qwen-context-classic"
+                    && mode != "gateway-qwen-lite"
+                {
+                    provider = if mode == "gateway-qwen-native-tools-classic" {
+                        provider.with_native_tools()
+                    } else {
+                        provider.with_custom_tool_mapping()
+                    };
+                    for (effort, native) in [("low", "low"), ("medium", "high"), ("high", "high")] {
+                        provider = provider
+                            .with_reasoning_effort_mapping(
+                                model.into(),
+                                effort.into(),
+                                native.into(),
+                            )
+                            .unwrap();
+                    }
+                    provider = provider
+                        .with_verbosity_instruction(
+                            "low".into(),
+                            "Keep user-facing answers concise while preserving required detail."
+                                .into(),
+                        )
+                        .unwrap();
+                }
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        Arc::new(provider),
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if deepseek {
                 use caidex_provider_deepseek::{DeepSeekConfig, DeepSeekProvider};
                 let config = DeepSeekConfig::new(credential)
                     .unwrap()
@@ -569,7 +650,8 @@ impl Harness {
         };
         // Explicit fixture scope: native Anthropic has no verified equivalent
         // for Codex cached web search. Never filter it inside the Gateway.
-        let web_search = if deepseek
+        let web_search = if qwen
+            || deepseek
             || ollama_lite
             || matches!(
                 mode,
@@ -589,7 +671,8 @@ impl Harness {
         };
         // Executor-owned catalog declares unsupported client tool search. This
         // uses the fixed Runtime's public config, never strips Gateway tools.
-        let google_summary = if deepseek
+        let google_summary = if qwen
+            || deepseek
             || ollama_lite
             || mode.starts_with("gateway-google-")
             || matches!(
@@ -602,7 +685,11 @@ impl Harness {
         } else {
             ""
         };
-        let catalog = if deepseek {
+        let catalog = if qwen {
+            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/qwen_model_catalog.json");
+            format!("model_catalog_json = {}\n", json!(path))
+        } else if deepseek {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures/deepseek_model_catalog.json");
             format!("model_catalog_json = {}\n", json!(path))

@@ -249,7 +249,7 @@ pub(crate) fn compile(
     }
     if !native_history && let Some(input) = wire["input"].as_array() {
         for item in input {
-            validate_message(item, false)?;
+            validate_message(item, false, runtime_context)?;
         }
     }
     wire["store"] = false.into();
@@ -262,7 +262,11 @@ pub(crate) fn compile(
     Ok(compiled)
 }
 
-pub(crate) fn validate_message(item: &Value, lite: bool) -> ProviderResult<()> {
+pub(crate) fn validate_message(
+    item: &Value,
+    lite: bool,
+    runtime_context: bool,
+) -> ProviderResult<()> {
     fields(item, &["type", "role", "content", "id", "status"])?;
     let role = item["role"].as_str().ok_or_else(invalid)?;
     if item.get("type").is_some_and(|v| v != "message")
@@ -272,7 +276,11 @@ pub(crate) fn validate_message(item: &Value, lite: bool) -> ProviderResult<()> {
     }
     for key in ["id", "status"] {
         if let Some(value) = item.get(key) {
-            if (role != "assistant" && !(lite && role == "developer" && key == "id"))
+            let runtime_id = runtime_context
+                && key == "id"
+                && matches!(role, "user" | "developer")
+                && item["content"].is_array();
+            if (role != "assistant" && !(key == "id" && lite && role == "developer" || runtime_id))
                 || item["type"] != "message"
             {
                 return Err(unsupported());

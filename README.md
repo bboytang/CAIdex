@@ -10,9 +10,9 @@
 
 完整CLI目标是共享真实Host/固定Codex Runtime的英文TUI、无头exec、持久task、模型/Provider/Profile、账户会话、本地及跨端记忆、Remote与扩展管理；账户认证不代Host审批权限，exec与后台任务语义分开。详见[CLI完整交互与验收规范V1](docs/CAIdex-CLI-完整交互与验收规范-V1.md)，H/I提供底层契约，P整合CLI，R实测。**这些是规划，当前可执行CLI仍仅doctor、credentials status/set/remove、版本/帮助，CLI-01～34均未执行。**
 
-CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，下一步Qwen/OpenRouter；规范补全不表示提前开展H/I/P/R实现。
+CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，Qwen实际Runtime本地已验、源码CI待验，之后OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为实际Qwen Classic/Lite固定Runtime接线，再OpenRouter；精确源码和CI证据见HANDOFF。
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为Qwen Classic/Lite固定Runtime源码三平台CI，本地7项新增/累计57项及Qwen72项已通过，之后OpenRouter；精确源码和CI证据见HANDOFF。
 
 续接复核补清无头 `exec fork` 的ForkOnly：不带prompt只创建分支，成功不代表执行任务；恢复目标不存在时不静默新建任务。此为P/R待实现契约，当前开发CLI仍无exec/fork/resume。F/G控制组合独立推进，验证结果见Qwen专属文档和HANDOFF，CLI文档核对不代验源码。
 

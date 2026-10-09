@@ -1,6 +1,6 @@
 # CAIdex Qwen Provider：设计与验收
 
-阶段 F/G；2026-10-09。代码 `model/providers/qwen`。当前包括原生目录/基础 Responses、显式 Runtime 控制/逐模型推理和原生summary绑定历史、function/namespace和显式custom映射接入，沿用既定 ModelProvider/Custom transport/Credential Broker/Gateway；不另造 HTTP 框架、Agent 或工具执行器。完整 Qwen Codex 兼容性、商业 Live/Full 和生产 Host **尚未验收**，不能因目录或文本请求成功升级兼容等级。
+阶段 F/G；2026-10-09。代码 `model/providers/qwen`。当前包括原生目录/基础 Responses、显式 Runtime 控制/逐模型推理和原生summary绑定历史、function/namespace和显式custom映射、Lite及固定Classic/Lite Runtime离线接入，沿用既定 ModelProvider/Custom transport/Credential Broker/Gateway；不另造 HTTP 框架、Agent 或工具执行器。完整 Qwen Codex 兼容性、商业 Live/Full 和生产 Host **尚未验收**，不能因目录或文本请求成功升级兼容等级。
 
 ## 官方契约与执行端配置
 
@@ -125,16 +125,26 @@ ModelProvider 六方法全部接入：
 
 `QwenProvider::with_lite_options`显式接受逐route声明的Classic/Lite，默认`new/with_options`仍只接受Classic。实际native transport始终Classic，目录/metadata返回原声明的dialects，不增加兼容等级。固定Runtime源码[Lite请求构造](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs)及[Lite回归](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/tests/suite/responses_lite.rs)已核对；[Qwen官方参数契约](https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-responses)仍不列parallel_tool_calls，不把本地拒绝当原生生成约束。
 
-- 原始请求先预算，Lite只消费第一项developer additional_tools；拒绝错位/重复/坏ID/未知字段。声明沿用现有function/namespace/custom映射，grammar仍仅指导。developer message的有效稳定ID仅在Lite政策下接受，保留native输入与完整前缀绑定；不放宽Classic的ID/状态规则。
+- 原始请求先预算，Lite只消费第一项developer additional_tools；拒绝错位/重复/坏ID/未知字段。声明沿用现有function/namespace/custom映射，grammar仍仅指导。此子阶段只在Lite政策下接受developer message有效稳定ID；后续实际Runtime接线另在显式runtime_context下接受typed developer/user消息ID，见下节。状态校验保持。
 - Lite parallel=false绑定本地最多交付一个调用，JSON和SSE终态多调用一律502；流中调用/参数/载体仍在完整验证前扣留。缺省/true可交付多调用但仍绑定Lite政策；null/非布尔拒绝。native请求不发送Lite header、additional_tools或parallel标志。summary auto/context all_turns/include仍须显式runtime_context与history双策略消费，effort逐route只映射一次，store=false。
 - 新v4载体绑定Lite政策、additional_tools稳定ID（若提供）、原工具声明/format、执行端/profile/endpoint/model、完整native前缀和原JSON/SSE；v1/v2/v3/v4及Classic/Lite不能混用。载体不是加密或来源认证。复用现有HistoryStream，不另造传输、执行器或审批引擎；旧history与工具政策保持。
 - 新增8项/共70项Qwen测试，JSON/SSE三轮精确回放含序列化与一次effort、坏声明/控制/ID、能力/源与编译预算、单调用/默认Classic、v4政策与scope/前缀篡改、取消/Drop/deadline socket/slot及Gateway两轮token/Key/attribution隔离。本地workspace508/0/52、既有固定Runtime50/0/0、Clippy全workspace/all-targets-D warnings、fmt/diff通过；旧62测试逐字保留，全workspace通过名精确为旧500+8。精确源码3ec8ca7c2d429ccfdad403134d6450acff2f5163/[CI37978406850](https://github.com/bboytang/CAIdex/actions/runs/37978406850)三平台完整通过（workspace508/503/507、既有Runtime50/49/49、Qwen70逐名一次），实际Qwen Classic/Lite Runtime与商业Live/Full未验。
 
 精确源码`3ec8ca7c2d429ccfdad403134d6450acff2f5163`/[CI37978406850](https://github.com/bboytang/CAIdex/actions/runs/37978406850)整体completed/success。Linux113982424514/Windows113982424527/macOS113982424369各17steps成功或条件跳过；完整raw2115/1801/1812行，workspace508/503/507（0failed，ignored52/50/50）、既有Runtime50/49/49（0failed/ignored），Qwen70/DeepSeek57每名每平台一次。全通过名559/552/556精确为旧37974303497集合+8，无遗漏/重复。watch及三份完整日志下载均exit0，ci-check通过；日志`/tmp/caidex-ci-37978406850-{linux,windows,macos}-raw.log`与status.json，checker及ci-result.json在`/tmp/caidex-qwen-lite/`。既有Runtime回归不是实际Qwen Runtime接线或Live/Full证据。
 
+## 实际固定Classic/Lite Runtime（本地已验，源码CI待验）
+
+复用固定Codex 0.160.1 / d27764b82f7118f674371e6d6e76271d9d606edb、既有Gateway/Broker和隔离app-server测试Harness，新增Qwen独立catalog/native Responses SSE fixture及7项实际Runtime回归。Classic exec_command与Lite functions::exec由真实Runtime发审批、批准后执行临时marker；真实结果与完整原生summary/未知扩展/大数/raw chunks分别保存到v3/v4。移除marker后重启app-server、从磁盘恢复线程，逐项核对原生前缀与结果，不重复审批或执行。Lite结果按既有契约把input_text数组拼成native字符串，磁盘保留原数组。
+
+首轮真实Runtime1通过/6失败定位到两路径都会提供developer/user稳定消息ID；最小生产修复只在既有显式runtime_context下接受type=message、数组content的developer/user有效ID，保留role/content/ID及完整native前缀绑定。默认、坏ID、system ID、非assistant status仍拒绝，旧Lite developer策略保留。不新增策略开关或history版本；一项旧Lite负例将现在合法的user改为仍非法的system，不宣称旧测试正文全部不变。
+
+7项另验default/部分策略Key与POST前拒绝、Lite双调用终态失败且无审批/执行/载体、半流含完整参数但无终态时取消关闭原生socket且不交付调用、待审批interrupt拒绝迟到Accept、未提供Decline不发送及真实Cancel无副作用。显式profile禁用未验证web/tool_search，effort逐route映射一次，原生只发送Classic；合成配置不授LiveRuntime/Full。
+
+新增Provider2项验证ID策略、JSON/SSE、带/不带history、前缀ID/role/text篡改Key前拒绝；Qwen72/0/0、新实际Runtime7/0/0、完整本地workspace510/0/59、实际Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过。通过名精确等于旧workspace+2、旧Runtime+7。仅Qwen生产校验及内部Runtime测试dev依赖/接线/fixtures变化，无新外部依赖，Runtime/Core/Gateway/Broker生产源码及workflow保持。源码三平台CI待本次提交后核验，旧Lite CI不代验本节；商业Live/Full、生产Host与iOS构建未验。
+
 ## 后续实施顺序
 
 1. 本步14项、workspace/Clippy及3638d13精确三平台CI已完成；保留证据，不重复已验基础适配，不借此授Full。
-2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，源码ae0b2d0/CI37939652724精确三平台已收尾；Runtime/history控制组合62项、完整本地及0858493/CI37974303497精确三平台已收尾；Lite70项及3ec8ca7/CI37978406850精确三平台已收尾；下一步实际固定Runtime。不盲复制DeepSeek明文content或Gemini签名契约。
-3. Lite Adapter已精确三平台验证，下一步实际固定Runtime；固定Runtime的summary/context/include组合仅在上述双策略显式消费，默认仍拒绝；Lite适配后再接固定真实Codex Classic/Lite审批/执行/取消/磁盘恢复测试；实验/网页/模型服务端工具不得冒充Runtime工具。
+2. 显式Runtime attribution/正文控制和逐模型推理参数21项、workspace/Clippy及311224b精确三平台已验；原生summary绑定历史32项及a3e7e6d/CI37929549601精确三平台已收尾；原生function/namespace、tool choice与成对结果及v2工具历史43项和c5c021d/CI37932689731精确三平台已收尾；本轮显式custom映射/v3历史54项/最终workspace492/0/52、Clippy及最终本地核对通过，源码ae0b2d0/CI37939652724精确三平台已收尾；Runtime/history控制组合62项、完整本地及0858493/CI37974303497精确三平台已收尾；Lite70项及3ec8ca7/CI37978406850精确三平台已收尾；实际固定Runtime本地57项已验、精确源码CI待验。不盲复制DeepSeek明文content或Gemini签名契约。
+3. 实际固定Classic/Lite审批/执行/取消/磁盘恢复7项已本地通过，下一步完成本次源码三平台CI；summary/context/include仍仅在双策略显式消费，默认拒绝。实验/网页/模型服务端工具不得冒充Runtime工具。
 4. Qwen之后OpenRouter，再按V3推进H/I/Windows/SSH/iOS/CLI/Relay/R；生产Host审批竞争/持久化在H，GUI/账户仍按既定阶段。真实商业模型测试需明确授权，本步不读用户Key/下载模型或部署。

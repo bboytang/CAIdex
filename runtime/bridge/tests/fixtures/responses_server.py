@@ -310,10 +310,94 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def native_qwen(self, body):
+        assert self.path == "/compatible-mode/v1/responses"
+        trace["gatewayCredentialMatched"] = self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
+        assert trace["gatewayCredentialMatched"]
+        trace.setdefault("nativeRequests", []).append(body)
+        trace.setdefault("liteHeaders", []).append(self.headers.get("x-openai-internal-codex-responses-lite"))
+        identity = f"native-{trace['requests']}"
+        thinking = {"type": "reasoning", "id": f"rs_{identity}", "status": "completed", "summary": [{"type": "summary_text", "text": "Native Qwen fixture "}, {"type": "summary_text", "text": "thinking", "future": "retain"}], "future": {"n": 18446744073709551616}}
+        if trace["requests"] == 1:
+            if mode.endswith("-lite"):
+                tool = next(tool for tool in body["tools"] if tool.get("parameters", {}).get("properties", {}).get("input", {}).get("type") == "string")
+                command = {"cmd": "echo CAIDEX_NATIVE_QWEN > caidex-native-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated CAIdex Qwen fixture marker only", "yield_time_ms": 1000}
+                script = "const result = await tools.exec_command(" + json.dumps(command) + "); text(result);"
+                arguments = " { \"input\" : " + json.dumps(script) + " } "
+            else:
+                tool = next(tool for tool in body["tools"] if "cmd" in tool.get("parameters", {}).get("properties", {}))
+                arguments = json.dumps({"cmd": "echo CAIDEX_NATIVE_QWEN > caidex-native-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated CAIdex Qwen fixture marker only", "yield_time_ms": 1000})
+            item = {"type": "function_call", "id": f"fc_{identity}", "status": "completed", "name": tool["name"], "call_id": "qwen-tool-one", "arguments": arguments}
+        else:
+            item = {"type": "message", "id": f"msg_{identity}", "status": "completed", "role": "assistant", "content": [{"type": "output_text", "text": "CAIdex local fixture complete"}]}
+        native = {"id": identity, "object": "response", "model": "native-fixture", "status": "completed", "output": [thinking, item], "future": {"n": 18446744073709551616}, "usage": {"input_tokens": 2, "output_tokens": 3, "total_tokens": 5}}
+        if mode == "native-qwen-multi-lite":
+            native["output"].append({**item, "id": "fc_qwen_two", "call_id": "qwen-tool-two"})
+        events = [event("response.created", response={"id": identity, "status": "in_progress", "output": []})]
+        events.extend([
+            event("response.output_item.added", output_index=0, item={**thinking, "status": "in_progress", "summary": []}),
+            event("response.reasoning_text.delta", output_index=0, item_id=thinking["id"], delta="Native Qwen fixture thinking"),
+            event("response.reasoning_text.done", output_index=0, item_id=thinking["id"], text="Native Qwen fixture thinking"),
+            event("response.output_item.done", output_index=0, item=thinking),
+        ])
+        for index, output in enumerate(native["output"][1:], 1):
+            if output["type"] == "function_call":
+                events.extend([
+                    event("response.output_item.added", output_index=index, item={**output, "status": "in_progress", "arguments": ""}),
+                    event("response.function_call_arguments.delta", output_index=index, item_id=output["id"], delta=output["arguments"]),
+                    event("response.function_call_arguments.done", output_index=index, item_id=output["id"], arguments=output["arguments"]),
+                ])
+            else:
+                events.extend([
+                    event("response.output_item.added", output_index=index, item={**output, "status": "in_progress", "content": []}),
+                    event("response.content_part.added", output_index=index, item_id=output["id"], content_index=0, part={"type": "output_text", "text": ""}),
+                    event("response.output_text.delta", output_index=index, item_id=output["id"], content_index=0, delta=output["content"][0]["text"]),
+                    event("response.output_text.done", output_index=index, item_id=output["id"], content_index=0, text=output["content"][0]["text"]),
+                    event("response.content_part.done", output_index=index, item_id=output["id"], content_index=0, part=output["content"][0]),
+                ])
+            events.append(event("response.output_item.done", output_index=index, item=output))
+        events.append(event("response.completed", response=native))
+        for sequence, output in enumerate(events):
+            output["sequence_number"] = sequence
+        if "stall" in mode:
+            events.pop()
+            trace.setdefault("nativeChunks", []).append(events)
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            self.protocol_version = "HTTP/1.1"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
+            self.wfile.write(f"{len(data):x}\r\n".encode() + data + b"\r\n")
+            self.wfile.flush()
+            Path(trace_path).with_name("gateway-streaming").touch()
+            try:
+                disconnected = self.connection.recv(1) == b""
+            except OSError:
+                disconnected = True
+            trace["gatewayDisconnected"] = disconnected
+            Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+            Path(trace_path).with_name("gateway-disconnected").touch()
+            self.close_connection = True
+            return
+        trace.setdefault("nativeResponses", []).append(native)
+        trace.setdefault("nativeChunks", []).append(events)
+        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+        data = "".join(f"event: {item['type']}\ndata: {json.dumps(item)}\n\n" for item in events).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         trace["requests"] += 1
         trace["authorizationSeen"] |= "Authorization" in self.headers
+        if mode.startswith("native-qwen-"):
+            self.native_qwen(body)
+            return
         if mode.startswith("native-deepseek-"):
             self.native_deepseek(body)
             return

@@ -298,6 +298,7 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             request,
             &self.config,
             tools.as_ref(),
+            self.runtime_context,
             self.limits.request_bytes.min(self.limits.response_bytes),
         )?;
         let mut wire = request.wire().clone();
