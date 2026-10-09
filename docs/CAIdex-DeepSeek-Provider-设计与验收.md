@@ -116,14 +116,16 @@ apply_patch三平台收尾：精确源码df98a54bb247f947d9ce4014f7007c9d192056b
 
 三平台完整核对：上述精确源码/CI整体completed/success，Linux113580022986/Windows113580022609/macOS113580023018各17steps成功或条件跳过；完整raw1994/1681/1692行。workspace423/418/422（0failed，ignored45/43/43）、DeepSeek42每名每平台一次、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。全workspace/credentials/Runtime/compile-fail doc-test通过名集合467/460/464等于已验6742b15基线加26新名，无遗漏/重复；下载、normalize/available/full-names在精确源码归档执行均exit0。watch句柄暂停后不存在，保存日志与GitHub终态确认成功，不虚构watch退出码。日志/tmp/caidex-ci-37855947093-{linux,windows,macos}-raw.log及标注.log/status.json/watch.log；checker /tmp/caidex-deepseek-history-controls-ci-{normalize,available}.py和/tmp/caidex-deepseek-ci-full-names.py。复杂reasoning/content-part索引、Lite/单调用与实际DeepSeek Runtime及Live仍待。
 
-## 多reasoning与content-part流映射（本地46项 / 三平台待验）
+## 多reasoning与content-part流映射（46项 / 修正版三平台通过）
 
 沿用唯一HistoryStream与原生I/O、v1/v2载体；原生output_index决定投影顺序，不用added到达顺序。多个reasoning item的content按原生item/part顺序归入唯一carrier的summary；content_part.added/done、reasoning_text.delta/done映射为summary part/text事件，全文显示仍不是原生精简摘要。message保留原content_index，投影output_index计入此前全部非reasoning item（包括暂未交付的工具）。较后item先added、item内容交错、早期done延迟或缺失时，只缓存已有原始chunk索引，待前置item与完整part数已知再映射；权威终态可补全缺失done。首段推理和可定位正文仍即时显示，工具仍只在完整终态/原生历史校验通过后交付。
 
 原生SSE历史校验同时覆盖live终态与反序列化回放：item/part身份、类型、索引、text/part done与最终原文一致；重复added/done、done后delta或跨类型事件拒绝。源raw chunks/原生完整wire不改，不改变已有待执行工具的结果配对和前缀规则；未绑定reasoning仍Key前拒绝。不新增依赖/策略入口/HTTP/Agent，生产只history_stream.rs及history.rs，其他Provider/Runtime/lib/request/tools/workflow不改。
 
-新增4项：五种顺序/交错/缺done/提前message/未知delta扩展的完整part索引与两轮回放；17种坏内容/ID/类型/生命周期事件不交付工具或carrier且真实socket/slot释放；序列化载体5种篡改Key/POST前拒绝；偏移等待时正文即时显示、取消/Drop与累积字节预算。旧42测试名保留，其中原多reasoning shortcut负例改为重复native index负例。有效RED正例编译成功502拒绝（/tmp/caidex-deepseek-complex-red.log），最终定向46/0/0（同前缀green.log）；workspace427/0/45、Clippy全workspace/all-targets-D warnings、fmt/diff通过，日志同前缀{workspace,clippy}.log。早期正例将reasoning放在待工具结果之后，被既有配对规则正确拒绝；调整fixture顺序，未放松生产配对规则。此阶段独立精确三平台待验，不借42项CI代验46项。
+新增4项：五种顺序/交错/缺done/提前message/未知delta扩展的完整part索引与两轮回放；17种坏内容/ID/类型/生命周期事件不交付工具或carrier且真实socket/slot释放；序列化载体5种篡改Key/POST前拒绝；偏移等待时正文即时显示、取消/Drop与累积字节预算。旧42测试名保留，其中原多reasoning shortcut负例改为重复native index负例。有效RED正例编译成功502拒绝（/tmp/caidex-deepseek-complex-red.log），初轮定向46/0/0（同前缀green.log）；修正版workspace427/0/45、Clippy全workspace/all-targets-D warnings、fmt/diff通过，日志同前缀{workspace,clippy}.log。早期正例将reasoning放在待工具结果之后，被既有配对规则正确拒绝；调整fixture顺序，未放松生产配对规则。此阶段修正版e04d944/CI37862956680已独立精确三平台验收，不借42项CI或被替代首版代验46项。
 
 恢复点：继续Lite custom Code Mode/本地单调用策略，然后固定DeepSeek Classic/Lite实际Runtime审批/执行/取消/磁盘重启，再Qwen/OpenRouter；真实模型/Live/Full仍未验。跨Provider/实际Host/账户/GUI阶段顺序不变。
 
-首版7393550/CI37862740579被替代：后续自查发现reasoning delta附带未知part字段会触发类型索引panic，有效RED日志/tmp/caidex-deepseek-complex-opaque-red.log（编译成功运行panic）；修复只在真实summary-part事件修改part类型，新增正例保留原始未知扩展。修正版需独立CI，不借首版结果代验。
+首版7393550/CI37862740579已取消/被替代：后续自查发现reasoning delta附带未知part字段会触发类型索引panic，有效RED日志/tmp/caidex-deepseek-complex-opaque-red.log（编译成功运行panic）；修复只在真实summary-part事件修改part类型，新增正例保留原始未知扩展。修正版已独立CI37862956680完整验收，不借首版结果代验。
+
+复杂流修正版三平台收尾：精确e04d94402e63d43337533ba22396f8fb8fd84a55/[CI37862956680](https://github.com/bboytang/CAIdex/actions/runs/37862956680)整体completed/success；Linux113602819911/Windows113602820108/macOS113602820877各17steps成功或条件跳过，完整raw1998/1685/1696行。workspace427/422/426（0failed，ignored45/43/43）、DeepSeek46每名每平台一次、旧固定Runtime43/42/42（0failed/ignored）、Linux native credentials1。全workspace/credentials/Runtime/compile-fail doc-test通过名集合471/464/468等于6742b15基线加30新名，无遗漏/重复；watch15755、完整日志下载与normalize/available/full-names均exit0，全部handle结束，在/tmp/caidex-deepseek-complex-ci-source精确归档核对。日志/tmp/caidex-ci-37862956680-{linux,windows,macos}-raw.log及标注.log/status.json/watch.log；checker /tmp/caidex-deepseek-complex-ci-{normalize,available}.py和/tmp/caidex-deepseek-ci-full-names.py。旧Runtime回归不是DeepSeek实际Runtime接线；全文推理不是原生摘要/加密，Lite/实际DeepSeek Runtime/商业模型与整体F/G、H–R仍待。

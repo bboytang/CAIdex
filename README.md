@@ -38,7 +38,7 @@ node scripts/codex-binary.mjs
 - `model/providers/anthropic`：原生 Messages/Models/SSE、Responses 转换和绑定历史；Gateway、经典 MCP 发现/执行/重启和 Lite Code Mode 审批/执行/取消已三平台离线验收，默认缓存网页搜索及商业模型兼容性待验。
 - `model/providers/google`：Gemini 原生 Models/generateContent、媒体/推理/结构输出和绑定历史；Gateway 与固定经典/Lite Runtime 离线接线已三平台验收，商业模型兼容性待验。
 - `model/providers/ollama`：复用共享传输的原生 Responses 适配，六方法、能力/推理、媒体/结构输出、绑定历史和 deferred 工具发现已三平台离线验收；固定经典 Runtime MCP 执行/重启及 Lite Code Mode 审批/执行/取消/磁盘恢复亦已三平台验证，真实 daemon/模型兼容性待验。
-- `model/providers/deepseek`：原生 Models 目录、六方法和经典文本 JSON/SSE，复用共享传输与独立执行端凭据；基础 Gateway、显式本地上下文、developer 优先指令与 verbosity 编译已三平台离线验收；新增显式 Classic 函数/namespace、明文推理绑定历史及执行端 effort 映射也已分别完成精确三平台离线验收；新增独立显式 custom apply_patch 与 v2 历史绑定（grammar 仅作指导）已精确三平台离线验收；显式 Runtime+history 组合新增本地 summary auto/context all_turns/include 控制，DeepSeek42 项及 workspace423/418/422 已精确三平台离线验收；多 reasoning/content-part 与交错流索引新增本地验收（DeepSeek46 项，未知扩展边界已补回归，修正版三平台待验）；其他 custom/高级控制、Lite/实际 Runtime 接线、真实模型兼容性待验。
+- `model/providers/deepseek`：原生 Models 目录、六方法和经典文本 JSON/SSE，复用共享传输与独立执行端凭据；基础 Gateway、显式本地上下文、developer 优先指令与 verbosity 编译已三平台离线验收；新增显式 Classic 函数/namespace、明文推理绑定历史及执行端 effort 映射也已分别完成精确三平台离线验收；新增独立显式 custom apply_patch 与 v2 历史绑定（grammar 仅作指导）已精确三平台离线验收；显式 Runtime+history 组合新增本地 summary auto/context all_turns/include 控制，DeepSeek42 项及 workspace423/418/422 已精确三平台离线验收；多 reasoning/content-part 与交错流索引及未知扩展边界已精确三平台离线验收（DeepSeek46 项，workspace427/422/426）；其他 custom/高级控制、Lite/实际 Runtime 接线、真实模型兼容性待验。
 - `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和剩余兼容 API 接入待实现。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
