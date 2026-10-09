@@ -192,3 +192,8 @@ Qwen后续显式控制本步只改Qwen lib/request，不改共享Gateway/传输�
 ## Qwen原生summary历史续接
 
 当前新增显式Classic无工具NativeHistory v1与增量投影：完整原生summary/未知JSON/SSE chunks、执行端/模型/compiled前缀/整组绑定、终态重建后载体、默认工具及MCP/tool-search拒绝、取消/Drop/socket/预算。只改Qwen，仍共享Custom传输/Broker，Gateway/Runtime实现未改；本地新增11项/共32项定向通过，workspace470/0/52及Clippy/fmt/diff本地通过，精确a3e7e6d/[CI37929549601](https://github.com/bboytang/CAIdex/actions/runs/37929549601)三平台完整通过：workspace470/465/469、既有Runtime50/49/49均0failed，Qwen32每名每平台一次，全通过名521/514/518精确为旧CI+11无遗漏/重复；旧311224b/CI37890668777不代验。具体契约与最终证据见[Qwen验收文档](CAIdex-Qwen-Provider-设计与验收.md)和[HANDOFF](../HANDOFF.md)。这不是实际Qwen Runtime工具接线/商业Live/Full；后续仍工具/choice/结果→Lite→固定Runtime→OpenRouter，不提前H/I/CLI。
+
+
+## Qwen原生function与工具历史
+
+显式with_native_tools新增Classic function/namespace、原生allowed_tools/单项required选择、紧邻调用/结果编译和完整v2绑定历史；调用仅在completed原生终态/参数流验证后交付，default及v1严格策略不放宽，custom/deferred/parallel false/服务商MCP仍拒绝。新增11项/43项定向通过，三轮前缀重排遗漏已有效RED并最小修复，最终workspace481/0/52、Clippy全workspace/all-targets-D warnings/fmt/diff本地通过，精确新源码CI待执行；共享Gateway/Custom/Core/Runtime/依赖未改。契约与准确证据见[Qwen文档](CAIdex-Qwen-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)，旧summary CI不代验，custom/Lite/实际Qwen Runtime/Live/Full仍待。

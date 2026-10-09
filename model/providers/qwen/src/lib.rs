@@ -5,6 +5,7 @@ mod config;
 mod history;
 mod history_stream;
 mod request;
+mod tools;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::NativeModel;
@@ -34,6 +35,7 @@ pub struct QwenProvider<S: SecretStore> {
     limits: Limits,
     runtime_context: bool,
     native_history: bool,
+    native_tools: bool,
     verbosity_instructions: HashMap<String, String>,
     reasoning_efforts: HashMap<String, HashMap<String, String>>,
 }
@@ -82,6 +84,7 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             limits,
             runtime_context: false,
             native_history: false,
+            native_tools: false,
             verbosity_instructions: HashMap::new(),
             reasoning_efforts: HashMap::new(),
         })
@@ -95,6 +98,11 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
     pub fn with_native_history(mut self) -> Self {
         self.native_history = true;
         self
+    }
+    /// Callable tools require bound native history.
+    pub fn with_native_tools(mut self) -> Self {
+        self.native_tools = true;
+        self.with_native_history()
     }
     /// Executor guidance; does not promise a provider-native verbosity scale.
     pub fn with_verbosity_instruction(
@@ -188,11 +196,37 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
         }
         Err(ProviderError::new(413, "qwen_catalog_limit"))
     }
-    fn prepare(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
+    fn prepare(
+        &self,
+        mut request: CanonicalRequest,
+    ) -> ProviderResult<(CanonicalRequest, Option<tools::ToolMap>)> {
         let model = self.responses.metadata(request.model())?;
         let capabilities = model.capabilities;
         if capabilities.text == CapabilitySupport::Unsupported {
             return Err(ProviderError::new(400, "unsupported_text"));
+        }
+        if request.wire().to_string().len() > self.limits.request_bytes {
+            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
+        let tools = if self.native_tools {
+            Some(tools::ToolMap::from_request(&request)?)
+        } else {
+            None
+        };
+        if tools.is_some() {
+            if request.wire()["tools"]
+                .as_array()
+                .is_some_and(|t| !t.is_empty())
+                && capabilities.native_tools == CapabilitySupport::Unsupported
+            {
+                return Err(ProviderError::new(400, "unsupported_tools"));
+            }
+            let mut wire = request.wire().clone();
+            for key in ["tools", "tool_choice", "parallel_tool_calls"] {
+                wire.as_object_mut().unwrap().remove(key);
+            }
+            request =
+                CanonicalRequest::new(wire, request.dialect()).map_err(|_| history::invalid())?;
         }
         let efforts = self.reasoning_efforts.get(request.model());
         let route = request.model().to_owned();
@@ -206,8 +240,13 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
             self.native_history,
         )?;
         if !self.native_history {
-            return Ok(request);
+            return Ok((request, None));
         }
+        let request = if let Some(tools) = &tools {
+            tools.compile(request)?
+        } else {
+            request
+        };
         let mut wire = request.wire().clone();
         wire["model"] = model.native_model.into();
         let request =
@@ -215,11 +254,14 @@ impl<S: SecretStore + 'static> QwenProvider<S> {
         let request = history::expand(
             request,
             &self.config,
+            tools.as_ref(),
             self.limits.request_bytes.min(self.limits.response_bytes),
         )?;
         let mut wire = request.wire().clone();
         wire["model"] = route.into();
-        CanonicalRequest::new(wire, request.dialect()).map_err(|_| history::invalid())
+        CanonicalRequest::new(wire, request.dialect())
+            .map(|r| (r, tools))
+            .map_err(|_| history::invalid())
     }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
         if context.headers.iter().any(|(name, _)| {
@@ -250,13 +292,14 @@ fn response_headers(headers: &ContextHeaders) -> ProviderResult<()> {
     }
     Ok(())
 }
-fn output(wire: &Value) -> ProviderResult<()> {
+fn output(wire: &Value, native_tools: bool) -> ProviderResult<()> {
     let tool = |v: &Value| {
         v["type"].as_str().is_some_and(|kind| {
-            kind.ends_with("_call")
-                || kind.ends_with("_call_output")
-                || kind.starts_with("mcp_")
-                || kind.starts_with("tool_search_")
+            !(native_tools && kind == "function_call")
+                && (kind.ends_with("_call")
+                    || kind.ends_with("_call_output")
+                    || kind.starts_with("mcp_")
+                    || kind.starts_with("tool_search_"))
         })
     };
     if tool(wire)
@@ -269,6 +312,12 @@ fn output(wire: &Value) -> ProviderResult<()> {
             .is_some_and(|items| items.iter().any(tool))
         || wire["type"].as_str().is_some_and(|kind| {
             kind.starts_with("response.")
+                && !(native_tools
+                    && matches!(
+                        kind,
+                        "response.function_call_arguments.delta"
+                            | "response.function_call_arguments.done"
+                    ))
                 && (kind.contains("_call")
                     || kind.starts_with("response.mcp_")
                     || kind.starts_with("response.tool_search_"))
@@ -321,17 +370,21 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
-            let request = self.prepare(request)?;
+            let (request, tools) = self.prepare(request)?;
             let native = self.native_request(&request)?;
             let mut response = self.responses.create_response(request, context).await?;
             response_headers(&response.headers)?;
-            output(response.response.wire())?;
+            output(response.response.wire(), tools.is_some())?;
+            if let Some(tools) = &tools {
+                tools.validate_response(&native, &response.response)?;
+            }
             if self.native_history && response.response.state() == StreamState::Completed {
                 let budget = self.limits.request_bytes.min(self.limits.response_bytes);
                 response.response = NativeHistory::record(
                     &self.config.replay_scope(),
                     &native,
                     &response.response,
+                    tools.as_ref(),
                     None,
                     budget,
                 )
@@ -352,7 +405,7 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
                 let deadline = Instant::now() + self.limits.total_timeout;
                 context.deadline = Some(context.deadline.unwrap_or(deadline).min(deadline));
             }
-            let request = self.prepare(request)?;
+            let (request, tools) = self.prepare(request)?;
             let native = self.native_request(&request)?;
             let stream_context = RequestContext {
                 headers: ContextHeaders::default(),
@@ -369,6 +422,7 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
                     response.events,
                     self.config.replay_scope(),
                     native,
+                    tools,
                     context,
                     self.limits.clone(),
                 ));
@@ -379,7 +433,7 @@ impl<S: SecretStore + 'static> ModelProvider for QwenProvider<S> {
                 match events.next().await? {
                     Ok(event) => {
                         if let ProviderStreamEvent::Model(model) = &event
-                            && let Err(error) = output(model.response.wire())
+                            && let Err(error) = output(model.response.wire(), false)
                         {
                             return Some((Err(error), None));
                         }

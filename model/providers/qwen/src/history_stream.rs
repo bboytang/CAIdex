@@ -1,4 +1,4 @@
-use crate::{Limits, NativeHistory, history};
+use crate::{Limits, NativeHistory, history, tools::ToolMap};
 use caidex_model_core::{
     CanonicalRequest, CanonicalResponse, ProviderError, ProviderResult, ProviderStream,
     ProviderStreamEvent, RequestContext, ResponseEvent, SseEvent, StreamEvent, StreamState,
@@ -25,6 +25,7 @@ pub(crate) struct HistoryStream {
     native: Option<ProviderStream>,
     scope: Value,
     request: CanonicalRequest,
+    tools: Option<ToolMap>,
     context: RequestContext,
     limits: Limits,
     remaining: usize,
@@ -43,6 +44,7 @@ impl HistoryStream {
         native: ProviderStream,
         scope: Value,
         request: CanonicalRequest,
+        tools: Option<ToolMap>,
         context: RequestContext,
         limits: Limits,
     ) -> Self {
@@ -50,6 +52,7 @@ impl HistoryStream {
             native: Some(native),
             scope,
             request,
+            tools,
             context,
             remaining: limits.request_bytes.min(limits.response_bytes),
             limits,
@@ -146,7 +149,7 @@ impl HistoryStream {
         Ok(())
     }
     fn push(&mut self, event: StreamEvent) -> ProviderResult<()> {
-        crate::output(event.response.wire())?;
+        crate::output(event.response.wire(), self.tools.is_some())?;
         self.remaining = self
             .remaining
             .checked_sub(event.frame.data.len())
@@ -176,7 +179,7 @@ impl HistoryStream {
                 let index = wire["output_index"].as_u64().ok_or_else(invalid)?;
                 let kind = wire["item"]["type"].as_str().ok_or_else(invalid)?;
                 if self.reasoning_id.is_none()
-                    || matches!(kind, "reasoning" | "message")
+                    || matches!(kind, "reasoning" | "message" | "function_call")
                         && !history::valid_id(&wire["item"]["id"])
                     || kind != "reasoning"
                         && wire["item"]["id"].as_str() == self.reasoning_id.as_deref()
@@ -229,6 +232,21 @@ impl HistoryStream {
                     self.waiting.push(self.chunks.len() - 1);
                 }
             }
+            "response.function_call_arguments.delta" | "response.function_call_arguments.done" => {
+                let index = wire["output_index"].as_u64().ok_or_else(invalid)?;
+                let item = self.items.get(&index).ok_or_else(invalid)?;
+                if self.tools.is_none()
+                    || item.done
+                    || item.kind != "function_call"
+                    || wire["item_id"] != item.id
+                    || wire.get("content_index").is_some()
+                    || event.response.kind().ends_with(".delta") && !wire["delta"].is_string()
+                    || event.response.kind().ends_with(".done") && !wire["arguments"].is_string()
+                {
+                    return Err(invalid());
+                }
+                // Raw tool events are retained but withheld until validated completion.
+            }
             "response.output_item.done" => {
                 let index = wire["output_index"].as_u64().ok_or_else(invalid)?;
                 let item = self.items.get_mut(&index).ok_or_else(invalid)?;
@@ -238,6 +256,13 @@ impl HistoryStream {
                 item.done = true;
             }
             _ if event.response.terminal().is_some() => {
+                if let Some(tools) = &self.tools
+                    && event.response.kind() != "error"
+                {
+                    let response =
+                        CanonicalResponse::new(wire["response"].clone()).map_err(|_| invalid())?;
+                    tools.validate_response(&self.request, &response)?;
+                }
                 if event.response.terminal() != Some(StreamState::Completed) {
                     self.emit(wire)?;
                 } else {
@@ -251,6 +276,7 @@ impl HistoryStream {
                         &self.scope,
                         &self.request,
                         &response,
+                        self.tools.as_ref(),
                         Some(&self.chunks),
                         budget,
                     )
@@ -285,7 +311,8 @@ impl HistoryStream {
                 self.terminal = true;
                 self.native.take();
             }
-            kind if kind.starts_with("response.reasoning_")
+            kind if kind.starts_with("response.function_call_arguments.")
+                || kind.starts_with("response.reasoning_")
                 || kind.starts_with("response.content_part.")
                 || kind.starts_with("response.output_text.") =>
             {
