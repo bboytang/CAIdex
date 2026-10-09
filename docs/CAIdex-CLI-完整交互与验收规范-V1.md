@@ -370,7 +370,7 @@ SQLite schema与Host/账户API均版本化。迁移前检查可用空间、兼�
 
 | 阶段 | CLI相关正式交付 | 验证边界 |
 | --- | --- | --- |
-| F/G | 当前DeepSeek Lite/真实Runtime，随后Qwen/OpenRouter/Gateway原计划 | 不被文档任务重做/跳过；旧离线CI不代验CLI |
+| F/G | 按HANDOFF当前恢复点继续Qwen/OpenRouter/Gateway；DeepSeek Lite及固定Runtime已完成各自离线三平台验收 | 不被文档任务重做/跳过；已有Provider/Runtime离线CI不代验CLI、商业Live/Full或生产Host |
 | H | 本地Host生命周期/attach-detach、SQLite journal、线程/任务状态、seq恢复、提交幂等/unknown、多端有效审批/竞争与安全阻塞 | 共用真实Runtime，不变云Agent；CLI/SSH退出不停止Host，重启未知不重跑 |
 | I | 账户公开客户端PKCE/Device协议、CLI auth_sessions/token轮换撤销、settings API、Linux本地memory/cache DTO与迁移、账户同步/epoch/删除/首次上传许可 | 共享Rust/API与服务端能力先稳定；CLI完整TUI登录入口仍P，非提前做新GUI |
 | J/K | Windows GUI/CLI/同机Host配置及CredentialRef权限一致，设备列表可显示CLI，真实审批可共享 | 同机不等于不同账户都有Key权限 |
