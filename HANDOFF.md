@@ -12,7 +12,7 @@ F/G中断点（未完成）：Qwen仅双runtime_context+native_history策略消�
 
 下一次F/G续接先核对两份diff与上述失败，定位夹具/源绑定/流事件原因，最小修复并完成定向边界、workspace/Clippy/fmt/diff及精确源码三平台CI；通过后再Lite/实际固定Qwen Runtime→OpenRouter→H/I及既定后续。不借ae0b2d0/CI37939652724代验未提交控制组合，不启动账户/CLI/UI、不读用户Key/付费API、不清target。完整CLI/H/I/P/R功能仍待实现；H持久Host/审批，I共享认证/账户memory，P终端整合，R真实平台/认证/多端验收。
 
-文档最终检查通过：16份Markdown/66本地链接/22锚点，CLI34/账户55/UI16验收行及17实体/A–R阶段表原样保持，历史CI/凭据证据保留；195个其他tracked文件（含两份Qwen草稿）SHA256不变，git diff --check通过。检查脚本/结果/tmp/caidex-cli-docs-current-audit/{check.py,result.json}，固定源码/版本help证据同目录source-check.json及*-help.txt。未运行Rust编译、完整CI、TUI、真实认证或模型；纯文档workflow路径不触发CI。按已有授权仅四文档独立提交/push，标题docs: clarify CLI fork-only and preserve F/G recovery；不提交两份Qwen草稿。恢复先核对实际HEAD/origin/status，本轮文档无待补需求，下一步仍先处理上述F/G失败。
+文档最终检查通过：16份Markdown/66本地链接/22锚点，CLI34/账户55/UI16验收行及17实体/A–R阶段表原样保持，历史CI/凭据证据保留；195个其他tracked文件（含两份Qwen草稿）SHA256不变，git diff --check通过。检查脚本/结果/tmp/caidex-cli-docs-current-audit/{check.py,result.json}，固定源码/版本help证据同目录source-check.json及*-help.txt。未运行Rust编译、完整CI、TUI、真实认证或模型；纯文档workflow路径不触发CI。四文档已以92c55295f003b96b9b04bb86068f8c06e4f5262d独立提交/push（docs: clarify CLI fork-only and preserve F/G recovery），push1951 exit0；HEAD=origin/main核对一致，工作区仅保留两份Qwen草稿。不提交这两份草稿；随后仅本文件记录收尾，标题docs: record CLI audit handoff，不运行文档CI。恢复先核对实际HEAD/origin/status，本轮文档无待补需求，下一步仍先处理上述F/G失败。
 
 ### 上一轮CLI文档已完成
 
@@ -166,7 +166,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- 当前branch main；文档复核起点HEAD/origin 1d64acbb1600b000926b033f32171a354f4b8ece。未提交Qwen request.rs/tests/provider.rs是F/G控制组合草稿，已知60通过/2失败，未完成workspace/Clippy/精确源码CI；本轮不修改/提交。另CLI/V3/README/HANDOFF四文档本轮收尾，按既有授权独立提交/push，不额外运行纯文档Rust CI。原Qwen custom ae0b2d0/CI37939652724及CLI98b9075/1d64acb证据保持。最终实际HEAD/origin/status在文档提交后核对。
+- 当前branch main；文档复核起点HEAD/origin 1d64acbb1600b000926b033f32171a354f4b8ece。未提交Qwen request.rs/tests/provider.rs是F/G控制组合草稿，已知60通过/2失败，未完成workspace/Clippy/精确源码CI；本轮不修改/提交。CLI/V3/README/HANDOFF四文档已独立提交/push 92c55295f003b96b9b04bb86068f8c06e4f5262d，HEAD/origin一致且仅两份Qwen草稿未提交已核对；随后仅HANDOFF记录收尾，不额外运行纯文档Rust CI。原Qwen custom ae0b2d0/CI37939652724及CLI98b9075/1d64acb证据保持。恢复仍先读取实际HEAD/origin/status；文档提交不代验两份F/G草稿。
 
 - 此前工具子阶段branch main，源码HEAD/origin c5c021daf999fa1b4cff755b3633c106d88266f4已独立commit/push（`feat(qwen): bind native function tools and paired history`），精确CI37932689731已完整验收。收尾文档提交仅README/Qwen/Gateway/HANDOFF，标题`docs: record Qwen tools three-platform verification`；无其他并行成果/未完成功能草稿，恢复先核对HEAD/origin/status，后续custom/Lite/实际Runtime按既定顺序。
 
