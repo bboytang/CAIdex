@@ -122,6 +122,8 @@ apply_patch三平台收尾：精确源码df98a54bb247f947d9ce4014f7007c9d192056b
 
 原生SSE历史校验同时覆盖live终态与反序列化回放：item/part身份、类型、索引、text/part done与最终原文一致；重复added/done、done后delta或跨类型事件拒绝。源raw chunks/原生完整wire不改，不改变已有待执行工具的结果配对和前缀规则；未绑定reasoning仍Key前拒绝。不新增依赖/策略入口/HTTP/Agent，生产只history_stream.rs及history.rs，其他Provider/Runtime/lib/request/tools/workflow不改。
 
-新增4项：四种顺序/交错/缺done/提前message的完整part索引与两轮回放；17种坏内容/ID/类型/生命周期事件不交付工具或carrier且真实socket/slot释放；序列化载体5种篡改Key/POST前拒绝；偏移等待时正文即时显示、取消/Drop与累积字节预算。旧42测试名保留，其中原多reasoning shortcut负例改为重复native index负例。有效RED正例编译成功502拒绝（/tmp/caidex-deepseek-complex-red.log），最终定向46/0/0（同前缀green.log）；workspace427/0/45、Clippy全workspace/all-targets-D warnings、fmt/diff通过，日志同前缀{workspace,clippy}.log。早期正例将reasoning放在待工具结果之后，被既有配对规则正确拒绝；调整fixture顺序，未放松生产配对规则。此阶段独立精确三平台待验，不借42项CI代验46项。
+新增4项：五种顺序/交错/缺done/提前message/未知delta扩展的完整part索引与两轮回放；17种坏内容/ID/类型/生命周期事件不交付工具或carrier且真实socket/slot释放；序列化载体5种篡改Key/POST前拒绝；偏移等待时正文即时显示、取消/Drop与累积字节预算。旧42测试名保留，其中原多reasoning shortcut负例改为重复native index负例。有效RED正例编译成功502拒绝（/tmp/caidex-deepseek-complex-red.log），最终定向46/0/0（同前缀green.log）；workspace427/0/45、Clippy全workspace/all-targets-D warnings、fmt/diff通过，日志同前缀{workspace,clippy}.log。早期正例将reasoning放在待工具结果之后，被既有配对规则正确拒绝；调整fixture顺序，未放松生产配对规则。此阶段独立精确三平台待验，不借42项CI代验46项。
 
 恢复点：继续Lite custom Code Mode/本地单调用策略，然后固定DeepSeek Classic/Lite实际Runtime审批/执行/取消/磁盘重启，再Qwen/OpenRouter；真实模型/Live/Full仍未验。跨Provider/实际Host/账户/GUI阶段顺序不变。
+
+首版7393550/CI37862740579被替代：后续自查发现reasoning delta附带未知part字段会触发类型索引panic，有效RED日志/tmp/caidex-deepseek-complex-opaque-red.log（编译成功运行panic）；修复只在真实summary-part事件修改part类型，新增正例保留原始未知扩展。修正版需独立CI，不借首版结果代验。

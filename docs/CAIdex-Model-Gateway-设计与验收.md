@@ -174,3 +174,5 @@ DeepSeek apply_patch独立三平台收尾：df98a54/[CI37854138352](https://gith
 DeepSeek显式Runtime+history组合新增summary auto/context all_turns/include本地消费：复用全文推理显示和绑定全部native回放，不冒称精简摘要/加密/服务器状态；先完整源budget，再本地控制与一次effort映射，无effort不编造native值。新增5项/共42项及workspace423/0/45、Clippy/fmt/diff本地通过，独立精确3c1ea05/[CI37855947093](https://github.com/bboytang/CAIdex/actions/runs/37855947093)已三平台完整验收：各17steps、workspace423/418/422及旧Runtime43/42/42通过，全通过名集合467/460/464为6742b15基线加26新名，无遗漏/重复；Gateway真实SSE→JSON两轮及token/优先指令隔离验证。不新增builder/HTTP/模型调用，不改历史codec或其他Provider/Runtime；复杂reasoning流索引、Lite/实际DeepSeek Runtime及Live仍待，详DeepSeek/HANDOFF。
 
 DeepSeek多reasoning/content-part本轮本地映射：按原生item/part顺序而非事件到达顺序分配summary和正文索引；偏移未确定仅暂存已有raw chunk索引，终态前保持可定位正文增量，所有工具仍经终态校验才交付。新增4项/共46项、workspace427/0/45与Clippy/fmt/diff本地通过；17种坏流真实断连/slot复用、5种序列化载体篡改Key前拒绝及等待偏移取消/Drop/预算验证。生产仅DeepSeek history/history_stream，不改共享Gateway/传输/其他Provider/Runtime/依赖/workflow；独立三平台待验，Lite/实际DeepSeek Runtime/Live仍待，详DeepSeek验收/HANDOFF。
+
+首版复杂流7393550/CI37862740579申请取消，不代验修正版；自查复现未知reasoning delta part扩展触发panic后，最小改动限定只转换真实part事件，正例增加未知扩展保留；独立修正版本地/CI证据收尾见DeepSeek/HANDOFF。

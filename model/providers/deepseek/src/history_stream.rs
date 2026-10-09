@@ -132,7 +132,13 @@ impl HistoryStream {
                 .into();
             wire["summary_index"] = summary_index.into();
             wire.as_object_mut().unwrap().remove("content_index");
-            if wire.get("part").is_some() {
+            if matches!(
+                wire["type"].as_str(),
+                Some(
+                    "response.reasoning_summary_part.added"
+                        | "response.reasoning_summary_part.done"
+                )
+            ) {
                 wire["part"]["type"] = "summary_text".into();
             }
         } else {

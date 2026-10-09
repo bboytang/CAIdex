@@ -3454,7 +3454,7 @@ fn resequence(chunks: &mut [Value]) {
 #[tokio::test]
 async fn complex_reasoning_parts_and_interleaved_items_keep_canonical_indices_and_exact_replay() {
     let native = complex_native();
-    for ordering in 0..4 {
+    for ordering in 0..5 {
         let mut chunks = complex_chunks(&native);
         if ordering == 1 || ordering == 2 {
             let first_done = chunks
@@ -3493,6 +3493,13 @@ async fn complex_reasoning_parts_and_interleaved_items_keep_canonical_indices_an
                 }
             });
             chunks.splice(1..1, message);
+        }
+        if ordering == 4 {
+            for chunk in &mut chunks {
+                if chunk["type"] == "response.reasoning_text.delta" {
+                    chunk["part"] = "opaque extension".into();
+                }
+            }
         }
         resequence(&mut chunks);
         let mut fixture = Fixture::start(vec![

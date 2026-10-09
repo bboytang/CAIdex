@@ -1,10 +1,10 @@
 # CAIdex 项目交接
 
-更新：2026-10-09 00:02 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
+更新：2026-10-09 00:04 UTC。每次先读本文件、AGENTS.md及Git状态；按V3续接，不重新规划。历史证据与协议细节见各Provider验收文档。正式项目仅`/root/projects/CAIdex-v1.0`，不改废弃`/root/projects/CAIdex`。
 
 ## 当前任务
 
-当前续接（main/cc30145）：已实现DeepSeek多reasoning/content-part按原生顺序映射，偏移未知复用bounded raw chunk索引等待，终态补全；正文增量与工具终态校验保持。新增4项/共46项、旧42名保留，原shortcut负例改成重复index；有效RED→46/0/0、workspace427/0/45、全workspace Clippy/fmt/diff通过，精确三平台尚待commit/push。未放松原工具结果配对；只history/history_stream生产及tests/provider和4文档（7路径）。日志/tmp/caidex-deepseek-complex-{red,green,workspace,clippy}.log。
+当前续接（main/cc30145）：已实现DeepSeek多reasoning/content-part按原生顺序映射，偏移未知复用bounded raw chunk索引等待，终态补全；正文增量与工具终态校验保持。新增4项/共46项、旧42名保留，原shortcut负例改成重复index；有效RED→46/0/0、workspace427/0/45、全workspace Clippy/fmt/diff通过，首版7393550已push/CI37862740579申请取消：自查未知delta part字段会panic，有效RED复现；仅在真实part事件转换类型，新增第5种正例保留扩展字段，修正版本地检查/独立CI待收尾。未放松原工具结果配对；只history/history_stream生产及tests/provider和4文档（7路径）。日志/tmp/caidex-deepseek-complex-{red,green,workspace,clippy}.log。
 
 F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现）；DeepSeek Classic函数/namespace与完整native推理历史dba1c90123b31e89f50c871e225afc817765ca7e/[CI37851276859](https://github.com/bboytang/CAIdex/actions/runs/37851276859)，后续显式effort映射32a9f3fdae8aed7519a867c1d32a8cf911f5ce09/[CI37851939704](https://github.com/bboytang/CAIdex/actions/runs/37851939704)，均已提交/push且精确三平台完整验收。此前effort范围DeepSeek29、workspace410/405/409、旧固定Runtime43/42/42通过；这不是实际DeepSeek Runtime接线或Live/Full。
 
@@ -65,7 +65,7 @@ F/G：账户/长期记忆/云同步架构独立提交81debdb（功能未实现�
 
 ## Git / 环境 / 相关文件
 
-- branch main；本轮从已push cc30145续接，当前未提交仅DeepSeek history/history_stream/tests及README/DeepSeek/Gateway/HANDOFF4文档（7路径，无新文件）；46项及workspace427/0/45/Clippy/fmt/diff通过，下一步commit/push/精确三平台。旧3c1ea05/CI37855947093已完整收尾；其他旧成果保留，没有其他用户修改、依赖/共享生产源码/Runtime/workflow变化。以实际Git为准，不借旧42项CI代验46项。
+- branch main；本轮从已push cc30145续接，当前未提交仅DeepSeek history/history_stream/tests及README/DeepSeek/Gateway/HANDOFF4文档（7路径，无新文件）；46项及workspace427/0/45/Clippy/fmt/diff通过，首版7393550已push，CI37862740579申请取消且不代验修正版；当前history_stream/tests与4文档待收尾commit/push/独立CI。旧3c1ea05/CI37855947093已完整收尾；其他旧成果保留，没有其他用户修改、依赖/共享生产源码/Runtime/workflow变化。以实际Git为准，不借旧42项CI代验46项。
 
 
 - .git普通沙箱只读，提交/push需授权环境。gh bboytang；push：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局配置/输出凭据。完整测试loopback用授权环境+TMPDIR=/var/tmp，保留/tmp/.git。全局codex0.160.1可用，本机无CI专用.tools/codex；Windows/Xcode/native Linux服务缺项由CI验。磁盘约9.4G可用，修改前先df，不清源码/凭据/保护目录。
