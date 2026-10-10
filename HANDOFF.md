@@ -1,8 +1,14 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，跨Provider边界四步骤完成，新增2项；精确源码b5e7fca/CI38071015251三平台workspace619/614/618、固定Runtime69/68/68已核验。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
+更新：2026-10-10，Lite切换步骤3完成，新增2项；完整本地workspace619/0/73、固定Runtime71/0/0与Clippy/fmt/diff通过，待精确三平台CI。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
 
 ## 当前阶段与恢复点
+
+Lite切换步骤3完成：workspace619/0/73（旧通过名保持，新2项ignored后显式运行），固定Codex0.160.1 Runtime71/0/0精确旧69+2；Clippy workspace/all-targets-D warnings、fmt/diff、19份Markdown/110链接/22锚点通过，报告JSON示例语法/字段及ProtocolFixture/Experimental范围核对。221个其他tracked文件逐字不变，旧Runtime/Classic/cross_provider测试正文保持；仅Harness Lite模式/新模块/接线与四文档，依赖/生产/fixture/workflow不改，最终diff已验。下一步按授权提交/push并核验精确三平台CI，尚无本轮CI证据。
+
+Lite切换步骤2完成：新2项定向2/0/0；固定additional_tools前缀/at_ ID与tools数组、无顶层tools/instructions、Lite header、切换/后续轮次/disk resume、fork关联与父历史隔离、未知模型Key/POST零访问及显式恢复均通过。第一轮0/2为新断言误写wire字段，修正后通过，无生产缺陷或策略放宽。新增版本化离线报告V1：Classic两route与Lite两route明确native fixture/方言/testedModelVersion，仅ProtocolFixture/Experimental，不自动挂载Registry、不升级Unknown/空报告/Full。当前仅Harness模式扩展、lite模块/接线与四文档未提交；下一步完整workspace/Runtime/Clippy/fmt/diff，再精确三平台CI。
+
+Lite切换步骤1完成：main初始ebf1c7f=origin/main且干净。固定Runtime目录确认gpt-6.1-sol/gpt-6-sol use_responses_lite；仅用其公共slug选离线协议，native模型为native-switch-0/1，不认领商业推理。复用Harness/OpenAI Adapter/ModelRouter并扩展显式Lite模式，新增独立lite模块2项（切换/重启/fork隔离/工具前缀和未知模型拒绝/恢复），旧Classic测试不改；依赖/生产/fixture不改。首定向0/2失败为新断言误用developer.additional_tools，实际固定wire为type=additional_tools/id=at_/tools数组；按已有wire验收修正，第二轮待验。另准备版本化离线切换报告，仅ProtocolFixture/Experimental，不升级Registry Unknown/Full。下一步定向→完整本地→精确三平台，各步更新交接。
 
 跨Provider步骤4已完成：精确源码`b5e7fca6b620eb45e0689eca5a8c2eee36c93562`/[CI38071015251](https://github.com/bboytang/CAIdex/actions/runs/38071015251)整体completed/success。linux job114268251307、windows job114268251255、macos job114268251059各17steps成功或条件跳过；workspace619/0/71、614/0/69、618/0/69，固定Runtime69/0/0、68/0/0、68/0/0。完整raw日志2292/1978/1989行，通过名689/682/686精确旧CI38069700504+2，无遗漏/重复；新增cross_provider2及OpenRouter100/Qwen72/DeepSeek57每名每平台一次，旧Runtime保持。watch和三份完整日志下载exit0，checker/result在`/tmp/caidex-cross-provider/`；收尾仅HANDOFF/README/Gateway三文档，223个其他tracked文件逐字保持已验SHA。最新文档提交、branch/工作区以git log/status为准。
 

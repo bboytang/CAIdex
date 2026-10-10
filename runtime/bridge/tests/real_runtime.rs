@@ -91,6 +91,7 @@ impl Harness {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
             "gateway-model-switching" => "wire-classic",
+            "gateway-model-switching-lite" => "wire-lite",
             "gateway-openrouter-classic"
             | "gateway-openrouter-context-classic"
             | "gateway-openrouter-native-tools-classic"
@@ -291,7 +292,7 @@ impl Harness {
                     "qwen"
                 } else if deepseek {
                     "deepseek"
-                } else if native_openai || mode == "gateway-model-switching" {
+                } else if native_openai || mode.starts_with("gateway-model-switching") {
                     "openai"
                 } else if native_anthropic {
                     "anthropic"
@@ -715,17 +716,27 @@ impl Harness {
                     .await
                     .unwrap(),
                 )
-            } else if mode == "gateway-model-switching" {
+            } else if mode.starts_with("gateway-model-switching") {
                 use caidex_model_core::{ModelMetadata, ModelProvider, ModelRouter};
                 use caidex_provider_openai::{OpenAiConfig, OpenAiProvider};
-                let models = ["gpt-5.5", "gpt-5.1-codex"]
+                let lite = mode == "gateway-model-switching-lite";
+                let ids = if lite {
+                    ["gpt-6.1-sol", "gpt-6-sol"]
+                } else {
+                    ["gpt-5.5", "gpt-5.1-codex"]
+                };
+                let models = ids
                     .into_iter()
                     .enumerate()
                     .map(|(index, id)| {
                         ModelMetadata::configured(
                             id.into(),
                             format!("native-switch-{index}"),
-                            vec![ResponsesDialect::Classic],
+                            vec![if lite {
+                                ResponsesDialect::Lite
+                            } else {
+                                ResponsesDialect::Classic
+                            }],
                         )
                     })
                     .collect();
@@ -742,8 +753,7 @@ impl Harness {
                     .unwrap(),
                 );
                 let router = ModelRouter::new(
-                    ["gpt-5.5", "gpt-5.1-codex"]
-                        .into_iter()
+                    ids.into_iter()
                         .map(|id| (id.into(), provider.clone()))
                         .collect(),
                 )
