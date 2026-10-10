@@ -6,7 +6,7 @@
 
 本轮恢复main=origin/main=`ec539e10ec05c906769f17715dee74da51bb9b3a`，开始干净；上一轮要求级审计已提交/push。上一阶段自动阈值四路径为实质进展，源码47b6b51/精确CI38086078152完整三平台成功，无运行中CI/测试。目标仍F/G全部，真实模型按用户顺序由用户项目最终自验；不把ProtocolFixture升级为LiveRuntime/Full，不转H或标整体完成。
 
-本轮重新读取计划/接口/Registry/Router/当前Adapter端点与报告，新增[要求级审计矩阵](docs/CAIdex-FG-离线验收核对-V1.md)，列出可证范围与真实未验项；重新下载精确CI元数据/三job各17steps/完整日志，Core29、Gateway24、八Provider533源码测试函数每平台各通过一次。workspace Linux/Windows/macOS623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），0失败；通过名701/694/698、raw2314/2000/2011，完整下载exit0。没有源码变更，不重复Rust测试/CI。
+上一轮已读取计划/接口/Registry/Router/当前Adapter端点与报告，新增[要求级审计矩阵](docs/CAIdex-FG-离线验收核对-V1.md)，列出可证范围与真实未验项；上一轮重新下载精确CI元数据/三job各17steps/完整日志，Core29、Gateway24、八Provider533源码测试函数每平台各通过一次。workspace Linux/Windows/macOS623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），0失败；通过名701/694/698、raw2314/2000/2011，完整下载exit0。没有源码变更，不重复Rust测试/CI。
 
 发现材料范围差异需澄清：原V2第17节分列Custom OpenAI-compatible及Custom Responses-compatible；V3第2节明确自定义Responses与DeepSeek/Qwen/OpenRouter等兼容API。实际Custom仅Responses，三个兼容API Adapter也仅Responses端点，不能据此认领通用chat/completions。已用异步问题询问用户是否F/G仍须补通用Chat Completions自定义入口，尚未答复。这个答复决定是否新增Adapter，不是常规开发审批；无权静默选择旧计划或缩小最终方案。其他独立门槛已整理，依赖该答复的实现不启动。
 
