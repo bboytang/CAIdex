@@ -1,6 +1,6 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，OpenRouter后端路由前置步骤进行中；工具/绑定历史尚未实现。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-10，OpenRouter显式后端路由前置步骤精确三平台验收完成；下一步原生工具/绑定历史。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
 
@@ -10,9 +10,11 @@
 
 本步 **OpenRouter逐route正文控制** 四步骤已完成并逐步更新交接：契约核对→显式verbosity指导/tier映射及8项新测试→完整本地→推送/精确源码CI。源码`2799a4cbe75371528955ca8d24efe5660cd54429`/[CI38006780427](https://github.com/bboytang/CAIdex/actions/runs/38006780427)已验，Provider31、workspace541/536/540、既有Runtime57/56/56，所有通过名精确旧CI+8；不是原生工具或历史回放验收。
 
-下一步 **OpenRouter原生工具/后端作用域绑定历史**：先核对官方Responses推理/工具/路由契约，summary/context/include、原生推理输入和工具当前仍拒绝。新载体须绑定执行端/profile/endpoint/明确后端/model/完整compiled前缀及instructions、verbosity/tier/effort政策，不能用model slug/tier冒充稳定后端。再Lite→实际Classic/Lite Runtime审批/执行/取消/磁盘恢复；不复制Qwen summary或DeepSeek明文规则，不读用户Key/调用商业模型，不跳H/I/CLI/UI。
+下一步 **OpenRouter原生工具/后端作用域绑定历史**：官方Responses推理/工具/路由契约已核对，接着实现并逐项验证；summary/context/include、原生推理输入和工具当前仍拒绝。新载体须绑定执行端/profile/endpoint/明确后端/model/完整compiled前缀及instructions、verbosity/tier/effort政策，不能用model slug/tier冒充稳定后端。再Lite→实际Classic/Lite Runtime审批/执行/取消/磁盘恢复；不复制Qwen summary或DeepSeek明文规则，不读用户Key/调用商业模型，不跳H/I/CLI/UI。
 
-本轮步骤1已完成：main=origin/main=4af07c1且干净，V3与实际源码一致。官方Responses工具、provider.only和Router Metadata契约已核对：base slug可匹配多个区域/variant，metadata供应方显示名不保证精确endpoint身份。先补齐逐route显式单一backend slug路由政策，禁止请求覆盖，保留require_parameters/禁fallback、预算和JSON/SSE原样输出；这不是稳定后端证明或历史回放验收。接着原生工具/完整政策绑定历史→Lite→实际Runtime。步骤2已完成：仅OpenRouter lib.rs及tests/provider.rs新增with_backend_selection，合法单一slug逐route配置、重复/未知route/坏slug拒绝；配置不升级能力，不打开工具/历史。5项新增，36/0/0定向一次通过，旧31项测试正文保持。编译后预算复用Custom，Key/POST前拒绝超限，JSON与SSE完整原生输出保持。工作区为上述源码/测试及HANDOFF修改，步骤3已完成：workspace546/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过。local-check.py逐名确认旧workspace541+5、旧Runtime57完全保持，旧31项测试正文逐字保留、Cargo.lock不变；18份Markdown/91本地链接/22锚点通过。源码差异已检查，只改本Provider lib/测试及相关文档。日志/tmp/caidex-openrouter-backend/。本轮源码未提交/推送，三平台CI待验；不是实际OpenRouter Runtime回归。
+本轮 **OpenRouter显式后端路由前置步骤** 已完成契约核对→最小实现/5项新增→完整本地→精确源码三平台CI，各步均更新交接。`with_backend_selection`逐route写入单一provider.only，保留require_parameters/禁fallback与预算；调用方不能覆盖、不升级能力、不打开工具/历史。旧31测试逐字保留，Provider36/0/0、本地workspace546/0/59、既有固定Runtime57/0/0及Clippy/fmt/diff通过；全通过名精确旧workspace+5、旧Runtime完全保持，依赖/共享生产源码/Runtime/其他Provider/workflow不变。源码`2c9954c80fd37950a188b9799ffc9c428b730fd4`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)三平台通过，完整证据在末节。
+
+准确恢复点：继续原生工具/完整政策绑定历史。官方provider.only的base slug可覆盖多个region/variant，metadata显示名不是精确endpoint证明；须保留原生reasoning/signature与未知扩展，同时绑定实际执行端/profile/endpoint、显式backend政策、model、完整compiled前缀/instructions及verbosity/tier/effort和工具政策，不能照搬Qwen summary-only或DeepSeek明文规则。再Lite→实际Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业调用未授权，不跳H/I/CLI/UI。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 
@@ -93,7 +95,7 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## Git、环境与操作授权
 
-- 分支 **main**，本轮起点HEAD=origin/main为4af07c1；OpenRouter显式backend选择本地已验，当前未提交lib.rs/tests/provider.rs及HANDOFF/README/OpenRouter/Gateway文档。本轮精确源码CI待验，旧2799a4c/CI38006780427仅证明正文控制及其以前范围。无依赖/共享生产源码/Runtime/其他Provider/workflow改动。
+- 分支 **main**，本轮源码`2c9954c80fd37950a188b9799ffc9c428b730fd4`已提交/push且精确CI38008446175已验；收尾前HEAD=origin/main为该SHA。仅HANDOFF/README/OpenRouter/Gateway四文档更新验收，源码保持精确CI版本；纯文档提交号依git log -1，不重复Rust CI。无依赖/共享生产源码/Runtime/其他Provider/workflow改动。
 - 新会话用户已明确授权本次核验通过的文档与Qwen Lite源码提交推送main及源码三平台CI；首次推送曾因自动审批不认可旧交接授权被拒，取得本会话明确授权后推送成功。
 - 用户2026-10-08持续授权本地检查通过后直接commit/push、源码三平台CI，不再重复询问；纯文档不运行完整Rust CI。离线合成fixture/临时marker已授权；未授权读取用户Key、商业API/邮件/生产部署/模型下载或购买服务。
 - `.git`普通沙箱只读，Git写入/push需授权执行环境。push使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局凭据或输出秘密。
@@ -148,3 +150,10 @@ OpenRouter收尾核对：18份Markdown/87本地链接/22锚点、git diff --chec
 精确源码`2799a4cbe75371528955ca8d24efe5660cd54429`/[CI38006780427](https://github.com/bboytang/CAIdex/actions/runs/38006780427)整体completed/success。Linux114077274589/Windows114077274731/macOS114077274576各17steps成功或条件跳过；完整raw2183/1869/1880行，workspace541/536/540（failed0，ignored59/57/57）、既有固定Runtime57/56/56（failed/ignored0），OpenRouter31、Qwen72、DeepSeek57每名每平台一次。全通过名599/592/596精确为旧CI38005373396集合+8，无遗漏/重复；既有Runtime通过名完全保持。watch及三份完整日志下载exit0，ci-check通过；日志`/tmp/caidex-ci-38006780427-{linux,windows,macos}-raw.log`及status.json，checker/result在`/tmp/caidex-openrouter-body/`。这些Runtime回归不代验实际OpenRouter接线或商业Live/Full，也不代验iOS应用。
 
 收尾仅四文档，18份Markdown/91本地链接/22锚点、diff与源码逐字保持精确CI版本检查通过；纯文档提交号依git log -1，推送后核对HEAD/origin与工作区，续接仍先检查真实状态。实际OpenRouter Runtime与商业Full仍未验，不借既有Runtime回归代验。
+
+
+## OpenRouter显式后端路由前置步骤已验
+
+精确源码`2c9954c80fd37950a188b9799ffc9c428b730fd4`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)整体completed/success。linux job114082598633，workspace546/0/59、既有固定Runtime57/0/0，raw2188行/通过名604；windows job114082598878，workspace541/0/57、既有固定Runtime56/0/0，raw1874行/通过名597；macos job114082598892，workspace545/0/57、既有固定Runtime56/0/0，raw1885行/通过名601。各17steps成功或条件跳过，OpenRouter36/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38006780427+5，无遗漏/重复，旧Runtime名完全保持。watch和完整日志下载exit0，ci-check通过；/tmp/caidex-openrouter-backend/及/tmp/caidex-ci-38008446175-{linux,windows,macos}-raw.log只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线或商业Live/Full。
+
+收尾仅四文档，18份Markdown/91本地链接/22锚点、diff及源码保持精确CI版本检查通过；纯文档提交推送后核对HEAD/origin与工作区，提交号依git log -1。恢复时先读顶部，不重做已验路由政策；工具/绑定历史/Lite/实际OpenRouter Runtime仍待实施。

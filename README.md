@@ -81,4 +81,4 @@ node scripts/codex-binary.mjs
 上游 Codex 与归档协议遵循 `upstream/codex/LICENSE`、`NOTICE`。CAIdex 自有代码及品牌的对外分发许可证尚未确定。
 
 
-OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_backend_selection`逐route配置单一`provider.only`，保留禁fallback与参数要求，调用方不能覆盖；不升级能力、不将base slug冒充实际稳定endpoint。新增5项/Provider36、本地workspace546/0/59及既有Runtime57/0/0、Clippy/fmt/diff通过，精确源码三平台CI待验。原生工具/完整政策绑定历史→Lite→实际OpenRouter Runtime仍待实现，最新恢复点见HANDOFF。
+OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_backend_selection`逐route配置单一`provider.only`，保留禁fallback与参数要求，调用方不能覆盖；不升级能力、不将base slug冒充实际稳定endpoint。新增5项/Provider36、本地workspace546/0/59及既有Runtime57/0/0、Clippy/fmt/diff通过；源码`2c9954c`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)精确三平台已验，workspace546/541/545、既有Runtime57/56/56，全通过名精确旧CI+5。原生工具/完整政策绑定历史→Lite→实际OpenRouter Runtime仍待实现，最新恢复点见HANDOFF。
