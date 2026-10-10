@@ -157,6 +157,11 @@ impl Harness {
             | "gateway-openai-local-compact-fail-lite" => "wire-local-compact-fail",
             "gateway-openai-local-compact-cancel-classic"
             | "gateway-openai-local-compact-cancel-lite" => "wire-local-compact-cancel",
+            "gateway-openai-compact-auto-classic" | "gateway-openai-compact-auto-lite" => {
+                "wire-compact-auto"
+            }
+            "gateway-openai-local-compact-auto-classic"
+            | "gateway-openai-local-compact-auto-lite" => "wire-local-compact-auto",
             "gateway-openai-compact-classic" => "wire-compact-classic",
             "gateway-openai-compact-lite" => "wire-compact-lite",
             "gateway-classic" | "gateway-openai-classic" => "wire-classic",
@@ -280,6 +285,8 @@ impl Harness {
                     | "gateway-openai-compact-cancel-lite"
                     | "gateway-openai-local-compact-fail-lite"
                     | "gateway-openai-local-compact-cancel-lite"
+                    | "gateway-openai-compact-auto-lite"
+                    | "gateway-openai-local-compact-auto-lite"
                     | "gateway-anthropic-stall-lite",
                 ) => "gpt-6.1-sol",
                 (
@@ -301,7 +308,9 @@ impl Harness {
                     | "gateway-openai-compact-fail-classic"
                     | "gateway-openai-compact-cancel-classic"
                     | "gateway-openai-local-compact-fail-classic"
-                    | "gateway-openai-local-compact-cancel-classic",
+                    | "gateway-openai-local-compact-cancel-classic"
+                    | "gateway-openai-compact-auto-classic"
+                    | "gateway-openai-local-compact-auto-classic",
                 ) => "gpt-5.5",
                 _ => "gpt-5.1-codex",
             }
@@ -908,8 +917,13 @@ impl Harness {
         } else {
             ""
         };
+        let auto_compact = if mode.contains("-compact-auto-") {
+            "model_auto_compact_token_limit = 10000\nmodel_post_turn_compact_threshold_percent = 0\n"
+        } else {
+            ""
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "{catalog}{google_summary}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"{provider_name}\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n{idle}[analytics]\nenabled = false\n"
+            "{catalog}{google_summary}{auto_compact}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"{provider_name}\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n{idle}[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -2119,6 +2133,188 @@ async fn real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk
             assert_eq!(request["liteHeader"].as_str().is_some(), lite);
         }
         assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+        assert_eq!(trace["gatewayCredentialMatched"], true);
+        harness.shutdown().await;
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Classic/Lite threshold-driven local and remote compaction"]
+async fn real_auto_compaction_threshold_preserves_checkpoint_after_disk_resume() {
+    for (mode, remote, lite) in [
+        ("gateway-openai-compact-auto-classic", true, false),
+        ("gateway-openai-compact-auto-lite", true, true),
+        ("gateway-openai-local-compact-auto-classic", false, false),
+        ("gateway-openai-local-compact-auto-lite", false, true),
+    ] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        for text in [
+            "Seed automatic compaction usage",
+            "Continue after threshold is reached",
+        ] {
+            harness
+                .runtime
+                .client()
+                .start_turn(
+                    &thread,
+                    vec![json!({"type":"text","text":text})],
+                    json!({}),
+                    DEADLINE,
+                )
+                .await
+                .unwrap();
+            let mut started = None;
+            let mut completed = None;
+            loop {
+                let RuntimeEvent::Notification(event) = harness.next().await else {
+                    panic!("automatic compaction requested an interaction")
+                };
+                if event.raw["params"]["item"]["type"] == "contextCompaction" {
+                    if event.method == "item/started" {
+                        assert!(
+                            started.is_none(),
+                            "only one automatic compaction is expected"
+                        );
+                        started = Some(event.raw["params"]["item"]["id"].clone());
+                    }
+                    if event.method == "item/completed" {
+                        completed = Some(event.raw["params"]["item"]["id"].clone());
+                    }
+                }
+                if event.method == "turn/completed" {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+            }
+            if text == "Seed automatic compaction usage" {
+                assert!(started.is_none());
+                assert_eq!(harness.trace()["requests"], 1);
+            } else {
+                assert!(started.is_some());
+                assert_eq!(started, completed);
+                assert_eq!(harness.trace()["requests"], 3);
+            }
+        }
+        let read = harness
+            .runtime
+            .client()
+            .read_thread(&thread, true, DEADLINE)
+            .await
+            .unwrap();
+        let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+        let checkpoints: Vec<Value> = rollout
+            .lines()
+            .map(|line| serde_json::from_str::<Value>(line).unwrap())
+            .filter(|item| item["type"] == "compacted")
+            .collect();
+        assert_eq!(checkpoints.len(), 1);
+        let stored = checkpoints[0]["payload"]["replacement_history"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|item| {
+                if remote {
+                    item["type"] == "compaction"
+                } else {
+                    item["content"]
+                        .to_string()
+                        .contains("CAIDEX_AUTO_COMPACT_SUMMARY")
+                }
+            })
+            .unwrap()
+            .clone();
+        if remote {
+            assert_eq!(stored["encrypted_content"], "CAIDEX_REMOTE_COMPACT+/==");
+        }
+        restart_google_runtime(&mut harness, &thread).await;
+        assert_eq!(harness.trace()["requests"], 3, "disk resume must not infer");
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![
+                    json!({"type":"text","text":"Continue after automatic checkpoint disk resume"}),
+                ],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            let RuntimeEvent::Notification(event) = harness.next().await else {
+                panic!("resume requested interaction")
+            };
+            assert_ne!(
+                event.raw["params"]["item"]["type"], "contextCompaction",
+                "usage below threshold must not compact again"
+            );
+            if event.method == "turn/completed" {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+        let trace = harness.trace();
+        assert_eq!(trace["requests"], 4);
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 4);
+        let requests = trace["wireRequests"].as_array().unwrap();
+        for request in requests {
+            assert_eq!(
+                request["body"]["model"],
+                if lite { "gpt-6.1-sol" } else { "gpt-5.5" }
+            );
+            assert_eq!(
+                request["liteHeader"],
+                if lite { json!("true") } else { Value::Null }
+            );
+        }
+        let trigger = requests[1]["body"]["input"].as_array().unwrap();
+        assert_eq!(
+            trigger
+                .iter()
+                .filter(|item| item["type"] == "compaction_trigger")
+                .count(),
+            usize::from(remote)
+        );
+        let mut wire_stored = stored.clone();
+        if !remote {
+            assert_eq!(
+                stored["internal_chat_message_metadata_passthrough"]["content_item_kinds"],
+                json!(["compaction.summary"])
+            );
+            assert!(
+                stored["internal_chat_message_metadata_passthrough"]["turn_id"]
+                    .as_str()
+                    .is_some_and(|id| !id.is_empty())
+            );
+            // The observed model wire omits Runtime-only summary attribution.
+            wire_stored
+                .as_object_mut()
+                .unwrap()
+                .remove("internal_chat_message_metadata_passthrough");
+        }
+        for request in &requests[2..] {
+            assert!(
+                request["body"]["input"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&wire_stored),
+                "checkpoint must replay intact: {}",
+                stored
+            );
+            assert!(
+                !request["body"]["input"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|item| item["type"] == "compaction_trigger")
+            );
+        }
         assert_eq!(trace["gatewayCredentialMatched"], true);
         harness.shutdown().await;
     }

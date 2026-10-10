@@ -88,3 +88,6 @@ Gemini comment/下游idle续轮：复用已验idle恢复流程，新增Classic/L
 
 
 源码`d72c88a292a4ab41775e38c95c73e7f62d2f7cda`/[CI38085110360](https://github.com/bboytang/CAIdex/actions/runs/38085110360)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38084218039集合+1本地压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略79/77/77）、固定Runtime77/76/76（无忽略），全部0失败；raw2312/1998/2009行、函数通过名700/693/697，另Secret doctest1。旧Provider/远端compaction/idle/执行与审批回归无遗漏或重复，watch及完整下载exit0。 本地非成功专项已完整离线验证；自动阈值、商业模型及生产Host仍未验。
+
+
+自动阈值续轮：四条Classic/Lite本地摘要/远端V2路径以显式预算和合成usage触发固定Runtime采样前检查，无手动compact/start；真实checkpoint、完整摘要/opaque重放、实际disk resume及无再压缩定向1/0/0通过。完整回归/精确CI状态见HANDOFF。此项明确测试范围不代全scope/全时序或商业模型，下一步继续要求级完成审计。

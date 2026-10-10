@@ -2,13 +2,13 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G完成核对恢复点（2026-10-10 本地压缩续轮）
+## 当前F/G完成核对恢复点（2026-10-10 自动阈值续轮）
 
-实际恢复main=origin/main=`bada37e0fe499226defc87387eb5d892ed23cecd`，开始干净；上一轮Gemini comment/Runtime idle为实质进展，源码74bc320/精确CI38084218039完整三平台通过。F/G整体仍待要求级完成审计，不转H；真实模型由用户项目最终自验。
+实际恢复main=origin/main=`d4471cbe8f8754b846de7823478a9ce0b59952b1`，开始干净。上一阶段本地非成功验收为实质进展，源码d72c88a/精确CI38085110360完整三平台通过。目标保持F/G全部，真实模型由用户项目最终自验，不转H或标整体完成。
 
-本轮重新读取固定d27764b compact.rs，新增Classic/Lite本地摘要失败/取消及disk resume独立测试，复用既有远端非成功流程。显式loopback profile沿OpenAI Adapter但Runtime provider name保持fixture（无remote V2），stream/request retries=0。首轮成功、第二POST摘要失败/停流取消，真实failed/interrupted、取消socket关闭，无成功compacted记录；真实app-server重启/disk resume不发POST，第三轮成功，Key/POST各3次。完整原历史逐值保留；Lite本地摘要的additional_tools为空，正常恢复后的工具item与原始首请求逐值一致，其他history保持精确。首定向因工具item差异失败，核实后按真实wire补独立断言，最终定向1/0/0通过。未修改生产实现/审批/schema/依赖。
+本轮重新核实固定d27764b config/mod.rs、models-manager/model_info.rs、session/context_window.rs与session/turn.rs：model_auto_compact_token_limit覆盖模型阈值，默认scope=Total，采样前检查先于新用户输入。新增单用例四路径：Classic/Lite本地摘要与远端V2，测试配置阈值10000、轮末压缩percent=0、首轮合成usage20000，后续usage=0。不调用compact/start；首轮仅1POST无compaction，下一轮自动contextCompaction开始/完成及正常推理共3POST；仅一个实际checkpoint。实际app-server重启/disk resume无POST，显式第三轮正常完成、无再压缩，总4POST/4Key。远端opaque item整值回放；本地摘要完整正文/角色/ID回放，仅模型wire省略Runtime内部summary归属metadata，checkpoint中content_item_kinds与turn_id另验。
 
-源码已提交/push`d72c88a292a4ab41775e38c95c73e7f62d2f7cda`，精确CI38085110360完整三平台核验成功；main=origin/main，源码提交后干净，当前仅文档收尾。修改范围Runtime Harness/合成fixture/两份证据文档/本交接。完整workspace623/0/79、固定Runtime77/0/0、Clippy/fmt/diff、fixture语法及143个Markdown目标/锚点通过；原远端非成功回归保持，225个非任务tracked文件逐字节一致。下一步：补自动阈值离线证据：Classic/Lite的本地摘要与远端V2分别用明确配置预算/合成usage触发固定Runtime采样前压缩，验证真实contextCompaction、正常完成、checkpoint和后续历史；不调用手动compact/start代验。先核实实际配置及模型阈值来源，检查测试如何避免首轮误触发/重复无限压缩，再按实际wire做最小测试。随后要求级F/G整体完成审计，不因阶段用例通过就宣布整体完成。固定入口为session/turn.rs run_pre_sampling_compact/run_auto_compact和session/context_window.rs，按预算/使用量/上下文窗口判断，分local与remote V2；不把手动测试代自动触发。Registry/Router/版本报告保持已有门控，不重建架构，不调用商业API。
+首定向仅因本地checkpoint内部metadata与模型wire差异失败；按实际wire精确排除一个已识别字段后四路径1/0/0通过，随后增强归属断言，完整workspace623/0/80、固定Runtime78/0/0、Clippy/fmt/diff、fixture语法和143个Markdown目标/锚点通过；225个非任务tracked文件逐字节保持。当前未提交仅Harness/合成fixture/交接，生产实现/审批/依赖/schema未改。下一步commit/push→精确三平台CI逐名核验，再按V3 F/G和各Provider/Registry/ModelRouter/report完成要求级审计，不以新增测试数代替整体证明。商业模型/实际daemon和生产Host未验，不自动授LiveRuntime/Full。
 
 ## 既有阶段与用户顺序
 

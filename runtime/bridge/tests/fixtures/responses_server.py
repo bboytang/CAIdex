@@ -589,7 +589,7 @@ class Handler(BaseHTTPRequestHandler):
             trace["tool"] = name
             events.append(event("response.output_item.done", item={"type": "function_call", "call_id": "fixture-command-1", "name": name, "arguments": json.dumps(arguments)}))
         else:
-            text = "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode in ["compact", "compact-lite"] and trace["requests"] == 2 else "CAIdex local fixture complete"
+            text = "CAIDEX_AUTO_COMPACT_SUMMARY" if mode == "wire-local-compact-auto" and trace["requests"] == 2 else "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode in ["compact", "compact-lite"] and trace["requests"] == 2 else "CAIdex local fixture complete"
             item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": text}]}
             if mode.startswith("goal-") or mode.startswith("wire-") or mode == "compact-lite":
                 item["phase"] = "final_answer"
@@ -597,7 +597,7 @@ class Handler(BaseHTTPRequestHandler):
             if text:
                 events.append(event("response.output_text.delta", delta=text))
             events.append(event("response.output_item.done", item=item))
-        tokens = 100 if mode == "goal-budget" else 0
+        tokens = 20000 if mode in ["wire-compact-auto", "wire-local-compact-auto"] and trace["requests"] == 1 else 100 if mode == "goal-budget" else 0
         if not compact_failed:
             events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": tokens, "output_tokens": 0, "total_tokens": tokens}}))
         if mode.startswith("wire-"):

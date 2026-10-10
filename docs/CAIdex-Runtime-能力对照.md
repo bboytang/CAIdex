@@ -447,3 +447,12 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 
 
 源码`d72c88a292a4ab41775e38c95c73e7f62d2f7cda`/[CI38085110360](https://github.com/bboytang/CAIdex/actions/runs/38085110360)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38084218039集合+1本地压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略79/77/77）、固定Runtime77/76/76（无忽略），全部0失败；raw2312/1998/2009行、函数通过名700/693/697，另Secret doctest1。旧Provider/远端compaction/idle/执行与审批回归无遗漏或重复，watch及完整下载exit0。 本地非成功专项已完整离线验证；自动阈值、商业模型及生产Host仍未验。
+
+
+## 自动阈值压缩及磁盘恢复（2026-10-10续轮）
+
+新增`real_auto_compaction_threshold_preserves_checkpoint_after_disk_resume`四路径：Classic/Lite × 本地摘要/远端V2。固定源码已核实配置覆盖模型阈值、默认Total scope及采样前检查。显式测试阈值10000、轮末压缩percent=0，首回复合成usage20000、后续0；首轮仅1POST无contextCompaction，第二轮真实自动contextCompaction开始/完成、摘要或opaque压缩与后续正常推理共3POST。没有调用thread/compact/start，仅一个实际rollout checkpoint。
+
+真实app-server重启/disk resume不推理，第三轮正常完成且无再压缩，共4POST/4Key；各请求核对模型与Classic/Lite header。自动压缩后及磁盘恢复后两次input重放checkpoint：远端item全值保留；本地摘要role/type/id/content全值保留，仅模型wire省略已识别Runtime内部summary归属字段，持久checkpoint的content_item_kinds=[compaction.summary]及turn_id另有断言。首定向因内部metadata差异失败，按实际wire收紧断言后四路径1/0/0通过；完整回归/精确CI见HANDOFF。
+
+生产执行/审批、默认阈值和能力不变。此证据仅上述Total采样前路径，不代表所有scope/轮末/TokenBudget/阈值极值/无限历史，也不授商业LiveRuntime/Full或生产Host恢复。
