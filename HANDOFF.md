@@ -1,6 +1,6 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，OpenRouter逐route正文控制精确三平台验收完成，下一步原生工具/后端绑定历史。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-10，OpenRouter后端路由前置步骤进行中；工具/绑定历史尚未实现。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
 
@@ -11,6 +11,8 @@
 本步 **OpenRouter逐route正文控制** 四步骤已完成并逐步更新交接：契约核对→显式verbosity指导/tier映射及8项新测试→完整本地→推送/精确源码CI。源码`2799a4cbe75371528955ca8d24efe5660cd54429`/[CI38006780427](https://github.com/bboytang/CAIdex/actions/runs/38006780427)已验，Provider31、workspace541/536/540、既有Runtime57/56/56，所有通过名精确旧CI+8；不是原生工具或历史回放验收。
 
 下一步 **OpenRouter原生工具/后端作用域绑定历史**：先核对官方Responses推理/工具/路由契约，summary/context/include、原生推理输入和工具当前仍拒绝。新载体须绑定执行端/profile/endpoint/明确后端/model/完整compiled前缀及instructions、verbosity/tier/effort政策，不能用model slug/tier冒充稳定后端。再Lite→实际Classic/Lite Runtime审批/执行/取消/磁盘恢复；不复制Qwen summary或DeepSeek明文规则，不读用户Key/调用商业模型，不跳H/I/CLI/UI。
+
+本轮步骤1已完成：main=origin/main=4af07c1且干净，V3与实际源码一致。官方Responses工具、provider.only和Router Metadata契约已核对：base slug可匹配多个区域/variant，metadata供应方显示名不保证精确endpoint身份。先补齐逐route显式单一backend slug路由政策，禁止请求覆盖，保留require_parameters/禁fallback、预算和JSON/SSE原样输出；这不是稳定后端证明或历史回放验收。接着原生工具/完整政策绑定历史→Lite→实际Runtime。步骤2已完成：仅OpenRouter lib.rs及tests/provider.rs新增with_backend_selection，合法单一slug逐route配置、重复/未知route/坏slug拒绝；配置不升级能力，不打开工具/历史。5项新增，36/0/0定向一次通过，旧31项测试正文保持。编译后预算复用Custom，Key/POST前拒绝超限，JSON与SSE完整原生输出保持。工作区为上述源码/测试及HANDOFF修改，步骤3已完成：workspace546/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过。local-check.py逐名确认旧workspace541+5、旧Runtime57完全保持，旧31项测试正文逐字保留、Cargo.lock不变；18份Markdown/91本地链接/22锚点通过。源码差异已检查，只改本Provider lib/测试及相关文档。日志/tmp/caidex-openrouter-backend/。本轮源码未提交/推送，三平台CI待验；不是实际OpenRouter Runtime回归。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 
@@ -91,7 +93,7 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## Git、环境与操作授权
 
-- 分支 **main**，已验源码`2799a4cbe75371528955ca8d24efe5660cd54429`已推送，收尾前HEAD=origin/main为该SHA；收尾仅HANDOFF/README/OpenRouter/Gateway四文档，纯文档提交号以git log -1为准。源码保持精确CI版本，不重复Rust CI。无依赖/共享生产源码/Runtime/其他Provider/workflow改动。
+- 分支 **main**，本轮起点HEAD=origin/main为4af07c1；OpenRouter显式backend选择本地已验，当前未提交lib.rs/tests/provider.rs及HANDOFF/README/OpenRouter/Gateway文档。本轮精确源码CI待验，旧2799a4c/CI38006780427仅证明正文控制及其以前范围。无依赖/共享生产源码/Runtime/其他Provider/workflow改动。
 - 新会话用户已明确授权本次核验通过的文档与Qwen Lite源码提交推送main及源码三平台CI；首次推送曾因自动审批不认可旧交接授权被拒，取得本会话明确授权后推送成功。
 - 用户2026-10-08持续授权本地检查通过后直接commit/push、源码三平台CI，不再重复询问；纯文档不运行完整Rust CI。离线合成fixture/临时marker已授权；未授权读取用户Key、商业API/邮件/生产部署/模型下载或购买服务。
 - `.git`普通沙箱只读，Git写入/push需授权执行环境。push使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局凭据或输出秘密。

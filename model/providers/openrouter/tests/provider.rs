@@ -1826,3 +1826,207 @@ async fn openrouter_body_controls_do_not_enable_null_tier_or_unconfigured_defaul
     assert_eq!(reads.load(Ordering::SeqCst), 0);
     assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
 }
+
+#[tokio::test]
+async fn openrouter_backend_selection_is_per_route_and_keeps_native_output() {
+    let mut fixture = Fixture::start(vec![Reply::json(response_wire())]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_backend_selection("fixture".into(), "google-vertex/us-east5".into())
+        .unwrap();
+    for (route, backend) in [
+        ("fixture", Some("google-vertex/us-east5")),
+        ("not-visible", None),
+    ] {
+        let wire = json!({"model":route,"input":"hello"});
+        let response = provider
+            .create_response(
+                CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        let sent = fixture.request().await.body.unwrap();
+        let mut expected = json!({"require_parameters":true,"allow_fallbacks":false});
+        if let Some(backend) = backend {
+            expected["only"] = json!([backend]);
+        }
+        assert_eq!(sent["provider"], expected);
+        assert_eq!(
+            sent["model"],
+            if route == "fixture" {
+                "native-fixture"
+            } else {
+                "absent"
+            }
+        );
+        assert_eq!(sent["store"], false);
+        assert_eq!(response.response.wire(), &response_wire());
+        assert_eq!(
+            provider.metadata(route).unwrap().capabilities.reasoning,
+            CapabilitySupport::Unknown
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn openrouter_backend_configuration_rejects_invalid_routes_slugs_and_duplicates() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    for slug in [
+        "",
+        " ",
+        "openai\n",
+        "open ai",
+        "/openai",
+        "openai/",
+        "openai//fast",
+        "https://example.test",
+        "供应方",
+    ] {
+        assert!(
+            fixture
+                .provider(broker.clone(), limits())
+                .with_backend_selection("fixture".into(), slug.into())
+                .is_err(),
+            "{slug:?}"
+        );
+    }
+    assert!(
+        fixture
+            .provider(broker.clone(), limits())
+            .with_backend_selection("missing".into(), "openai".into())
+            .is_err()
+    );
+    assert!(
+        fixture
+            .provider(broker, limits())
+            .with_backend_selection("fixture".into(), "openai".into())
+            .unwrap()
+            .with_backend_selection("fixture".into(), "azure".into())
+            .is_err()
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_backend_selection_does_not_enable_caller_routing_tools_or_history() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_runtime_context()
+        .with_backend_selection("fixture".into(), "openai/fast".into())
+        .unwrap();
+    let mut wires = Vec::new();
+    for (field, value) in [
+        ("provider", json!({"only":["azure"]})),
+        ("models", json!(["other"])),
+        ("session_id", json!("sticky")),
+        ("tools", json!([])),
+        ("include", json!(["reasoning.encrypted_content"])),
+    ] {
+        let mut wire = json!({"model":"fixture","input":[]});
+        wire[field] = value;
+        wires.push(wire);
+    }
+    wires.push(
+        json!({"model":"fixture","input":[{"type":"reasoning","encrypted_content":"foreign"}]}),
+    );
+    for wire in wires {
+        assert!(
+            provider
+                .create_response(
+                    CanonicalRequest::new(wire, ResponsesDialect::Classic).unwrap(),
+                    RequestContext::default()
+                )
+                .await
+                .is_err()
+        );
+    }
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_backend_compiled_budget_precedes_credentials_and_post() {
+    let fixture = Fixture::start(vec![]).await;
+    let (broker, reads) = broker(Some(KEY));
+    let mut configured = limits();
+    configured.request_bytes = 256;
+    let provider = fixture
+        .provider(broker, configured)
+        .with_backend_selection("fixture".into(), "b".repeat(257))
+        .unwrap();
+    let error = provider
+        .create_response(
+            request(false, ResponsesDialect::Classic),
+            RequestContext::default(),
+        )
+        .await
+        .err()
+        .unwrap();
+    assert_eq!(error.code, "invalid_or_oversized_body");
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.accepted.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn openrouter_backend_sse_combines_controls_without_rewriting_routing_metadata() {
+    let mut native = response_wire();
+    native["service_tier"] = "default".into();
+    native["openrouter_metadata"] = json!({"requested":"native-fixture","attempt":1,"endpoints":{"available":[{"provider":"Fixture Provider","model":"native-fixture","selected":true}]},"future":"retain"});
+    let terminal = json!({"type":"response.completed","response":native});
+    let mut fixture = Fixture::start(vec![Reply::stream(format!(
+        "{CREATED}data: {terminal}\n\n"
+    ))])
+    .await;
+    let (broker, reads) = broker(Some(KEY));
+    let provider = fixture
+        .provider(broker, limits())
+        .with_runtime_context()
+        .with_backend_selection("fixture".into(), "fixture-provider/fast".into())
+        .unwrap()
+        .with_verbosity_instruction("fixture".into(), "low".into(), "Concise".into())
+        .unwrap()
+        .with_reasoning_effort_mapping("fixture".into(), "xhigh".into(), "high".into())
+        .unwrap()
+        .with_service_tier_mapping("fixture".into(), "priority".into(), "fast".into())
+        .unwrap();
+    let mut wire = runtime_wire();
+    wire["stream"] = true.into();
+    wire["instructions"] = "original".into();
+    wire["text"]["verbosity"] = "low".into();
+    wire["reasoning"] = json!({"effort":"xhigh"});
+    wire["service_tier"] = "priority".into();
+    let mut events = provider
+        .stream_response(
+            CanonicalRequest::new(wire.clone(), ResponsesDialect::Classic).unwrap(),
+            runtime_context(),
+        )
+        .await
+        .unwrap()
+        .events;
+    let sent = fixture.request().await;
+    let body = sent.body.unwrap();
+    assert_eq!(
+        body["provider"],
+        json!({"only":["fixture-provider/fast"],"require_parameters":true,"allow_fallbacks":false})
+    );
+    assert_eq!(body["input"], wire["input"]);
+    assert_eq!(body["instructions"], "original\nConcise");
+    assert_eq!(body["reasoning"], json!({"effort":"high"}));
+    assert_eq!(body["service_tier"], "fast");
+    assert!(!sent.headers.contains("executor-private"));
+    let mut actual = Vec::new();
+    while let Some(event) = events.next().await {
+        if let ProviderStreamEvent::Model(model) = event.unwrap() {
+            actual.push(model.response.wire().clone());
+        }
+    }
+    assert!(actual.contains(&terminal));
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+}

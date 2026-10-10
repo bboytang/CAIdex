@@ -227,3 +227,6 @@ Qwen后续显式控制本步只改Qwen lib/request，不改共享Gateway/传输�
 ## OpenRouter逐route正文控制（三平台离线已验）
 
 显式逐route verbosity文本指导保留原instructions追加一次，不宣称原生等级或结构输出；service_tier请求映射一次，auto/default组、flex同值、priority/fast别名组、ultrafast同值，未知/重复/未配置/跨档本地降级拒绝，原生JSON/SSE实际tier保留。Gateway/Broker/Custom/Runtime共享实现未改；仅OpenRouter生产源码/测试及验收文档。新增8项、31项定向、workspace541/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff与通过名精确旧CI基准+8本地验证通过；精确源码2799a4c/[CI38006780427](https://github.com/bboytang/CAIdex/actions/runs/38006780427)三平台已验（workspace541/536/540、既有Runtime57/56/56、OpenRouter31逐名一次，全部通过名精确旧CI+8），实际OpenRouter Runtime/工具历史/Lite/商业Live/Full仍未验。详见[OpenRouter验收](CAIdex-OpenRouter-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)。
+
+
+OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_backend_selection`逐route配置单一`provider.only`，保留禁fallback与参数要求，调用方不能覆盖；不升级能力、不将base slug冒充实际稳定endpoint。新增5项/Provider36、本地workspace546/0/59及既有Runtime57/0/0、Clippy/fmt/diff通过，精确源码三平台CI待验。原生工具/完整政策绑定历史→Lite→实际OpenRouter Runtime仍待实现，最新恢复点见HANDOFF。

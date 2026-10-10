@@ -29,6 +29,7 @@ pub struct OpenRouterProvider<S: SecretStore> {
     reasoning_efforts: HashMap<String, HashMap<String, String>>,
     verbosity_instructions: HashMap<String, HashMap<String, String>>,
     service_tiers: HashMap<String, HashMap<String, String>>,
+    backends: HashMap<String, String>,
 }
 impl<S: SecretStore + 'static> OpenRouterProvider<S> {
     pub fn new(
@@ -78,6 +79,7 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             reasoning_efforts: HashMap::new(),
             verbosity_instructions: HashMap::new(),
             service_tiers: HashMap::new(),
+            backends: HashMap::new(),
         })
     }
     /// Consume executor-local attribution and neutral text; do not forward identity or enable caching.
@@ -161,6 +163,29 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             .insert(source, native);
         Ok(self)
     }
+    /// Executor-owned singleton provider.only policy, not proof of the serving endpoint.
+    /// A base slug may match multiple variants; use the official full endpoint slug when needed.
+    pub fn with_backend_selection(
+        mut self,
+        model: String,
+        backend: String,
+    ) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !backend.split('/').all(|part| {
+            !part.is_empty()
+                && part
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.'))
+        }) || self.backends.contains_key(&model)
+        {
+            return Err(ProviderError::new(
+                400,
+                "openrouter_invalid_backend_selection",
+            ));
+        }
+        self.backends.insert(model, backend);
+        Ok(self)
+    }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
         if context.headers.iter().any(|(name, _)| {
             !self.runtime_context
@@ -192,7 +217,8 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         let efforts = self.reasoning_efforts.get(request.model());
         let verbosity = self.verbosity_instructions.get(request.model());
         let tiers = self.service_tiers.get(request.model());
-        request::compile(
+        let backend = self.backends.get(request.model());
+        let compiled = request::compile(
             request,
             self.limits.request_bytes,
             self.runtime_context,
@@ -200,7 +226,14 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             metadata.capabilities.reasoning,
             verbosity,
             tiers,
-        )
+        )?;
+        if let Some(backend) = backend {
+            let mut wire = compiled.wire().clone();
+            wire["provider"]["only"] = serde_json::json!([backend]);
+            return CanonicalRequest::new(wire, compiled.dialect())
+                .map_err(|_| ProviderError::new(400, "openrouter_invalid_request"));
+        }
+        Ok(compiled)
     }
 }
 impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {

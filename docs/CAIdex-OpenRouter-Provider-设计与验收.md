@@ -66,3 +66,12 @@
 新增8项覆盖逐route/三种指导/原instructions、非Runtime身份/结构输出拒绝、配置/坏值/重复/跨档门控、源与编译预算先于凭据、tier别名映射一次及实际返回保留、context+effort+正文SSE组合、默认/Null拒绝。首轮30/1为SSE夹具未设置stream=true，补齐后定向31/0/0；旧23项测试逐字保留。完整本地workspace541/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过，workspace旧533通过名精确+8、旧Runtime完全保持；依赖/共享/其他Provider/Runtime/workflow未改。本步精确源码三平台CI已验，见下段，日志`/tmp/caidex-openrouter-body/`；不认领原生工具历史/Lite/实际OpenRouter Runtime/商业Live/Full。
 
 精确源码`2799a4cbe75371528955ca8d24efe5660cd54429`/[CI38006780427](https://github.com/bboytang/CAIdex/actions/runs/38006780427)整体completed/success。Linux114077274589/Windows114077274731/macOS114077274576各17steps成功或条件跳过；完整raw2183/1869/1880行，workspace541/536/540（failed0，ignored59/57/57）、既有固定Runtime57/56/56（failed/ignored0），OpenRouter31、Qwen72、DeepSeek57每名每平台一次。全通过名599/592/596精确为旧CI38005373396集合+8，无遗漏/重复；既有Runtime通过名完全保持。watch及三份完整日志下载exit0，ci-check通过；日志`/tmp/caidex-ci-38006780427-{linux,windows,macos}-raw.log`及status.json，checker/result在`/tmp/caidex-openrouter-body/`。这些Runtime回归不代验实际OpenRouter接线或商业Live/Full，也不代验iOS应用。
+
+
+## 显式后端路由前置步骤（2026-10-10）
+
+`with_backend_selection(route, backend)`由执行端逐route配置一个原生provider slug，拒绝未知route、重复配置、空路径段和非ASCII字母数字/点/下划线/短横线的段；不猜测模型或目录能力，不验证商业端点是否可用。编译后写入`provider.only=[backend]`，保留`require_parameters=true/allow_fallbacks=false/store=false`。未配置route保持旧行为；调用方provider/models/session_id、工具、summary/context/include与推理历史仍拒绝。源预算与注入后共享预算均先于凭据和POST；不改HTTP栈、Runtime或依赖。
+
+[官方路由契约](https://openrouter.ai/docs/guides/routing/provider-selection)说明base slug覆盖供应方多个variant/region；full slug限制指定变体。故本步只建立路由政策，不证明实际服务endpoint稳定。[Router Metadata](https://openrouter.ai/docs/guides/features/router-metadata)显示名也不能冒充精确backend身份；JSON/SSE已有metadata原样保留，不用请求slug覆盖实际输出。原生工具与完整政策/前缀绑定历史仍是下一步，[Responses工具契约](https://openrouter.ai/docs/api_reference/responses/tool-calling)已核对；不套用Qwen summary-only或DeepSeek明文规则。
+
+新增5项：逐route与默认隔离/元数据不升级/原生JSON保留；配置坏值/重复/未知route；请求路由、工具与历史门控；注入后预算Key/POST前拒绝；context+effort+verbosity+tier+backend的SSE组合及实际metadata保留。定向36/0/0一次通过；完整本地workspace546/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过。逐名精确旧workspace541+5、既有Runtime名完全保持，旧31测试正文逐字不变、Cargo.lock不变；18份Markdown/91本地链接/22锚点通过。精确源码三平台CI待验。日志`/tmp/caidex-openrouter-backend/`。本步不是原生工具/绑定历史/Lite/实际OpenRouter Runtime或商业Live/Full验收。
