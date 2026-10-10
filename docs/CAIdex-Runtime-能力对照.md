@@ -43,7 +43,7 @@
 
 - Queue reorder 要求每个现存 submission ID 恰好出现一次；busy start 不消费条目；中断后队列暂停，显式 start 可选非队首。用户消息事件的 `clientId` 对应队列 `clientUserMessageId`。
 - Goal 另需 `features.goals`，不是 initialize 的实验 opt-in 就能保证支持。active 可自动开始轮次；负预算拒绝；budgetLimited/blocked 是上游状态。blocked 更新可先于最后一轮 turn/completed，UI 分别处理目标与轮次终态。
-- 手动 compact/start 返回 `{}` 只代表请求受理；最终依据 contextCompaction item 与 turn/completed。原有经典本地摘要证据保持；2026-10-10新增Lite本地摘要和Classic/Lite远端v2 opaque压缩/磁盘恢复本地通过，精确CI待验，详下文。
+- 手动 compact/start 返回 `{}` 只代表请求受理；最终依据 contextCompaction item 与 turn/completed。原有经典本地摘要证据保持；2026-10-10新增Lite本地摘要和Classic/Lite远端v2 opaque压缩/磁盘恢复本地通过，精确三平台CI已验，详下文。
 
 ## 原 V2 原生能力逐项验收
 
@@ -66,7 +66,7 @@
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
 | MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
-| Context compaction | 三平台经典本地摘要已验；Lite本地摘要及Classic/Lite远端opaque/重启本地已验 | 新精确三平台CI及商业模型，详下文 |
+| Context compaction | 三平台经典本地摘要已验；Lite本地摘要及Classic/Lite远端opaque/重启三平台已验 | 商业模型、失败/取消/自动阈值等独立范围，详下文 |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
 | Queue | 三平台 CRUD/reorder/分页/busy/中断保留/指定及默认/自动启动通过 | 多端与持久 Host H |
@@ -414,4 +414,4 @@ cargo test -p caidex-runtime --test real_runtime --locked -- --ignored
 
 新增real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume分别覆盖两个明确模式：种子轮次、compact/start受理、同ID contextCompaction started/completed及完成终态、实际rollout compacted checkpoint中的完整compaction item、实际app-server重启/disk resume（没有额外POST）、后续轮次完整item逐值承接。Classic/Lite header、compaction_trigger恰好一个、Key/POST各3次和合成认证均核对。opaque值仅合成载体，不证明模型服务解密或签名认证。
 
-Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Lifecycle完成且第三请求包含压缩摘要；不以远端证据代验本地分支。定向远端1/0/0（含Classic/Lite）、本地2/0/0（旧Classic+新Lite），完整workspace623/0/75、固定Runtime73/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；旧Runtime保持，新增2名。当前待精确源码三平台CI。未证明压缩失败/取消/自动阈值/无限历史/生产Host恢复/商业模型；fixture不授LiveRuntime/Full。
+Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Lifecycle完成且第三请求包含压缩摘要；不以远端证据代验本地分支。定向远端1/0/0（含Classic/Lite）、本地2/0/0（旧Classic+新Lite），完整workspace623/0/75、固定Runtime73/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；旧Runtime保持，新增2名。源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)整体completed/success，三job各17steps成功或条件跳过，完整日志逐名精确旧Gemini CI+2。Linux/Windows/macOS workspace623/618/622（忽略75/73/73）、固定Runtime73/72/72（无忽略），全部0失败，旧533个Provider函数及原生凭据/Secret doctest保持。未证明压缩失败/取消/自动阈值/无限历史/生产Host恢复/商业模型；fixture不授LiveRuntime/Full。

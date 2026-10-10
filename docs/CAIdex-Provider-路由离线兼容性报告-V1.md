@@ -50,6 +50,6 @@
 - Qwen：Runtime context、custom tool mapping（包含native tools/history）、逐route effort及verbosity映射；summary/context只限既有验收契约；Lite另需显式options。地域/计划/API版本与grammar硬约束未验；不能按slug推断支持。
 - OpenRouter：逐route显式backend=fixture-backend/region、runtime/native/advanced tools、native history、auto summary/all_turns context、effort/verbosity映射；Lite显式options。默认或部分政策拒绝Key/POST前发送；实际后端身份/版本、商业Full未验。
 
-基础证据：源码`9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`/[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)八Adapter及固定Runtime三平台完整日志已核验，workspace621/616/620、Runtime71/70/70，0失败，旧通过名保持。Gemini边界增强源码`57451e9996aee201954ee5d404dd02e22dba8dd2`的精确CI尚在运行；compaction新证据尚在本地回归，本报告不会把它们记成三平台通过。
+基础证据：源码`9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`/[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)八Adapter及固定Runtime三平台完整日志已核验，workspace621/616/620、Runtime71/70/70，0失败，旧通过名保持。Gemini边界增强源码`57451e9996aee201954ee5d404dd02e22dba8dd2`/[CI38081567944](https://github.com/bboytang/CAIdex/actions/runs/38081567944)三平台完整日志已核验，workspace623/618/622、Runtime71/70/70、Google94，0失败，旧集合+2。compaction源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)三平台完整日志已验：workspace623/618/622、Runtime73/72/72、0失败，旧集合+2Runtime；新增Lite本地摘要、Classic/Lite远端opaque及实际磁盘恢复仅属于上文明确配置。
 
 可信执行端可引用本索引，但生产Registry配置的Unknown能力、未知context/output限额和空报告保持，不用fixture反推模型智能、签名认证、服务限额或费用。LiveProvider/LiveRuntime/Compatible/Full仍未验；用户确认在全项目完成后自行进行真实模型验收。生产Host、活动轮次模型边界约束与持久跨Provider关联归H，客户端展示归J/P。

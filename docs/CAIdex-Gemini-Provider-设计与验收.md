@@ -334,4 +334,4 @@ STOP分类仅将非thought的functionCall视为可执行工具调用。thought-o
 
 新增完整载体组互换专项：同模型两条不同输入的JSON/SSE完整组均先验证自身合法并序列化恢复，双向移入对方历史；Classic/Lite、JSON/SSE目标入口均在Key/POST前400 google_history_request_mismatch。不修改组内内容，也不认为载体JSON是加密认证。原生/投影已有cancel/Drop用例扩展到不消费队列：多帧停流，cancel先观察socket关闭再排空缓存并验证终止错误，不交付工具done/载体/成功终态；Drop关闭socket、共享permit可复用，Key读取恰好2次。既有消费后取消/截断及满槽deadline用例保持。
 
-本地Google94/0/0、workspace623/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；最终双向组互换专项复验1/0/0。当前待提交及精确三平台CI。新增2测试、增强3既有用例；生产仅调整共享usage校验与outcome分类，无依赖/fixture/workflow变更。商业真实模型由用户在全项目完成后自行验证，当前未验，不升级LiveRuntime/Full。
+本地Google94/0/0、workspace623/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；最终双向组互换专项复验1/0/0。源码`57451e9996aee201954ee5d404dd02e22dba8dd2`/[CI38081567944](https://github.com/bboytang/CAIdex/actions/runs/38081567944)三平台completed/success，各17steps成功或条件跳过，完整日志逐名为旧集合+2。Linux/Windows/macOS workspace623/618/622、固定Runtime71/70/70，0失败；Google94逐名每平台一次。新增2测试、增强3既有用例；生产仅调整共享usage校验与outcome分类，无依赖/fixture/workflow变更。商业真实模型由用户在全项目完成后自行验证，当前未验，不升级LiveRuntime/Full。
