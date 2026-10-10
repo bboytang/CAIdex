@@ -2,30 +2,31 @@
 
 更新：2026-10-10。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
-## 当前批准里程碑：治理与计划调整（本次仅文档）
+## 当前批准里程碑：H-1 本地Host生命周期与SQLite事件持久化
 
-用户要求采用“已批准里程碑内自主执行，里程碑之间用户确认”。本次仅审查/修改治理、计划、验收与交接Markdown，允许commit/push main，禁止功能源码、依赖、商业API及生产部署。文档调整及相关检查已完成；本次治理提交/push封存后停止，等待用户决定。F/G-Offline建议关闭尚待独立只读审计及用户确认，H尚未获启动授权。
+2026-10-10 用户确认 F/G-Offline 验收通过并正式关闭；F/G-Live 保持待验，不认领商业兼容性或生产Host。用户明确批准 H-1，实现/测试/演示/commit/push main/三平台精确CI，完成后停止；H-2/H-3/I 尚未授权。
 
-开始时实际main/HEAD=origin/main=GitHub main=`0e9004b6aad7a2adbad11b4fbb920a57cb8fd25a`，工作区干净；本次治理收尾提交以实际Git HEAD及提交说明`docs: adopt milestone gates and finite F/G exit criteria`为准；恢复时核实main/远端及工作区。最新已验源码`586199fb9655ccd8bff1830968b209aee3d6bf23`，与治理基线的所有非Markdown源码/依赖/workflow相同。
+实施前核对：main/HEAD/远端 main 均为 `b8dfec41bf06b2237b6c7ca2d7f91c91b7ec4322`，初始工作区干净；V3第4节H-1及CLI第10节为验收依据。磁盘约4GB空闲，target约17GB；复用缓存、限制并行，不删除用户/全局Codex资料。
 
-## F/G当前事实与证据
+有限计划：①核对Facade/生命周期边界并记录设计；②新增独立本地Host及V1 SQLite journal、Host/stream sequence、提交后广播、attach/detach、snapshot恢复；③双内部客户端/真实固定Runtime无模型初始化与线程探针、故障测试；④最终diff/提交/push/精确三平台CI/审计证据。非目标：H-2任务/幂等提交/执行链、H-3审批竞争/Diff、正式GUI/CLI、SSH/Relay、账户/Memory、商业调用/用户Key和生产部署。
 
-- 九Adapter已实现：OpenAI、Anthropic、Gemini、Ollama、DeepSeek、Qwen、OpenRouter、Custom Responses、Custom Chat Completions，复用六方法/Canonical/Registry/Router/Gateway/Broker；固定Runtime仍执行/审批真源。
-- 本次重新读取[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)精确head、三job各17steps及完整日志：整体completed/success。Linux/Windows/macOS workspace640/635/639（忽略83/81/81），固定Runtime81/80/80（无忽略），均0失败；Core29/Gateway24/Provider550各测试名逐平台一次，Linux原生凭据另1项、Secret compile-fail doctest保持。job114325748624/114325748645/114325748432；不重跑源码回归，复用有效证据。
-- 已验证具体Responses/JSON/SSE/工具与结果/usage/reasoning/opaque/错误限流/取消超时边界，Classic/Lite、真实原生审批/隔离执行/磁盘恢复、明确模型切换与压缩路径。18个route/方言及4条切换route有版本化离线报告，仅ProtocolFixture/Experimental，不自动挂生产Registry。
-- 旧Chat CI38089213569失败的fixture终态后写trace竞争及required无tools门控已由586199f修复/新三平台CI复验；历史详[Chat验收](docs/CAIdex-Custom-Chat-Completions-设计与验收.md)。不是当前源码阻断，不重复开发。
-- 当前明确F/G-Offline源码/证据阻断清单为空；只提出关闭建议，不自动认定用户已验收。详细五类归属、拒绝边界及有限退出条件见[Offline/Live核对](docs/CAIdex-FG-离线验收核对-V1.md)。独立关键里程碑审计尚未执行，实施会话复核不替代。
-- F/G-Live保持未验：真实商业模型/API/版本/签名/费用、实际Ollama daemon/模型与性能由用户全项目完成后自验。无用户Key读取/收费调用，不授LiveRuntime/Full；不能因Live等待无限阻止另行批准的H–R。
+通过条件：客户端退出不终止Host；两个测试客户端断线重连恢复提交事件或一致快照；重启journal保持Host身份/seq且旧Runtime状态未知，不重发未确认动作；SQLite版本/损坏/提交失败安全拒绝；实际演示、测试、Linux/Windows/macOS精确CI及可独立审计证据。停止条件：达到上述条件即停止新增功能，等待用户验收及下一授权；真实阻断须修复复验，资源不足不得擅自清理。
 
-## 治理调整与准确下一步
+依赖：固定Codex0.160.1、现有Runtime Facade、Tokio/serde与新增必要SQLite绑定；隔离运行数据，不接收Key/Account Token，不改现有凭据边界。当前进度：H-1已实现并本地验证，封存/精确CI收尾中；独立审计未执行。
 
-已发现文档问题：README把已完成OpenRouter写为下一步、HANDOFF堆叠历史CI、V3/交接“进入H”缺用户批准门槛。本次修正文档状态及执行机制，保留全部V3架构和A–R顺序。
+## H-1 当前进度与证据
 
-文档/链接/格式及最终diff已检查：213个本地目标、23个锚点通过；仅7份Markdown，所有非Markdown与治理基线相同，V3产品架构正文与A–R工作/顺序保持。未重新运行Rust/Runtime（源码未改，复用上列精确CI）；没有商业API、部署、H编码或独立退出审计。本次commit/push后核实远端相同和工作区干净即停止；不触发无意义Rust CI。
+已实现 `runtime/host` 独立本地Host、固定Runtime Facade复用、V1 SQLite journal/event+snapshot事务、Host/stream双seq、提交后广播、严格内部JSONL请求、双端attach/detach/连续replay或一致snapshot。线程探针先记录未知intent再发请求；重启保留未知intent、旧Runtime缓存失效，不重发。显式shutdown先记录stopping；Runtime断连/交互/存储失败安全停止；inspect只读、不建库/迁移。Windows owner-only ACL、Unix0700/owner/链接检查，独立Host token不进入Runtime/journal/日志。
 
-准确下一步只有用户决策：安排独立只读审计/确认F/G-Offline关闭，并明确是否批准建议H-1。此前没有下一开发里程碑授权，不能自行开始Host/账户/客户端或新增Provider工作。
+本地证据：workspace 655通过/0失败/83忽略（后续严格请求解码修复以最终H-1定向复验为准）；H-1最终15项定向及全仓Clippy/fmt、固定Runtime81/0/0与stable/experimental schema指纹已验证。真实独立Host进程演示通过：两客户端重连replay一致、第三观察客户端进程退出不终止Host、真实强杀重启同Host/旧线程unknown/探针0重发。初始本地测试受默认沙箱socket/原生执行限制，已在授权执行环境复验；/tmp为Git工作树导致既有凭据保护测试拒绝，换本会话Git外私有TMPDIR后通过，未改保护或/tmp/.git。额外参数拒绝测试暴露serde flatten忽略字段，已改严格带标签struct请求，最终H-1复验覆盖。
 
-H首个交付建议（未批准、未实现）：独立本地Host生命周期与SQLite事件journal，复用固定RuntimeFacade；内部客户端attach/detach及按seq恢复已落盘事件/快照，客户端退出不终止Host，Host重启不重发未知动作。以非收费真实Runtime初始化/线程事件形成可运行最小链路，不提前做正式GUI/完整CLI。H任务执行/审批多端竞争/取消/结果未知/Diff及纵向任务链另有后续内部里程碑，不能将H首项当H整体完成，详V3。
+[H-1设计/运行/失败与限制](docs/CAIdex-H1-Host-设计与验收-V1.md)提供独立复现及审计入口；源码/测试/演示/workflow最终diff检查后提交main，精确三平台CI待push后核验。当前源码尚未封存，不虚构SHA/CI/独立审计通过。完成本次H-1交付后停止；准确下一步为用户安排独立只读审计及验收，H-2必须另行明确批准。
+
+## F/G 封存状态
+
+F/G-Offline已由用户正式确认关闭。九Adapter/18条route/4条切换的原证据复用[退出核对](docs/CAIdex-FG-离线验收核对-V1.md)，固定源码586199f/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台全成功（workspace640/635/639，Runtime81/80/80）。本次未改Facade/Provider/凭据源码，最新功能变更仅H-1及必要workspace/依赖/workflow。
+
+F/G-Live仍待真实模型版本/签名/费用、实际Ollama等用户最终实测；没有用户Key读取或商业调用，不授LiveRuntime/Full，不认领生产Host已通过。前次治理b8dfec4已结束，不是当前待办；独立审计未新增执行记录。
 
 ## 已确定的架构边界（不得擅自改动）
 
@@ -44,14 +45,14 @@ H首个交付建议（未批准、未实现）：独立本地Host生命周期与
 
 ## 未实现、未验证与风险
 
-- H生产Host、持久任务/journal/seq/snapshot/审批竞争、活动轮次模型约束与跨Provider持久关联未实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
+- H-1 journal/seq/snapshot/本地生命周期已实现；H-2持久任务/幂等/执行链、H-3审批竞争/Diff、活动轮次模型约束与跨Provider持久关联/完整生产Host仍未实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
 - I官方账户/PostgreSQL/Memory/同步/Email及J–O客户端、L SSH、P完整英文CLI、Q加密Relay、R实际平台/安装升级/权限/恢复仍待。当前CLI仅doctor、credentials status/set/remove、version/help；CLI-01～34不因底层协议存在而完成。
 - 各Provider限制以专属验收/profile为准；未知Runtime扩展不保证类型化持久化全量往返。native载体为JSON一致性门控而非密码学真实性，backend配置不是实际endpoint证明；终态缓冲受idle/预算限制，完整前缀可能二次增长。
 - compaction只验明确Classic/Lite本地/远端成功与失败/取消、Total采样前自动阈值/磁盘恢复；其他scope/轮末/TokenBudget/无限历史不认领。同步SecretStore开始后不能强停，保证取消后不POST；跨Gateway keepalive未承诺。
-- jsonschema0.58.6有字节/regex限制但无硬CPU抢占；H须分析生产隔离/有界失败，此限制不写成已解决。当前未发现有实际证据的新F/G阻断；后续若出现影响权限/隔离/数据完整性/后续正确性的明确缺陷，重新纳入阻断分析。
+- H-1无journal裁剪/高负载吞吐/备份恢复承诺；SQLite提交在服务任务同步执行、同OS用户授权域，Runtime丢事件无法凭已捕获日志重建完整真源。jsonschema0.58.6有字节/regex限制但无硬CPU抢占；后续H须分析生产隔离/有界失败，此限制不写成已解决。当前未发现有实际证据的新F/G阻断；后续若出现影响权限/隔离/数据完整性/后续正确性的明确缺陷，重新纳入阻断分析。
 
 ## 恢复入口
 
 - [AGENTS规则](AGENTS.md)、[V3阶段/里程碑/交付](docs/CAIdex-实施计划-V3.md)、[UI规范](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud设计](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI-01～34](docs/CAIdex-CLI-完整交互与验收规范-V1.md)。
 - [F/G退出核对](docs/CAIdex-FG-离线验收核对-V1.md)、[Gateway](docs/CAIdex-Model-Gateway-设计与验收.md)、[Runtime能力](docs/CAIdex-Runtime-能力对照.md)、[18条Provider路由报告](docs/CAIdex-Provider-路由离线兼容性报告-V1.md)、[4条切换报告](docs/CAIdex-模型切换-离线兼容性报告-V1.md)。各Provider专属验收由上述索引进入，历史CI留原文/GitHub。
-- 源码 `runtime/bridge/src/`、`model/core/src/`、`model/gateway/src/`、`model/providers/`、`credentials/core/`；固定Runtime/切换/Provider集成测试位于 `runtime/bridge/tests/`。当前没有生产Host/Windows/iOS工程，先检查实际文件再设计H。
+- H-1源码/测试 `runtime/host/`、真实进程演示 `scripts/h1-demo.py`；既有源码 `runtime/bridge/src/`、`model/core/src/`、`model/gateway/src/`、`model/providers/`、`credentials/core/`；固定Runtime/切换/Provider集成测试位于 `runtime/bridge/tests/`。当前只有H-1本地Host探针，无完整生产任务Host/Windows/iOS工程；完成H-1后不自行开始H-2。

@@ -8,6 +8,8 @@
 
 当前可以运行：执行端凭据 Broker、脱敏及 CLI 凭据状态/保存/删除，固定版本 app-server 的双向 JSONL 适配、Runtime facade（线程/轮次/Steer/interrupt、能力门控、审批/输入转交）、协议回归测试与离线 `caidex doctor`。完整协议调用入口保留常规和实验方法；具体模型/工具能力仍需逐项验证，详见能力对照。doctor 只创建隔离的临时线程，不启动模型轮次、不执行项目命令、不读取用户 Codex 登录配置。
 
+F/G-Offline已于2026-10-10获用户确认关闭，F/G-Live待验。获批H-1提供独立本地Host、SQLite事件journal、双内部客户端attach/detach和恢复演示，见[H-1运行与验收](docs/CAIdex-H1-Host-设计与验收-V1.md)；该探针不提供持久任务/工具审批或正式CLI，不代表完整H及生产Host通过。
+
 完整CLI目标是共享真实Host/固定Codex Runtime的英文TUI、无头exec、持久task、模型/Provider/Profile、账户会话、本地及跨端记忆、Remote与扩展管理；账户认证不代Host审批权限，exec与后台任务语义分开。详见[CLI完整交互与验收规范V1](docs/CAIdex-CLI-完整交互与验收规范-V1.md)，H/I提供底层契约，P整合CLI，R实测。**这些是规划，当前可执行CLI仍仅doctor、credentials status/set/remove、版本/帮助，CLI-01～34均未执行。**
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。完整CLI规范及V3/账户/UI/凭据设计保持，CLI-01～34均待正式产品实现与验收。DeepSeek/Qwen/OpenRouter实际Classic/Lite固定Runtime、Registry/切换与报告已离线验；不把旧子阶段“下一步”当当前授权，准确证据见以下当前状态。
@@ -82,7 +84,7 @@ node scripts/codex-binary.mjs
 - `docs/CAIdex-UI-规范-V1.md`：UI 布局和 CAIdex 功能入口。
 - `HANDOFF.md`：当前进度、验证与下一步；每次续接先读。
 
-当前适配层是本地传输组件，尚不包含生产 Host 的持久化、重连和生命周期管理。CLI 可通过 `caidex credentials --help` 查看凭据管理用法；没有秘密导出命令，保存只接受显式管道输入。普通 Chat、模型 Key 设置页面和 Windows/iOS 页面尚未实现。
+当前适配层及H-1本地Host支持事件持久化、重连和生命周期探针；完整生产Host任务/审批能力仍待后续批准里程碑。CLI 可通过 `caidex credentials --help` 查看凭据管理用法；没有秘密导出命令，保存只接受显式管道输入。普通 Chat、模型 Key 设置页面和 Windows/iOS 页面尚未实现。
 
 ## CI 与许可证
 

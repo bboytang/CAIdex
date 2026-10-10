@@ -1,0 +1,84 @@
+{
+  "evidence_version": 1,
+  "milestone": "H-1",
+  "baseline_sha": "b8dfec41bf06b2237b6c7ca2d7f91c91b7ec4322",
+  "platform": "Linux",
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "workspace": {
+    "passed": 655,
+    "failed": 0,
+    "ignored": 83
+  },
+  "workspace_scope_note": "Whole workspace ran before final strict request decoder correction; final Host 15 tests plus real demo and Host Clippy ran after correction. Final exact-source whole workspace is enforced by three-platform CI.",
+  "host": {
+    "passed": 15,
+    "failed": 0,
+    "ignored": 0
+  },
+  "host_test_names": [
+    "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+    "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+    "failed_commit_does_not_advance_event_or_snapshot",
+    "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+    "offline_inspection_never_migrates_or_creates_a_database",
+    "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+    "second_owner_is_rejected_and_lock_releases_after_close",
+    "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+    "oversized_event_is_rejected_without_advancing_watermark",
+    "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+    "partial_client_frame_survives_interleaved_event_broadcast",
+    "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+    "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+    "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+    "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+  ],
+  "runtime": {
+    "passed": 81,
+    "failed": 0,
+    "ignored": 0
+  },
+  "runtime_pin": "0.160.1",
+  "schema": [
+    "stable schema matches Codex 0.160.1",
+    "experimental schema matches Codex 0.160.1"
+  ],
+  "clippy": "workspace passed; final Host all targets passed after request decoder correction",
+  "demo": {
+    "status": "ok",
+    "codex_version": "0.160.1",
+    "host_id": "f0bac1c25150c7caee7baaabf79ee303",
+    "before_restart_seq": 5,
+    "after_restart_seq": 7,
+    "clients": 2,
+    "observer_process_exit_detaches": true,
+    "replay_identical": true,
+    "snapshot_restored": true,
+    "old_runtime_state": "unknown",
+    "restart_resubmissions": 0,
+    "model_turns": 0,
+    "commercial_calls": 0,
+    "user_keys_read": false
+  },
+  "checked_file_sha256": {
+    ".github/workflows/ci.yml": "335afc0a47ba7bc952c16861c30d2f6c01529dbce8d6836c50a00f6f810c7518",
+    "Cargo.lock": "2cedd30ba87dcc92604bc3e7561be1ae537f69d733517624123f9ee317080fca",
+    "Cargo.toml": "31c86553a617a9ee0ea09ced2854842ee40faa4fb043b2ac915cdf35df4a6306",
+    "runtime/host/Cargo.toml": "bb8657fb733031d24ae8fff11ef1433200e3d5c71aea77d7959b857f7088f052",
+    "runtime/host/src/journal.rs": "af59f075e1f5c2703ff320b8f99748d9814a9adcc5cef64781e1ffa53d348632",
+    "runtime/host/src/lib.rs": "1cd91d371785815e011fbde145054ef7f1fe4e2819c9171c9f5debcc49e3031f",
+    "runtime/host/src/main.rs": "cf5e2d0586cd412920af8c343995025b296e3b5b8538e7ae81e6fa3943927133",
+    "runtime/host/src/security.rs": "c3a7c0fffd42d18f03ab8df183e390a03d7887b0b66bbf1b51d244dd6c7ec236",
+    "runtime/host/src/service.rs": "429916d68bbefea34348cd926c9caa54b7a957dbdf7acc7d7329fc4e743313b3",
+    "runtime/host/tests/fixtures/peer.py": "ff00300b90b80caf76f684a806a209dcf355bb09417fb7416867d52a290f2fea",
+    "runtime/host/tests/journal.rs": "cbd6d4843c05d33e1968b5b7ba959e09bc6611a70311c6052463659dbd7ef9ad",
+    "runtime/host/tests/service.rs": "0dc7be48a8ba0172db9411b04d6a67b87a32427e5d8f708acaf85f380156d94a",
+    "scripts/h1-demo.py": "137f9419147dd4c1f86bedc92c5e004f8680e2954e9f33ecd39cb17932dba7b8"
+  },
+  "independent_audit": "not performed",
+  "limitations": [
+    "H-1 thread probe only; no persistent task or tool/approval chain",
+    "No commercial calls or user key reads",
+    "No production multi-user/remote ACL, load or backup claim",
+    "Original /tmp is a Git worktree; credential protection tests required a newly owned private TMPDIR outside Git"
+  ]
+}
