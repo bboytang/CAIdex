@@ -722,3 +722,5 @@ async fn gateway_delivers_native_function_data_without_executing_or_forwarding_i
     assert_eq!(reads.load(Ordering::SeqCst), 1);
     gateway.shutdown().await.unwrap();
 }
+
+mod advanced;

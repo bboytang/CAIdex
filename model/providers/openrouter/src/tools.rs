@@ -52,19 +52,45 @@ fn arguments(value: &Value) -> ProviderResult<()> {
     }
     Ok(())
 }
-pub(crate) fn input_item(item: &Value) -> bool {
+fn call_item(item: &Value) -> bool {
     matches!(
         item["type"].as_str(),
-        Some("function_call" | "function_call_output")
+        Some("function_call" | "custom_tool_call")
     )
+}
+fn payload(item: &Value) -> &'static str {
+    if item["type"] == "custom_tool_call" {
+        "input"
+    } else {
+        "arguments"
+    }
+}
+pub(crate) fn input_item(item: &Value) -> bool {
+    call_item(item)
+        || matches!(
+            item["type"].as_str(),
+            Some("function_call_output" | "custom_tool_call_output")
+        )
+}
+type Identity = (Option<String>, String);
+fn identity(item: &Value) -> ProviderResult<Identity> {
+    Ok((
+        item.get("namespace")
+            .map(name)
+            .transpose()?
+            .map(str::to_owned),
+        name(&item["name"])?.to_owned(),
+    ))
 }
 
 /// Route-local declarations and selection, never an executor or schema validator.
 pub(crate) struct ToolPolicy {
-    declared: HashSet<String>,
-    allowed: HashSet<String>,
+    declared: HashMap<Identity, bool>,
+    allowed: HashSet<Identity>,
     required: bool,
     single: bool,
+    advanced: bool,
+    selection: bool,
     input_calls: HashSet<String>,
     input_item_ids: HashSet<String>,
 }
@@ -72,58 +98,77 @@ impl ToolPolicy {
     pub(crate) fn new(
         request: &CanonicalRequest,
         parallel: CapabilitySupport,
+        advanced: bool,
     ) -> ProviderResult<Self> {
         let wire = request.wire();
-        let mut declared = HashSet::new();
+        let mut policy = Self {
+            declared: HashMap::new(),
+            allowed: HashSet::new(),
+            required: false,
+            single: false,
+            advanced,
+            selection: false,
+            input_calls: HashSet::new(),
+            input_item_ids: HashSet::new(),
+        };
+        let mut namespaces = HashSet::new();
         if let Some(tools) = wire.get("tools").filter(|v| !v.is_null()) {
             for tool in tools.as_array().ok_or_else(invalid)? {
-                fields(
-                    tool,
-                    &[
-                        "type",
-                        "name",
-                        "description",
-                        "parameters",
-                        "strict",
-                        "defer_loading",
-                    ],
-                )?;
-                if tool["type"] != "function"
-                    || tool
-                        .get("description")
-                        .is_some_and(|v| !v.is_null() && !v.is_string())
-                    || !tool["parameters"].is_object()
-                    || ["strict", "defer_loading"]
-                        .iter()
-                        .any(|key| tool.get(key).is_some_and(|v| !v.is_null() && v != false))
-                    || !declared.insert(name(&tool["name"])?.to_owned())
-                {
-                    return Err(invalid());
+                if advanced && tool["type"] == "namespace" {
+                    fields(tool, &["type", "name", "description", "tools"])?;
+                    let ns = name(&tool["name"])?;
+                    let members = tool["tools"].as_array().ok_or_else(invalid)?;
+                    if !namespaces.insert(ns)
+                        || members.is_empty()
+                        || !tool["description"].is_string()
+                    {
+                        return Err(invalid());
+                    }
+                    for member in members {
+                        policy.declare(member, Some(ns))?;
+                    }
+                } else {
+                    policy.declare(tool, None)?;
                 }
             }
         }
-        let mut allowed = declared.clone();
+        policy.allowed = policy.declared.keys().cloned().collect();
         let choice = &wire["tool_choice"];
-        let mut required = false;
         if !choice.is_null() {
             if let Some(mode) = choice.as_str() {
                 match mode {
                     "auto" => {}
-                    "none" => allowed.clear(),
-                    "required" => required = true,
+                    "none" => policy.allowed.clear(),
+                    "required" => policy.required = true,
                     _ => return Err(invalid()),
                 }
-            } else {
-                fields(choice, &["type", "name"])?;
-                let selected = name(&choice["name"])?;
-                if choice["type"] != "function" || !declared.contains(selected) {
+            } else if advanced && choice["type"] == "allowed_tools" {
+                fields(choice, &["type", "mode", "tools"])?;
+                match choice["mode"].as_str() {
+                    Some("auto") => {}
+                    Some("required") => policy.required = true,
+                    _ => return Err(invalid()),
+                }
+                let mut selected = HashSet::new();
+                for tool in choice["tools"].as_array().ok_or_else(invalid)? {
+                    if !selected.insert(policy.selector(tool)?) {
+                        return Err(invalid());
+                    }
+                }
+                if selected.is_empty() {
                     return Err(invalid());
                 }
-                allowed = HashSet::from([selected.to_owned()]);
-                required = true;
+                policy.allowed = selected;
+                policy.selection = true;
+            } else {
+                let selected = policy.selector(choice)?;
+                policy.allowed = HashSet::from([selected]);
+                policy.required = true;
+                policy.selection =
+                    advanced && (choice["type"] == "custom" || choice.get("namespace").is_some());
             }
         }
-        if required && allowed.is_empty() {
+        if policy.required && policy.allowed.is_empty() {
             return Err(invalid());
         }
         let flag = wire.get("parallel_tool_calls").filter(|v| !v.is_null());
@@ -132,33 +177,143 @@ impl ToolPolicy {
         {
             return Err(invalid());
         }
-        let mut policy = Self {
-            declared,
-            allowed,
-            required,
-            single: flag == Some(&Value::Bool(false)) || parallel == CapabilitySupport::Unsupported,
-            input_calls: HashSet::new(),
-            input_item_ids: HashSet::new(),
-        };
+        policy.single =
+            flag == Some(&Value::Bool(false)) || parallel == CapabilitySupport::Unsupported;
         policy.validate_input(wire)?;
         Ok(policy)
+    }
+    fn declare(&mut self, tool: &Value, namespace: Option<&str>) -> ProviderResult<()> {
+        let custom = self.advanced && tool["type"] == "custom";
+        fields(
+            tool,
+            if custom {
+                &["type", "name", "description", "format", "async"]
+            } else {
+                &[
+                    "type",
+                    "name",
+                    "description",
+                    "parameters",
+                    "strict",
+                    "defer_loading",
+                ]
+            },
+        )?;
+        if tool
+            .get("description")
+            .is_some_and(|v| !v.is_null() && !v.is_string())
+        {
+            return Err(invalid());
+        }
+        if custom {
+            if tool
+                .get("async")
+                .is_some_and(|v| !v.is_null() && v != false)
+            {
+                return Err(invalid());
+            }
+            if let Some(format) = tool.get("format") {
+                match format["type"].as_str() {
+                    Some("text") => fields(format, &["type"])?,
+                    Some("grammar") => {
+                        fields(format, &["type", "syntax", "definition"])?;
+                        if !matches!(format["syntax"].as_str(), Some("lark" | "regex"))
+                            || !format["definition"]
+                                .as_str()
+                                .is_some_and(|s| !s.trim().is_empty())
+                        {
+                            return Err(invalid());
+                        }
+                    }
+                    _ => return Err(invalid()),
+                }
+            }
+        } else if tool["type"] != "function"
+            || !tool["parameters"].is_object()
+            || ["strict", "defer_loading"]
+                .iter()
+                .any(|key| tool.get(key).is_some_and(|v| !v.is_null() && v != false))
+        {
+            return Err(invalid());
+        }
+        let key = (
+            namespace.map(str::to_owned),
+            name(&tool["name"])?.to_owned(),
+        );
+        if self.declared.insert(key, custom).is_some() {
+            return Err(invalid());
+        }
+        Ok(())
+    }
+    fn selector(&self, value: &Value) -> ProviderResult<Identity> {
+        fields(
+            value,
+            if self.advanced {
+                &["type", "name", "namespace"]
+            } else {
+                &["type", "name"]
+            },
+        )?;
+        let key = identity(value)?;
+        let custom = match value["type"].as_str() {
+            Some("function") => false,
+            Some("custom") if self.advanced => true,
+            _ => return Err(invalid()),
+        };
+        if self.declared.get(&key) != Some(&custom) {
+            return Err(invalid());
+        }
+        Ok(key)
+    }
+    pub(crate) fn compile_selection(&self, wire: &mut Value) {
+        if !self.selection {
+            return;
+        }
+        // Native named custom/namespace selectors are unspecified; restrict declarations instead.
+        let tools = wire["tools"].as_array_mut().expect("validated tools");
+        tools.retain_mut(|tool| {
+            if tool["type"] == "namespace" {
+                let namespace = tool["name"].as_str().unwrap().to_owned();
+                let members = tool["tools"].as_array_mut().unwrap();
+                members.retain(|member| {
+                    self.allowed.contains(&(
+                        Some(namespace.clone()),
+                        member["name"].as_str().unwrap().to_owned(),
+                    ))
+                });
+                !members.is_empty()
+            } else {
+                self.allowed
+                    .contains(&(None, tool["name"].as_str().unwrap().to_owned()))
+            }
+        });
+        wire["tool_choice"] = if self.required { "required" } else { "auto" }.into();
     }
     pub(crate) fn has_tools(&self) -> bool {
         !self.declared.is_empty()
     }
     fn call(&self, item: &Value) -> ProviderResult<()> {
         id(&item["call_id"])?;
-        if !self.declared.contains(name(&item["name"])?)
-            || item.get("namespace").is_some()
+        let custom = item["type"] == "custom_tool_call";
+        if self.declared.get(&identity(item)?) != Some(&custom)
+            || item
+                .get("async")
+                .is_some_and(|v| !v.is_null() && v != false)
+            || item.get("subagent_id").is_some()
+            || item.get("subagent_items").is_some()
             || item.get("status").is_some_and(|v| v != "completed")
             || item.get("id").is_some_and(|v| id(v).is_err())
         {
             return Err(invalid());
         }
-        arguments(&item["arguments"])
+        if custom {
+            item["input"].as_str().ok_or_else(invalid).map(|_| ())
+        } else {
+            arguments(&item["arguments"])
+        }
     }
     fn validate_input(&mut self, wire: &Value) -> ProviderResult<()> {
-        let mut pending = HashSet::new();
+        let mut pending = HashMap::new();
         let mut ids = HashSet::new();
         for item in wire["input"].as_array().into_iter().flatten() {
             if !input_item(item) {
@@ -172,20 +327,45 @@ impl ToolPolicy {
             {
                 return Err(invalid());
             }
-            if item["type"] == "function_call" {
+            if call_item(item) {
                 fields(
                     item,
-                    &["type", "id", "status", "name", "call_id", "arguments"],
+                    if self.advanced && item["type"] == "custom_tool_call" {
+                        &[
+                            "type",
+                            "id",
+                            "status",
+                            "name",
+                            "namespace",
+                            "call_id",
+                            "input",
+                            "async",
+                        ]
+                    } else if self.advanced {
+                        &[
+                            "type",
+                            "id",
+                            "status",
+                            "name",
+                            "namespace",
+                            "call_id",
+                            "arguments",
+                            "async",
+                        ]
+                    } else {
+                        &["type", "id", "status", "name", "call_id", "arguments"]
+                    },
                 )?;
                 self.call(item)?;
                 let call_id = id(&item["call_id"])?;
                 if !self.input_calls.insert(call_id.to_owned()) {
                     return Err(invalid());
                 }
-                pending.insert(call_id.to_owned());
+                pending.insert(call_id.to_owned(), item["type"] == "custom_tool_call");
             } else {
                 fields(item, &["type", "id", "status", "call_id", "output"])?;
-                if !pending.remove(id(&item["call_id"])?)
+                if pending.remove(id(&item["call_id"])?)
+                    != Some(item["type"] == "custom_tool_call_output")
                     || item.get("status").is_some_and(|v| v != "completed")
                 {
                     return Err(invalid());
@@ -213,12 +393,12 @@ impl ToolPolicy {
             let mut ids: HashSet<&str> = response
                 .output()
                 .iter()
-                .filter(|item| item["type"] != "function_call")
+                .filter(|item| !call_item(item))
                 .filter_map(|item| item["id"].as_str())
                 .collect();
             let mut count = 0;
             for item in response.output() {
-                if item["type"] != "function_call" {
+                if !call_item(item) {
                     continue;
                 }
                 if !ids.insert(id(&item["id"])?) {
@@ -230,7 +410,7 @@ impl ToolPolicy {
                 }
                 if response.state() != StreamState::Completed
                     || !call_ids.insert(id(&item["call_id"])?.to_owned())
-                    || !self.allowed.contains(name(&item["name"])?)
+                    || !self.allowed.contains(&identity(item)?)
                 {
                     return Err(invalid());
                 }
@@ -262,11 +442,11 @@ struct ToolEvents {
 impl ToolEvents {
     fn observe(&mut self, wire: &Value) -> ProviderResult<()> {
         let kind = wire["type"].as_str().ok_or_else(native_error)?;
-        if wire["type"] == "function_call"
+        if call_item(wire)
             || wire["output"]
                 .as_array()
-                .is_some_and(|items| items.iter().any(|item| item["type"] == "function_call"))
-            || wire["item"]["type"] == "function_call"
+                .is_some_and(|items| items.iter().any(call_item))
+            || call_item(&wire["item"])
                 && !matches!(
                     kind,
                     "response.output_item.added" | "response.output_item.done"
@@ -283,24 +463,23 @@ impl ToolEvents {
         }
         if wire["response"]["output"]
             .as_array()
-            .is_some_and(|items| items.iter().any(|item| item["type"] == "function_call"))
+            .is_some_and(|items| items.iter().any(call_item))
         {
             return Err(native_error());
         }
-        if kind == "response.output_item.added" && wire["item"]["type"] == "function_call" {
+        if kind == "response.output_item.added" && call_item(&wire["item"]) {
             let index = wire["output_index"].as_u64().ok_or_else(native_error)?;
             let item = &wire["item"];
             id(&item["id"])?;
             id(&item["call_id"])?;
-            name(&item["name"])?;
-            if item.get("namespace").is_some()
-                || item
-                    .get("status")
-                    .is_some_and(|v| v != "in_progress" && v != "completed")
+            identity(item)?;
+            if item
+                .get("status")
+                .is_some_and(|v| v != "in_progress" && v != "completed")
             {
                 return Err(native_error());
             }
-            let arguments = item["arguments"]
+            let arguments = item[payload(item)]
                 .as_str()
                 .ok_or_else(native_error)?
                 .to_owned();
@@ -322,9 +501,11 @@ impl ToolEvents {
             }
         } else if matches!(
             kind,
-            "response.function_call_arguments.delta" | "response.function_call_arguments.done"
-        ) || kind == "response.output_item.done"
-            && wire["item"]["type"] == "function_call"
+            "response.function_call_arguments.delta"
+                | "response.function_call_arguments.done"
+                | "response.custom_tool_call_input.delta"
+                | "response.custom_tool_call_input.done"
+        ) || kind == "response.output_item.done" && call_item(&wire["item"])
         {
             let index = wire["output_index"].as_u64().ok_or_else(native_error)?;
             let call = self.calls.get_mut(&index).ok_or_else(native_error)?;
@@ -332,7 +513,7 @@ impl ToolEvents {
                 return Err(native_error());
             }
             if kind == "response.output_item.done" {
-                let arguments = wire["item"]["arguments"]
+                let arguments = wire["item"][payload(&call.added)]
                     .as_str()
                     .ok_or_else(native_error)?;
                 if (call.delta || call.arguments_done) && arguments != call.arguments
@@ -345,7 +526,11 @@ impl ToolEvents {
                 call.arguments = arguments.to_owned();
                 call.done = Some(wire["item"].clone());
             } else {
-                if wire["item_id"] != call.added["id"] || call.arguments_done {
+                if wire["item_id"] != call.added["id"]
+                    || call.arguments_done
+                    || kind.starts_with("response.custom_tool_call_input.")
+                        != (call.added["type"] == "custom_tool_call")
+                {
                     return Err(native_error());
                 }
                 if kind.ends_with(".delta") {
@@ -353,7 +538,9 @@ impl ToolEvents {
                         .push_str(wire["delta"].as_str().ok_or_else(native_error)?);
                     call.delta = true;
                 } else {
-                    let arguments = wire["arguments"].as_str().ok_or_else(native_error)?;
+                    let arguments = wire[payload(&call.added)]
+                        .as_str()
+                        .ok_or_else(native_error)?;
                     if call.delta && call.arguments != arguments
                         || !call.delta && !arguments.starts_with(&call.arguments)
                     {
@@ -374,11 +561,11 @@ impl ToolEvents {
                 .get(*index as usize)
                 .ok_or_else(native_error)?;
             if call.done.as_ref() != Some(item)
-                || item["type"] != "function_call"
-                || ["id", "call_id", "name"]
+                || !call_item(item)
+                || ["type", "id", "call_id", "name", "namespace"]
                     .iter()
                     .any(|k| item[k] != call.added[k])
-                || item["arguments"] != call.arguments
+                || item[payload(item)] != call.arguments
             {
                 return Err(native_error());
             }

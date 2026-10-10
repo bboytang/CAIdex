@@ -32,6 +32,7 @@ pub struct OpenRouterProvider<S: SecretStore> {
     service_tiers: HashMap<String, HashMap<String, String>>,
     backends: HashMap<String, String>,
     native_tools: HashSet<String>,
+    advanced_tools: HashSet<String>,
 }
 impl<S: SecretStore + 'static> OpenRouterProvider<S> {
     pub fn new(
@@ -83,6 +84,7 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             service_tiers: HashMap::new(),
             backends: HashMap::new(),
             native_tools: HashSet::new(),
+            advanced_tools: HashSet::new(),
         })
     }
     /// Consume executor-local attribution and neutral text; do not forward identity or enable caching.
@@ -197,6 +199,14 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         }
         Ok(self)
     }
+    /// Enable native namespace/custom tools and explicit subset compilation on a native-tools route.
+    pub fn with_advanced_tools(mut self, model: String) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !self.native_tools.contains(&model) || !self.advanced_tools.insert(model) {
+            return Err(ProviderError::new(400, "openrouter_invalid_tool_route"));
+        }
+        Ok(self)
+    }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
         if context.headers.iter().any(|(name, _)| {
             !self.runtime_context
@@ -232,7 +242,11 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             return Err(ProviderError::new(413, "invalid_or_oversized_body"));
         }
         let policy = if self.native_tools.contains(request.model()) {
-            let policy = tools::ToolPolicy::new(&request, metadata.capabilities.parallel_tools)?;
+            let policy = tools::ToolPolicy::new(
+                &request,
+                metadata.capabilities.parallel_tools,
+                self.advanced_tools.contains(request.model()),
+            )?;
             if policy.has_tools()
                 && metadata.capabilities.native_tools
                     == caidex_model_core::CapabilitySupport::Unsupported
@@ -279,6 +293,9 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
                     wire[key] = value.clone();
                 }
             }
+        }
+        if let Some(policy) = &policy {
+            policy.compile_selection(&mut wire);
         }
         CanonicalRequest::new(wire, compiled.dialect())
             .map(|request| (request, policy))

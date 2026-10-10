@@ -221,7 +221,7 @@ pub(crate) fn headers(headers: &ContextHeaders) -> ProviderResult<()> {
 pub(crate) fn output(wire: &Value, native_tools: bool) -> ProviderResult<()> {
     let tool = |v: &Value| {
         v["type"].as_str().is_some_and(|k| {
-            !(native_tools && k == "function_call")
+            !(native_tools && matches!(k, "function_call" | "custom_tool_call"))
                 && (k.ends_with("_call")
                     || k.ends_with("_call_output")
                     || k.starts_with("mcp_")
@@ -243,6 +243,8 @@ pub(crate) fn output(wire: &Value, native_tools: bool) -> ProviderResult<()> {
                         k,
                         "response.function_call_arguments.delta"
                             | "response.function_call_arguments.done"
+                            | "response.custom_tool_call_input.delta"
+                            | "response.custom_tool_call_input.done"
                     ))
                 && (k.contains("_call")
                     || k.starts_with("response.mcp_")

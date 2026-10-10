@@ -1,8 +1,10 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，OpenRouter Classic平面function工具精确三平台验收完成；下一步namespace/custom及完整政策绑定历史。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-10，OpenRouter namespace/custom显式适配已实现并通过63项定向；完整本地已验，本轮源码三平台验收进行中。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
+
+本轮步骤1已完成：main=origin/main=3a2feab、工作区干净；核对既有51项、V3 F/G范围与OpenRouter官方Python SDK固定SHA `de9aa273aa0ba658bdbd55e56f2f999c2dce782e`。原生请求union包含namespace/function/custom；custom支持text或lark/regex grammar及原生custom_tool_call_input delta/done。named choice类型未定义custom/namespace selector，故新增显式逐route advanced开关，用精确声明子集+原生auto/required编译选择，不猜测原生具名扩展。保留默认/平面route拒绝；校验qualified identity/调用与结果种类/JSON和SSE终态，拒绝async、deferred及server tools，不执行工具。步骤2已实现：with_advanced_tools须先启用native_tools/backend；qualified identity原生保留，custom grammar/text不转换function，不做本地grammar匹配承诺；声明子集编译一次，原顺序文本配对且拒绝跨种类结果；混合SSE/input分片/终态身份校验与错误前不交付及满槽释放覆盖。首轮新增12项/Provider63通过，旧51项正文保持；diff复核补充text/默认format和互斥payload用例，曾出现Rust临时字段数组借用编译错误，改静态分支后最终63/0/0通过，无当前已知失败。步骤3已完成：Provider63/0/0、workspace573/0/59、既有固定Runtime57/0/0、Clippy全workspace/all-targets -D warnings、fmt/diff通过；通过名精确旧workspace561+12、旧Runtime57不变；旧51测试正文逐字保持，Cargo.lock/共享/其他Provider/Runtime/workflow未改。18份Markdown/95本地链接/22锚点通过。步骤4源码提交/push及精确三平台CI进行中，尚未取得本轮CI证据。完整政策绑定历史→Lite→实际Runtime仍待实施，商业调用未授权。作用范围仅OpenRouter源码/测试及验收文档，无新依赖或共享/Runtime改动。
 
 当前处于 **F/G 多模型与 Gateway**。OpenRouter基础Classic Adapter已完成契约核对→实现/14项定向→完整本地→推送/精确三平台CI四步，每步已更新本文件。源码`9563df09607a71da409466ba3d0c69b9a09c3ca6`/[CI38004040230](https://github.com/bboytang/CAIdex/actions/runs/38004040230)已验，workspace524/519/523、既有Runtime57/56/56，旧通过名精确+14。
 
@@ -12,7 +14,7 @@
 
 本轮 **OpenRouter Classic平面function工具** 已完成契约核对→最小实现/15项新增→完整本地→精确源码三平台CI，各步均更新交接。逐route显式with_native_tools须先配backend；原生声明/auto-none-required-named选择/原顺序成对文本结果，JSON与SSE调用身份/参数/终态门控、旧工具call_id/item ID复用拒绝；SSE预算内缓冲模型事件到终态，Heartbeat继续传递，取消/deadline/Drop与满槽释放已验，不执行工具。opaque reasoning/未知输出扩展及大整数ID保留，但其输入回放仍关闭；Unknown不升级，Unsupported显式拒绝。旧36项测试正文逐字保留，Provider51/0/0、本地workspace561/0/59、既有固定Runtime57/0/0及Clippy/fmt/diff通过；全通过名精确旧workspace546+15、旧Runtime57完全保持，依赖/共享生产源码/Runtime/其他Provider/workflow不变。源码`65001cd0952685d635d61e4d6d682e174928eb01`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)三平台已验，完整证据见末节。
 
-准确恢复点：继续原生工具namespace/custom适配及完整政策绑定历史。平面function配对是明文校验，不能冒充签名历史或原生call未知扩展的无损输入回放；summary/context/include、reasoning输入、namespace/custom/allowed_tools/deferred/server工具及Lite仍拒绝。后续载体须绑定执行端/profile/endpoint、显式backend政策、model、完整compiled前缀/instructions及verbosity/tier/effort/工具政策，保留原生reasoning/signature和未知扩展；base slug可覆盖多个region/variant，metadata显示名不是精确endpoint证明，不能用slug/tier冒充稳定后端。不照搬Qwen summary-only或DeepSeek明文规则。再Lite→实际Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业调用未授权，不跳H/I/CLI/UI。工具route的文本显示延迟到终态；实际Runtime/下游长流体验未验，shortcut注释保留该限制。
+准确恢复点：先完成本轮namespace/custom的完整本地、精确源码三平台与文档收尾；再完整政策绑定历史。平面function配对是明文校验，不能冒充签名历史或原生call未知扩展的无损输入回放；summary/context/include、reasoning输入、deferred/server/async工具及Lite仍拒绝；namespace/custom/allowed_tools仅新增advanced route显式支持，待本轮完整验收。后续载体须绑定执行端/profile/endpoint、显式backend政策、model、完整compiled前缀/instructions及verbosity/tier/effort/工具政策，保留原生reasoning/signature和未知扩展；base slug可覆盖多个region/variant，metadata显示名不是精确endpoint证明，不能用slug/tier冒充稳定后端。不照搬Qwen summary-only或DeepSeek明文规则。再Lite→实际Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业调用未授权，不跳H/I/CLI/UI。工具route的文本显示延迟到终态；实际Runtime/下游长流体验未验，shortcut注释保留该限制。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 

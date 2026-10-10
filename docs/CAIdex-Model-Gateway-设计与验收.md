@@ -233,3 +233,9 @@ OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_b
 
 
 OpenRouter显式逐route Classic平面function工具已实现：须配置backend后启用with_native_tools，声明/选择/文本结果配对及JSON/SSE终态门控；工具仍由固定Codex执行，Provider只交付数据。新增15项/Provider51定向通过；旧36项保持，原生opaque/未知输出扩展无损。工具SSE缓冲到终态核验，会延迟文本显示；完整本地workspace561/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff通过，通过名精确旧workspace+15；源码`65001cd`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)精确三平台已验，workspace561/556/560、既有Runtime57/56/56、OpenRouter51每名一次，完整通过名精确旧CI+15；namespace/custom、完整政策绑定历史、Lite与实际OpenRouter Runtime仍待实施，恢复点见HANDOFF。
+
+
+## OpenRouter原生高级工具（定向已验、完整验收进行中）
+
+
+OpenRouter逐route显式advanced工具已实现：须先配置backend/native_tools，namespace/function/custom原生身份与自由文本保留，具名高级/allowed_tools通过精确声明子集+auto/required编译一次；kind配对与混合SSE终态校验、默认拒绝、source/compiled预算及Gateway身份隔离覆盖。新增12项/Provider63定向通过，旧51项保持；完整本地workspace573/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff及18份Markdown/95本地链接/22锚点通过；通过名精确旧workspace+12、旧Runtime不变，新源码三平台CI进行中。完整政策绑定历史/Lite/实际OpenRouter Runtime与商业Live/Full未验；工具流文本仍延迟到终态。详见[OpenRouter验收](CAIdex-OpenRouter-Provider-设计与验收.md)和[HANDOFF](../HANDOFF.md)。
