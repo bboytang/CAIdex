@@ -66,7 +66,7 @@
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
 | MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
-| Context compaction | 三平台Classic/Lite本地摘要、远端opaque/重启及两分支失败/取消/磁盘恢复已验 | 自动阈值、商业模型和生产Host等独立范围，详下文 |
+| Context compaction | 三平台Classic/Lite本地摘要、远端opaque、两分支失败/取消、Total采样前自动阈值及磁盘恢复已验 | 其他scope/轮末/TokenBudget、商业模型和生产Host等独立范围，详下文 |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
 | Queue | 三平台 CRUD/reorder/分页/busy/中断保留/指定及默认/自动启动通过 | 多端与持久 Host H |
@@ -456,3 +456,6 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 真实app-server重启/disk resume不推理，第三轮正常完成且无再压缩，共4POST/4Key；各请求核对模型与Classic/Lite header。自动压缩后及磁盘恢复后两次input重放checkpoint：远端item全值保留；本地摘要role/type/id/content全值保留，仅模型wire省略已识别Runtime内部summary归属字段，持久checkpoint的content_item_kinds=[compaction.summary]及turn_id另有断言。首定向因内部metadata差异失败，按实际wire收紧断言后四路径1/0/0通过；完整回归/精确CI见HANDOFF。
 
 生产执行/审批、默认阈值和能力不变。此证据仅上述Total采样前路径，不代表所有scope/轮末/TokenBudget/阈值极值/无限历史，也不授商业LiveRuntime/Full或生产Host恢复。
+
+
+源码`47b6b519d69955328218b2b7953794641090de52`/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38085110360集合+1自动压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），全部0失败；raw2314/2000/2011行、函数通过名701/694/698，另Secret doctest1。旧Provider/本地与远端手动及非成功/idle/执行审批回归无遗漏或重复，watch与下载exit0。 本专项已完整离线验证；整体F/G审计未完成，商业模型与生产Host未验。

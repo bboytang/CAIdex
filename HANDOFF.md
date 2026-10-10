@@ -8,7 +8,9 @@
 
 本轮重新核实固定d27764b config/mod.rs、models-manager/model_info.rs、session/context_window.rs与session/turn.rs：model_auto_compact_token_limit覆盖模型阈值，默认scope=Total，采样前检查先于新用户输入。新增单用例四路径：Classic/Lite本地摘要与远端V2，测试配置阈值10000、轮末压缩percent=0、首轮合成usage20000，后续usage=0。不调用compact/start；首轮仅1POST无compaction，下一轮自动contextCompaction开始/完成及正常推理共3POST；仅一个实际checkpoint。实际app-server重启/disk resume无POST，显式第三轮正常完成、无再压缩，总4POST/4Key。远端opaque item整值回放；本地摘要完整正文/角色/ID回放，仅模型wire省略Runtime内部summary归属metadata，checkpoint中content_item_kinds与turn_id另验。
 
-首定向仅因本地checkpoint内部metadata与模型wire差异失败；按实际wire精确排除一个已识别字段后四路径1/0/0通过，随后增强归属断言，完整workspace623/0/80、固定Runtime78/0/0、Clippy/fmt/diff、fixture语法和143个Markdown目标/锚点通过；225个非任务tracked文件逐字节保持。当前未提交仅Harness/合成fixture/交接，生产实现/审批/依赖/schema未改。下一步commit/push→精确三平台CI逐名核验，再按V3 F/G和各Provider/Registry/ModelRouter/report完成要求级审计，不以新增测试数代替整体证明。商业模型/实际daemon和生产Host未验，不自动授LiveRuntime/Full。
+首定向仅因本地checkpoint内部metadata与模型wire差异失败；按实际wire精确排除一个已识别字段后四路径1/0/0通过，随后增强归属断言，完整workspace623/0/80、固定Runtime78/0/0、Clippy/fmt/diff、fixture语法和143个Markdown目标/锚点通过；225个非任务tracked文件逐字节保持。源码已提交/push`47b6b519d69955328218b2b7953794641090de52`，精确CI38086078152完整三平台逐名核验通过；main=origin/main，源码提交后干净，当前仅文档收尾。生产实现/审批/依赖/schema未改。下一步按V3 F/G和各Provider/Registry/ModelRouter/report完成要求级审计，不以新增测试数代替整体证明。商业模型/实际daemon和生产Host未验，不自动授LiveRuntime/Full。
+
+本轮审计预查尚未结论：原V2第17节分别列Custom OpenAI-compatible及Custom Responses-compatible，V3第2节当前明确自定义Responses及DeepSeek/Qwen/OpenRouter等兼容API；实际custom crate仅CustomResponses。下一步核实通用Chat Completions入口的最终计划归属/真实六方法实现与拒绝边界，不将具体Provider的base URL或目录API等同通用Adapter，不预选实现或擅自缩小最终方案。该审计未完成，不能标F/G整体闭环或直接转H。
 
 ## 既有阶段与用户顺序
 
@@ -23,6 +25,10 @@
 - 核对、Registry/Router、Classic/Lite切换、跨Provider显式文本交接均沿旧已验实现，不重复。生产执行器/审批、依赖、workflow未改。
 
 ## 精确CI证据
+
+源码`47b6b519d69955328218b2b7953794641090de52`/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38085110360集合+1自动压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），全部0失败；raw2314/2000/2011行、函数通过名701/694/698，另Secret doctest1。旧Provider/本地与远端手动及非成功/idle/执行审批回归无遗漏或重复，watch与下载exit0。
+
+本阶段本地workspace623/0/80、Runtime78/0/0、Clippy/fmt/diff/fixture语法和143个Markdown目标/锚点通过；225个非任务tracked文件与d4471cb逐字节保持。纯文档收尾HEAD以实际Git为准。
 
 源码`d72c88a292a4ab41775e38c95c73e7f62d2f7cda`/[CI38085110360](https://github.com/bboytang/CAIdex/actions/runs/38085110360)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38084218039集合+1本地压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略79/77/77）、固定Runtime77/76/76（无忽略），全部0失败；raw2312/1998/2009行、函数通过名700/693/697，另Secret doctest1。旧Provider/远端compaction/idle/执行与审批回归无遗漏或重复，watch及完整下载exit0。
 
@@ -74,7 +80,7 @@ Gemini已验：Linux/Windows/macOS job114299375039/114299374956/114299375049；r
 - H的持久journal、快照/sequence、结果未知与提交幂等、审批多端竞争、活动轮次模型边界及跨Provider持久关联/一般历史适配待实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
 - I账户/PostgreSQL/Memory/同步/邮件和J–O客户端、L SSH、P完整CLI、Q Relay、R实际平台/终端/认证/多端验收仍待。apps/cli现有doctor、credentials status/set/remove、version/help，不冒称CLI-01～34/账户55项/UI16项完成。
 - 未开放语义仍明确拒绝：各Provider差异见验收/route报告；未知Runtime扩展不保证类型化持久化全量往返。native载体是JSON一致性门控而非签名真实性/来源认证，backend配置不是实际endpoint证明；完整前缀二次增长/预算、文本终态缓冲保持。
-- compaction手动正常及本地/远端Classic/Lite失败/取消已离线验证；自动阈值、无限历史或生产恢复未验。同步SecretStore开始后不能强停，仅保证取消后不POST；OpenAI Classic/Lite Runtime下游idle已验，Gemini Classic/Lite纯comment下游idle时序已专门离线验证，但不承诺跨Gateway keepalive支持。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
+- compaction手动正常、本地/远端Classic/Lite失败/取消，以及Total scope采样前自动阈值与磁盘恢复已离线验证；其他scope/轮末/TokenBudget/无限历史或生产恢复未验，不由已验路径认领。同步SecretStore开始后不能强停，仅保证取消后不POST；OpenAI Classic/Lite Runtime下游idle已验，Gemini Classic/Lite纯comment下游idle时序已专门离线验证，但不承诺跨Gateway keepalive支持。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
 - 无当前权限/推送阻塞或已知失败；旧自动审批拒绝已由持续授权解除，不能当成当前阻塞。
 
 ## 代码与设计入口
