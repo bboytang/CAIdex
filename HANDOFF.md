@@ -1,8 +1,14 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，固定Runtime模型切换四步骤完成，新增3项；精确源码430305d/CI38069700504三平台workspace619/614/618、固定Runtime67/66/66已核验。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
+更新：2026-10-10，跨Provider边界步骤3完成，新增2项；完整本地workspace619/0/71、固定Runtime69/0/0及Clippy/fmt/diff通过，待精确三平台CI。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
 
 ## 当前阶段与恢复点
+
+跨Provider步骤3完成：workspace619/0/71通过名保持；固定Codex0.160.1 Runtime69/0/0精确旧67+2。Clippy全workspace/all-targets-D warnings、fmt/diff及18份Markdown/103链接/22锚点通过。221个其他tracked文件逐字不变，旧switching三测试正文保持，仅新增子模块；依赖/Cargo.lock/生产源码/Harness/fixture/workflow不变。最终diff已验，下一步按持续授权提交/push并核验精确三平台CI，尚无本次CI证据。
+
+跨Provider步骤2完成：新增2项定向2/0/0。OpenAI源实际thread/read选择可见assistant文本，OpenRouter新线程含来源ID且forkedFromId为空；真实CommandApproval前无marker，Accept后仅目标临时目录写入，磁盘重启继续而不重复执行；所有nativeRequests无源opaque/签名/未选源输入，源turns和Key/POST保持。另从源真实rollout提取reasoning向目标Gateway提交，HTTP400、目标Key/POST零访问、错误无opaque/Key回显。这是显式离线文本交接与Gateway拒绝证据，不实现Host持久关联、云专用history入口或商业迁移。当前main未提交独立测试模块接线与文档，下一步完整workspace/Runtime/Clippy/fmt/diff，再按授权push/精确CI。
+
+跨Provider步骤1完成：main起始4728e62=origin/main且干净。稳定thread/start无原始history，实验thread/resume.history标注“FOR CODEX CLOUD - DO NOT USE”，不作为迁移入口。复用OpenAI source与OpenRouter target既有Harness/Adapter策略，在独立新线程只显式交接已选可见assistant文本与来源thread ID；不自动总结/复制原始输入/opaque reasoning/签名，不冒充Host持久关联或raw fork。新增cross_provider独立模块2项：真实Runtime目标审批/隔离执行/重启不重复/source不变，及真实源磁盘reasoning经目标Gateway在Key/POST前拒绝。范围仅Runtime测试模块接线/独立测试与三文档，无生产/依赖/fixture更改；定向运行中尚未认领通过，下一步按真实结果完成本地/精确三平台验收。
 
 模型切换步骤4已完成：精确源码`430305d5a0ae323b9d739bc6db05ae2dfc30c3bf`/[CI38069700504](https://github.com/bboytang/CAIdex/actions/runs/38069700504)整体completed/success。linux job114264420492、windows job114264420596、macos job114264420641各17steps成功或条件跳过；workspace619/0/69、614/0/67、618/0/67，固定Runtime67/0/0、66/0/0、66/0/0。完整raw日志2288/1974/1985行，通过名687/680/684精确旧CI38063184946+3，无遗漏/重复；新增switching3及OpenRouter100/Qwen72/DeepSeek57每名每平台一次，旧Runtime保持。watch及完整三份日志下载exit0，checker/result在`/tmp/caidex-model-switching/`，原始日志`/tmp/caidex-ci-38069700504-{linux,windows,macos}-raw.log`。收尾仅HANDOFF/README/Gateway三文档，222个其他tracked文件逐字保持精确已验SHA；最新文档提交、branch与工作区以git log/status为准。
 

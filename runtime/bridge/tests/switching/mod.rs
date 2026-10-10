@@ -1,5 +1,6 @@
 //! Verified offline OpenAI combinations, not commercial model compatibility.
 use super::*;
+mod cross_provider;
 
 async fn turn(harness: &mut Harness, thread: &str, text: &str, options: Value) -> Value {
     let response = harness
