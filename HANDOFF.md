@@ -20,7 +20,7 @@
 
 本地证据：workspace 655通过/0失败/83忽略（后续严格请求解码修复以最终H-1定向复验为准）；H-1最终15项定向及全仓Clippy/fmt、固定Runtime81/0/0与stable/experimental schema指纹已验证。真实独立Host进程演示通过：两客户端重连replay一致、第三观察客户端进程退出不终止Host、真实强杀重启同Host/旧线程unknown/探针0重发。初始本地测试受默认沙箱socket/原生执行限制，已在授权执行环境复验；/tmp为Git工作树导致既有凭据保护测试拒绝，换本会话Git外私有TMPDIR后通过，未改保护或/tmp/.git。额外参数拒绝测试暴露serde flatten忽略字段，已改严格带标签struct请求，最终H-1复验覆盖。
 
-[H-1设计/运行/失败与限制](docs/CAIdex-H1-Host-设计与验收-V1.md)提供独立复现及审计入口；源码/测试/演示/workflow最终diff检查后提交main，精确三平台CI待push后核验。当前源码尚未封存，不虚构SHA/CI/独立审计通过。完成本次H-1交付后停止；准确下一步为用户安排独立只读审计及验收，H-2必须另行明确批准。
+[H-1设计/运行/失败与限制](docs/CAIdex-H1-Host-设计与验收-V1.md)提供独立复现及审计入口。main功能提交`db8bf47a5b0e44d8efdc64ec72006adf594889b6`已push；[CI38093594306](https://github.com/bboytang/CAIdex/actions/runs/38093594306)精确绑定该SHA，Linux/macOS成功、Windows在H-1私有目录ACL初始化失败（Protocol tests中Host两个unit失败），整体failure，不能认领三平台成功。当前修复Windows权限判定/补充无秘密step分类，新增快速Windows边界检查（复用生产脚本，不复制实现），仍严格owner-only；需新源码提交及精确CI复验。完成本次H-1交付后停止；准确下一步为用户安排独立只读审计及验收，H-2必须另行明确批准。
 
 ## F/G 封存状态
 

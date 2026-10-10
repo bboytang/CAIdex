@@ -45,6 +45,31 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22.23.3
+      - name: Windows Host owner-only storage boundary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $source = Get-Content runtime/host/src/security.rs -Raw
+          $script = [regex]::Match($source, '(?s)r#"(.*?)"#').Groups[1].Value
+          if (!$script) { throw 'Missing production ACL script' }
+          $env:CAIDEX_PRIVATE_DIRECTORY = Join-Path $env:TEMP ('caidex-h1-acl-' + [guid]::NewGuid())
+          try {
+            & powershell.exe -NoProfile -NonInteractive -Command $script
+            if ($LASTEXITCODE) { throw "New private directory failed at ACL step $LASTEXITCODE" }
+            & powershell.exe -NoProfile -NonInteractive -Command $script
+            if ($LASTEXITCODE) { throw "Existing private directory failed at ACL step $LASTEXITCODE" }
+            $acl = Get-Acl -LiteralPath $env:CAIDEX_PRIVATE_DIRECTORY
+            $acl.SetAccessRuleProtection($false, $true)
+            Set-Acl -LiteralPath $env:CAIDEX_PRIVATE_DIRECTORY -AclObject $acl
+            & powershell.exe -NoProfile -NonInteractive -Command $script
+            if ($LASTEXITCODE -ne 22) { throw 'Inherited ACL was not rejected' }
+            Write-Output 'Owner-only storage create/reopen and unsafe inheritance rejection passed'
+          } finally {
+            if (Test-Path -LiteralPath $env:CAIDEX_PRIVATE_DIRECTORY) {
+              Remove-Item -LiteralPath $env:CAIDEX_PRIVATE_DIRECTORY -Recurse -Force
+            }
+          }
+          $global:LASTEXITCODE = 0
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy
       - name: Check formatting

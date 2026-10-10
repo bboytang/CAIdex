@@ -17,6 +17,8 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("Host refused: {0}")]
     Refused(&'static str),
+    #[error("Host owner-only Windows ACL check failed at step {0}")]
+    WindowsAcl(i32),
     #[error("Runtime failed: {0}")]
     Runtime(#[from] caidex_runtime::Error),
 }
