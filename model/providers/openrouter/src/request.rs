@@ -3,12 +3,72 @@ use caidex_model_core::{
     ResponsesDialect,
 };
 use serde_json::{Value, json};
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 pub(crate) fn valid_effort(value: &str) -> bool {
     matches!(
         value,
         "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
     )
+}
+pub(crate) fn valid_summary(value: &str) -> bool {
+    matches!(value, "auto" | "concise" | "detailed")
+}
+pub(crate) fn valid_context(value: &str) -> bool {
+    matches!(value, "auto" | "all_turns" | "current_turn")
+}
+/// Extract only configured native history controls before the single effort compilation.
+pub(crate) fn history_controls(
+    wire: &mut Value,
+    runtime: bool,
+    summaries: Option<&BTreeSet<String>>,
+    contexts: Option<&BTreeSet<String>>,
+    support: CapabilitySupport,
+) -> ProviderResult<Value> {
+    let mut native = json!({});
+    if !runtime {
+        return Ok(native);
+    }
+    if let Some(include) = wire.get("include") {
+        if !include.is_null() {
+            let values = include.as_array().ok_or_else(invalid)?;
+            if !(values.is_empty()
+                || values.len() == 1 && values[0] == "reasoning.encrypted_content")
+            {
+                return Err(unsupported());
+            }
+            if !values.is_empty() && support == CapabilitySupport::Unsupported {
+                return Err(ProviderError::new(400, "unsupported_reasoning"));
+            }
+        }
+        native["include"] = include.clone();
+    }
+    wire.as_object_mut().unwrap().remove("include");
+    if let Some(reasoning) = wire.get_mut("reasoning") {
+        fields(reasoning, &["effort", "summary", "context"])?;
+        let controls = reasoning.get("summary").is_some() || reasoning.get("context").is_some();
+        for (key, choices, valid) in [
+            ("summary", summaries, valid_summary as fn(&str) -> bool),
+            ("context", contexts, valid_context as fn(&str) -> bool),
+        ] {
+            if let Some(value) = reasoning.get(key) {
+                if !value.is_null() {
+                    let value = value.as_str().ok_or_else(invalid)?;
+                    if !valid(value) || !choices.is_some_and(|s| s.contains(value)) {
+                        return Err(unsupported());
+                    }
+                    if support == CapabilitySupport::Unsupported {
+                        return Err(ProviderError::new(400, "unsupported_reasoning"));
+                    }
+                }
+                native["reasoning"][key] = value.clone();
+            }
+            reasoning.as_object_mut().unwrap().remove(key);
+        }
+        if controls && reasoning.as_object().unwrap().is_empty() {
+            wire.as_object_mut().unwrap().remove("reasoning");
+        }
+    }
+    Ok(native)
 }
 fn invalid() -> ProviderError {
     ProviderError::new(400, "openrouter_invalid_request")

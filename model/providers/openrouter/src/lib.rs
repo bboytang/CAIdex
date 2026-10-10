@@ -21,7 +21,7 @@ use caidex_model_core::{
 use caidex_provider_custom::{ConfiguredModel, CustomResponses, CustomResponsesProvider};
 use futures_util::{StreamExt, stream};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -43,6 +43,8 @@ pub struct OpenRouterProvider<S: SecretStore> {
     native_tools: HashSet<String>,
     advanced_tools: HashSet<String>,
     native_history: HashSet<String>,
+    reasoning_summaries: HashMap<String, BTreeSet<String>>,
+    reasoning_contexts: HashMap<String, BTreeSet<String>>,
     replay_scope: serde_json::Value,
 }
 impl<S: SecretStore + 'static> OpenRouterProvider<S> {
@@ -97,6 +99,8 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             native_tools: HashSet::new(),
             advanced_tools: HashSet::new(),
             native_history: HashSet::new(),
+            reasoning_summaries: HashMap::new(),
+            reasoning_contexts: HashMap::new(),
             replay_scope: config.replay_scope(),
         })
     }
@@ -228,6 +232,46 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         }
         Ok(self)
     }
+    /// Explicit native summary support on a route with local Runtime context and bound history.
+    pub fn with_reasoning_summary(
+        mut self,
+        model: String,
+        summary: String,
+    ) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !self.runtime_context
+            || !self.native_history.contains(&model)
+            || !request::valid_summary(&summary)
+            || !self
+                .reasoning_summaries
+                .entry(model)
+                .or_default()
+                .insert(summary)
+        {
+            return Err(ProviderError::new(400, "openrouter_invalid_summary_policy"));
+        }
+        Ok(self)
+    }
+    /// Declare exact native context support; the executor must verify model/backend support.
+    pub fn with_reasoning_context(
+        mut self,
+        model: String,
+        context: String,
+    ) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !self.runtime_context
+            || !self.native_history.contains(&model)
+            || !request::valid_context(&context)
+            || !self
+                .reasoning_contexts
+                .entry(model)
+                .or_default()
+                .insert(context)
+        {
+            return Err(ProviderError::new(400, "openrouter_invalid_context_policy"));
+        }
+        Ok(self)
+    }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
         if context.headers.iter().any(|(name, _)| {
             !self.runtime_context
@@ -266,7 +310,14 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             for k in ["model", "input", "stream"] {
                 controls.as_object_mut().unwrap().remove(k);
             }
-            let policy = serde_json::json!({"route":request.model(),"native_model":metadata.native_model,"capabilities":metadata.capabilities,"runtime_context":self.runtime_context,"native_tools":self.native_tools.contains(request.model()),"advanced_tools":self.advanced_tools.contains(request.model()),"backend":self.backends[request.model()],"efforts":self.reasoning_efforts.get(request.model()),"verbosity":self.verbosity_instructions.get(request.model()),"tiers":self.service_tiers.get(request.model()),"controls":controls});
+            let mut policy = serde_json::json!({"route":request.model(),"native_model":metadata.native_model,"capabilities":metadata.capabilities,"runtime_context":self.runtime_context,"native_tools":self.native_tools.contains(request.model()),"advanced_tools":self.advanced_tools.contains(request.model()),"backend":self.backends[request.model()],"efforts":self.reasoning_efforts.get(request.model()),"verbosity":self.verbosity_instructions.get(request.model()),"tiers":self.service_tiers.get(request.model()),"controls":controls});
+            // Absent policies keep existing v1 carriers byte-compatible.
+            if let Some(choices) = self.reasoning_summaries.get(request.model()) {
+                policy["summaries"] = serde_json::json!(choices);
+            }
+            if let Some(choices) = self.reasoning_contexts.get(request.model()) {
+                policy["contexts"] = serde_json::json!(choices);
+            }
             let source =
                 CanonicalRequest::new(source, request.dialect()).map_err(|_| history::invalid())?;
             let (request, tools, history) =

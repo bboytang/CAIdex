@@ -9,7 +9,7 @@ use caidex_model_core::{
 };
 use serde_json::{Value, json};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     fmt,
 };
 
@@ -115,6 +115,30 @@ fn compile(policy: &Value, limit: usize) -> ProviderResult<(CanonicalRequest, To
             wire.as_object_mut().unwrap().remove(k);
         }
     }
+    let choices = |key, valid: fn(&str) -> bool| -> ProviderResult<Option<BTreeSet<String>>> {
+        let Some(value) = policy.get(key) else {
+            return Ok(None);
+        };
+        let choices: BTreeSet<String> =
+            serde_json::from_value(value.clone()).map_err(|_| invalid())?;
+        if !runtime
+            || choices.is_empty()
+            || choices.iter().any(|v| !valid(v))
+            || json!(choices) != *value
+        {
+            return Err(invalid());
+        }
+        Ok(Some(choices))
+    };
+    let summaries = choices("summaries", request::valid_summary)?;
+    let contexts = choices("contexts", request::valid_context)?;
+    let history_controls = request::history_controls(
+        &mut wire,
+        runtime,
+        summaries.as_ref(),
+        contexts.as_ref(),
+        capabilities.reasoning,
+    )?;
     let efforts = map(policy, "efforts")?;
     let verbosity = map(policy, "verbosity")?;
     let tiers = map(policy, "tiers")?;
@@ -128,6 +152,14 @@ fn compile(policy: &Value, limit: usize) -> ProviderResult<(CanonicalRequest, To
         tiers.as_ref(),
     )?;
     let mut wire = request.wire().clone();
+    if let Some(include) = history_controls.get("include") {
+        wire["include"] = include.clone();
+    }
+    if let Some(reasoning) = history_controls["reasoning"].as_object() {
+        for (key, value) in reasoning {
+            wire["reasoning"][key] = value.clone();
+        }
+    }
     if native {
         for k in ["tools", "tool_choice", "parallel_tool_calls"] {
             if let Some(v) = source.wire().get(k) {

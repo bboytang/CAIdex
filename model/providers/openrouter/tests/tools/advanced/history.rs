@@ -874,7 +874,7 @@ async fn history_does_not_enable_summary_include_lite_or_hosted_execution() {
     let p = history_provider(&f, b, limits()).with_runtime_context();
     for (key, value) in [
         ("reasoning", json!({"summary":"auto"})),
-        ("include", json!(["reasoning.encrypted_content"])),
+        ("include", json!(["output_text.logprobs"])),
         ("context", json!("all_turns")),
         ("tools", json!([{"type":"web_search"}])),
     ] {
@@ -900,3 +900,5 @@ async fn history_does_not_enable_summary_include_lite_or_hosted_execution() {
     );
     assert_eq!(reads.load(Ordering::SeqCst), 0);
 }
+
+mod controls;
