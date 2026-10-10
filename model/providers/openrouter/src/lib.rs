@@ -2,12 +2,15 @@
 //! No hosted executor, model-name capability guesses or inference retries.
 mod catalog;
 mod config;
+mod history;
+mod history_stream;
 mod request;
 mod tools;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::NativeModel;
 pub use config::OpenRouterConfig;
+pub use history::NativeHistory;
 
 use caidex_credentials::{Broker, SecretStore};
 use caidex_model_core::{
@@ -22,6 +25,12 @@ use std::{
     sync::Arc,
 };
 
+struct Prepared {
+    request: CanonicalRequest,
+    tools: Option<tools::ToolPolicy>,
+    history: Option<history::HistoryContext>,
+}
+
 pub struct OpenRouterProvider<S: SecretStore> {
     responses: CustomResponsesProvider<S>,
     models_endpoint: CustomResponses,
@@ -33,6 +42,8 @@ pub struct OpenRouterProvider<S: SecretStore> {
     backends: HashMap<String, String>,
     native_tools: HashSet<String>,
     advanced_tools: HashSet<String>,
+    native_history: HashSet<String>,
+    replay_scope: serde_json::Value,
 }
 impl<S: SecretStore + 'static> OpenRouterProvider<S> {
     pub fn new(
@@ -85,6 +96,8 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             backends: HashMap::new(),
             native_tools: HashSet::new(),
             advanced_tools: HashSet::new(),
+            native_history: HashSet::new(),
+            replay_scope: config.replay_scope(),
         })
     }
     /// Consume executor-local attribution and neutral text; do not forward identity or enable caching.
@@ -207,6 +220,14 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         }
         Ok(self)
     }
+    /// Bind stateless native history to this executor's route, scope and complete compiled policy.
+    pub fn with_native_history(mut self, model: String) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !self.backends.contains_key(&model) || !self.native_history.insert(model) {
+            return Err(ProviderError::new(400, "openrouter_invalid_history_route"));
+        }
+        Ok(self)
+    }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
         if context.headers.iter().any(|(name, _)| {
             !self.runtime_context
@@ -233,13 +254,28 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
                 .await?,
         )
     }
-    fn prepare(
-        &self,
-        request: CanonicalRequest,
-    ) -> ProviderResult<(CanonicalRequest, Option<tools::ToolPolicy>)> {
+    fn prepare(&self, request: CanonicalRequest) -> ProviderResult<Prepared> {
         let metadata = self.responses.metadata(request.model())?;
         if request.wire().to_string().len() > self.limits.request_bytes {
             return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
+        if self.native_history.contains(request.model()) {
+            let mut source = request.wire().clone();
+            request::consume_context(&mut source, self.runtime_context)?;
+            let mut controls = source.clone();
+            for k in ["model", "input", "stream"] {
+                controls.as_object_mut().unwrap().remove(k);
+            }
+            let policy = serde_json::json!({"route":request.model(),"native_model":metadata.native_model,"capabilities":metadata.capabilities,"runtime_context":self.runtime_context,"native_tools":self.native_tools.contains(request.model()),"advanced_tools":self.advanced_tools.contains(request.model()),"backend":self.backends[request.model()],"efforts":self.reasoning_efforts.get(request.model()),"verbosity":self.verbosity_instructions.get(request.model()),"tiers":self.service_tiers.get(request.model()),"controls":controls});
+            let source =
+                CanonicalRequest::new(source, request.dialect()).map_err(|_| history::invalid())?;
+            let (request, tools, history) =
+                history::prepare(source, self.replay_scope.clone(), policy, &self.limits)?;
+            return Ok(Prepared {
+                request,
+                tools,
+                history: Some(history),
+            });
         }
         let policy = if self.native_tools.contains(request.model()) {
             let policy = tools::ToolPolicy::new(
@@ -298,7 +334,11 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             policy.compile_selection(&mut wire);
         }
         CanonicalRequest::new(wire, compiled.dialect())
-            .map(|request| (request, policy))
+            .map(|request| Prepared {
+                request,
+                tools: policy,
+                history: None,
+            })
             .map_err(|_| ProviderError::new(400, "openrouter_invalid_request"))
     }
 }
@@ -342,13 +382,29 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
-            let (request, tools) = self.prepare(request)?;
-            let response = self.responses.create_response(request, context).await?;
+            let Prepared {
+                request,
+                tools,
+                history,
+            } = self.prepare(request)?;
+            let mut response = self.responses.create_response(request, context).await?;
             request::output(response.response.wire(), tools.is_some())?;
             if let Some(tools) = tools {
                 tools.response(response.response.wire())?;
             }
             request::headers(&response.headers)?;
+            if let Some(history) = history
+                && response.response.state() == caidex_model_core::StreamState::Completed
+            {
+                response.response = NativeHistory::record(
+                    &history,
+                    &response.response,
+                    None,
+                    self.limits.request_bytes.min(self.limits.response_bytes),
+                )?
+                .to_responses(self.limits.request_bytes.min(self.limits.response_bytes))
+                .map_err(history::native_error)?;
+            }
             Ok(response)
         })
     }
@@ -359,8 +415,12 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
             let mut context = self.native_context(context)?;
-            let (request, tools) = self.prepare(request)?;
-            if tools.is_some() {
+            let Prepared {
+                request,
+                tools,
+                history,
+            } = self.prepare(request)?;
+            if tools.is_some() || history.is_some() {
                 let deadline = std::time::Instant::now() + self.limits.total_timeout;
                 context.deadline = Some(context.deadline.unwrap_or(deadline).min(deadline));
             }
@@ -374,6 +434,15 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
                 .stream_response(request, stream_context)
                 .await?;
             request::headers(&response.headers)?;
+            if let Some(history) = history {
+                response.events = history_stream::buffered_stream(
+                    response.events,
+                    history,
+                    context,
+                    self.limits.clone(),
+                );
+                return Ok(response);
+            }
             if let Some(tools) = tools {
                 response.events = tools::buffered_stream(
                     response.events,

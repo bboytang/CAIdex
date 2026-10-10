@@ -42,25 +42,7 @@ pub(crate) fn compile(
         return Err(ProviderError::new(400, "unsupported_dialect"));
     }
     let mut wire = request.wire().clone();
-    if runtime_context {
-        for key in ["client_metadata", "prompt_cache_key"] {
-            if let Some(value) = wire.get(key).filter(|v| !v.is_null()) {
-                let valid = if key == "client_metadata" {
-                    value
-                        .as_object()
-                        .is_some_and(|m| m.values().all(Value::is_string))
-                } else {
-                    value
-                        .as_str()
-                        .is_some_and(|s| !s.trim().is_empty() && !s.chars().any(char::is_control))
-                };
-                if !valid {
-                    return Err(invalid());
-                }
-            }
-            wire.as_object_mut().unwrap().remove(key);
-        }
-    }
+    consume_context(&mut wire, runtime_context)?;
     if let Some(text) = wire.get("text") {
         if !runtime_context && verbosity.is_none() {
             return Err(unsupported());
@@ -164,53 +146,79 @@ pub(crate) fn compile(
     }
     if let Some(items) = wire["input"].as_array() {
         for item in items {
-            fields(item, &["type", "role", "content", "id", "status"])?;
-            let role = item["role"].as_str().ok_or_else(invalid)?;
-            if !matches!(role, "system" | "developer" | "user" | "assistant")
-                || item.get("type").is_some_and(|t| t != "message")
-            {
-                return Err(unsupported());
-            }
-            for key in ["id", "status"] {
-                if let Some(v) = item.get(key) {
-                    let runtime_id =
-                        runtime_context && key == "id" && matches!(role, "developer" | "user");
-                    if (role != "assistant" && !runtime_id) || item["type"] != "message" {
-                        return Err(unsupported());
-                    }
-                    if key == "id"
-                        && v.as_str()
-                            .is_none_or(|s| s.trim().is_empty() || s.chars().any(char::is_control))
-                        || key == "status" && v != "completed"
-                    {
-                        return Err(invalid());
-                    }
-                }
-            }
-            if !item["content"].is_string() {
-                for part in item["content"].as_array().ok_or_else(invalid)? {
-                    fields(part, &["type", "text", "annotations", "logprobs"])?;
-                    if !matches!(part["type"].as_str(), Some("input_text" | "output_text")) {
-                        return Err(unsupported());
-                    }
-                    if !part["text"].is_string() {
-                        return Err(invalid());
-                    }
-                    for key in ["annotations", "logprobs"] {
-                        if part.get(key).is_some_and(|v| {
-                            !v.is_null() && v.as_array().is_none_or(|a| !a.is_empty())
-                        }) {
-                            return Err(unsupported());
-                        }
-                    }
-                }
-            }
+            validate_message(item, runtime_context)?;
         }
     }
     // Router defaults may silently ignore parameters or retry another backend.
     wire["provider"] = json!({"require_parameters":true,"allow_fallbacks":false});
     wire["store"] = false.into();
     CanonicalRequest::new(wire, ResponsesDialect::Classic).map_err(|_| invalid())
+}
+pub(crate) fn consume_context(wire: &mut Value, runtime_context: bool) -> ProviderResult<()> {
+    if runtime_context {
+        for key in ["client_metadata", "prompt_cache_key"] {
+            if let Some(value) = wire.get(key).filter(|v| !v.is_null()) {
+                let valid = if key == "client_metadata" {
+                    value
+                        .as_object()
+                        .is_some_and(|m| m.values().all(Value::is_string))
+                } else {
+                    value
+                        .as_str()
+                        .is_some_and(|s| !s.trim().is_empty() && !s.chars().any(char::is_control))
+                };
+                if !valid {
+                    return Err(invalid());
+                }
+            }
+            wire.as_object_mut().unwrap().remove(key);
+        }
+    }
+    Ok(())
+}
+pub(crate) fn validate_message(item: &Value, runtime_context: bool) -> ProviderResult<()> {
+    fields(item, &["type", "role", "content", "id", "status"])?;
+    let role = item["role"].as_str().ok_or_else(invalid)?;
+    if !matches!(role, "system" | "developer" | "user" | "assistant")
+        || item.get("type").is_some_and(|t| t != "message")
+    {
+        return Err(unsupported());
+    }
+    for key in ["id", "status"] {
+        if let Some(v) = item.get(key) {
+            let runtime_id = runtime_context && key == "id" && matches!(role, "developer" | "user");
+            if (role != "assistant" && !runtime_id) || item["type"] != "message" {
+                return Err(unsupported());
+            }
+            if key == "id"
+                && v.as_str()
+                    .is_none_or(|s| s.trim().is_empty() || s.chars().any(char::is_control))
+                || key == "status" && v != "completed"
+            {
+                return Err(invalid());
+            }
+        }
+    }
+    if !item["content"].is_string() {
+        for part in item["content"].as_array().ok_or_else(invalid)? {
+            fields(part, &["type", "text", "annotations", "logprobs"])?;
+            if !matches!(part["type"].as_str(), Some("input_text" | "output_text")) {
+                return Err(unsupported());
+            }
+            if !part["text"].is_string() {
+                return Err(invalid());
+            }
+            for key in ["annotations", "logprobs"] {
+                if part
+                    .get(key)
+                    .is_some_and(|v| !v.is_null() && v.as_array().is_none_or(|a| !a.is_empty()))
+                {
+                    return Err(unsupported());
+                }
+            }
+        }
+    }
+    Ok(())
 }
 pub(crate) fn headers(headers: &ContextHeaders) -> ProviderResult<()> {
     if headers.get("x-codex-turn-state").is_some() {

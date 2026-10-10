@@ -179,7 +179,7 @@ impl ToolPolicy {
         }
         policy.single =
             flag == Some(&Value::Bool(false)) || parallel == CapabilitySupport::Unsupported;
-        policy.validate_input(wire)?;
+        policy.validate_input(wire, &HashSet::new())?;
         Ok(policy)
     }
     fn declare(&mut self, tool: &Value, namespace: Option<&str>) -> ProviderResult<()> {
@@ -312,12 +312,16 @@ impl ToolPolicy {
             arguments(&item["arguments"])
         }
     }
-    fn validate_input(&mut self, wire: &Value) -> ProviderResult<()> {
+    pub(crate) fn validate_input(
+        &mut self,
+        wire: &Value,
+        trusted: &HashSet<usize>,
+    ) -> ProviderResult<()> {
         let mut pending = HashMap::new();
         let mut ids = HashSet::new();
-        for item in wire["input"].as_array().into_iter().flatten() {
+        for (index, item) in wire["input"].as_array().into_iter().flatten().enumerate() {
             if !input_item(item) {
-                if !pending.is_empty() && item["role"] != "assistant" {
+                if !pending.is_empty() && item["role"] != "assistant" && !trusted.contains(&index) {
                     return Err(invalid());
                 }
                 continue;
@@ -328,34 +332,36 @@ impl ToolPolicy {
                 return Err(invalid());
             }
             if call_item(item) {
-                fields(
-                    item,
-                    if self.advanced && item["type"] == "custom_tool_call" {
-                        &[
-                            "type",
-                            "id",
-                            "status",
-                            "name",
-                            "namespace",
-                            "call_id",
-                            "input",
-                            "async",
-                        ]
-                    } else if self.advanced {
-                        &[
-                            "type",
-                            "id",
-                            "status",
-                            "name",
-                            "namespace",
-                            "call_id",
-                            "arguments",
-                            "async",
-                        ]
-                    } else {
-                        &["type", "id", "status", "name", "call_id", "arguments"]
-                    },
-                )?;
+                if !trusted.contains(&index) {
+                    fields(
+                        item,
+                        if self.advanced && item["type"] == "custom_tool_call" {
+                            &[
+                                "type",
+                                "id",
+                                "status",
+                                "name",
+                                "namespace",
+                                "call_id",
+                                "input",
+                                "async",
+                            ]
+                        } else if self.advanced {
+                            &[
+                                "type",
+                                "id",
+                                "status",
+                                "name",
+                                "namespace",
+                                "call_id",
+                                "arguments",
+                                "async",
+                            ]
+                        } else {
+                            &["type", "id", "status", "name", "call_id", "arguments"]
+                        },
+                    )?;
+                }
                 self.call(item)?;
                 let call_id = id(&item["call_id"])?;
                 if !self.input_calls.insert(call_id.to_owned()) {
@@ -435,12 +441,12 @@ struct PendingCall {
     done: Option<Value>,
 }
 #[derive(Default)]
-struct ToolEvents {
+pub(crate) struct ToolEvents {
     calls: HashMap<u64, PendingCall>,
     terminal: Option<Value>,
 }
 impl ToolEvents {
-    fn observe(&mut self, wire: &Value) -> ProviderResult<()> {
+    pub(crate) fn observe(&mut self, wire: &Value) -> ProviderResult<()> {
         let kind = wire["type"].as_str().ok_or_else(native_error)?;
         if call_item(wire)
             || wire["output"]
@@ -553,7 +559,7 @@ impl ToolEvents {
         }
         Ok(())
     }
-    fn finish(&self, policy: &ToolPolicy) -> ProviderResult<()> {
+    pub(crate) fn finish(&self, policy: &ToolPolicy) -> ProviderResult<()> {
         let terminal = self.terminal.as_ref().ok_or_else(native_error)?;
         policy.response(terminal)?;
         for (index, call) in &self.calls {

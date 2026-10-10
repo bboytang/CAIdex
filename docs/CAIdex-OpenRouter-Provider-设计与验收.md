@@ -1,6 +1,6 @@
 # CAIdex OpenRouter Provider：设计与验收
 
-阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。基础文本、显式上下文/effort/正文/backend路由及逐route Classic平面function工具已分别三平台离线验收；平面阶段Provider51项；本轮namespace/custom新增12项、Provider63已精确三平台验收。完整推理/工具历史载体、Lite、实际固定OpenRouter Runtime及商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
+阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。基础文本、显式上下文/effort/正文/backend路由及逐route Classic平面function工具已分别三平台离线验收；平面阶段Provider51项；本轮namespace/custom新增12项、Provider63已精确三平台验收。本轮完整原生历史载体新增19项定向已验，Provider82；完整本地已通过，新源码CI待验。Lite、实际固定OpenRouter Runtime及商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
 
 ## 官方契约与默认入口范围
 
@@ -112,3 +112,13 @@
 
 
 精确源码`ca2cf5870e691183dc888657773e2ae993d52e8e`/[CI38047726929](https://github.com/bboytang/CAIdex/actions/runs/38047726929)整体completed/success。linux job114200540663，workspace573/0/59、既有固定Runtime57/0/0，raw2215行/通过名631；windows job114200540664，workspace568/0/57、既有固定Runtime56/0/0，raw1901行/通过名624；macos job114200540515，workspace572/0/57、既有固定Runtime56/0/0，raw1912行/通过名628；各17steps成功或条件跳过，OpenRouter63/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38010128508+12，无遗漏/重复，旧Runtime名完全保持。watch和三份完整日志下载exit0，ci-check通过；/tmp/caidex-openrouter-advanced/及/tmp/caidex-ci-38047726929-{linux,windows,macos}-raw.log与status.json只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线、商业Live/Full或iOS应用构建。
+
+
+## OpenRouter完整政策绑定原生历史（本轮定向已验）
+
+- [官方无状态契约](https://openrouter.ai/docs/api_reference/responses/overview)、[手动reasoning历史](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)和固定SDK de9aa273的[reasoning item](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/src/openrouter/components/outputreasoningitem.py)/[reasoning_text SSE](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/src/openrouter/components/reasoningdeltaevent.py)已核对。完整原生id/summary/content/encrypted_content/signature/format及未知非执行扩展、annotations、usage/metadata/大整数保存在v1载体内，SSE保留完整解析事件；不照搬Qwen summary-only或DeepSeek明文规则。
+- `with_backend_selection`之后显式`with_native_history(route)`，独立于native_tools/runtime_context；默认与未启用route仍拒绝历史carrier/裸reasoning。凭据归属/profile/kind与规范配置endpoint、route/native model、能力、backend政策、runtime/native/advanced开关、整个route effort/verbosity/tier映射、原正文控制/工具政策均精确绑定。所有正文控制改变（含instructions/采样/预算/选择）须新分支；stream和显式本地消费的归因/cache变化不改政策。base slug可能覆盖region/variant，绑定配置与政策不证明实际供应实例相同。
+- [固定Runtime ResponseItem/ContentItem](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/protocol/src/models.rs)不会保留所有未知字段。输出采用完整敏感wire的reasoning载体+Runtime可保留的文本/原生function/custom投影，未知项只留载体。回放核对整个投影组及已展开的完整原生前缀，允许Runtime省略有效ID/status及reasoning content:null，然后按原顺序恢复原始输出，载体本身不发native。工具结果继续精确kind/call_id/声明配对，已知server/deferred/async/subagent仍拒绝。
+- 每个载体重新核对内部编译控制、配置与原生response/known reasoning类型、调用身份/选择/旧ID；SSE核对known文本与reasoning_text/summary_text分片、item索引/身份/done/terminal以及工具参数，坏流在任何模型投影前拒绝。失败/未完成不创建carrier，合法原生失败事件保留；部分可执行调用不交付。共享HTTP/Broker/Gateway与Codex唯一执行/审批实现不变。
+- source、expanded/compiled、carrier/response、原生累计SSE及投影frame/累计输出预算均保留，超限拒绝。取消/deadline/Drop/Heartbeat和队列取消遵循共享契约；错误或Drop后关闭连接、释放单slot。文本仍缓冲到终态，完整前缀在多载体中会二次增长，预算限制不能当精简/自动截断。载体不是加密、签名认证或来源证明，可能含敏感推理/配置；Debug隐藏wire，无Key读取/保存。
+- 新增19项、Provider82/0/0，旧63测试正文保持。三轮JSON→原生前缀恢复、JSON→SSE、全部原始wire/投影/政策与内部篡改、预算、取消/连接释放/Heartbeat、Gateway身份隔离定向通过。本轮workspace592/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff及18份Markdown/99链接/22锚点通过；全通过名精确旧workspace573+19，旧Runtime57及旧63测试正文逐字保持，Cargo.lock/共享/其他Provider/Runtime/workflow未改。新源码三平台待验。summary/context/include策略、Lite和实际OpenRouter Classic/Lite Runtime另待后续；商业Live/Full未授权且未测试。

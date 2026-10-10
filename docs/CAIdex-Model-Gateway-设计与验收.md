@@ -239,3 +239,9 @@ OpenRouter显式逐route Classic平面function工具已实现：须配置backend
 
 
 OpenRouter逐route显式advanced工具已实现：须先配置backend/native_tools，namespace/function/custom原生身份与自由文本保留，具名高级/allowed_tools通过精确声明子集+auto/required编译一次；kind配对与混合SSE终态校验、默认拒绝、source/compiled预算及Gateway身份隔离覆盖。新增12项/Provider63定向通过，旧51项保持；完整本地workspace573/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff及18份Markdown/95本地链接/22锚点通过；通过名精确旧workspace+12、旧Runtime不变，源码`ca2cf58`/[CI38047726929](https://github.com/bboytang/CAIdex/actions/runs/38047726929)精确三平台已验，workspace573/568/572、既有固定Runtime57/56/56、OpenRouter63每名一次，完整通过名精确旧CI+12，无遗漏/重复。完整政策绑定历史/Lite/实际OpenRouter Runtime与商业Live/Full未验；工具流文本仍延迟到终态。详见[OpenRouter验收](CAIdex-OpenRouter-Provider-设计与验收.md)和[HANDOFF](../HANDOFF.md)。
+
+
+## OpenRouter完整政策绑定原生历史（定向已验）
+
+
+OpenRouter完整政策绑定原生历史已实现、19项新增定向通过，Provider82：逐route显式开启，完整原生reasoning/签名/未知扩展与JSON/SSE保存在载体，Runtime可保留投影整组+完整原生前缀校验后原序回放；绑定执行端CredentialRef/profile/配置endpoint、backend政策/model/能力/原正文控制与工具政策，默认关闭。源码仅OpenRouter，无依赖/共享执行器改动；本轮workspace592/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff及18份Markdown/99链接/22锚点通过，旧通过名精确+19、旧63测试正文与Cargo.lock保持；新源码三平台待验。文本终态缓冲、完整前缀二次增长由预算限制；载体非加密/来源认证，backend政策不证明实际endpoint稳定。summary/context/include、Lite、实际OpenRouter Runtime与商业Live/Full仍待。详见[OpenRouter验收](CAIdex-OpenRouter-Provider-设计与验收.md)和[HANDOFF](../HANDOFF.md)。

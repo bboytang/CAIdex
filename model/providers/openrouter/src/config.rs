@@ -32,6 +32,9 @@ impl OpenRouterConfig {
         self.endpoint("responses")?;
         Ok(self)
     }
+    pub(crate) fn replay_scope(&self) -> serde_json::Value {
+        serde_json::json!({"base":self.base_url.as_str(),"credential":self.credential})
+    }
     pub(crate) fn endpoint(&self, path: &str) -> Result<CustomResponses, Error> {
         let url = self
             .base_url

@@ -531,3 +531,5 @@ async fn gateway_delivers_native_custom_namespace_data_without_execution() {
     assert_eq!(reads.load(Ordering::SeqCst), 1);
     gateway.shutdown().await.unwrap();
 }
+
+mod history;
