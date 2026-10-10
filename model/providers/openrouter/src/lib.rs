@@ -3,6 +3,7 @@
 mod catalog;
 mod config;
 mod request;
+mod tools;
 
 pub use caidex_provider_custom::{ClientOptions, Error, Limits};
 pub use catalog::NativeModel;
@@ -30,6 +31,7 @@ pub struct OpenRouterProvider<S: SecretStore> {
     verbosity_instructions: HashMap<String, HashMap<String, String>>,
     service_tiers: HashMap<String, HashMap<String, String>>,
     backends: HashMap<String, String>,
+    native_tools: HashSet<String>,
 }
 impl<S: SecretStore + 'static> OpenRouterProvider<S> {
     pub fn new(
@@ -80,6 +82,7 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             verbosity_instructions: HashMap::new(),
             service_tiers: HashMap::new(),
             backends: HashMap::new(),
+            native_tools: HashSet::new(),
         })
     }
     /// Consume executor-local attribution and neutral text; do not forward identity or enable caching.
@@ -186,6 +189,14 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         self.backends.insert(model, backend);
         Ok(self)
     }
+    /// Enable flat Classic function tools for an explicitly configured backend route.
+    pub fn with_native_tools(mut self, model: String) -> ProviderResult<Self> {
+        self.responses.metadata(&model)?;
+        if !self.backends.contains_key(&model) || !self.native_tools.insert(model) {
+            return Err(ProviderError::new(400, "openrouter_invalid_tool_route"));
+        }
+        Ok(self)
+    }
     fn native_context(&self, mut context: RequestContext) -> ProviderResult<RequestContext> {
         if context.headers.iter().any(|(name, _)| {
             !self.runtime_context
@@ -212,8 +223,38 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
                 .await?,
         )
     }
-    fn prepare(&self, request: CanonicalRequest) -> ProviderResult<CanonicalRequest> {
+    fn prepare(
+        &self,
+        request: CanonicalRequest,
+    ) -> ProviderResult<(CanonicalRequest, Option<tools::ToolPolicy>)> {
         let metadata = self.responses.metadata(request.model())?;
+        if request.wire().to_string().len() > self.limits.request_bytes {
+            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
+        let policy = if self.native_tools.contains(request.model()) {
+            let policy = tools::ToolPolicy::new(&request, metadata.capabilities.parallel_tools)?;
+            if policy.has_tools()
+                && metadata.capabilities.native_tools
+                    == caidex_model_core::CapabilitySupport::Unsupported
+            {
+                return Err(ProviderError::new(400, "unsupported_tools"));
+            }
+            Some(policy)
+        } else {
+            None
+        };
+        let original = request.wire().clone();
+        let mut wire = original.clone();
+        if policy.is_some() {
+            for key in ["tools", "tool_choice", "parallel_tool_calls"] {
+                wire.as_object_mut().unwrap().remove(key);
+            }
+            if let Some(items) = wire["input"].as_array_mut() {
+                items.retain(|item| !tools::input_item(item));
+            }
+        }
+        let request = CanonicalRequest::new(wire, request.dialect())
+            .map_err(|_| ProviderError::new(400, "openrouter_invalid_request"))?;
         let efforts = self.reasoning_efforts.get(request.model());
         let verbosity = self.verbosity_instructions.get(request.model());
         let tiers = self.service_tiers.get(request.model());
@@ -227,13 +268,21 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             verbosity,
             tiers,
         )?;
+        let mut wire = compiled.wire().clone();
         if let Some(backend) = backend {
-            let mut wire = compiled.wire().clone();
             wire["provider"]["only"] = serde_json::json!([backend]);
-            return CanonicalRequest::new(wire, compiled.dialect())
-                .map_err(|_| ProviderError::new(400, "openrouter_invalid_request"));
         }
-        Ok(compiled)
+        if policy.is_some() {
+            wire["input"] = original["input"].clone();
+            for key in ["tools", "tool_choice", "parallel_tool_calls"] {
+                if let Some(value) = original.get(key) {
+                    wire[key] = value.clone();
+                }
+            }
+        }
+        CanonicalRequest::new(wire, compiled.dialect())
+            .map(|request| (request, policy))
+            .map_err(|_| ProviderError::new(400, "openrouter_invalid_request"))
     }
 }
 impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
@@ -276,11 +325,12 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
     ) -> ProviderFuture<'_, ProviderResponse> {
         Box::pin(async move {
             let context = self.native_context(context)?;
-            let response = self
-                .responses
-                .create_response(self.prepare(request)?, context)
-                .await?;
-            request::output(response.response.wire())?;
+            let (request, tools) = self.prepare(request)?;
+            let response = self.responses.create_response(request, context).await?;
+            request::output(response.response.wire(), tools.is_some())?;
+            if let Some(tools) = tools {
+                tools.response(response.response.wire())?;
+            }
             request::headers(&response.headers)?;
             Ok(response)
         })
@@ -291,18 +341,37 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
         context: RequestContext,
     ) -> ProviderFuture<'_, StreamingResponse> {
         Box::pin(async move {
-            let context = self.native_context(context)?;
+            let mut context = self.native_context(context)?;
+            let (request, tools) = self.prepare(request)?;
+            if tools.is_some() {
+                let deadline = std::time::Instant::now() + self.limits.total_timeout;
+                context.deadline = Some(context.deadline.unwrap_or(deadline).min(deadline));
+            }
+            let stream_context = RequestContext {
+                headers: ContextHeaders::default(),
+                cancellation: context.cancellation.clone(),
+                deadline: context.deadline,
+            };
             let mut response = self
                 .responses
-                .stream_response(self.prepare(request)?, context)
+                .stream_response(request, stream_context)
                 .await?;
             request::headers(&response.headers)?;
+            if let Some(tools) = tools {
+                response.events = tools::buffered_stream(
+                    response.events,
+                    tools,
+                    context,
+                    self.limits.response_bytes,
+                );
+                return Ok(response);
+            }
             response.events = Box::pin(stream::unfold(Some(response.events), |state| async move {
                 let mut events = state?;
                 match events.next().await? {
                     Ok(event) => {
                         if let ProviderStreamEvent::Model(model) = &event
-                            && let Err(error) = request::output(model.response.wire())
+                            && let Err(error) = request::output(model.response.wire(), false)
                         {
                             return Some((Err(error), None));
                         }

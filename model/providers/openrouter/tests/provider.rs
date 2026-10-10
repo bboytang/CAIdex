@@ -2030,3 +2030,5 @@ async fn openrouter_backend_sse_combines_controls_without_rewriting_routing_meta
     assert!(actual.contains(&terminal));
     assert_eq!(reads.load(Ordering::SeqCst), 1);
 }
+
+mod tools;

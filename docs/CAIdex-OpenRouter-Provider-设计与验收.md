@@ -78,3 +78,18 @@
 
 
 精确源码`2c9954c80fd37950a188b9799ffc9c428b730fd4`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)整体completed/success。linux job114082598633，workspace546/0/59、既有固定Runtime57/0/0，raw2188行/通过名604；windows job114082598878，workspace541/0/57、既有固定Runtime56/0/0，raw1874行/通过名597；macos job114082598892，workspace545/0/57、既有固定Runtime56/0/0，raw1885行/通过名601。各17steps成功或条件跳过，OpenRouter36/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38006780427+5，无遗漏/重复，旧Runtime名完全保持。watch和完整日志下载exit0，ci-check通过；/tmp/caidex-openrouter-backend/及/tmp/caidex-ci-38008446175-{linux,windows,macos}-raw.log只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线或商业Live/Full。
+
+
+## Classic原生平面function工具（2026-10-10）
+
+`with_native_tools(route)`须先逐route配置`with_backend_selection`，拒绝缺配置/未知route/重复启用；默认及其他route仍拒绝工具。工具仍是数据，Codex 0.160.1是唯一执行与审批真源，不新增执行器/HTTP栈/依赖或改变Runtime。显式Unsupported拒绝声明或parallel=true；Unknown不升级兼容性。
+
+- [官方Responses工具契约](https://openrouter.ai/docs/api_reference/responses/tool-calling)的平面function声明、auto/none/named选择、call_id配对和文本结果已核对；required模式也作为显式策略向native转发，并在完成响应中本地检查至少一个合法调用。声明唯一name/parameters对象；strict=true、defer_loading=true、namespace/custom/allowed_tools/server tools仍拒绝。此阶段不宣称JSON Schema约束验收。
+- 声明、选择及parallel控制原样转发一次；parallel=false或明确Unsupported时最多交付一个调用，多调用JSON/SSE均拒绝，不拆请求/重试/执行。保留原输入顺序：并行call组/逆序成对结果、string或input_text数组、合法可选ID/状态；重复、未配对、缺结果、跨未完成call的用户消息、畸形参数及未声明调用Key/POST前拒绝。
+- JSON终态验证完成状态、声明/选择、JSON object参数、call_id/item ID唯一及旧工具身份复用后交付。opaque reasoning、未知输出扩展、usage/metadata原样保留，但其输入回放仍关闭；这里只是明文工具配对校验，不是完整原生历史绑定或来源认证。已含未知原生call扩展的无损输入回放须后续载体支持，不能用本步已支持的明文字段替代。
+- SSE在预算内缓冲模型事件，到终态核对完整调用身份/索引、参数delta/arguments.done/output_item.done与最终输出后原样交付；支持交错Unicode参数流、done-only与terminal-only，不提前交付任何模型/工具事件，传输Heartbeat继续传递。此选择会延迟文本显示；实际Runtime、commercial和下游长流体验仍待验。累计decoded事件预算、取消503/provider_cancelled、deadline504/provider_timeout、Drop、错误后满槽释放及完成后取消待交付队列均有定向证据，不自动重连或补跑工具。
+- 源预算在工具字段提取前；编译后共享预算仍Key/POST前。client_metadata/Runtime header仅本地消费，provider.only/禁fallback/store=false继续强制。summary/context/include/原生推理输入、Lite仍关闭；显式backend只是路由政策，不证明实际endpoint稳定。
+
+新增15项独立`tests/tools/mod.rs`，旧36测试正文逐字保持。初期RequestContext非Clone及测试编译问题已修正；首可执行47/1、补充50/1为取消旧断言499不符共享503契约，统一后51/0/0。最终差异核对发现新call_id复用旧item ID，负例先失败再最小修复，51/0/0重验通过。Clippy首轮仅新测试初始化写法已修正。最终workspace561/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；完整通过名精确旧workspace546+15、旧Runtime名完全保持，旧36测试正文逐字保留、Cargo.lock不变、共享/其他Provider/Runtime/workflow未改。未知item大整数ID夹具无损保留，不把工具身份约束套到未知输出上。18份Markdown/91本地链接/22锚点及差异边界通过；精确源码三平台CI待验，既有固定Runtime57/0/0已通过，未改生产/fixture，不是实际OpenRouter接线。日志`/tmp/caidex-openrouter-tools/`。
+
+恢复顺序：原生工具其余namespace/custom适配及完整后端/执行端/profile/endpoint/model/完整前缀/instructions/verbosity/tier/effort/工具政策绑定历史→Lite→实际Classic/Lite固定Runtime审批/执行/取消/磁盘恢复；不照搬Qwen summary-only或DeepSeek明文规则，不调用商业API或读取真实Key。
