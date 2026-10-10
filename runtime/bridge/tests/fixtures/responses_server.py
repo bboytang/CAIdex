@@ -520,7 +520,9 @@ class Handler(BaseHTTPRequestHandler):
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
         remote_compact = mode.startswith("wire-compact-") and any(item.get("type") == "compaction_trigger" for item in body.get("input", []))
-        if mode == "wire-stall" or (mode == "wire-idle" and trace["requests"] == 1) or (remote_compact and mode == "wire-compact-cancel"):
+        local_compact = mode.startswith("wire-local-compact-") and trace["requests"] == 2
+        compact_failed = (remote_compact and mode == "wire-compact-fail") or (local_compact and mode == "wire-local-compact-fail")
+        if mode == "wire-stall" or (mode == "wire-idle" and trace["requests"] == 1) or (remote_compact and mode == "wire-compact-cancel") or (local_compact and mode == "wire-local-compact-cancel"):
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
             self.protocol_version = "HTTP/1.1"
             self.send_response(200)
@@ -552,8 +554,8 @@ class Handler(BaseHTTPRequestHandler):
                 reasoning["summary"] = [{"type": "summary_text", "text": "Native fixture thinking"}]
                 reasoning["encrypted_content"] = "caidex.anthropic.native-message.v1:" + json.dumps({"provider": "anthropic", "version": 1, "message": native})
             events.append(event("response.output_item.done", item=reasoning))
-        if remote_compact and mode == "wire-compact-fail":
-            events.append(event("response.failed", response={"id": identity, "status": "failed", "error": {"code": "server_error", "message": "Synthetic remote compaction failure"}}))
+        if compact_failed:
+            events.append(event("response.failed", response={"id": identity, "status": "failed", "error": {"code": "server_error", "message": "Synthetic compaction failure"}}))
         elif remote_compact:
             events.append(event("response.output_item.done", item={"type": "compaction", "encrypted_content": "CAIDEX_REMOTE_COMPACT+/=="}))
         elif mode == "patch" and trace["requests"] == 1:
@@ -596,7 +598,7 @@ class Handler(BaseHTTPRequestHandler):
                 events.append(event("response.output_text.delta", delta=text))
             events.append(event("response.output_item.done", item=item))
         tokens = 100 if mode == "goal-budget" else 0
-        if not (remote_compact and mode == "wire-compact-fail"):
+        if not compact_failed:
             events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": tokens, "output_tokens": 0, "total_tokens": tokens}}))
         if mode.startswith("wire-"):
             trace.setdefault("wireResponses", []).append(events)

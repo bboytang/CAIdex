@@ -2,13 +2,13 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G完成核对恢复点（2026-10-10 Gemini idle续轮）
+## 当前F/G完成核对恢复点（2026-10-10 本地压缩续轮）
 
-实际恢复main=origin/main=`4f3fd254c143914e23134e10e9551c327c5581ae`，开始干净。上一轮为实质进展：OpenAI idle与远端压缩非成功测试，源码8c3ecc8/精确CI38083310797完整三平台通过。目标仍F/G全部，不直接转H或标整体完成；真实模型按用户顺序最终自行验，开发端继续离线任务。
+实际恢复main=origin/main=`bada37e0fe499226defc87387eb5d892ed23cecd`，开始干净；上一轮Gemini comment/Runtime idle为实质进展，源码74bc320/精确CI38084218039完整三平台通过。F/G整体仍待要求级完成审计，不转H；真实模型由用户项目最终自验。
 
-本轮检查Gemini transfer/投影/Gateway：native收到chunk重设idle，纯SSE comment不产生投影事件。新增Classic/Lite显式idle profile，固定Runtime idle500ms，Provider/Gateway保留默认90s/600s且各单许可；首POST每100ms持续comment、次POST正常。复用上一轮idle断言流程，验证真实idle失败、无partial assistant/reasoning/tool历史、socket关闭、无重试、2次Key/POST和同线程显式恢复；Gemini额外核对至少2个comment及仅第二次完整native response。定向1/0/0通过。一次测试接线误替换已由编译检查发现并恢复其他Provider，完整workspace623/0/78、固定Runtime76/0/0、Clippy/fmt/diff及fixture语法通过，旧OpenAI idle回归保持；143个Markdown本地目标/锚点有效。已提交/push源码`74bc3205ca52c129a8a723624cb453b97fbfccea`，精确CI38084218039完整三平台核验成功。当前仅文档收尾，源码提交后main=origin/main、工作区干净；无生产实现/依赖/schema/审批变化。
+本轮重新读取固定d27764b compact.rs，新增Classic/Lite本地摘要失败/取消及disk resume独立测试，复用既有远端非成功流程。显式loopback profile沿OpenAI Adapter但Runtime provider name保持fixture（无remote V2），stream/request retries=0。首轮成功、第二POST摘要失败/停流取消，真实failed/interrupted、取消socket关闭，无成功compacted记录；真实app-server重启/disk resume不发POST，第三轮成功，Key/POST各3次。完整原历史逐值保留；Lite本地摘要的additional_tools为空，正常恢复后的工具item与原始首请求逐值一致，其他history保持精确。首定向因工具item差异失败，核实后按真实wire补独立断言，最终定向1/0/0通过。未修改生产实现/审批/schema/依赖。
 
-下一步：补本地compaction Classic/Lite失败/取消及磁盘恢复独立测试，复用已验非成功流程，按固定上游compact.rs真实wire及终态核对，不能沿远端v2分支认领；随后核实自动阈值及整体要求级F/G门槛。已只读核实固定d27764b compact.rs失败/中断先返回、成功才replace_compacted_history，stream重试由既有配置控制；自动触发入口为session/turn.rs run_pre_sampling_compact/run_auto_compact与session/context_window.rs，预算/使用量/上下文窗口共同判断，分local与remote V2。不得依赖/tmp源码恢复，可重新读取精确固定提交。Registry/Router与版本报告不升级生产能力，不重复已有实现。无需商业Key/API授权，不读用户Key/调用商业API。
+当前未提交：Runtime Harness/合成fixture/两份证据文档/本交接。完整workspace623/0/79、固定Runtime77/0/0、Clippy/fmt/diff、fixture语法及143个Markdown目标/锚点通过；原远端非成功回归保持，225个非任务tracked文件逐字节一致。下一步：commit/push，精确三平台CI逐名核验；再补自动阈值离线证据并完成要求级F/G审计。固定入口为session/turn.rs run_pre_sampling_compact/run_auto_compact和session/context_window.rs，按预算/使用量/上下文窗口判断，分local与remote V2；不把手动测试代自动触发。Registry/Router/版本报告保持已有门控，不重建架构，不调用商业API。
 
 ## 既有阶段与用户顺序
 

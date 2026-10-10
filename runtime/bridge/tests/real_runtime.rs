@@ -153,6 +153,10 @@ impl Harness {
             "gateway-openai-compact-cancel-classic" | "gateway-openai-compact-cancel-lite" => {
                 "wire-compact-cancel"
             }
+            "gateway-openai-local-compact-fail-classic"
+            | "gateway-openai-local-compact-fail-lite" => "wire-local-compact-fail",
+            "gateway-openai-local-compact-cancel-classic"
+            | "gateway-openai-local-compact-cancel-lite" => "wire-local-compact-cancel",
             "gateway-openai-compact-classic" => "wire-compact-classic",
             "gateway-openai-compact-lite" => "wire-compact-lite",
             "gateway-classic" | "gateway-openai-classic" => "wire-classic",
@@ -274,6 +278,8 @@ impl Harness {
                     | "gateway-openai-idle-lite"
                     | "gateway-openai-compact-fail-lite"
                     | "gateway-openai-compact-cancel-lite"
+                    | "gateway-openai-local-compact-fail-lite"
+                    | "gateway-openai-local-compact-cancel-lite"
                     | "gateway-anthropic-stall-lite",
                 ) => "gpt-6.1-sol",
                 (
@@ -293,7 +299,9 @@ impl Harness {
                     _,
                     "gateway-openai-idle-classic"
                     | "gateway-openai-compact-fail-classic"
-                    | "gateway-openai-compact-cancel-classic",
+                    | "gateway-openai-compact-cancel-classic"
+                    | "gateway-openai-local-compact-fail-classic"
+                    | "gateway-openai-local-compact-cancel-classic",
                 ) => "gpt-5.5",
                 _ => "gpt-5.1-codex",
             }
@@ -2119,12 +2127,35 @@ async fn real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk
 #[tokio::test]
 #[ignore = "requires pinned Codex; remote v2 failure/cancel keeps Classic/Lite disk history"]
 async fn real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume() {
-    for (mode, cancel, lite) in [
-        ("gateway-openai-compact-fail-classic", false, false),
-        ("gateway-openai-compact-fail-lite", false, true),
-        ("gateway-openai-compact-cancel-classic", true, false),
-        ("gateway-openai-compact-cancel-lite", true, true),
-    ] {
+    compaction_failure_and_cancel_recovery(
+        &[
+            ("gateway-openai-compact-fail-classic", false, false),
+            ("gateway-openai-compact-fail-lite", false, true),
+            ("gateway-openai-compact-cancel-classic", true, false),
+            ("gateway-openai-compact-cancel-lite", true, true),
+        ],
+        true,
+    )
+    .await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; local summary failure/cancel keeps Classic/Lite disk history"]
+async fn real_local_compaction_failure_and_cancel_keep_history_after_disk_resume() {
+    compaction_failure_and_cancel_recovery(
+        &[
+            ("gateway-openai-local-compact-fail-classic", false, false),
+            ("gateway-openai-local-compact-fail-lite", false, true),
+            ("gateway-openai-local-compact-cancel-classic", true, false),
+            ("gateway-openai-local-compact-cancel-lite", true, true),
+        ],
+        false,
+    )
+    .await;
+}
+
+async fn compaction_failure_and_cancel_recovery(modes: &[(&str, bool, bool)], remote: bool) {
+    for &(mode, cancel, lite) in modes {
         let mut harness = Harness::start(mode).await;
         let thread = harness.create_thread().await;
         harness
@@ -2258,12 +2289,26 @@ async fn real_remote_compaction_failure_and_cancel_keep_history_after_disk_resum
         let requests = trace["wireRequests"].as_array().unwrap();
         let old = requests[1]["body"]["input"].as_array().unwrap();
         let next = requests[2]["body"]["input"].as_array().unwrap();
-        assert_eq!(old.last().unwrap()["type"], "compaction_trigger");
-        assert_eq!(
-            &next[..old.len() - 1],
-            &old[..old.len() - 1],
-            "failed compaction must retain the exact old history prefix"
-        );
+        if remote {
+            assert_eq!(old.last().unwrap()["type"], "compaction_trigger");
+        } else {
+            assert_eq!(old.last().unwrap()["type"], "message");
+            assert_eq!(old.last().unwrap()["role"], "user");
+            assert!(old.iter().all(|item| item["type"] != "compaction_trigger"));
+        }
+        if !remote && lite {
+            // Local compaction disables tools; the normal next turn restores its tool item.
+            assert_eq!(old[0]["type"], "additional_tools");
+            assert_eq!(old[0]["tools"], json!([]));
+            assert_eq!(next[0], requests[0]["body"]["input"][0]);
+            assert_eq!(&next[1..old.len() - 1], &old[1..old.len() - 1]);
+        } else {
+            assert_eq!(
+                &next[..old.len() - 1],
+                &old[..old.len() - 1],
+                "failed compaction must retain the exact old history prefix"
+            );
+        }
         assert!(
             next.iter()
                 .all(|item| item["type"] != "compaction" && item["type"] != "compaction_trigger")

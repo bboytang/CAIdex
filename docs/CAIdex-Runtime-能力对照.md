@@ -437,3 +437,10 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 
 
 源码`74bc3205ca52c129a8a723624cb453b97fbfccea`/[CI38084218039](https://github.com/bboytang/CAIdex/actions/runs/38084218039)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38083310797集合+1Runtime。Linux/Windows/macOS workspace623/618/622（忽略78/76/76）、固定Runtime76/75/75（无忽略），全部0失败；raw2310/1996/2007行、函数通过名699/692/696，另Secret doctest1。旧Provider、OpenAI idle、远端压缩及审批回归无遗漏/重复，watch和下载exit0。 本专项离线验证完成，商业模型/生产Host未验。
+
+
+## 本地摘要压缩非成功与磁盘恢复（2026-10-10续轮）
+
+新增`real_local_compaction_failure_and_cancel_keep_history_after_disk_resume`，Classic/Lite各失败与取消四路径。与远端测试复用生命周期/恢复断言，但显式fixture provider身份保持本地摘要分支，不选择OpenAI remote V2。固定stream/request retries=0；第二POST为user摘要请求，无compaction_trigger，失败返回response.failed且无成功completed；取消停在未完成真实socket。实际failed/interrupted终态、取消关闭上游、无额外POST/Key读取，rollout无成功compacted记录。实际app-server重启及disk resume不发POST，显式第三轮成功、Key/POST各3次。
+
+原始history前缀逐值保留。Lite本地压缩会将additional_tools清空；恢复正常轮次后的工具item与首轮原始请求逐值一致，其余history前缀逐值一致。首定向因此失败，核实真实wire后补独立工具恢复断言，最终定向1/0/0通过；未改生产执行/审批/能力。完整回归与精确三平台CI状态见HANDOFF。本证据不代验自动阈值、无限历史、真实商业模型或生产Host。
