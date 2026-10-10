@@ -313,3 +313,12 @@ Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG�
 源码56f9789e133d94b657b950405ddbf50214afd56b已提交/push；[CI37717424972](https://github.com/bboytang/CAIdex/actions/runs/37717424972)三平台completed/success，精确head、三job及全部step success/skipped已核对。Google90个名字及新增Google实际Runtime7个名字逐平台各一次。workspace Linux312/Windows307/macOS311，0失败、ignored39/37/37；实际Runtime Linux37/WindowsmacOS36，0失败/0ignored；Linux隔离native credentials1及fmt/Clippy/schema/doctor通过。watch exit0、三job日志下载均exit0，逐名脚本exit0。日志/tmp/caidex-ci-37717424972-{status.json,watch.log,linux.log,windows.log,macos.log}。商业模型Full、comment-only Runtime idle及H–R未验；Rust macOS不等于iOS应用构建。
 
 本节实际Runtime离线阶段已验收；下一步兼容API/Ollama，沿V3与现有Provider/Gateway边界，不重做Gemini已完成阶段。
+
+
+## F/G剩余单调用分支专项（2026-10-10，精确CI待验）
+
+按[离线门槛核对V1](CAIdex-FG-离线验收核对-V1.md)核实，固定Runtime阶段记录的thought豁免、无tools、未opt-in none三个专项此前未覆盖；重复/部分SSE usage已在history阶段覆盖，不重复开发。
+
+在既有HTTP/Provider测试新增2项，均JSON/SSE×Classic/Lite：`single_call_policy_exempts_thought_calls_without_losing_native_history`验证thought调用不占可执行单调用额度，仅交付actual-call且参数准确，完整原生签名Parts经canonical序列化/恢复保持；`no_tools_and_none_reject_calls_without_single_call_opt_in`验证默认非opt-in时无tools和choice=none额度仍为0，原生返回调用时502且不交付工具/载体/成功终态，Key读取与POST各一次，无重试。纯新增测试，不改Provider生产校验、Runtime、fixture、依赖或workflow，也不开放未支持语义。
+
+定向3/0/0（含旧单调用测试）、Google完整92/0/0、workspace621/0/73、Clippy workspace/all-targets-D warnings与fmt/diff通过；固定Runtime完整71/0/0及schema指纹通过；workspace通过名精确旧CI+2、Runtime通过名保持，无遗漏/重复。新精确源码三平台CI待验。首次定向失败仅为沙箱禁止loopback监听，允许socket环境复跑通过；不是生产缺陷RED。完整Runtime首次启动因本会话未安装项目固定二进制而71项NotFound，按既有CI安装0.160.1、版本与schema校验后完整重跑71/0/0，不以全局0.162.1替代。唯一独立只读审查无Critical/Important；计划中多余“无调用正例”措辞已删，实际只认领上述范围。thought-only文本phase、usage下界、整组互换/满槽cancel及商业/Host等其他缺口仍保留核对表，不因本轮测试宣布F/G完成。

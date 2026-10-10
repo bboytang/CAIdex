@@ -4,15 +4,17 @@
 
 ## 当前状态与第一步
 
-交接整理前实际状态：branch `main`，HEAD=origin/main=`6d6b2cf3a58fe1401955ac72197f05b1cc8fe2c7`，工作区干净。该提交只收尾四份文档；最新源码为 `3a57bcbfb8f4aa942019c081404b6833daa57642`，三平台 CI 已完整核验成功。此次仅修改 HANDOFF，完成检查后提交/push；交接提交自身的 SHA 以 `git log -1` 为准，不能将上面的前置 SHA 当成最新 HEAD。
+本会话恢复基线为 main=origin/main=`a9502451bbe392a5fd00bd39e073caef17c20960`；最新已验源码仍为 `3a57bcbfb8f4aa942019c081404b6833daa57642`。本次F/G核对与Gemini专项测试尚未提交；不能将恢复基线的CI用作新增源码三平台证据。
 
-**没有未完成的代码、未提交功能、运行中的测试/CI、当前已知测试失败或待处理推送审批。** 上一任务“Lite模型切换新增2项与版本化离线报告”已经完成。下一任务是**核对 V3 F/G 剩余离线门槛和证据缺口**，尚未开始该审计或选定下一项实现；不要虚构已有审计结论或直接标记 F/G 完成。
+本会话已核实 main=origin/main=`a9502451bbe392a5fd00bd39e073caef17c20960`，开始时工作区干净。上一任务Lite切换与版本化报告保持完成。本次已核对V3 F/G门槛、Registry/Router、各Provider与Runtime的交接缺口，见[离线核对V1](docs/CAIdex-FG-离线验收核对-V1.md)。重新下载精确CI38072098372三个完整日志，确认全部job/steps、八Adapter529测试名三平台通过。
+
+当前选定任务：补Gemini单调用thought豁免、无tools、未opt-in none三个缺失专项的JSON/SSE×Classic/Lite验收；新增两个测试已实现，定向3/0/0通过（含旧测试）；首次沙箱拒绝loopback监听，允许socket环境复跑通过，非生产缺陷RED。Google92/0/0、workspace621/0/73、Clippy/fmt/diff通过，完整固定Runtime71/0/0通过；workspace通过名精确旧CI+2、Runtime通过名保持，无遗漏/重复。固定Runtime首次因项目二进制缺失71项NotFound，按CI安装隔离0.160.1并通过版本/schema校验后重跑已恢复，全局0.162.1未用于验收。唯一独立只读审查无Critical/Important，计划多余承诺已修。未提交：Google测试、Google验收、离线核对V1与HANDOFF；CI尚未启动。生产实现/依赖/Runtime固定版本不改；F/G仍未整体完成。
 
 新 Codex 顺序：
 
 1. 先读本文件、[AGENTS](AGENTS.md)，运行 `git status --short --branch`、`git log -4 --oneline`、`git rev-parse HEAD origin/main`，核实恢复点和用户新改动。
 2. 读[实施计划 V3](docs/CAIdex-实施计划-V3.md)、[Gateway验收](docs/CAIdex-Model-Gateway-设计与验收.md)、[模型切换报告V1](docs/CAIdex-模型切换-离线兼容性报告-V1.md)，对照 Registry/Router、Runtime切换测试及各Provider验收。
-3. 将剩余 F/G 要求对应到“实现/测试证据/未验或待实现”，先找明确缺口，补最小的既定离线验收。重点核实每模型版本化报告、Unknown/Unsupported展示与拒绝、工具/推理及切换的证据范围；并非这些项目全部缺失，也不是任意组合都已支持。
+3. 本次核对已记录到离线核对V1；先完成Gemini三个单调用分支专项，再按表继续Anthropic精确恢复/结果断言及其余已确认缺口。每模型商业报告/真实API、生产Host仍未验，不自动升级Registry能力。
 4. 每重要步骤更新本文件。代码改动按定向→相关完整本地→最终diff→提交/push→精确源码三平台CI推进；CI必须核对实际SHA、3jobs/步骤、完整日志及测试名，不仅查看绿色状态。纯文档无需重复Rust CI。
 5. 商业API/真实Key、生产Host持久关联/通用历史适配、客户端等另有边界。不能把这些缺口伪装成离线完成；满足V3前置门槛后按 H→I→J/K→L→M/N/O→P→Q→R，不据fixture跳H。
 
@@ -114,6 +116,11 @@ schema/doctor依CI使用固定二进制：`scripts/verify-codex-schema.mjs`、`c
 
 本机补充证据：`/tmp/caidex-lite-switching/{focused-second,workspace,runtime,clippy,ci-watch}.log`及ci-check.py/ci-result.json；完整CI `/tmp/caidex-ci-38072098372-{linux,windows,macos}-raw.log`及status.json。此前阶段补充目录 `/tmp/caidex-{cross-provider,model-switching,model-router,openrouter-runtime}/`。丢失/tmp可用上表GitHub CI和仓库源码恢复；不要求上个Codex记忆或句柄存在。
 
-## 本次交接核验
+## 上次交接核验（a950245历史）
 
 交接仅整理本文件，删除过时“下一步/未实现/旧Git”流水状态，保留当前实现、准确恢复点、关键证据/限制/架构/授权。旧HANDOFF完整内容可从整理前commit `6d6b2cf`读取；更早记录见[2026-10-09历史归档](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)，历史状态不覆盖本文件。未开发新功能、未重跑无变更源码测试；最新源码CI证据如上。交接提交前已通过19份Markdown/112本地链接/22锚点、git diff --check及最终差异检查；227个其他tracked文件逐字保持6d6b2cf，唯一修改为HANDOFF。提交/push后核实branch/HEAD/origin/干净工作区，交接提交号以git log -1为准。
+
+
+## 本次F/G核对与Gemini专项恢复点
+
+已完成离线门槛核对及两个测试/三个分支的本地完整验证，未改生产源码/依赖/fixture/workflow；225个其他tracked文件与a950245逐字保持，新增核对文档及其余三份改动的本地链接/最终diff检查通过。下一动作：提交/push当前四文件，精确新源码三平台CI逐job/step/完整名核验后更新文档；不能用旧3a57bcb CI代验新增测试。完整日志是本会话新生成的/tmp/caidex-fg-audit-20261010/{focused-allowed,google,workspace,runtime,clippy,schema}.log，持续恢复以仓库文档/精确CI为准，不要求/tmp保留。

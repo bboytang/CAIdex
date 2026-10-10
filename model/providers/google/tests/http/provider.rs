@@ -916,3 +916,181 @@ async fn explicit_single_call_policy_validates_json_and_sse_before_tool_delivery
         }
     }
 }
+
+// Catches counting thought-only calls as executable or dropping their signed
+// native Parts while enforcing the one real call delivered to the Runtime.
+#[tokio::test]
+async fn single_call_policy_exempts_thought_calls_without_losing_native_history() {
+    let declarations = json!([{ "type":"function","name":"echo","parameters":{"type":"object"}}]);
+    let tools = ToolMap::new(declarations.as_array().unwrap(), 8).unwrap();
+    let mut native = native_reply("STOP");
+    native["candidates"][0]["content"]["parts"] = json!([
+        {"thought":true,"functionCall":{"name":tools.native_tools()[0]["name"],"id":"thought-call","args":{"n":0}},"thoughtSignature":"PRIVATE_THOUGHT_CALL"},
+        {"functionCall":{"name":tools.native_tools()[0]["name"],"id":"actual-call","args":{"n":1}},"thoughtSignature":"PRIVATE_ACTUAL_CALL"}
+    ]);
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for streaming in [false, true] {
+            let mut fixture = Fixture::start(vec![if streaming {
+                Reply::sse(std::slice::from_ref(&native))
+            } else {
+                Reply::json(native.clone())
+            }])
+            .await;
+            let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+            let mut p = profile();
+            p.enforce_single_tool_call = true;
+            let provider = GeminiProvider::new(client, vec![p], 8).unwrap();
+            let mut wire = canonical(
+                dialect,
+                vec![json!({"role":"user","content":"q"})],
+                &declarations,
+                streaming,
+            )
+            .wire()
+            .clone();
+            wire["parallel_tool_calls"] = false.into();
+            let request = CanonicalRequest::new(wire, dialect).unwrap();
+            let response = if streaming {
+                let mut stream = provider
+                    .stream_response(request, RequestContext::default())
+                    .await
+                    .unwrap();
+                let mut events = Vec::new();
+                while let Some(event) = stream.events.next().await {
+                    if let ProviderStreamEvent::Model(event) = event.unwrap() {
+                        events.push(event);
+                    }
+                }
+                assert_eq!(
+                    events
+                        .iter()
+                        .filter(|e| e.response.kind() == "response.output_item.done"
+                            && e.response.wire()["item"]["type"] == "function_call")
+                        .count(),
+                    1
+                );
+                assert_eq!(events.last().unwrap().response.kind(), "response.completed");
+                events.last().unwrap().response.wire()["response"].clone()
+            } else {
+                provider
+                    .create_response(request, RequestContext::default())
+                    .await
+                    .unwrap()
+                    .response
+                    .wire()
+                    .clone()
+            };
+            assert_eq!(response["status"], "completed");
+            let output = response["output"].as_array().unwrap();
+            let calls: Vec<_> = output
+                .iter()
+                .filter(|i| i["type"] == "function_call")
+                .collect();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0]["call_id"], "actual-call");
+            assert_eq!(calls[0]["name"], "echo");
+            assert_eq!(
+                serde_json::from_str::<Value>(calls[0]["arguments"].as_str().unwrap()).unwrap(),
+                json!({"n":1})
+            );
+            let persisted: Vec<Value> =
+                serde_json::from_str(&serde_json::to_string(output).unwrap()).unwrap();
+            assert_eq!(
+                NativeHistory::from_responses_output(
+                    &persisted,
+                    MODEL,
+                    &request_body(&fixture.request().await),
+                    LIMIT
+                )
+                .unwrap()
+                .native_response(),
+                &native
+            );
+            assert_eq!(reads.load(Ordering::SeqCst), 1);
+        }
+    }
+}
+
+// Catches treating zero tools/choice=none as unlimited without the single-call
+// opt-in, or releasing an unsolicited call/carrier before the zero limit check.
+#[tokio::test]
+async fn no_tools_and_none_reject_calls_without_single_call_opt_in() {
+    let declarations = json!([{ "type":"function","name":"echo","parameters":{"type":"object"}}]);
+    let tools = ToolMap::new(declarations.as_array().unwrap(), 8).unwrap();
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        for streaming in [false, true] {
+            for declared in [false, true] {
+                let mut native = native_reply("STOP");
+                native["candidates"][0]["content"]["parts"] = json!([
+                    {"functionCall":{"name":tools.native_tools()[0]["name"],"id":"unsolicited-call","args":{"n":1}},"thoughtSignature":"PRIVATE_UNSOLICITED_CALL"}
+                ]);
+                let mut fixture = Fixture::start(vec![if streaming {
+                    Reply::sse(std::slice::from_ref(&native))
+                } else {
+                    Reply::json(native)
+                }])
+                .await;
+                let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+                let provider = GeminiProvider::new(client, vec![profile()], 8).unwrap();
+                let mut wire = canonical(
+                    dialect,
+                    vec![json!({"role":"user","content":"q"})],
+                    &if declared {
+                        declarations.clone()
+                    } else {
+                        json!([])
+                    },
+                    streaming,
+                )
+                .wire()
+                .clone();
+                wire["parallel_tool_calls"] = false.into();
+                wire["tool_choice"] = if declared { "none" } else { "auto" }.into();
+                let request = CanonicalRequest::new(wire, dialect).unwrap();
+                let error = if streaming {
+                    let mut stream = provider
+                        .stream_response(request, RequestContext::default())
+                        .await
+                        .unwrap();
+                    let mut error = None;
+                    while let Some(event) = stream.events.next().await {
+                        match event {
+                            Ok(ProviderStreamEvent::Model(event)) => {
+                                assert!(event.response.terminal().is_none());
+                                assert_ne!(event.response.kind(), "response.output_item.done");
+                                assert!(!event.frame.data.contains("encrypted_content"));
+                                assert!(!event.frame.data.contains("function_call"));
+                            }
+                            Err(e) => {
+                                assert!(error.is_none());
+                                error = Some(e);
+                            }
+                            _ => {}
+                        }
+                    }
+                    error.unwrap()
+                } else {
+                    provider
+                        .create_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                };
+                assert_eq!(error.http_status, 502);
+                assert_eq!(error.code, "google_tool_call_limit_exceeded");
+                assert!(!format!("{error:?}").contains("PRIVATE_UNSOLICITED_CALL"));
+                let posted = request_body(&fixture.request().await);
+                if declared {
+                    assert_eq!(
+                        posted["toolConfig"]["functionCallingConfig"]["mode"],
+                        "NONE"
+                    );
+                } else {
+                    assert!(posted.get("tools").is_none());
+                }
+                assert_eq!(reads.load(Ordering::SeqCst), 1);
+                assert!(fixture.requests.try_recv().is_err());
+            }
+        }
+    }
+}
