@@ -52,7 +52,7 @@
 - Qwen：Runtime context、custom tool mapping（包含native tools/history）、逐route effort及verbosity映射；summary/context只限既有验收契约；Lite另需显式options。地域/计划/API版本与grammar硬约束未验；不能按slug推断支持。
 - OpenRouter：逐route显式backend=fixture-backend/region、runtime/native/advanced tools、native history、auto summary/all_turns context、effort/verbosity映射；Lite显式options。默认或部分政策拒绝Key/POST前发送；实际后端身份/版本、商业Full未验。
 
-- Custom Chat：标准Chat Completions，显式no-reasoning Runtime profile、grammar仅提示映射及Lite工具编译；关闭web/search并使用独立fixture catalog。终态前缓冲，媒体/签名/compaction/未映射推理拒绝；JSON context headers不透传，模型返回名必须与显式native_model一致。真实原生审批/隔离执行/完整结果、磁盘恢复和取消已本地定向验；全体回归/精确CI待核验，不用旧八Adapter CI代验。
+- Custom Chat：标准Chat Completions，显式no-reasoning Runtime profile、grammar仅提示映射及Lite工具编译；关闭web/search并使用独立fixture catalog。终态前缓冲，媒体/签名/compaction/未映射推理拒绝；JSON context headers不透传，模型返回名必须与显式native_model一致。真实原生审批/隔离执行/完整结果、磁盘恢复和取消已本地定向验；全体本地回归通过，源码586199fb9655ccd8bff1830968b209aee3d6bf23/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)整体completed/success，完整三平台日志已验（workspace640/635/639、Runtime81/80/80、0失败），不用旧八Adapter CI代验。
 
 基础证据：源码`9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`/[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)八Adapter及固定Runtime三平台完整日志已核验，workspace621/616/620、Runtime71/70/70，0失败，旧通过名保持。Gemini边界增强源码`57451e9996aee201954ee5d404dd02e22dba8dd2`/[CI38081567944](https://github.com/bboytang/CAIdex/actions/runs/38081567944)三平台完整日志已核验，workspace623/618/622、Runtime71/70/70、Google94，0失败，旧集合+2。compaction源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)三平台完整日志已验：workspace623/618/622、Runtime73/72/72、0失败，旧集合+2Runtime；新增Lite本地摘要、Classic/Lite远端opaque及实际磁盘恢复仅属于上文明确配置。
 

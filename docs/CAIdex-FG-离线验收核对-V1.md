@@ -1,6 +1,6 @@
 # CAIdex F/G 离线验收核对 V1
 
-核对日期：2026-10-10。当前源码main/origin/main=18249beabed7702581cc033f88b1922da975b1f3：两类Custom已正式确认，新Chat Adapter15项及完整本地回归通过；[精确CI38089213569](https://github.com/bboytang/CAIdex/actions/runs/38089213569)整体失败（Linux trace EOF、Windows trace旧值、macOS成功）；fixture写证据先于终态及required无tools门控已本地复验，新精确三平台CI待提交修复后核验，未认领三平台成功。依据[实施计划V3](CAIdex-实施计划-V3.md)、[Gateway验收](CAIdex-Model-Gateway-设计与验收.md)、各Provider验收及仓库/精确CI。当前要求级矩阵见本文末节；此前基线和已完成步骤保留为历史证据，不是当前待办。本文件不宣布商业F/G完成或把fixture当生产Host。
+核对日期：2026-10-10。当前已验源码=586199fb9655ccd8bff1830968b209aee3d6bf23：两类Custom已正式确认，新Chat Adapter15项及完整本地回归通过；[精确CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台完整日志已核验成功。首次CI38089213569的Linux/Windows fixture证据竞争已定位修复，不认领该失败运行成功。依据[实施计划V3](CAIdex-实施计划-V3.md)、[Gateway验收](CAIdex-Model-Gateway-设计与验收.md)、各Provider验收及仓库/精确CI。当前要求级矩阵见本文末节；此前基线和已完成步骤保留为历史证据，不是当前待办。本文件不宣布商业F/G完成或把fixture当生产Host。
 
 ## 基线证据（历史起点）
 
@@ -26,7 +26,7 @@
 | F Responses/取消/工具/opaque/错误 | Core、Gateway及各Adapter已有离线回归；Runtime执行与审批保持固定0.160.1/d27764b | 已验证具体范围；不是所有Provider×参数×时序的穷举证明 |
 | G Registry/ModelRouter | [Registry](../model/core/src/registry.rs)、[Router测试7项](../model/core/tests/router.rs)、[Gateway Router测试2项](../model/gateway/tests/router/mod.rs)：显式ID、目录归属、漂移拒绝、未知模型/方言/streaming门控，无fallback | 已实现/离线已验；不新建Registry或HTTP栈 |
 | Unknown/Unsupported展示与拒绝 | ModelMetadata/六方法公开三态及未知限额；目录不升级能力/报告。Router检查dialect/streaming，其余请求语义由Adapter门控；Provider测试含Key/POST前拒绝 | 核心数据与拒绝已验；最终GUI/CLI展示归J/P，不伪造当前产品UI |
-| 每模型版本化报告 | CompatibilityReport schemaVersion=1、reference/testedModelVersion/source/level门控已有；[切换报告V1](CAIdex-模型切换-离线兼容性报告-V1.md)仅四条合成route | 各Provider文档是分阶段证据，尚非每个商业版本报告；八Adapter16个正例route/方言已有[路由离线报告V1](CAIdex-Provider-路由离线兼容性报告-V1.md)，逐profile/版本/限制绑定，不批量赋Full或自动挂生产Registry |
+| 每模型版本化报告 | CompatibilityReport schemaVersion=1、reference/testedModelVersion/source/level门控已有；[切换报告V1](CAIdex-模型切换-离线兼容性报告-V1.md)仅四条合成route | 各Provider文档是分阶段证据，尚非每个商业版本报告；九Adapter18个正例route/方言已有[路由离线报告V1](CAIdex-Provider-路由离线兼容性报告-V1.md)，逐profile/版本/限制绑定，不批量赋Full或自动挂生产Registry |
 | 模型切换 | Classic3、Lite2与跨Provider2项真实Runtime测试已验；同Provider只限两个明确同方言route组合；跨Provider只显式可见文本新线程及foreign reasoning拒绝 | 不重复既有测试；完整工具状态/其他组合未验，活动轮次约束/持久关联/通用历史适配归H，不能用云专用history入口替代 |
 | Provider工具/推理边界 | 配置、签名载体和完整前缀绑定已有；Gemini单调用3分支已补专项；Anthropic恢复/完整结果精确断言已三平台验证，详下表 | 补已有契约的离线证据；未开放功能继续明确拒绝，不按slug猜支持 |
 | F真实模型验收与G商业报告 | 当前没有授权的真实Key/API/daemon证据 | 用户确认全项目完成后自行验收；当前继续可离线任务，真实模型仍未验，不宣称商业Compatible/Full |
@@ -96,26 +96,30 @@ Gemini comment/下游idle续轮：复用已验idle恢复流程，新增Classic/L
 源码`47b6b519d69955328218b2b7953794641090de52`/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38085110360集合+1自动压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），全部0失败；raw2314/2000/2011行、函数通过名701/694/698，另Secret doctest1。旧Provider/本地与远端手动及非成功/idle/执行审批回归无遗漏或重复，watch与下载exit0。 本专项已完整离线验证；整体F/G审计未完成，商业模型与生产Host未验。
 
 
-## 要求级整体审计恢复点（2026-10-10，整体未完成）
+## 要求级整体审计（2026-10-10；开发端离线复核与精确新CI已验）
 
-恢复实际main/origin/main=`64176a2edd5b5bedf7f8d4fef00fa0c0113de604`，工作区干净。本轮重新读取V3 F/G、第2节与原V2第14–19节、当前六方法接口/Registry/Router、Custom及兼容API实际端点、Provider/route报告与固定Runtime证据；从GitHub重新读取精确源码47b6b519d69955328218b2b7953794641090de52的[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)元数据、三job全部17steps和完整日志，不沿/tmp旧状态恢复。
+本轮恢复起点main/origin/main=`64176a2edd5b5bedf7f8d4fef00fa0c0113de604`，当时工作区干净；当前已验源码与文档收尾状态以本文开头/HANDOFF及实际Git为准。本轮重新读取V3 F/G、第2节与原V2第14–19节、当前六方法接口/Registry/Router、Custom及兼容API实际端点、Provider/route报告与固定Runtime证据；从GitHub重新读取精确源码47b6b519d69955328218b2b7953794641090de52的[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)元数据、三job全部17steps和完整日志，不沿/tmp旧状态恢复。
 
 以下是门槛状态及证据范围，不将未知或后续阶段项计为已通过：
 
 | 要求 / 权威来源 | 当前可证事实 | 状态与准确剩余 |
 | --- | --- | --- |
 | V3 F：Responses、工具 normalization、opaque、错误/限流 | [Core视图与协议测试](../model/core/tests/responses.rs)、[终态/流测试](../model/core/tests/stream.rs)、[Gateway HTTP](../model/gateway/tests/http.rs)：经典/Lite、工具参数原值/文本及媒体结果、usage缺值、opaque/未知字段、大数字、终态区别；429/HTTP-date、认证/TLS/预算及关闭路径已有回归 | 明确协议范围已离线验；不是每个未知商业端点支持证明 |
-| V2第16节 / V3 G：六方法最终接口 | [ModelProvider](../model/core/src/provider.rs)六方法已定义；八Adapter及ModelRouter实现同一trait，编译/测试通过；Gateway复用注入接口，不执行工具 | 已实现/离线已验；通用Chat Completions Custom已正式纳入范围，新增实现待验见末行 |
+| V2第16节 / V3 G：六方法最终接口 | [ModelProvider](../model/core/src/provider.rs)六方法已定义；九Adapter及ModelRouter实现同一trait，编译/测试通过；Gateway复用注入接口，不执行工具 | 已实现/离线已验；通用Chat Completions Custom已正式纳入范围，新增实现/本地验证见末行 |
 | V3 G：模型注册及显式路由 | [Registry](../model/core/src/registry.rs)、[Router](../model/core/src/router.rs)校验固定ID/能力/版本报告；目录只归属显式注册Adapter，重复/漂移拒绝，未知路由/方言/streaming拒绝，无自动fallback/推理重试 | Core Router7项及Gateway Router2项三平台通过；不重复实现 |
 | V2第18–19节 / V3 G：能力与兼容等级 | 三态、context/output未知限额、prompt profile、版本/来源及四级兼容性公开；配置/目录不授报告，fixture Full/Compatible拒绝，漂移报告拒绝 | 数据及门控已验；最终GUI/CLI展示归J/P；商业能力未知，不能用模型slug或fixture赋支持 |
-| V3 G：逐模型版本报告 | [16个route/方言报告](CAIdex-Provider-路由离线兼容性报告-V1.md)与[4条切换route报告](CAIdex-模型切换-离线兼容性报告-V1.md)绑定fixture/profile版本、来源与限制 | 上述离线路由有版本化证据；尚无每个真实商业版本报告，不自动挂生产Registry或授LiveRuntime/Full |
+| V3 G：逐模型版本报告 | [18个route/方言报告](CAIdex-Provider-路由离线兼容性报告-V1.md)与[4条切换route报告](CAIdex-模型切换-离线兼容性报告-V1.md)绑定fixture/profile版本、来源与限制 | 上述离线路由有版本化证据；尚无每个真实商业版本报告，不自动挂生产Registry或授LiveRuntime/Full |
 | V3 G：各Provider工具/推理 | 原有Adapter表及各专属文档保留准确配置、native历史绑定、工具/推理/媒体/结构输出转换、Key/POST前明确拒绝范围 | 八个现有Adapter具体范围已实现/离线验；未开放功能不是隐含支持，不能推给任意兼容端点 |
 | V3 G：切换与不透明历史 | 同Provider Classic/Lite明确组合；跨Provider显式文本新线程/foreign reasoning拒绝；本地/远端手动成功、失败/取消及Total采样前自动阈值/实际disk resume均有固定Runtime证据 | 当前离线路径已验；活动轮次边界、持久关联与通用历史适配按V3归H，其他压缩scope/轮末/TokenBudget未由当前路径认领 |
 | V3 F：取消、超时、恢复 | Provider/Gateway guard/Drop/背压、实际socket与permit；OpenAI Classic/Lite Runtime idle、Gemini持续comment下游idle及显式恢复已独立验证 | 当前路径已验；同步SecretStore已开始读取不能强停，但取消后不POST；不承诺所有时序穷举 |
 | V3：固定原生Runtime执行/审批 | 固定0.160.1/d27764b；实际批准执行、取消不执行、拒绝前无副作用、多轮工具/rollout/disk resume，Runtime为执行/审批真源 | 已有离线真实进程证据；生产Host及客户端端到端分别归H/K/O/P/R，fixture不代验 |
 | V3 F真实模型门槛 / G商业报告 | 没有本轮商业Key/API、真实Ollama daemon/模型/性能或商业签名推理证据 | 用户明确全项目完成后自行验证；保持未验，不再询问Key/商业费用，不因该用户顺序停止独立开发 |
-| V2第17节 / 用户2026-10-10正式V3补充：两类Custom | Custom Responses已有离线证据；用户明确要求新增标准/chat/completions Adapter，现有Responses兼容端点不能代验 | **已实现首轮/定向已验，完整回归及CI待验**。[独立Adapter契约](CAIdex-Custom-Chat-Completions-设计与验收.md)：15项协议与3项固定Runtime本地通过；共享Custom新2项，完整回归与三平台待验。独立Adapter复用共享接口，不重写其他Provider；请求/JSON/SSE/工具及结果/usage/reasoning边界/错误限流/取消超时/历史安全逐项验收，定向+完整回归+三平台CI；新增Adapter不自动完成整体F/G |
+| V2第17节 / 用户2026-10-10正式V3补充：两类Custom | Custom Responses已有离线证据；用户明确要求新增标准/chat/completions Adapter，现有Responses兼容端点不能代验 | **已实现/完整本地回归已验，精确新三平台CI已验**。[独立Adapter契约](CAIdex-Custom-Chat-Completions-设计与验收.md)：15项协议与3项固定Runtime本地通过；共享Custom新2项；workspace640/0/83、固定Runtime81/0/0与Clippy/fmt/diff通过。无tools却required真实RED→Key前400 GREEN；首次CI fixture写入竞争修复后完整复验。独立Adapter复用共享接口，不重写其他Provider；请求/JSON/SSE/工具及结果/usage/reasoning边界/错误限流/取消超时/历史安全逐项验收，定向+完整回归+三平台CI；新增Adapter不自动完成整体F/G |
 
-精确CI重新核验：整体completed/success；三平台Core29、Gateway24、Provider533个源码测试函数各出现一次。Provider计数为Custom7/OpenAI11/Anthropic123/Google94/Ollama69/DeepSeek57/Qwen72/OpenRouter100；这些是现有范围回归，并不证明商业支持。Linux/Windows/macOS workspace623/618/622（忽略80/78/78），固定Runtime78/77/77（无忽略），全部0失败；函数通过名701/694/698、raw2314/2000/2011行。全部17steps成功或仅非Linux跳过两项Linux原生凭据步骤，完整下载exit0。
+旧基线CI38086078152重新核验：整体completed/success；三平台Core29、Gateway24、Provider533个源码测试函数各出现一次。Provider计数为Custom7/OpenAI11/Anthropic123/Google94/Ollama69/DeepSeek57/Qwen72/OpenRouter100；这些是现有范围回归，并不证明商业支持。Linux/Windows/macOS workspace623/618/622（忽略80/78/78），固定Runtime78/77/77（无忽略），全部0失败；函数通过名701/694/698、raw2314/2000/2011行。全部17steps成功或仅非Linux跳过两项Linux原生凭据步骤，完整下载exit0。
 
-准确下一步：实现已正式授权的通用Chat Completions Adapter，先检查共享传输复用与标准协议，再补独立定向/固定Runtime离线接线、完整回归与精确三平台CI。新增Adapter完成后继续整体要求级审计；既有已验证路径不重复实现，真实商业验收仍由用户最后执行，不转H或授LiveRuntime/Full。
+复核结论：对照V2第14–19、79–80节/V3 F/G，既有协议、Provider、Registry/Router、报告及固定Runtime已验路径没有发现新的明确离线实现缺口；新增通用Chat及required无tools门控已补齐，精确新三平台CI也已完整核验。这里不把抽样路径当全组合证明，也不取消真实模型、媒体/推理等逐模型实际能力验收。Shell/Patch/MCP/审批/requestUserInput已有固定Runtime证据；Skills/Plugins协议及提示入口保留，但不认领九Provider逐项真实插件/技能与商业模型运行，完整产品整合/真实终端仍按P/R验证。
+
+源码`586199fb9655ccd8bff1830968b209aee3d6bf23`/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)整体completed/success；Linux/Windows/macOS三个job114325748624/114325748645/114325748432，各17steps成功或预期跳过，完整日志逐名精确旧CI38086078152集合+15Chat+2Custom+3Runtime，无遗漏/重复。workspace640/635/639（忽略83/81/81），固定Runtime81/80/80（无忽略），全部0失败；Linux另单独原生凭据项1通过，Secret compile-fail doctest保持。raw2358/2044/2055行、函数通过名721/714/718。Core29/Gateway24/Provider550各一次：Custom9、Chat15、OpenAI11、Anthropic123、Google94、Ollama69、DeepSeek57、Qwen72、OpenRouter100。watch与三个完整日志下载exit0。
+
+准确下一步：本轮开发端F/G离线复核及新增Chat验收完成，无待收尾源码/运行中CI；纯文档收尾HEAD以实际Git为准。真实模型门槛由用户项目最后执行，F/G不标商业整体通过。按A–R下一阶段H，先读取既定Host持久化/CLI约束并检查现有实现，再确定首项可验任务；当前未实施H，不改变最终方案或授LiveRuntime/Full。

@@ -104,4 +104,6 @@ P/R的CLI-11/15/34另验无头exec fork的ForkOnly例外：无prompt时仅确认
 
 用户确认V2两类Custom全部保留；V3未逐字列出通用Chat Completions不构成取消。新增独立标准`/chat/completions` Adapter，复用现有ModelProvider、Canonical Protocol、共享传输、Credential Broker、ModelRouter、Responses Gateway及固定Codex Runtime原生执行/审批，不改变A–R顺序。既有DeepSeek/Qwen/OpenRouter/Custom Responses不重写，只有具体测试证明必要时最小扩展共享接口。
 
-请求、JSON/SSE、工具调用与结果、usage、reasoning能力边界、错误/限流、取消/超时及历史安全必须逐项离线验收；不支持能力明确拒绝，不宣称完整原生Responses。新增Adapter定向测试、整体回归、Linux/Windows/macOS精确CI均为门槛；现阶段范围已确认、实现待完成、验证待执行。新增Adapter不自动完成F/G，[要求级验收矩阵](CAIdex-FG-离线验收核对-V1.md)继续核实全部剩余项；商业真实验收由用户在全项目完成后执行，fixture不授商业兼容性或生产Host证据。
+请求、JSON/SSE、工具调用与结果、usage、reasoning能力边界、错误/限流、取消/超时及历史安全必须逐项离线验收；不支持能力明确拒绝，不宣称完整原生Responses。新增Adapter定向测试、整体回归、Linux/Windows/macOS精确CI均为门槛；现阶段范围已确认、实现与上述离线验证已完成，精确证据见下段。新增Adapter不自动完成F/G，[要求级验收矩阵](CAIdex-FG-离线验收核对-V1.md)继续核实全部剩余项；商业真实验收由用户在全项目完成后执行，fixture不授商业兼容性或生产Host证据。
+
+2026-10-10 F/G开发端离线复核：两类Custom均已实现；新Chat Adapter及共享传输、Registry/Router/九Provider/固定Runtime完整回归以源码586199fb9655ccd8bff1830968b209aee3d6bf23/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台完整日志验证。详细要求/残余门槛见[要求级矩阵](CAIdex-FG-离线验收核对-V1.md)。真实模型商业条件保持用户项目最终自验，F/G不标商业整体通过；后续按A–R进入H，先核对既定Host与CLI持久化契约，不调整阶段顺序。

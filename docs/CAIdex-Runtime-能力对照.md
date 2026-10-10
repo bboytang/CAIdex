@@ -459,3 +459,12 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 
 
 源码`47b6b519d69955328218b2b7953794641090de52`/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38085110360集合+1自动压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），全部0失败；raw2314/2000/2011行、函数通过名701/694/698，另Secret doctest1。旧Provider/本地与远端手动及非成功/idle/执行审批回归无遗漏或重复，watch与下载exit0。 本专项已完整离线验证；整体F/G审计未完成，商业模型与生产Host未验。
+
+
+## Custom Chat Completions：固定Runtime离线接线（2026-10-10）
+
+独立标准/chat/completions Adapter经ModelRouter→Responses Gateway接入固定0.160.1/d27764b。新增三项包含Classic/Lite文本双轮/实际重启磁盘恢复、真实原生审批批准后隔离执行与完整参数/结果逐值一致且恢复不重跑、Cancel/待审批interrupt/迟到Accept不执行。独立catalog关闭web/search，显式无推理Runtime和grammar提示映射；不改Runtime执行/审批或其他Provider，默认不开放这些配置。终态前缓冲、未映射推理/签名/媒体/compaction明确拒绝，完整边界见[Chat验收](CAIdex-Custom-Chat-Completions-设计与验收.md)。
+
+源码`586199fb9655ccd8bff1830968b209aee3d6bf23`/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)整体completed/success；Linux/Windows/macOS三个job114325748624/114325748645/114325748432，各17steps成功或预期跳过，完整日志逐名精确旧CI38086078152集合+15Chat+2Custom+3Runtime，无遗漏/重复。workspace640/635/639（忽略83/81/81），固定Runtime81/80/80（无忽略），全部0失败；Linux另单独原生凭据项1通过，Secret compile-fail doctest保持。raw2358/2044/2055行、函数通过名721/714/718。Core29/Gateway24/Provider550各一次：Custom9、Chat15、OpenAI11、Anthropic123、Google94、Ollama69、DeepSeek57、Qwen72、OpenRouter100。watch与三个完整日志下载exit0。
+
+首次CI38089213569的Linux/Windows分别读到空trace/旧计数，已定位新fixture写入晚于终态的竞争并移至终态前；不是生产Host恢复证据。F/G开发端要求级复核完成；商业API/实际Ollama、生产Host/客户端/真实终端仍未验，后续按V3 H–R，不授LiveRuntime/Full。

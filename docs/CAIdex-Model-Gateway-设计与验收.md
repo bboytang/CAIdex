@@ -1,8 +1,8 @@
 # CAIdex 模型核心与 Gateway：设计和验收
 
-阶段F/G，按V3最终架构推进。当前八个Adapter（Custom Responses、OpenAI、Anthropic、Gemini、Ollama、DeepSeek、Qwen、OpenRouter）的明确协议/工具/推理范围已有三平台离线证据；Registry/ModelRouter、逐route版本报告、Classic/Lite切换、Runtime idle及本地/远端压缩的已验范围见[要求级核对](CAIdex-FG-离线验收核对-V1.md)、[路由报告](CAIdex-Provider-路由离线兼容性报告-V1.md)和[Runtime能力对照](CAIdex-Runtime-能力对照.md)。最新精确源码47b6b519d69955328218b2b7953794641090de52/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)完整三平台通过。
+阶段F/G，按V3最终架构推进。当前九个Adapter（Custom Responses、Custom Chat Completions、OpenAI、Anthropic、Gemini、Ollama、DeepSeek、Qwen、OpenRouter）的明确协议/工具/推理范围已有三平台离线证据；Registry/ModelRouter、逐route版本报告、Classic/Lite切换、Runtime idle及本地/远端压缩的已验范围见[要求级核对](CAIdex-FG-离线验收核对-V1.md)、[路由报告](CAIdex-Provider-路由离线兼容性报告-V1.md)和[Runtime能力对照](CAIdex-Runtime-能力对照.md)。最新精确源码586199fb9655ccd8bff1830968b209aee3d6bf23/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)完整三平台通过。
 
-F/G整体未完成：用户于2026-10-10正式确认V3保留两类Custom；新增标准`/chat/completions` Adapter已纳入正式范围，已开始实现，[独立设计与验收](CAIdex-Custom-Chat-Completions-设计与验收.md)记录定向证据；整体/三平台验证待完成，不能以现有Responses兼容API代验。复用共享传输/六方法/Canonical/Broker/Router/Gateway，固定Runtime保留执行与审批；现有Provider不重写，只有具体测试证明必要时最小扩展共享接口。真实商业模型/实际Ollama由用户项目最终自验；生产Host、UI与完整CLI分别归V3后续阶段。下文较早基线保留为历史证据，不用于重复开发已完成任务；当前准确下一步以[HANDOFF](../HANDOFF.md)为准，不直接转H或授LiveRuntime/Full。
+F/G开发端离线复核完成，商业门槛仍未验：用户于2026-10-10正式确认V3保留两类Custom；新增标准`/chat/completions` Adapter已纳入正式范围，已实现并通过完整三平台离线验收，[独立设计与验收](CAIdex-Custom-Chat-Completions-设计与验收.md)记录请求/JSON/SSE/工具与结果/usage/边界及完整回归证据，不能以现有Responses兼容API代验。复用共享传输/六方法/Canonical/Broker/Router/Gateway，固定Runtime保留执行与审批；现有Provider不重写，只有具体测试证明必要时最小扩展共享接口。真实商业模型/实际Ollama由用户项目最终自验；生产Host、UI与完整CLI分别归V3后续阶段。下文较早基线保留为历史证据，不用于重复开发已完成任务；当前准确下一步以[HANDOFF](../HANDOFF.md)为准，后续按A–R进入H先核对既定设计，不能授LiveRuntime/Full。
 
 ## 固定协议依据
 
@@ -34,7 +34,7 @@ Lite 的 tools 编码还依赖 Provider 的 namespace_tools 能力，不保证�
 - ResponsesStream 区分 Open/Completed/Interrupted/Incomplete/Failed/Cancelled/Truncated/Invalid。只有 response.completed 可作为成功；response.incomplete 的 interrupted 单独标识，其他原因保留不完整。response.failed/error 为失败。
 - 已提供的 sequence_number 要递增，允许缺省/间隔；同一流不能混合 response.id。显式 SSE event 名与 JSON type 矛盾、坏编码/坏 JSON/超限、终态后新的事件均失败关闭。
 - 终态后的配对 CRLF 尾字节、注释/空行可以解码；finish 后状态保持，不允许重开。core 的取消只关闭解析；HTTP Gateway 另行负责取消 task/socket，见下。
-- 不把 [DONE] 或 EOF 当作 Responses 成功，不做模型 POST 自动重试。Chat Completions 的 [DONE] 转换将由对应 Adapter 处理。
+- 不把 [DONE] 或 EOF 当作 Responses 成功，不做模型 POST 自动重试。Chat Completions 的 [DONE] 由独立 Adapter 在合法 finish_reason 后转换；EOF不代终态。
 
 SSE framing 依据 [WHATWG 标准](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)。终态处理也核对了 [官方完成事件指导](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference#3-wait-for-completed-inference)，历史/工具 correlation 与 encrypted reasoning 核对 [Responses 迁移清单](https://developers.openai.com/api/docs/guides/migrate-to-responses#incremental-rollout-checklist)。
 
