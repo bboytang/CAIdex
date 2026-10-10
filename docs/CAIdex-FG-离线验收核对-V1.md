@@ -1,6 +1,58 @@
 # CAIdex F/G 离线验收核对 V1
 
-核对日期：2026-10-10。当前已验源码=586199fb9655ccd8bff1830968b209aee3d6bf23：两类Custom已正式确认，新Chat Adapter15项及完整本地回归通过；[精确CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台完整日志已核验成功。首次CI38089213569的Linux/Windows fixture证据竞争已定位修复，不认领该失败运行成功。依据[实施计划V3](CAIdex-实施计划-V3.md)、[Gateway验收](CAIdex-Model-Gateway-设计与验收.md)、各Provider验收及仓库/精确CI。当前要求级矩阵见本文末节；此前基线和已完成步骤保留为历史证据，不是当前待办。本文件不宣布商业F/G完成或把fixture当生产Host。
+## 当前阶段退出：F/G-Offline与F/G-Live（2026-10-10治理复核）
+
+复核基线main/HEAD及GitHub main为`0e9004b6aad7a2adbad11b4fbb920a57cb8fd25a`，开始时工作区干净。最新已验源码`586199fb9655ccd8bff1830968b209aee3d6bf23`与基线的功能源码、依赖、固定Runtime、CI工作流一致。本次只审查和修改Markdown，没有重跑Rust测试/商业API，也没有新增功能；重新从GitHub读取精确CI元数据和三个完整日志，对照实际源码测试名复核。
+
+**建议关闭F/G-Offline：当前明确源码/证据阻断为0。** 这是实施会话基于有限要求的建议，尚未获得独立新会话/其他模型的退出审计或用户验收确认，不标“已批准关闭”，不授权启动H。F/G-Live继续待用户全项目完成后实测；其他已确认产品功能和A–R顺序不变。
+
+### 五类验收归属
+
+| 分类 | 有限要求及当前事实 | 证据/处理 |
+| --- | --- | --- |
+| 1 已完成且有证据：核心协议 | Canonical文本/工具调用及结果原值、usage缺值/大数、reasoning/opaque保留或显式拒绝、JSON/Responses SSE终态、错误/限流/取消/超时/预算；Classic/Lite分别验 | [Core测试](../model/core/tests/responses.rs)、[流生命周期](../model/core/tests/stream.rs)、[Gateway HTTP](../model/gateway/tests/http.rs)、各Provider测试；Core29/Gateway24三平台逐名通过，不认领任意未知扩展全量Runtime往返 |
+| 1 已完成且有证据：模型接口/注册 | ModelProvider六方法；Registry能力Unknown/Supported/Unsupported及未知限额/四级兼容等级；Router显式ID/归属/漂移拒绝、方言与streaming门控、无fallback | [接口](../model/core/src/provider.rs)、[Registry](../model/core/src/registry.rs)、[Router](../model/core/src/router.rs)/[7项回归](../model/core/tests/router.rs)、[Gateway Router2项](../model/gateway/tests/router/mod.rs)。其他请求语义由Adapter门控，能力Unknown不等于Supported，目录不授商业支持 |
+| 1 已完成且有证据：九Provider | 两类Custom及OpenAI/Anthropic/Gemini/Ollama/DeepSeek/Qwen/OpenRouter的当前明确转换及profile范围；Classic/Lite正例与配置缺失/未知控制/非法历史等安全拒绝 | 共550项源码测试名在三平台各一次；专属文档/实际profile由[18条route报告](CAIdex-Provider-路由离线兼容性报告-V1.md)索引，不把一个Provider正例推给任意兼容端点 |
+| 1 已完成且有证据：固定Runtime | 0.160.1真实进程工具执行/审批/取消/迟到回应、已完成工具disk resume不重跑、原参数/结果；明确同Provider Classic/Lite组合切换/fork隔离、显式跨Provider可见文本新线程与foreign reasoning拒绝 | [Runtime测试](../runtime/bridge/tests/real_runtime.rs)、[切换](../runtime/bridge/tests/switching/mod.rs)/[Lite](../runtime/bridge/tests/switching/lite.rs)/[跨Provider](../runtime/bridge/tests/switching/cross_provider.rs)、[Chat接线](../runtime/bridge/tests/chat_completions/mod.rs)；合成模型驱动真实执行，不等于商业推理或生产Host |
+| 1 已完成且有证据：报告/安全失败 | 18条Provider route/方言、4条切换route绑定fixture/profile版本/来源/限制；凭据owner/profile/执行端、TLS/redirect/单次POST、Gateway token隔离、非法历史Key前拒绝、半流不执行 | [路由报告](CAIdex-Provider-路由离线兼容性报告-V1.md)、[切换报告](CAIdex-模型切换-离线兼容性报告-V1.md)、[凭据设计](CAIdex-Credentials-设计与验收.md)、[共享Custom测试](../model/providers/custom/tests/provider.rs)；Fixture保持ProtocolFixture/Experimental，生产Registry不自动升级 |
+| 2 必须补齐的阻断 | 当前没有实际失败或源码证据证明上述有限Offline通过条件不满足 | 阻断清单见下节；新明确缺陷按当前要求/影响/证据/最小修复纳入，不为退出而忽略，也不把未来未知问题全列阻断 |
+| 3 已拒绝/暂不支持 | 各profile未开放媒体/状态/结构输出/工具发现/grammar硬约束/推理签名等依Adapter明确拒绝；默认未配置的Lite/控制不隐含支持。Native carrier为一致性门控而非签名真实性证明 | 专属限制见route索引和[Chat转换边界](CAIdex-Custom-Chat-Completions-设计与验收.md)。Chat grammar仅显式提示、无通用signed reasoning；SSE终态缓冲/JSON头/精确模型名限制保留；不是删除产品总范围，真实模型能力逐个验 |
+| 4 归属H–R | Host持久journal/seq/snapshot/task/幂等/结果未知/多端审批、模型活动轮次约束和持久关联归H；账户/独立Chat/Memory/同步归I；能力展示/正式GUI/完整CLI/真实SkillsPlugins操作及平台安装分别归J–P/R；SSH/Relay归L/Q | [V3](CAIdex-实施计划-V3.md)及[Runtime能力表](CAIdex-Runtime-能力对照.md)保留所有原需求，不用底层保留方法标产品完成。H生产隔离/有界失败分析须保留jsonschema无硬CPU抢占等已知限制 |
+| 5 需要真实模型 | 每个商业model/version/backend、推理/签名真实性、真实工具选择/能力/限额/usage费用、实际Ollama daemon/模型/性能、商业版本报告及实际平台行为 | F/G-Live由用户完整项目结束后自验；不读用户Key、不调用收费模型、fixture不授LiveRuntime/Compatible/Full。实际平台/部署证据另在R，不由Rust macOS成功代验 |
+
+### 有限剩余阻断清单与关闭条件
+
+| 当前阻断ID | 必要要求/证据 | 最小必要修复 |
+| --- | --- | --- |
+| 无 | 下面精确CI三平台完整日志及当前源码核对有效，未发现新的明确Offline阻断 | 无本次功能源码修复；不新增Provider、重写Gateway或扩大协议测试 |
+
+退出流程仍有两项**待执行**：独立只读审计不可变源码/实际证据，以及用户确认F/G-Offline关闭并另行批准H首里程碑。这是验收流程状态，不能写成代码缺陷或已审计通过。本次治理任务到文档检查/commit/push后停止。
+
+有限通过条件：明确Offline要求有对应实现/有效证据；当前阻断清空；相关三平台CI通过并复核精确源码/实际步骤与日志；未支持/未验/后续归属准确；独立审计阻断解决；用户确认。未知未来API变化、任意参数组合、全部scope/无限历史/全时序形式证明或纯优化不自动增加门槛。
+
+非阻断/归属后续的记录：跨Gateway keepalive与终态缓冲延迟、完整前缀预算/增长、其他compaction scope/轮末/TokenBudget、Runtime未知扩展类型化全量回放、jsonschema CPU隔离。当前按专属文档准确限制，不把风险写成已解决；若实际证据表明会破坏当前安全边界或H等模块正确性，再作阻断分析。生产Host/GUI/账户/CLI等正式需求按后续里程碑实现，不作为无穷F/G补测任务。
+
+### 本次重新核验的可复现证据
+
+[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)精确head=`586199fb9655ccd8bff1830968b209aee3d6bf23`，整体completed/success；三job各17steps成功，Windows/macOS仅两项Linux原生凭据条件步骤跳过。完整日志与源码测试函数逐名核对Core29/Gateway24/Provider550，无缺失/重复，函数通过名721/714/718（另Secret compile-fail doctest）；历史名比较见原验收记录，本次不依赖旧/tmp。
+
+| 平台 / job | workspace通过/失败/忽略 | 固定Runtime通过/失败/忽略 | 完整日志行数 |
+| --- | --- | --- | --- |
+| Linux / 114325748624 | 640/0/83 | 81/0/0 | 2358 |
+| Windows / 114325748645 | 635/0/81 | 80/0/0 | 2044 |
+| macOS / 114325748432 | 639/0/81 | 80/0/0 | 2055 |
+
+Linux原生凭据独立步骤另1项通过；workspace ignored不能计为通过，Runtime另显式执行。源码Provider计数为Custom9/Chat15/OpenAI11/Anthropic123/Google94/Ollama69/DeepSeek57/Qwen72/OpenRouter100。复核命令：`gh run view 38090495112 --json headSha,status,conclusion,jobs`；对上述job执行`gh run view 38090495112 --job <job-id> --log`。按[CI工作流](../.github/workflows/ci.yml)在具有所需平台条件时可复现locked workspace/独立凭据/固定Runtime/schema/doctor；纯文档治理不无理由重跑完整Rust回归，精确CI与源码不变验证足够。
+
+### F/G-Live保留与用户决策
+
+Live没有新增实测证据，继续待验。用户最终报告应绑定真实提供商/model/version/backend/endpoint profile、实际平台/固定Runtime、工具/推理/错误限流/usage及限制，不能只看聊天或HTTP成功。收到真实报告后按既有Registry兼容来源/版本门控关闭对应范围；本次不定义收费授权、猜模型能力或批量标Full。
+
+**下一步仅为验收与授权决定**：独立审计本建议、用户确认Offline关闭并批准明确H里程碑。H–R无需无限等待Live，但仍不得未经确认自行启动。旧章节的“下一步”“尚未完成”均是当时历史，当前状态以本节为准。
+
+## 历史核对与实施证据（保留成果，不作为当前待办）
+
+核对日期：2026-10-10。当前已验源码=586199fb9655ccd8bff1830968b209aee3d6bf23：两类Custom已正式确认，新Chat Adapter15项及完整本地回归通过；[精确CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台完整日志已核验成功。首次CI38089213569的Linux/Windows fixture证据竞争已定位修复，不认领该失败运行成功。依据[实施计划V3](CAIdex-实施计划-V3.md)、[Gateway验收](CAIdex-Model-Gateway-设计与验收.md)、各Provider验收及仓库/精确CI。原要求级矩阵保留于后文，当前退出以本文开头为准；此前基线和已完成步骤保留为历史证据，不是当前待办。本文件不宣布商业F/G完成或把fixture当生产Host。
 
 ## 基线证据（历史起点）
 
@@ -122,4 +174,4 @@ Gemini comment/下游idle续轮：复用已验idle恢复流程，新增Classic/L
 
 源码`586199fb9655ccd8bff1830968b209aee3d6bf23`/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)整体completed/success；Linux/Windows/macOS三个job114325748624/114325748645/114325748432，各17steps成功或预期跳过，完整日志逐名精确旧CI38086078152集合+15Chat+2Custom+3Runtime，无遗漏/重复。workspace640/635/639（忽略83/81/81），固定Runtime81/80/80（无忽略），全部0失败；Linux另单独原生凭据项1通过，Secret compile-fail doctest保持。raw2358/2044/2055行、函数通过名721/714/718。Core29/Gateway24/Provider550各一次：Custom9、Chat15、OpenAI11、Anthropic123、Google94、Ollama69、DeepSeek57、Qwen72、OpenRouter100。watch与三个完整日志下载exit0。
 
-准确下一步：本轮开发端F/G离线复核及新增Chat验收完成，无待收尾源码/运行中CI；纯文档收尾HEAD以实际Git为准。真实模型门槛由用户项目最后执行，F/G不标商业整体通过。按A–R下一阶段H，先读取既定Host持久化/CLI约束并检查现有实现，再确定首项可验任务；当前未实施H，不改变最终方案或授LiveRuntime/Full。
+准确下一步：本轮开发端F/G离线复核及新增Chat验收完成，无待收尾源码/运行中CI；纯文档收尾HEAD以实际Git为准。真实模型门槛由用户项目最后执行，F/G不标商业整体通过。按A–R下一阶段为H候选，用户批准后先读取既定Host持久化/CLI约束并检查现有实现，再确定首项可验任务；当前未实施H，不改变最终方案或授LiveRuntime/Full。

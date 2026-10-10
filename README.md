@@ -10,11 +10,20 @@
 
 完整CLI目标是共享真实Host/固定Codex Runtime的英文TUI、无头exec、持久task、模型/Provider/Profile、账户会话、本地及跨端记忆、Remote与扩展管理；账户认证不代Host审批权限，exec与后台任务语义分开。详见[CLI完整交互与验收规范V1](docs/CAIdex-CLI-完整交互与验收规范-V1.md)，H/I提供底层契约，P整合CLI，R实测。**这些是规划，当前可执行CLI仍仅doctor、credentials status/set/remove、版本/帮助，CLI-01～34均未执行。**
 
-CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，Qwen实际Runtime也已完成三平台离线验收，下一步OpenRouter；规范补全不表示提前开展H/I/P/R实现。
+CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。完整CLI规范及V3/账户/UI/凭据设计保持，CLI-01～34均待正式产品实现与验收。DeepSeek/Qwen/OpenRouter实际Classic/Lite固定Runtime、Registry/切换与报告已离线验；不把旧子阶段“下一步”当当前授权，准确证据见以下当前状态。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter完整政策绑定历史；namespace/custom已精确三平台验收；上下文/effort/逐route正文控制已三平台验收；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
 
 续接复核补清无头 `exec fork` 的ForkOnly：不带prompt只创建分支，成功不代表执行任务；恢复目标不存在时不静默新建任务。此为P/R待实现契约，当前开发CLI仍无exec/fork/resume。F/G控制组合独立推进，验证结果见Qwen专属文档和HANDOFF，CLI文档核对不代验源码。
+
+## 当前状态与里程碑授权
+
+2026-10-10治理复核基线为`0e9004b`，最新已验源码`586199f`的[三平台CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)整体成功；workspace Linux/Windows/macOS 640/635/639、固定Runtime81/80/80，0失败。九Adapter（含Custom Responses和Custom Chat Completions）、Registry/Router/Gateway及明确Classic/Lite/审批/恢复/切换路径已离线验，18条Provider route/方言和4条切换route有版本化fixture报告。
+
+[F/G-Offline退出复核](docs/CAIdex-FG-离线验收核对-V1.md)当前明确源码/证据阻断为0，建议关闭，独立只读审计及用户确认仍待执行。F/G-Live由用户全项目完成后验收，不用fixture授LiveRuntime/Full；生产Host、官方账户/Chat/Memory/云、正式Windows/iOS/完整CLI尚未实现，macOS Rust CI不代iOS构建。
+
+开发按[AGENTS](AGENTS.md)在**已批准里程碑内**持续自主实施/修复/测试/push main，关键里程碑提供源码/CI/可复现运行与限制供独立审计；通过后停止，用户确认并批准下一里程碑才启动。保留全部[V3架构与A–R顺序](docs/CAIdex-实施计划-V3.md)，不新增强制分支/PR/Tag；本次仅文档治理，完成后停止，不启动H。H首项建议为独立Host生命周期与SQLite事件journal/attach恢复，未批准/未实现。
+
+下述工程说明与Provider续轮记录含历史子阶段状态，不作为当前待办；当前范围以上述退出矩阵和[HANDOFF](HANDOFF.md)为准。已完成工作不重复开发。
 
 ## 开发与验证
 
@@ -42,6 +51,7 @@ node scripts/codex-binary.mjs
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
 - `model/core`：ModelProvider 六方法接口、模型能力/兼容性 Registry、经典/Lite 请求/完整回复/工具/usage 视图、增量 SSE 和流生命周期。
 - `model/providers/custom`：可独立调用的 Custom Responses 推理 client，供普通 Chat 与 Gateway 共用；配置模型列表、Broker 认证、显式 context headers、TLS 验证、取消/超时/背压与安全错误。
+- `model/providers/chat-completions`：独立标准/chat/completions Adapter，复用共享传输/Canonical/Broker/Router/Gateway；明确请求/JSON/SSE/工具及结果/usage/推理与历史拒绝边界，Classic/Lite固定Runtime离线接线三平台已验，商业能力未验。
 - `model/providers/openai`：原生 Models 发现/Responses 适配器，显式执行端组织/项目与凭据引用；复用共享传输，默认无服务端历史存储。当前使用合成协议服务验证，真实 API 兼容性待验。
 - `model/providers/anthropic`：原生 Messages/Models/SSE、Responses 转换和绑定历史；Gateway、经典 MCP 发现/执行/重启和 Lite Code Mode 审批/执行/取消已三平台离线验收，默认缓存网页搜索及商业模型兼容性待验。
 - `model/providers/google`：Gemini 原生 Models/generateContent、媒体/推理/结构输出和绑定历史；Gateway 与固定经典/Lite Runtime 离线接线已三平台验收，商业模型兼容性待验。
@@ -54,7 +64,7 @@ node scripts/codex-binary.mjs
 - Qwen实际Classic/Lite固定Runtime：新增7项真实审批/隔离工具执行、磁盘恢复不重跑、拒绝与取消；最小修复显式runtime_context下typed developer/user消息稳定ID，新增Provider2项。精确bf94c9d/[CI37982550340](https://github.com/bboytang/CAIdex/actions/runs/37982550340)三平台完整通过：workspace510/505/509、实际Runtime57/56/56、Qwen72；旧通过名精确+2/+7。Codex仍是唯一执行/审批真源，商业Live/Full、生产Host及iOS构建未验。
 - `model/providers/openrouter`：原生目录/六方法、基础Classic文本JSON/SSE，固定无状态与路由策略，复用Custom传输与执行端Broker；14项及workspace524/0/59、既有Runtime57/0/0、Clippy/fmt本地通过，精确9563df0/[CI38004040230](https://github.com/bboytang/CAIdex/actions/runs/38004040230)三平台完整通过（workspace524/519/523、既有Runtime57/56/56，OpenRouter14逐名一次）。工具/推理历史/Lite/实际OpenRouter Runtime及商业Live/Full仍待。OpenRouter上下文/effort新增9项、本地23项与workspace533/0/59、既有Runtime57/0/0、Clippy/fmt/diff已验；默认拒绝与身份隔离保持，精确92d0612/[CI38005373396](https://github.com/bboytang/CAIdex/actions/runs/38005373396)三平台已验（workspace533/528/532、既有Runtime57/56/56，OpenRouter23逐名保持）。
 - OpenRouter逐route正文控制：显式verbosity文本指导与service_tier请求映射，默认缺策略/未知/跨档静默降级拒绝，实际tier保留；新增8项/共31项、workspace541/0/59、既有Runtime57/0/0、Clippy/fmt/diff本地通过，精确2799a4c/[CI38006780427](https://github.com/bboytang/CAIdex/actions/runs/38006780427)三平台通过（workspace541/536/540、既有Runtime57/56/56，OpenRouter31逐名一次）。工具/后端绑定历史与实际Runtime另验。
-- `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产 Host/CLI 配置入口和剩余兼容 API 接入待实现。
+- `model/gateway`：Rust 库形式的本地 Responses HTTP/SSE Gateway，可注入原生 ModelProvider；生产Host/完整CLI配置入口待后续批准里程碑；当前九Adapter明确离线范围已验。
 - `credentials/core`：执行端身份/profile 隔离、系统/环境/Unix 文件存储与诊断脱敏。
 - `apps/cli`：开发阶段诊断与本地凭据管理命令；最终 CLI/共享 Host 接入仍待实现。
 - `upstream/codex`：版本/源码锁定、协议基准和上游许可证。
@@ -80,6 +90,10 @@ node scripts/codex-binary.mjs
 
 上游 Codex 与归档协议遵循 `upstream/codex/LICENSE`、`NOTICE`。CAIdex 自有代码及品牌的对外分发许可证尚未确定。
 
+
+## 历史Provider实施记录
+
+以下保留原有子阶段成果与精确CI；其中当时的下一步不覆盖当前里程碑授权/退出矩阵。
 
 OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_backend_selection`逐route配置单一`provider.only`，保留禁fallback与参数要求，调用方不能覆盖；不升级能力、不将base slug冒充实际稳定endpoint。新增5项/Provider36、本地workspace546/0/59及既有Runtime57/0/0、Clippy/fmt/diff通过；源码`2c9954c`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)精确三平台已验，workspace546/541/545、既有Runtime57/56/56，全通过名精确旧CI+5。该阶段新增范围为路由政策；后续工具及历史进度见下段与HANDOFF。
 

@@ -34,8 +34,8 @@
 | C 工程与 CI | 按既定 monorepo 路径建立所需工程，锁依赖和 action SHA；Linux/Windows/macOS 基础检查 | 各 runner 实际运行通过；iOS 工程建立后追加真实 iOS 检查 |
 | D Runtime 边界 | 完整线程/turn facade，审批、用户输入、工具事件、能力协商与 CLI 对照 | 不吞事件/请求；与固定上游行为一致，未知能力不冒充支持 |
 | E 凭据 | 执行端凭据存储、配置归属、统一脱敏 | 秘密不出现在代码、日志、快照和同步；跨设备归属正确 |
-| F 模型核心与 Gateway | Responses 流及 Custom Chat Completions 转换、取消、工具 normalization、opaque 信息、错误/限流 | 协议测试服务验证后，用授权凭据做真实模型兼容性验证 |
-| G 多模型 Codex | 各 Provider（含两类 Custom）工具/推理/切换与模型注册 | 每模型有版本化兼容性报告，未支持能力清楚展示 |
+| F 模型核心与 Gateway | Responses 流及 Custom Chat Completions 转换、取消、工具 normalization、opaque 信息、错误/限流 | F/G-Offline按有限矩阵验收并经用户确认关闭；F/G-Live保留真实模型验证，用户项目最终执行 |
+| G 多模型 Codex | 各 Provider（含两类 Custom）工具/推理/切换与模型注册 | 离线路由有版本化范围/拒绝证据，商业版本报告归F/G-Live；客户端能力展示在J/P实际验收 |
 | H Host 与持久化 | 背景 Host生命周期/attach-detach、SQLite journal、线程/持久任务、快照/event sequence、提交幂等/结果未知、真实审批持久化及多端竞争/安全阻塞 | GUI/CLI/SSH连接退出不自动取消Host任务；首次有效审批、断连/重启恢复不盲重跑未知工具；不改为云端Agent，账户不代替Host授权 |
 | I Chat/账户/云同步/记忆核心 | 共享Rust/API；独立Chat；官方账户/PostgreSQL/Passkey/auth_sessions；CLI公开客户端PKCE/Device协议、token轮换/撤销/settings；Linux本地memory/cache DTO；Memory Engine/混合检索/Embedding；账户开关/继承/首次上传授权/epoch/删除；EmailSender/本机备份 | 无执行工具权限；ACC/SEC/MEM/SYN/REC/OPS及CLI认证/同步核心具备证据，GUI/终端/真实部署仍待验；完整CLI登录交互归P |
 | J Windows 框架 | 应用壳、会话/Composer、模型/Key、主题/i18n/品牌；原生注册/登录/恢复、账户/设备/记忆/云同步设置 | 本机可做检查及 Windows 运行/构建通过；原生认证、独立开关/A/B/切账户交互有证据 |
@@ -50,7 +50,63 @@
 
 UI 实现内部顺序参考 UI 规范，整个项目顺序以上表的 Runtime/模型/Host 前置条件为准。
 
-2026-10-10用户执行顺序确认：真实模型验收在全项目完成后由用户自行执行；当前先完成开发端能够实现/离线验证的既定任务。F/G商业模型通过条件仍保留为未验，离线fixture不替代真实证据，不授LiveRuntime/Full；不得因等待商业授权停止可独立推进的开发。
+2026-10-10用户执行顺序确认：真实模型验收在全项目完成后由用户自行执行；当前先完成开发端能够实现/离线验证的既定任务。F/G商业模型通过条件仍保留为未验，离线fixture不替代真实证据，不授LiveRuntime/Full；不得因等待商业授权停止可独立推进且已获批准的里程碑；不因此自动授权跨阶段。
+
+### 里程碑授权、退出与独立审计（2026-10-10正式调整）
+
+整体A–R功能、顺序和架构依赖保持；阶段不自动等于一次无限授权。已批准里程碑内持续自主细化、实现、修复、必要测试、commit/push main及精确CI，不逐小步求确认；里程碑之间必须由用户确认。没有新强制分支/PR/人工合并/Tag制度。本次治理任务只改必要Markdown，完成后停止，不启动H编码。
+
+每个里程碑实施前必须写明：目标、有限任务/非目标、输入及实际依赖、验收来源与具体通过条件、代码/测试/运行交付物、停止条件。结果区分计划/已实现/已验证；不能因协议方法存在或文档声明就标功能完成。阻断问题须对应当前通过条件且有失败/源码/复现证据；权限、隔离、数据完整性及后续正确性的明确缺陷不能忽略。非阻断与建议注明影响、所属阶段及处理条件，不以未知未来兼容性或任意参数组合扩大退出门槛。
+
+关键里程碑在自测/相关CI及diff核验后，提交不可变源码SHA、精确CI/测试、可复现运行说明与限制报告；由独立新会话或其他模型只读核对实际代码、调用路径、完整证据与范围。自审不算独立审计；不要求每次微小修改重审。审计阻断在当前里程碑修复并相关复验，非阻断记录后续；用户确认通过并批准下一明确里程碑后才能启动。独立审计不替代自动测试/平台运行，也不新设人工Git合并制度。
+
+独立审计重点为F/G-Offline退出、H持久任务/审批/恢复核心、I认证/RLS及同步删除边界、Windows/iOS Codex可操作链路、P完整CLI、Q加密授权及R交付；各阶段细分关键点在批准该里程碑时明确，当前没有这些未来里程碑的编码授权。
+
+### F/G有限退出与证据分层
+
+- **F/G-Offline**：按[当前有限矩阵及阻断清单](CAIdex-FG-离线验收核对-V1.md)核对协议/六方法/Registry/Router/Gateway、九Provider明确profile、Classic/Lite、固定Runtime执行/审批/恢复/切换、能力三态与版本化离线报告、已确定安全及失败路径。源码/证据阻断清空、相关CI有效、拒绝/限制与归属明确，即提出关闭建议；独立审计及用户确认后记录关闭。未知未来问题不无限续期，已验路径不重复开发。
+- **F/G-Live**：商业模型及每个真实版本、实际Ollama/性能、原生签名与真实能力保持待验，用户全项目完成后自行执行。fixture不是LiveRuntime或Full，不读用户Key/不调用收费模型；用户确认Offline退出并批准后续里程碑后，Live等待不无限卡住H–R。若出现影响生产架构/后续正确性的明确缺陷，按证据重新阻断分析。
+- 后续阶段原有依赖不变：生产Host不由临时Runtime测试代验，GUI/CLI能力展示不是F/G数据门控的重复开发；Skills/Plugins/MCP/Queue/Steer/Diff/Review原需求保留，完整产品操作按H/K/O/P/R分别验证，不以离线计数认领完成。
+
+### H–R可运行交付与实际依赖
+
+每个关键阶段尽可能提供可操作、可观察或独立复现的结果。交付记录至少包含：不可变源码/构建版本、取得方式、启动方法、测试环境及合成/真实边界、核心操作、预期输出/通过判定、限制与失败恢复。轻量内部客户端仅供开发验证，不冒充正式Windows GUI或完整CLI。实际依赖以已稳定契约为输入，不重复开发Facade/Provider/Broker；商业API、完整GUI、邮件送达或签名设备条件不是全部核心工作的前置等待理由，相关实际验收仍保留。
+
+**H内部里程碑建议（均未启动，分别需用户批准）**
+
+| 分组 | 有限任务/可交付结果 | 通过及停止条件 |
+| --- | --- | --- |
+| H-1 本地Host生命周期与事件持久化 | 独立Host管理固定Runtime进程；SQLite版本化journal按Host/stream编号、先提交再广播；内部客户端attach/detach、seq补缺口/一致snapshot；用真实非收费初始化/线程事件演示 | 两客户端断连/重连可复现，客户端退出不终止Host；重启读取journal但不重发未知动作，失效状态不伪装恢复；不泄Key。代码/测试/运行证据及关键审计就绪后停止，不把该骨架当完整H |
+| H-2 持久任务与原生执行链 | 任务提交/operation幂等、查询/取消/受理与完成区别、实际策略；原生审批转交、执行/终态/结果未知、重启不盲重跑、模型轮次边界及持久关联 | 内部客户端可提交/查询/取消；合成模型驱动真实Runtime隔离执行，回应丢失按原operation恢复，不重复执行；Host退出/重启/未知结果有证据；不得另造执行器/审批或使用云专用history入口 |
+| H-3 多端审批、Diff与纵向集成 | 持久审批首次有效、过期/撤销/并发/安全阻塞；真实Runtime事件及Diff/Review数据转交，恢复与有界失败/隔离；复用H-1/2 | 在稳定Host契约上演示“发起任务→流式输出→工具审批→实际执行→完成状态→Diff→断线恢复”；核对两端竞争/迟到回应、seq/snapshot缺口及不重跑。完整H其他既定要求同验，不能用演示省略权限/恢复门槛 |
+
+H-1是建议的第一可交付任务，本次只记录范围；具体传输/schema/隔离实现要在获批后的设计细化中对照[CLI Host契约](CAIdex-CLI-完整交互与验收规范-V1.md)和现有源码确定，不先新建另一套Runtime。H纵向链可用集成程序或内部测试客户端，不依赖提前做完整J/K。H的模型关联、权限上限、审批与连接生命周期不依赖官方账户登录代授权，I在既定独立身份域接入。
+
+**I内部可独立验收分组（细化下文既有五步，不新增重复任务、不减验收项）**
+
+| 分组 | 交付与验收重点 |
+| --- | --- |
+| I-1 账户/权限与数据库 | 不可变user_id、项目ACL/全部逻辑实体、PostgreSQL+pgvector迁移、最小权限角色/RLS；可重建测试数据库，跨账户/项目及未设置上下文拒绝证据 |
+| I-2 认证/会话 | 注册/login/密码/Passkey/恢复、EmailSender接口、auth_sessions；refresh轮换/重放/撤销/迟到回调、CLI PKCE/Device及issuer/audience信任边界；本地测试服务可验，真实邮件/部署另记录 |
+| I-3 独立Chat与缓存 | 无项目执行工具权限；不可变消息/并发分支/附件、本地SQLite及账户隔离/outbox；本地可运行收发与切账户演示，复用ModelProvider，不复制Host Key |
+| I-4 Memory Engine | 个人/项目与原始Chat/Runtime来源区分、revision/纠错/授权检索；整合/Embedding角色与空间版本、无模型基础检索；跨模型Provider外发许可、授权执行端与Key归属 |
+| I-5 Chat同步 | 独立同步控制、cursor/outbox/附件/删除/冲突/中断轮次；两测试客户端可复现同步与隔离，不把Chat开关当Memory授权 |
+| I-6 Memory同步状态机 | 新账户默认关、继承权威enabled/settings_version/epoch与独立首次上传范围；多设备冲突、离线关闭/待确认、A保留/B重认证删除、tombstone/旧job/旧设备防复活及账户切换 |
+| I-7 运行与恢复 | Email实际送达/地域额度、部署边界、迁移与本机有限备份/恢复、2核2GB资源/磁盘失败、导出；测试运行与正式部署授权分别记录，不承诺异地备份或全故障恢复 |
+
+每个I里程碑都交代码、自动测试、独立运行证据和安全边界。完整[Account/Memory验收矩阵](CAIdex-Account-Memory-Cloud-设计与验收-V1.md#13-可执行验收矩阵全部待实现未执行)及CLI认证/同步要求继续有效，表格不是删减或标完成；认证/授权/隔离不得为进度降级。
+
+**J–K Windows**：保持Tauri2/React/TypeScript/Rust与UI规范。J正式工程建立后逐步提供可运行构建；具备可打包条件后Windows CI上传可下载测试产物，注明SHA/环境/有效期/取得位置及五步试用说明（取得→启动→配置→操作→通过判定）。K接真实Host/审批/QueueSteer/DiffReview，独立账户与Host状态。Windows runner构建/测试不代Windows11桌面/UAC/sandbox/安装升级真交互，Rust单测不标客户端完成。
+
+**L SSH**：复用稳定Host契约与V3正式SSH入口，核对SSH连接和Host独立授权、远程task/seq恢复、断连后台继续、模型/Key执行端归属、多客户端审批、建连失败/超时/撤销。提供两客户端或实际SSH可复现操作；不因账号登录授Host执行权，不能用临时隧道fixture声称生产恢复已验。
+
+**M–O iOS**：保留SwiftUI+UniFFI/UI。M工程建立起在GitHub macOS runner执行真正Simulator构建/测试，按具备条件追加无签名Archive；N/O共享Windows/Host已确认的账户/记忆/任务/审批/Remote契约。分别记录Rust macOS、Simulator、无签名Archive、真机功能、可安装发布包五种证据，互不替代；签名/真机条件缺失不阻止已批准的Simulator工作，但相应门槛保持未验。
+
+**P CLI**：保留完整英文TUI/exec/持久task/Remote/Provider/Profile/模型/账户/Memory/MCP/Skills/Plugins等入口，复用H/I/L契约，按CLI-01～34及原O/H/A/D/T证据层次有限验收。提供真实Windows Terminal/Linux SSH/VPS/无TTY的相应操作说明及输出/退出码；协议方法存在不等于CLI命令完成，缺真实环境的项留R，不重新实现Agent/审批。
+
+**Q Relay**：保留Noise/Snow E2EE、配对身份、撤销/重放/恢复，Account与Host/Relay授权分别验证。提供独立端点的加密/配对/撤销及攻击负例运行证据；中继不能读载荷，登录会话不能代配对。
+
+**R最终验收**：按原范围逐项登记“要求→精确版本/环境→操作/测试→实际证据→结论/未验原因”。分别收集离线协议、固定Runtime、生产Host、Windows实际交互、iOS Simulator/Archive/真机/安装包、CLI真实终端、用户真实商业模型、账户/邮件/云同步/本机恢复、安全权限/跨端操作及构建/安装/升级证据。不得以一种成功代另一种，也不承诺全部未知组合通过。
 
 ### I 阶段内部顺序与正式门槛
 
@@ -95,9 +151,9 @@ P/R的CLI-11/15/34另验无头exec fork的ForkOnly例外：无prompt时仅确认
 
 ## 开发纪律
 
-- 每次先读 `HANDOFF.md` 与 Git 状态；阶段完成/暂停/中断前更新恢复点。
+- 每次先读 `HANDOFF.md` 与实际Git/相关源码，按[AGENTS](../AGENTS.md)只续接已批准里程碑；完成/暂停/中断前更新恢复点，达到通过条件后停止等待用户验收及下一里程碑授权。
 - 只创建当前阶段用到的模块，保留整体路径方向；不提前填满空抽象或假功能。
-- 对接口和运行风险做有意义测试，按真实结果记录。原始 V2 的 CLI/Provider/Remote/工具能力需求仍需逐项验收。
+- 对接口和运行风险做有意义测试，复用已验实现/有效证据，按真实结果记录；非阻断改进进入后续清单，不无限延长阶段。原始 V2 的 CLI/Provider/Remote/工具能力需求仍需逐项验收。
 - 实际付费 API 调用与凭据复用/创建需先明确授权；在此之前使用离线元数据与协议测试服务，不读取用户密钥。
 
 ## F/G Custom 正式范围补充（2026-10-10）
@@ -106,4 +162,4 @@ P/R的CLI-11/15/34另验无头exec fork的ForkOnly例外：无prompt时仅确认
 
 请求、JSON/SSE、工具调用与结果、usage、reasoning能力边界、错误/限流、取消/超时及历史安全必须逐项离线验收；不支持能力明确拒绝，不宣称完整原生Responses。新增Adapter定向测试、整体回归、Linux/Windows/macOS精确CI均为门槛；现阶段范围已确认、实现与上述离线验证已完成，精确证据见下段。新增Adapter不自动完成F/G，[要求级验收矩阵](CAIdex-FG-离线验收核对-V1.md)继续核实全部剩余项；商业真实验收由用户在全项目完成后执行，fixture不授商业兼容性或生产Host证据。
 
-2026-10-10 F/G开发端离线复核：两类Custom均已实现；新Chat Adapter及共享传输、Registry/Router/九Provider/固定Runtime完整回归以源码586199fb9655ccd8bff1830968b209aee3d6bf23/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台完整日志验证。详细要求/残余门槛见[要求级矩阵](CAIdex-FG-离线验收核对-V1.md)。真实模型商业条件保持用户项目最终自验，F/G不标商业整体通过；后续按A–R进入H，先核对既定Host与CLI持久化契约，不调整阶段顺序。
+2026-10-10 F/G开发端离线复核：两类Custom均已实现；新Chat Adapter及共享传输、Registry/Router/九Provider/固定Runtime完整回归以源码586199fb9655ccd8bff1830968b209aee3d6bf23/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台完整日志验证。详细要求/残余门槛见[要求级矩阵](CAIdex-FG-离线验收核对-V1.md)。真实模型商业条件保持用户项目最终自验，F/G不标商业整体通过；F/G-Offline关闭及H启动须经用户确认；获批后先核对既定Host与CLI持久化契约，不调整阶段顺序。
