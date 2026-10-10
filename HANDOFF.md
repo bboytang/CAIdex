@@ -2,6 +2,14 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
+## 当前F/G完成核对恢复点（2026-10-10续轮）
+
+实际恢复main=origin/main=`e258828446d8aad4920a76154e61121fcab4623c`，开始干净；上一轮重要源码/文档/精确CI进展已核实。目标仍F/G全部，不因已补部分确认缺口就转H或标整体完成。本轮要求级完成核对发现文档明确未验的下游固定Runtime idle路径；Provider/Gateway超时和interrupt不是这条路径证据。
+
+当前修改tests/real_runtime.rs、tests/fixtures/responses_server.py：新增Classic/Lite Runtime idle500ms、Provider/Gateway仍默认90s/600s且各单许可，真实失败终态/上游socket关闭/无自动重试与显式同线程恢复验证；合成fixture首POST停流、次POST正常。配置字段及idle错误读取固定d27764b公开源码核实，非猜测。idle定向测试1/0/0通过；另新增Classic/Lite远端压缩失败及取消四路径，实际失败/中断、取消关闭上游、无成功checkpoint，重启/disk resume后完整原历史逐值继续；定向1/0/0通过。完整workspace623/0/77、固定Runtime75/0/0、Clippy/fmt/diff及fixture语法通过；141个Markdown本地目标有效。最终diff仅Harness/合成fixture/两份证据文档和本交接，无生产、依赖、schema和审批变更。尚未提交/CI。
+
+下一步：读定向终态，按实际wire核对断言，相关完整workspace/固定Runtime/Clippy/fmt/diff，提交/push精确三平台CI；并继续要求级完成核对（compaction失败/取消、报告与模型注册范围），不将API用户最终自验当作已经完成。用户继续可离线任务的授权保持，不读取用户Key/商业API。
+
 ## 当前状态与准确下一步
 
 branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`，提交后main=origin/main、工作区干净。本轮开始基线`4931b58663435448139d725ed2414db496a001e4`。当前仅维护交接与验收证据文档；源码无未完成修改或已知失败。最新[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)已完整三平台核验成功；Gemini、Anthropic前置精确CI同样通过。本轮确认的F/G离线缺口均已实施/验证，无运行中测试或CI，本次收尾仅五份证据文档，225个其他tracked文件保持精确CI源码；收尾提交号/HEAD/origin/干净工作区以最终Git检查为准。F/G商业验收仍未完成，目标保持active，按用户确认顺序继续可独立推进的后续阶段。
@@ -12,7 +20,7 @@ branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b
 
 1. 先读HANDOFF/AGENTS，核对实际Git与精确CI。最新源码9b0b48f、CI38081995688已完整验证；本次纯文档收尾HEAD以最终git log -1为准，不能把源码SHA当作收尾HEAD。无源码变更不重复Rust CI。
 2. [离线核对V1](docs/CAIdex-FG-离线验收核对-V1.md)中已确认的Anthropic、Gemini、compaction和逐route报告缺口已完成，不重复实现，不标F/G商业整体完成。
-3. 按V3推进H Host与持久化：先读既定Host/journal/审批/幂等设计并检查实际仓库，再选择明确未实现的最小阶段。当前workspace没有Host工程，仍只有Runtime facade、model/credentials与开发CLI；尚未选定H第一项实现，不重新设计最终方案。真实模型由用户最终验，生产Host不能用fixture代验。
+3. 本条为前轮候选顺序，当前以顶部F/G要求级核对恢复点为准，未批准跳过未核实离线门槛。待F/G离线闭环后按V3推进H Host与持久化：先读既定Host/journal/审批/幂等设计并检查实际仓库，再选择明确未实现的最小阶段。当前workspace没有Host工程，仍只有Runtime facade、model/credentials与开发CLI；尚未选定H第一项实现，不重新设计最终方案。真实模型由用户最终验，生产Host不能用fixture代验。
 4. 每重要步骤更新本文件。代码按定向→相关完整本地→diff→提交/push→精确三平台CI推进；CI核对SHA/三个job/完整步骤与通过名。保持持续授权和边界，常规开发不重新确认。
 
 ## 本轮已实施与本地验证

@@ -66,3 +66,10 @@
 ## 最终离线复核（2026-10-10）
 
 源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)三平台完整核验：Linux/Windows/macOS workspace623/618/622（ignored75/73/73）、固定Runtime73/72/72，全部failed0；三job各17steps成功或预期条件跳过。完整通过名精确Gemini CI38081567944旧集合+2Runtime；533个Provider函数、原生凭据和Secret doctest保持，raw2304/1990/2001行。20份Markdown/140本地链接/22锚点、16条报告记录/JSON字段、fixture语法和最终diff通过；215个非任务tracked文件保持恢复基线。
+
+
+## 续轮要求级核对恢复点
+
+2026-10-10从实际e258828恢复后继续F/G完成核对，不能将前轮“确认缺口已补”视为全F/G证明或直接转H。新增Runtime idle Classic/Lite，以及远端压缩Classic/Lite失败/取消四路径，定向各1/0/0通过，详[Runtime能力对照](CAIdex-Runtime-能力对照.md)。完整回归/提交/精确CI状态见HANDOFF。
+
+下一步继续核对Gemini纯comment/下游idle、本地压缩非成功与自动阈值是否属于既定离线门槛，并逐项核对Registry/Router、报告和各Provider明确拒绝范围；尚未确认整体离线闭环。真实商业模型按用户要求留到项目最后自行验收，仍未验证，不用fixture代验。

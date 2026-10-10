@@ -415,3 +415,12 @@ cargo test -p caidex-runtime --test real_runtime --locked -- --ignored
 新增real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume分别覆盖两个明确模式：种子轮次、compact/start受理、同ID contextCompaction started/completed及完成终态、实际rollout compacted checkpoint中的完整compaction item、实际app-server重启/disk resume（没有额外POST）、后续轮次完整item逐值承接。Classic/Lite header、compaction_trigger恰好一个、Key/POST各3次和合成认证均核对。opaque值仅合成载体，不证明模型服务解密或签名认证。
 
 Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Lifecycle完成且第三请求包含压缩摘要；不以远端证据代验本地分支。定向远端1/0/0（含Classic/Lite）、本地2/0/0（旧Classic+新Lite），完整workspace623/0/75、固定Runtime73/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；旧Runtime保持，新增2名。源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)整体completed/success，三job各17steps成功或条件跳过，完整日志逐名精确旧Gemini CI+2。Linux/Windows/macOS workspace623/618/622（忽略75/73/73）、固定Runtime73/72/72（无忽略），全部0失败，旧533个Provider函数及原生凭据/Secret doctest保持。未证明压缩失败/取消/自动阈值/无限历史/生产Host恢复/商业模型；fixture不授LiveRuntime/Full。
+
+
+## Runtime idle 与远端压缩非成功路径（2026-10-10续轮）
+
+新增两个固定Runtime离线用例，生产实现、执行器及审批未变。`real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_slots` 使用OpenAI Adapter合成Classic/Lite路由，原生stream idle设500ms，上游Provider仍90s/600s、Gateway及Provider各单许可。真实轮次以idle timeout失败，上游socket关闭，无自动重试、无不完整assistant/reasoning/tool历史；显式同线程新轮次成功，证明两层许可回收。配置/错误来自固定d27764b源码，不由Provider超时替代。
+
+`real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume` 覆盖Classic/Lite远端v2各失败/取消：实际contextCompaction及failed/interrupted终态、取消关闭上游、无额外POST/Key读取、rollout无成功compacted记录；重启实际app-server并disk resume不发POST，显式下一轮逐值保留原历史前缀，移除compaction_trigger且无伪造compaction。复用既有Harness与fixture，无生产远端能力升级。
+
+两项定向各1/0/0通过；完整回归和精确三平台CI状态见HANDOFF。此证据不覆盖Gemini纯comment keepalive专属时序、本地压缩失败/取消、自动阈值、商业模型或生产Host，不能授LiveRuntime/Full。

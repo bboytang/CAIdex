@@ -145,6 +145,13 @@ impl Harness {
             "gateway-anthropic-stall-classic" | "gateway-anthropic-stall-lite" => {
                 "native-anthropic-stall"
             }
+            "gateway-openai-idle-classic" | "gateway-openai-idle-lite" => "wire-idle",
+            "gateway-openai-compact-fail-classic" | "gateway-openai-compact-fail-lite" => {
+                "wire-compact-fail"
+            }
+            "gateway-openai-compact-cancel-classic" | "gateway-openai-compact-cancel-lite" => {
+                "wire-compact-cancel"
+            }
             "gateway-openai-compact-classic" => "wire-compact-classic",
             "gateway-openai-compact-lite" => "wire-compact-lite",
             "gateway-classic" | "gateway-openai-classic" => "wire-classic",
@@ -261,6 +268,9 @@ impl Harness {
                     _,
                     "gateway-stall-lite"
                     | "gateway-openai-stall-lite"
+                    | "gateway-openai-idle-lite"
+                    | "gateway-openai-compact-fail-lite"
+                    | "gateway-openai-compact-cancel-lite"
                     | "gateway-anthropic-stall-lite",
                 ) => "gpt-6.1-sol",
                 (
@@ -275,6 +285,12 @@ impl Harness {
                     | "native-ollama-classic"
                     | "native-ollama-discovery",
                     _,
+                )
+                | (
+                    _,
+                    "gateway-openai-idle-classic"
+                    | "gateway-openai-compact-fail-classic"
+                    | "gateway-openai-compact-cancel-classic",
                 ) => "gpt-5.5",
                 _ => "gpt-5.1-codex",
             }
@@ -693,6 +709,10 @@ impl Harness {
                 )
             } else if native_openai {
                 use caidex_provider_openai::{OpenAiConfig, OpenAiProvider};
+                let mut limits = Limits::default();
+                if mode.starts_with("gateway-openai-idle-") {
+                    limits.in_flight = 1;
+                }
                 let config = OpenAiConfig::new(credential)
                     .unwrap()
                     .with_base_url(&format!("http://127.0.0.1:{port}/v1"))
@@ -708,18 +728,14 @@ impl Harness {
                             vec![ResponsesDialect::Classic, ResponsesDialect::Lite],
                         )],
                         broker.clone(),
-                        Limits::default(),
+                        limits.clone(),
                     )
                     .unwrap(),
                 );
                 Some(
-                    caidex_model_gateway::start_with_provider(
-                        provider,
-                        broker.redactor(),
-                        Limits::default(),
-                    )
-                    .await
-                    .unwrap(),
+                    caidex_model_gateway::start_with_provider(provider, broker.redactor(), limits)
+                        .await
+                        .unwrap(),
                 )
             } else if mode.starts_with("gateway-model-switching") {
                 use caidex_model_core::{ModelMetadata, ModelProvider, ModelRouter};
@@ -871,8 +887,13 @@ impl Harness {
         } else {
             "CAIdex local protocol fixture"
         };
+        let idle = if mode.starts_with("gateway-openai-idle-") {
+            "stream_idle_timeout_ms = 500\n"
+        } else {
+            ""
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "{catalog}{google_summary}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"{provider_name}\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
+            "{catalog}{google_summary}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"{provider_name}\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n{idle}[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -2088,6 +2109,172 @@ async fn real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk
 }
 
 #[tokio::test]
+#[ignore = "requires pinned Codex; remote v2 failure/cancel keeps Classic/Lite disk history"]
+async fn real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume() {
+    for (mode, cancel, lite) in [
+        ("gateway-openai-compact-fail-classic", false, false),
+        ("gateway-openai-compact-fail-lite", false, true),
+        ("gateway-openai-compact-cancel-classic", true, false),
+        ("gateway-openai-compact-cancel-lite", true, true),
+    ] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![
+                    json!({"type":"text","text":"Seed history that failed compaction must retain"}),
+                ],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await
+                && event.method == "turn/completed"
+            {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+        assert_eq!(
+            harness
+                .runtime
+                .client()
+                .call(
+                    "thread/compact/start",
+                    Some(json!({"threadId":thread})),
+                    DEADLINE
+                )
+                .await
+                .unwrap(),
+            json!({})
+        );
+        let mut started = false;
+        if cancel {
+            let compact_turn = loop {
+                if let RuntimeEvent::Notification(event) = harness.next().await
+                    && event.method == "item/started"
+                    && event.raw["params"]["item"]["type"] == "contextCompaction"
+                {
+                    started = true;
+                    break event.raw["params"]["turnId"].as_str().unwrap().to_owned();
+                }
+            };
+            let streaming = harness.directory.0.join("gateway-streaming");
+            tokio::time::timeout(DEADLINE, async {
+                while !streaming.exists() {
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+            })
+            .await
+            .unwrap();
+            harness
+                .runtime
+                .client()
+                .interrupt_turn(&thread, &compact_turn, DEADLINE)
+                .await
+                .unwrap();
+        }
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Interaction(request) => {
+                    panic!("compaction requested interaction: {}", request.event.raw)
+                }
+                RuntimeEvent::Notification(event) => {
+                    if event.method == "item/started"
+                        && event.raw["params"]["item"]["type"] == "contextCompaction"
+                    {
+                        started = true;
+                    }
+                    if event.method == "turn/completed" {
+                        assert_eq!(
+                            event.raw["params"]["turn"]["status"],
+                            if cancel { "interrupted" } else { "failed" },
+                            "{}",
+                            event.raw
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+        assert!(started);
+        if cancel {
+            let disconnected = harness.directory.0.join("gateway-disconnected");
+            tokio::time::timeout(DEADLINE, async {
+                while !disconnected.exists() {
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+            })
+            .await
+            .unwrap();
+            assert_eq!(harness.trace()["gatewayDisconnected"], true);
+        }
+        assert_eq!(harness.trace()["requests"], 2);
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 2);
+        let read = harness
+            .runtime
+            .client()
+            .read_thread(&thread, true, DEADLINE)
+            .await
+            .unwrap();
+        let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+        assert!(
+            rollout
+                .lines()
+                .all(|line| serde_json::from_str::<Value>(line).unwrap()["type"] != "compacted")
+        );
+        restart_google_runtime(&mut harness, &thread).await;
+        assert_eq!(harness.trace()["requests"], 2);
+        harness.runtime.client().start_turn(&thread,
+            vec![json!({"type":"text","text":"Recover original history after non-successful compaction"})], json!({}), DEADLINE).await.unwrap();
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await
+                && event.method == "turn/completed"
+            {
+                assert_eq!(
+                    event.raw["params"]["turn"]["status"], "completed",
+                    "{}",
+                    event.raw
+                );
+                break;
+            }
+        }
+        let trace = harness.trace();
+        assert_eq!(trace["requests"], 3);
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+        let requests = trace["wireRequests"].as_array().unwrap();
+        let old = requests[1]["body"]["input"].as_array().unwrap();
+        let next = requests[2]["body"]["input"].as_array().unwrap();
+        assert_eq!(old.last().unwrap()["type"], "compaction_trigger");
+        assert_eq!(
+            &next[..old.len() - 1],
+            &old[..old.len() - 1],
+            "failed compaction must retain the exact old history prefix"
+        );
+        assert!(
+            next.iter()
+                .all(|item| item["type"] != "compaction" && item["type"] != "compaction_trigger")
+        );
+        for request in requests {
+            assert_eq!(
+                request["body"]["model"],
+                if lite { "gpt-6.1-sol" } else { "gpt-5.5" }
+            );
+            assert_eq!(
+                request["liteHeader"],
+                if lite { json!("true") } else { Value::Null }
+            );
+        }
+        harness.shutdown().await;
+    }
+}
+
+#[tokio::test]
 #[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
 async fn real_idle_queue_add_starts_a_turn_and_preserves_client_identity() {
     let mut harness = Harness::start("message").await;
@@ -2747,6 +2934,132 @@ async fn real_runtime_interrupt_via_gateway_closes_provider_socket() {
 #[ignore = "requires pinned Codex; native OpenAI classic/Lite interrupt closes actual socket"]
 async fn real_runtime_interrupt_via_native_openai_closes_provider_socket() {
     interrupt_gateway(&["gateway-openai-stall-classic", "gateway-openai-stall-lite"]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Classic/Lite downstream idle failure and explicit recovery"]
+async fn real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_slots() {
+    for (mode, lite) in [
+        ("gateway-openai-idle-classic", false),
+        ("gateway-openai-idle-lite", true),
+    ] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":"Wait for native Runtime idle timeout"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Interaction(request) => {
+                    panic!("idle fixture requested interaction: {}", request.event.raw)
+                }
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "failed",
+                        "{}",
+                        event.raw
+                    );
+                    assert!(
+                        event.raw["params"]["turn"]["error"]["message"]
+                            .as_str()
+                            .unwrap()
+                            .contains("idle timeout waiting for SSE"),
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                _ => (),
+            }
+        }
+        let disconnected = harness.directory.0.join("gateway-disconnected");
+        tokio::time::timeout(DEADLINE, async {
+            while !disconnected.exists() {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(harness.trace()["gatewayDisconnected"], true);
+        assert_eq!(harness.trace()["requests"], 1);
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 1);
+        let read = harness
+            .runtime
+            .client()
+            .read_thread(&thread, true, DEADLINE)
+            .await
+            .unwrap();
+        let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+        for line in rollout.lines() {
+            let item: Value = serde_json::from_str(line).unwrap();
+            if item["type"] == "response_item" {
+                assert_ne!(item["payload"]["role"], "assistant");
+                assert!(!matches!(
+                    item["payload"]["type"].as_str(),
+                    Some("reasoning" | "function_call" | "custom_tool_call")
+                ));
+            }
+        }
+        // Recovery is an explicit new turn on the same Runtime/Gateway, each limited to one slot.
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":"Explicit recovery after failed idle turn"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        let mut visible = String::new();
+        loop {
+            match harness.next().await {
+                RuntimeEvent::Interaction(request) => {
+                    panic!("recovery requested interaction: {}", request.event.raw)
+                }
+                RuntimeEvent::Notification(event) if event.method == "item/agentMessage/delta" => {
+                    visible.push_str(event.raw["params"]["delta"].as_str().unwrap())
+                }
+                RuntimeEvent::Notification(event) if event.method == "turn/completed" => {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+                _ => (),
+            }
+        }
+        assert_eq!(visible, "CAIdex local fixture complete");
+        let trace = harness.trace();
+        assert_eq!(trace["requests"], 2);
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 2);
+        assert_eq!(trace["wireResponses"].as_array().unwrap().len(), 1);
+        for request in trace["wireRequests"].as_array().unwrap() {
+            assert_eq!(
+                request["body"]["model"],
+                if lite { "gpt-6.1-sol" } else { "gpt-5.5" }
+            );
+            assert_eq!(request["organization"], "org-fixture");
+            assert_eq!(request["project"], "proj-fixture");
+            assert_eq!(
+                request["liteHeader"],
+                if lite { json!("true") } else { Value::Null }
+            );
+        }
+        assert_eq!(trace["gatewayCredentialMatched"], true);
+        harness.shutdown().await;
+    }
 }
 
 async fn interrupt_gateway(modes: &[&str]) {

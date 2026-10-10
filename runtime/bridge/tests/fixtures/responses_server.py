@@ -512,7 +512,8 @@ class Handler(BaseHTTPRequestHandler):
             trace.setdefault("summarySeen", []).append("CAIDEX_COMPACT_SUMMARY" in json.dumps(body.get("input", [])))
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
-        if mode == "wire-stall":
+        remote_compact = mode.startswith("wire-compact-") and any(item.get("type") == "compaction_trigger" for item in body.get("input", []))
+        if mode == "wire-stall" or (mode == "wire-idle" and trace["requests"] == 1) or (remote_compact and mode == "wire-compact-cancel"):
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
             self.protocol_version = "HTTP/1.1"
             self.send_response(200)
@@ -532,7 +533,6 @@ class Handler(BaseHTTPRequestHandler):
             Path(trace_path).with_name("gateway-disconnected").touch()
             self.close_connection = True
             return
-        remote_compact = mode.startswith("wire-compact-") and any(item.get("type") == "compaction_trigger" for item in body.get("input", []))
         if mode.startswith("wire-") and not remote_compact:
             reasoning = {"type": "reasoning", "id": f"rs_{identity}", "summary": [], "encrypted_content": "CAIDEX_OPAQUE_REASONING+/==", "provider_signature": "CAIDEX_FUTURE_SIGNATURE=="}
             if mode.startswith("wire-anthropic-"):
@@ -545,7 +545,9 @@ class Handler(BaseHTTPRequestHandler):
                 reasoning["summary"] = [{"type": "summary_text", "text": "Native fixture thinking"}]
                 reasoning["encrypted_content"] = "caidex.anthropic.native-message.v1:" + json.dumps({"provider": "anthropic", "version": 1, "message": native})
             events.append(event("response.output_item.done", item=reasoning))
-        if remote_compact:
+        if remote_compact and mode == "wire-compact-fail":
+            events.append(event("response.failed", response={"id": identity, "status": "failed", "error": {"code": "server_error", "message": "Synthetic remote compaction failure"}}))
+        elif remote_compact:
             events.append(event("response.output_item.done", item={"type": "compaction", "encrypted_content": "CAIDEX_REMOTE_COMPACT+/=="}))
         elif mode == "patch" and trace["requests"] == 1:
             trace["offeredTools"] = [{"name": tool.get("name"), "type": tool.get("type"), "nestedNames": [nested.get("name") for nested in tool.get("tools", [])]} for tool in body.get("tools", [])]
@@ -587,7 +589,8 @@ class Handler(BaseHTTPRequestHandler):
                 events.append(event("response.output_text.delta", delta=text))
             events.append(event("response.output_item.done", item=item))
         tokens = 100 if mode == "goal-budget" else 0
-        events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": tokens, "output_tokens": 0, "total_tokens": tokens}}))
+        if not (remote_compact and mode == "wire-compact-fail"):
+            events.append(event("response.completed", response={"id": identity, "usage": {"input_tokens": tokens, "output_tokens": 0, "total_tokens": tokens}}))
         if mode.startswith("wire-"):
             trace.setdefault("wireResponses", []).append(events)
         Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
