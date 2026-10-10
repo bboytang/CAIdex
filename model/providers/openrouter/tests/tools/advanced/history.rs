@@ -902,3 +902,5 @@ async fn history_does_not_enable_summary_include_lite_or_hosted_execution() {
 }
 
 mod controls;
+
+mod lite;

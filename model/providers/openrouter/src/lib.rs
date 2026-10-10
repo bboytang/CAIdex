@@ -36,6 +36,7 @@ pub struct OpenRouterProvider<S: SecretStore> {
     models_endpoint: CustomResponses,
     limits: Limits,
     runtime_context: bool,
+    model_dialects: HashMap<String, Vec<caidex_model_core::ResponsesDialect>>,
     reasoning_efforts: HashMap<String, HashMap<String, String>>,
     verbosity_instructions: HashMap<String, HashMap<String, String>>,
     service_tiers: HashMap<String, HashMap<String, String>>,
@@ -63,16 +64,37 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         limits: Limits,
         options: ClientOptions,
     ) -> Result<Self, Error> {
-        if models
-            .iter()
-            .any(|m| m.dialects != [caidex_model_core::ResponsesDialect::Classic])
-        {
-            return Err(Error::InvalidRoute);
-        }
+        Self::build(config, models, broker, limits, options, false)
+    }
+    /// Explicit Lite compilation; native transport remains stateless Classic.
+    pub fn with_lite_options(
+        config: OpenRouterConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+    ) -> Result<Self, Error> {
+        Self::build(config, models, broker, limits, options, true)
+    }
+    fn build(
+        config: OpenRouterConfig,
+        models: Vec<ModelMetadata>,
+        broker: Arc<Broker<S>>,
+        limits: Limits,
+        options: ClientOptions,
+        lite: bool,
+    ) -> Result<Self, Error> {
+        let mut model_dialects = HashMap::new();
         let models_endpoint = config.endpoint("models")?;
         let routes = models
             .into_iter()
-            .map(|model| {
+            .map(|mut model| {
+                model.validate().map_err(|_| Error::InvalidRoute)?;
+                if !lite && model.dialects != [caidex_model_core::ResponsesDialect::Classic] {
+                    return Err(Error::InvalidRoute);
+                }
+                model_dialects.insert(model.id.clone(), model.dialects.clone());
+                model.dialects = vec![caidex_model_core::ResponsesDialect::Classic];
                 ConfiguredModel::new(
                     model.id.clone(),
                     model.native_model.clone(),
@@ -92,6 +114,7 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
             models_endpoint,
             limits,
             runtime_context: false,
+            model_dialects,
             reasoning_efforts: HashMap::new(),
             verbosity_instructions: HashMap::new(),
             service_tiers: HashMap::new(),
@@ -299,10 +322,14 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
         )
     }
     fn prepare(&self, request: CanonicalRequest) -> ProviderResult<Prepared> {
-        let metadata = self.responses.metadata(request.model())?;
+        let metadata = self.metadata(request.model())?;
+        if !metadata.dialects.contains(&request.dialect()) {
+            return Err(ProviderError::new(400, "unsupported_dialect"));
+        }
         if request.wire().to_string().len() > self.limits.request_bytes {
             return Err(ProviderError::new(413, "invalid_or_oversized_body"));
         }
+        let (request, lite) = request::classic(request)?;
         if self.native_history.contains(request.model()) {
             let mut source = request.wire().clone();
             request::consume_context(&mut source, self.runtime_context)?;
@@ -311,6 +338,9 @@ impl<S: SecretStore + 'static> OpenRouterProvider<S> {
                 controls.as_object_mut().unwrap().remove(k);
             }
             let mut policy = serde_json::json!({"route":request.model(),"native_model":metadata.native_model,"capabilities":metadata.capabilities,"runtime_context":self.runtime_context,"native_tools":self.native_tools.contains(request.model()),"advanced_tools":self.advanced_tools.contains(request.model()),"backend":self.backends[request.model()],"efforts":self.reasoning_efforts.get(request.model()),"verbosity":self.verbosity_instructions.get(request.model()),"tiers":self.service_tiers.get(request.model()),"controls":controls});
+            if let Some(lite) = lite {
+                policy["lite"] = lite;
+            }
             // Absent policies keep existing v1 carriers byte-compatible.
             if let Some(choices) = self.reasoning_summaries.get(request.model()) {
                 policy["summaries"] = serde_json::json!(choices);
@@ -411,6 +441,7 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
                     if !available.contains(&model.native_model) {
                         return None;
                     }
+                    model.dialects = self.model_dialects[&model.id].clone();
                     model.source = EvidenceSource::ProviderCatalog;
                     Some(model)
                 })
@@ -418,7 +449,9 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
         })
     }
     fn metadata(&self, model: &str) -> ProviderResult<ModelMetadata> {
-        self.responses.metadata(model)
+        let mut metadata = self.responses.metadata(model)?;
+        metadata.dialects = self.model_dialects[model].clone();
+        Ok(metadata)
     }
     fn capabilities(&self, model: &str) -> ProviderResult<ModelCapabilities> {
         self.responses.capabilities(model)

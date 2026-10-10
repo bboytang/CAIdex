@@ -14,6 +14,7 @@ use std::{
 };
 
 const PREFIX: &str = "caidex.openrouter.native-history.v1:";
+const LITE_PREFIX: &str = "caidex.openrouter.native-history.v2:";
 pub(crate) fn invalid() -> ProviderError {
     ProviderError::new(400, "openrouter_invalid_history")
 }
@@ -105,6 +106,27 @@ fn compile(policy: &Value, limit: usize) -> ProviderResult<(CanonicalRequest, To
     source["model"] = policy["route"].clone();
     source["input"] = json!([]);
     let source = CanonicalRequest::new(source, ResponsesDialect::Classic).map_err(|_| invalid())?;
+    if let Some(lite) = policy.get("lite") {
+        if lite
+            .as_object()
+            .is_none_or(|o| o.len() != 1 || !o.contains_key("additional_tools"))
+        {
+            return Err(invalid());
+        }
+        let mut original = source.wire().clone();
+        original.as_object_mut().unwrap().remove("tools");
+        original["input"] = if lite["additional_tools"].is_null() {
+            json!([])
+        } else {
+            json!([lite["additional_tools"]])
+        };
+        let (restored, binding) = request::classic(
+            CanonicalRequest::new(original, ResponsesDialect::Lite).map_err(|_| invalid())?,
+        )?;
+        if restored.wire() != source.wire() || binding.as_ref() != Some(lite) {
+            return Err(invalid());
+        }
+    }
     let tools = ToolPolicy::new(&source, capabilities.parallel_tools, advanced)?;
     if native && tools.has_tools() && capabilities.native_tools == CapabilitySupport::Unsupported {
         return Err(ProviderError::new(400, "unsupported_tools"));
@@ -280,7 +302,7 @@ impl NativeHistory {
         chunks: Option<&[Value]>,
         limit: usize,
     ) -> ProviderResult<Self> {
-        let mut wire = json!({"provider":"openrouter","version":1,"scope":context.scope,"policy":context.policy,"request":context.request.wire(),"response":response.wire(),"source":if chunks.is_some(){"sse"}else{"json"}});
+        let mut wire = json!({"provider":"openrouter","version":if context.policy.get("lite").is_some(){2}else{1},"scope":context.scope,"policy":context.policy,"request":context.request.wire(),"response":response.wire(),"source":if chunks.is_some(){"sse"}else{"json"}});
         if let Some(chunks) = chunks {
             wire["chunks"] = json!(chunks);
         }
@@ -288,7 +310,14 @@ impl NativeHistory {
     }
     fn new(wire: Value, limit: usize) -> ProviderResult<Self> {
         bounded(&wire, limit)?;
-        if wire["provider"] != "openrouter" || wire["version"] != 1 {
+        if wire["provider"] != "openrouter"
+            || wire["version"]
+                != if wire["policy"].get("lite").is_some() {
+                    2
+                } else {
+                    1
+                }
+        {
             return Err(invalid());
         }
         let reference: CredentialRef =
@@ -345,13 +374,18 @@ impl NativeHistory {
         if carrier["type"] != "reasoning" || text.len() > limit {
             return Err(invalid());
         }
-        Self::new(
-            serde_json::from_str(text.strip_prefix(PREFIX).ok_or_else(invalid)?)
-                .map_err(|_| invalid())?,
-            limit,
-        )
-        .map_err(|_| invalid())
+        let (payload, version) = if let Some(payload) = text.strip_prefix(PREFIX) {
+            (payload, 1)
+        } else {
+            (text.strip_prefix(LITE_PREFIX).ok_or_else(invalid)?, 2)
+        };
+        let wire: Value = serde_json::from_str(payload).map_err(|_| invalid())?;
+        if wire["version"] != version {
+            return Err(invalid());
+        }
+        Self::new(wire, limit).map_err(|_| invalid())
     }
+
     pub fn from_responses(response: &CanonicalResponse, limit: usize) -> ProviderResult<Self> {
         let history = Self::decode(response.output().first().ok_or_else(invalid)?, limit)?;
         let projected = history.to_responses(limit)?;
@@ -381,8 +415,13 @@ impl NativeHistory {
             .map(|p| json!({"type":"summary_text","text":p["text"]}))
             .collect();
         // shortcut: complete prefixes grow quadratically across carriers; budgets bound them until Host persistence deduplicates history.
+        let prefix = if self.0["version"] == 2 {
+            LITE_PREFIX
+        } else {
+            PREFIX
+        };
         let mut output = vec![
-            json!({"type":"reasoning","id":format!("rs_{}_openrouter_history",response.id()),"summary":summary,"encrypted_content":format!("{PREFIX}{}",self.0)}),
+            json!({"type":"reasoning","id":format!("rs_{}_openrouter_history",response.id()),"summary":summary,"encrypted_content":format!("{prefix}{}",self.0)}),
         ];
         for item in response.output() {
             let mut projected = json!({});

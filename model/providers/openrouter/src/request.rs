@@ -4,6 +4,48 @@ use caidex_model_core::{
 };
 use serde_json::{Value, json};
 use std::collections::{BTreeSet, HashMap};
+/// Source is bounded before consuming the Runtime's prompt-only tool prefix.
+pub(crate) fn classic(
+    request: CanonicalRequest,
+) -> ProviderResult<(CanonicalRequest, Option<Value>)> {
+    if request.dialect() == ResponsesDialect::Classic {
+        return Ok((request, None));
+    }
+    let mut wire = request.wire().clone();
+    if wire
+        .get("parallel_tool_calls")
+        .is_some_and(|v| !v.is_boolean())
+    {
+        return Err(invalid());
+    }
+    let input = wire["input"].as_array_mut().ok_or_else(invalid)?;
+    let mut prefix = Value::Null;
+    for (index, item) in input.iter().enumerate() {
+        if item["type"] != "additional_tools" {
+            continue;
+        }
+        fields(item, &["type", "id", "role", "tools"])?;
+        if index != 0
+            || item["role"] != "developer"
+            || !item["tools"].is_array()
+            || item.get("id").is_some_and(|v| {
+                v.as_str()
+                    .is_none_or(|s| s.trim().is_empty() || s.chars().any(char::is_control))
+            })
+        {
+            return Err(invalid());
+        }
+        prefix = item.clone();
+    }
+    if !prefix.is_null() {
+        input.remove(0);
+        wire["tools"] = prefix["tools"].clone();
+    }
+    Ok((
+        CanonicalRequest::new(wire, ResponsesDialect::Classic).map_err(|_| invalid())?,
+        Some(json!({"additional_tools":prefix})),
+    ))
+}
 pub(crate) fn valid_effort(value: &str) -> bool {
     matches!(
         value,
