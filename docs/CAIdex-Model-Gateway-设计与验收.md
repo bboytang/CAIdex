@@ -279,3 +279,11 @@ OpenRouter显式原生summary/context/include组合已实现，新增8项，Prov
 精确源码`0e2cb32834af889a5d9b343cb867c7cb5e0d40af`/[CI38057298047](https://github.com/bboytang/CAIdex/actions/runs/38057298047)整体completed/success。linux job114228278808，workspace610/0/66、实际固定Runtime64/0/0，raw2267行/通过名675；windows job114228278882，workspace605/0/64、实际固定Runtime63/0/0，raw1953行/通过名668；macos job114228278736，workspace609/0/64、实际固定Runtime63/0/0，raw1964行/通过名672。各17steps成功或条件跳过，OpenRouter Provider100/Qwen72/DeepSeek57及新增OpenRouter Runtime7每名每平台一次；全通过名精确旧CI38055815533+7，无遗漏/重复，旧Runtime名保持。watch和三份完整日志下载exit0，ci-check通过。
 
 下一步继续V3 F/G：对照`model/core` Registry、Gateway/Runtime测试与各Provider验收，核对模型注册/切换和版本化兼容性报告尚缺的范围；先核实代码/证据再补既定验收，不重做已验Adapter，不据离线fixture跳H。真实模型Live/Full须另有明确授权，不升级Unknown/Registry证据。商业API、生产Host、iOS应用未验；context仍依执行端显式model/backend支持声明，载体非加密/来源认证、backend政策非实际endpoint证明，文本终态缓冲及完整前缀二次增长/预算限制保留。
+
+## 显式多 Provider 模型路由
+
+`model/core::ModelRouter`实现既定六方法接口，构造时传入公共模型ID与现有`Arc<dyn ModelProvider>`的明确绑定，复用Registry校验。不设默认Provider、自动重试或错误降级，不读取Key，不转换工具或签名历史。可直接注入Gateway现有`start_with_provider`，无需新增HTTP栈或Runtime执行器。
+
+注册保留原生模型、方言、能力和版本化兼容性报告；Adapter元数据发生变化须重新注册。目录每个Adapter调用一次，仅返回已显式绑定且归属匹配的模型，按ID排序；ProviderCatalog只表示目录来源，不升级能力或报告，重复/绑定漂移拒绝，目录失败原样返回。请求、上下文、取消、错误及retry-after原样交给所选Adapter，未知模型/不支持方言/明确不支持流式在调用前拒绝。
+
+新增7项Core路由与2项Gateway OpenRouter/Custom回环测试完整本地通过：workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff；三平台CI待验。此阶段不证明商业Live/Full，也不实现Host线程切换。跨Provider切换仍按V3创建关联新线程并适配历史，同Provider在已验组合的轮次边界切换。

@@ -426,6 +426,7 @@ dependencies = [
  "caidex-credentials",
  "caidex-model-core",
  "caidex-provider-custom",
+ "caidex-provider-openrouter",
  "futures-util",
  "getrandom 0.4.3",
  "httpdate",

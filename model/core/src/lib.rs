@@ -5,6 +5,7 @@
 mod provider;
 mod registry;
 mod responses;
+mod router;
 mod sse;
 mod stream;
 
@@ -21,6 +22,7 @@ pub use responses::{
     CanonicalRequest, CanonicalResponse, ResponseEvent, ResponseItem, ResponsesDialect, ToolCall,
     ToolInput, ToolKind, ToolResult, ToolSearchCall, ToolSearchOutput, Usage,
 };
+pub use router::ModelRouter;
 pub use sse::{SseDecoder, SseEvent};
 pub use stream::{ResponsesStream, StreamEvent, StreamState};
 

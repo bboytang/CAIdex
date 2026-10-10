@@ -1,4 +1,5 @@
 //! Real loopback sockets and synthetic credentials, never a commercial model.
+mod router;
 use caidex_credentials::{Broker, CredentialRef, Id, Secret, SecretKind, SecretStore};
 use caidex_model_core::{ResponsesDialect, ResponsesStream, StreamState};
 use caidex_model_gateway::{CustomResponses, Limits, ModelRoute, RunningGateway};
