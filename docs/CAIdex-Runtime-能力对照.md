@@ -66,7 +66,7 @@
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
 | MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
-| Context compaction | 三平台经典本地摘要已验；Lite本地摘要及Classic/Lite远端opaque/重启三平台已验 | 商业模型、失败/取消/自动阈值等独立范围，详下文 |
+| Context compaction | 三平台Classic/Lite本地摘要、远端opaque/重启及两分支失败/取消/磁盘恢复已验 | 自动阈值、商业模型和生产Host等独立范围，详下文 |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
 | Queue | 三平台 CRUD/reorder/分页/busy/中断保留/指定及默认/自动启动通过 | 多端与持久 Host H |
@@ -444,3 +444,6 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 新增`real_local_compaction_failure_and_cancel_keep_history_after_disk_resume`，Classic/Lite各失败与取消四路径。与远端测试复用生命周期/恢复断言，但显式fixture provider身份保持本地摘要分支，不选择OpenAI remote V2。固定stream/request retries=0；第二POST为user摘要请求，无compaction_trigger，失败返回response.failed且无成功completed；取消停在未完成真实socket。实际failed/interrupted终态、取消关闭上游、无额外POST/Key读取，rollout无成功compacted记录。实际app-server重启及disk resume不发POST，显式第三轮成功、Key/POST各3次。
 
 原始history前缀逐值保留。Lite本地压缩会将additional_tools清空；恢复正常轮次后的工具item与首轮原始请求逐值一致，其余history前缀逐值一致。首定向因此失败，核实真实wire后补独立工具恢复断言，最终定向1/0/0通过；未改生产执行/审批/能力。完整回归与精确三平台CI状态见HANDOFF。本证据不代验自动阈值、无限历史、真实商业模型或生产Host。
+
+
+源码`d72c88a292a4ab41775e38c95c73e7f62d2f7cda`/[CI38085110360](https://github.com/bboytang/CAIdex/actions/runs/38085110360)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38084218039集合+1本地压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略79/77/77）、固定Runtime77/76/76（无忽略），全部0失败；raw2312/1998/2009行、函数通过名700/693/697，另Secret doctest1。旧Provider/远端compaction/idle/执行与审批回归无遗漏或重复，watch及完整下载exit0。 本地非成功专项已完整离线验证；自动阈值、商业模型及生产Host仍未验。
