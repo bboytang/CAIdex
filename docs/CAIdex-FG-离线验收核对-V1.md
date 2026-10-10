@@ -60,10 +60,10 @@
 
 源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)整体completed/success；三job各17steps成功或条件跳过，完整日志逐名核验通过。Linux/Windows/macOS workspace621/616/620（0失败、忽略73/71/71）、固定Runtime71/70/70（0失败/忽略）；Google92逐名每平台一次。全通过名693/686/690精确旧基线CI+2，无旧名遗漏/重复；raw日志2298/1984/1995行，watch与下载exit0。仅Google新增2测试，其余Adapter及固定Runtime保持。上述执行计划已经完成；纯文档收尾不重复Rust CI。
 
-下一步：Anthropic精确断言已三平台CI核验；Gemini四类边界已三平台精确CI核验；16个route/profile离线报告已写，compaction两个新增用例本地及精确三平台CI通过。已确认的可离线补齐缺口均已实施/验证，没有据此认领全参数/全时序形式证明。商业真实模型与生产Host仍未验，F/G不标商业整体完成；离线复核与压缩精确CI已完成，按用户确认顺序继续H独立开发，不能用fixture认领商业门槛。
+下一步：Anthropic精确断言已三平台CI核验；Gemini四类边界已三平台精确CI核验；16个route/profile离线报告已写，compaction两个新增用例本地及精确三平台CI通过。已确认的可离线补齐缺口均已实施/验证，没有据此认领全参数/全时序形式证明。商业真实模型与生产Host仍未验，F/G不标商业整体完成；该前轮离线复核与压缩精确CI已完成；后续补证与当前Custom范围未决见本文末节及HANDOFF，不据此转H或用fixture认领商业门槛。
 
 
-## 最终离线复核（2026-10-10）
+## 前轮压缩离线复核（2026-10-10，历史证据）
 
 源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)三平台完整核验：Linux/Windows/macOS workspace623/618/622（ignored75/73/73）、固定Runtime73/72/72，全部failed0；三job各17steps成功或预期条件跳过。完整通过名精确Gemini CI38081567944旧集合+2Runtime；533个Provider函数、原生凭据和Secret doctest保持，raw2304/1990/2001行。20份Markdown/140本地链接/22锚点、16条报告记录/JSON字段、fixture语法和最终diff通过；215个非任务tracked文件保持恢复基线。
 

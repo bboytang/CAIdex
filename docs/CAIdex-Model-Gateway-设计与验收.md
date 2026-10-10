@@ -1,14 +1,14 @@
 # CAIdex 模型核心与 Gateway：设计和验收
 
-阶段 F/G，依 V3 顺序推进。F 第一至第三步当前范围已有三平台验收，第三步包括 ModelProvider、CanonicalResponse、模型 Registry 和独立 Custom Responses client。后续 Provider 与实际商业模型兼容性仍需验收，不能将已有离线证据当作 F/G 全部验收。
+阶段F/G，按V3最终架构推进。当前八个Adapter（Custom Responses、OpenAI、Anthropic、Gemini、Ollama、DeepSeek、Qwen、OpenRouter）的明确协议/工具/推理范围已有三平台离线证据；Registry/ModelRouter、逐route版本报告、Classic/Lite切换、Runtime idle及本地/远端压缩的已验范围见[要求级核对](CAIdex-FG-离线验收核对-V1.md)、[路由报告](CAIdex-Provider-路由离线兼容性报告-V1.md)和[Runtime能力对照](CAIdex-Runtime-能力对照.md)。最新精确源码47b6b519d69955328218b2b7953794641090de52/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)完整三平台通过。
 
-原生 OpenAI Models/Responses 与 Gateway 注入入口已在源码 e7253c8 实现，[CI 37573720266](https://github.com/bboytang/CAIdex/actions/runs/37573720266) 三平台全部通过；新增契约和限制见 [OpenAI Provider 设计与验收](CAIdex-OpenAI-Provider-设计与验收.md)。Anthropic 原生适配及实际 Runtime 离线接线范围已三平台验收，见 [Anthropic 当前范围](CAIdex-Anthropic-Provider-设计与验收.md)；Gemini Models、generateContent JSON、原生SSE解析及流式HTTP、v1原生历史/Responses输出投影、工具身份映射/v2声明绑定历史及Responses请求编译基础已三平台验收，图片/工具结果媒体、推理、结构输出及其余Runtime参数转换亦已三平台验收（最新源码05f6f91/[CI37693355853](https://github.com/bboytang/CAIdex/actions/runs/37693355853)，Google78项逐平台通过），六方法/Profile及增量JSON/SSE投影、Registry/Gateway本阶段已三平台验收（源码530ead5/[CI37696809902](https://github.com/bboytang/CAIdex/actions/runs/37696809902)，Google88逐平台通过）；实际Gemini Runtime离线接线亦已三平台验收（源码56f9789/CI37717424972），见 [Gemini 当前范围](CAIdex-Gemini-Provider-设计与验收.md)。兼容 API、Ollama 剩余范围与真实商业模型兼容性仍待后续；Ollama 已验阶段见本文末及专属验收文档。
+F/G整体未完成：原V2两类Custom与V3明确的Custom Responses之间，通用Chat Completions入口范围正在向用户澄清，实际仓库没有通用chat/completions Adapter，不能以现有Responses兼容API代验。真实商业模型/实际Ollama由用户项目最终自验；生产Host、UI与完整CLI分别归V3后续阶段。下文较早基线保留为历史证据，不用于重复开发已完成任务；当前准确下一步以[HANDOFF](../HANDOFF.md)为准，不直接转H或授LiveRuntime/Full。
 
 ## 固定协议依据
 
 源码固定 `d27764b82f7118f674371e6d6e76271d9d606edb` / Codex 0.160.1，不从当前 main 或未知模型 fallback 推断行为。
 
-| 路径 | 固定上游实际行为 | 本轮验证 |
+| 路径 | 固定上游实际行为 | 基础阶段验证（历史） |
 | --- | --- | --- |
 | 经典 Responses | `/responses`，instructions/tools 在顶层；使用 bundled gpt-5.5 元数据路径 | 真实 Runtime 两轮、本地服务捕获请求和 opaque reasoning 回放 |
 | Responses Lite | 同一路径，header `x-openai-internal-codex-responses-lite: true`；instructions/tools 不在顶层；input 内 additional_tools + developer message；稳定 at_/msg_ ID，reasoning.context=all_turns，parallel_tool_calls=false | bundled gpt-6.1-sol/code_mode_only 元数据选择、两轮稳定前缀/推理回放；没有执行 Code Mode 工具 |
@@ -97,7 +97,7 @@ HTTP Gateway 通过以下边界保留收到的 wire；不会恢复上游已经�
 - 本机 workspace/fmt/Clippy/真实 Runtime 20 项通过，单并发 slot/TLS 定向复验通过。首轮 Windows TLS 正例被拒绝，以明确 CA/leaf identity、用途/AKI/有效期的 fixture 修正后全部通过，未放宽生产 TLS。日志 `/tmp/caidex-ci-37552752561.log` 供本机复查，跨机器以 CI 链接为准。
 - 后续范围：兼容API/Ollama、真实Provider TLS/商业推理、远端opaque compaction及未映射context headers。Anthropic原生历史与Lite Code Mode实际执行已另有三平台离线证据，Gemini v1历史/输出投影本轮亦已验收；这些不代表商业Full。E原生keyring回归继续由CI保持。
 
-## 下一步顺序
+## 基础接入阶段顺序（历史）
 
 1. OpenAI 当前离线适配范围已通过三平台验收，按 V3/原 V2 第 14–22 节继续 Anthropic→Gemini→兼容 API/Ollama，使用已验六方法接口与 Registry，先以本地合成 fixture 验证原生 Adapter/模型清单；OpenAI 真实模型兼容性与原生历史限制继续保留验收项。
 2. 补各 Adapter 原生请求/响应/工具/usage/reasoning/images/结构化输出/context/capabilities/prompt compatibility；不要把 Responses pass-through 当作最终跨提供商 Gateway。
