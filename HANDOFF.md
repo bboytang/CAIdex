@@ -4,9 +4,11 @@
 
 ## 当前完整F/G目标恢复点（本轮）
 
-本轮恢复HEAD=origin/main=`4931b58663435448139d725ed2414db496a001e4`，开始干净。已加强两个既有Anthropic固定Runtime用例：Classic重启第四POST逐值回放第三native回复全组（含opaque）；Lite落盘custom调用input/身份与完整结果逐值转native text核对，并断言Key读取2次。无生产/fixture/依赖/workflow变更。定向各1/0/0、完整workspace621/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；最终diff已检查。当前待提交/push及精确三平台CI，不能将本地结果记成CI证据。
+本轮恢复HEAD=origin/main=`4931b58663435448139d725ed2414db496a001e4`，开始干净。Anthropic两个既有固定Runtime断言已提交/push `9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`；精确[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)正在运行，watch会话61234。Classic重启第四POST完整回放第三native回复全组；Lite落盘custom调用input/身份及完整结果逐值转native text，Key读取2次。定向各1/0/0、workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过；生产/fixture/依赖/workflow未改。
 
-下一步：提交本阶段并核验精确CI，继续Gemini缺prompt usage下界、thought-only phase、整组互换/满槽cancel，随后逐route报告及固定Runtime compaction证据。F/G目标保持active，不能以两断言替代全部。用户已明确：真实模型验收最后全项目完成后由用户自行执行；当前先完成可离线实现/验证任务。不再询问Key/API，不读取用户Key或调用商业API；真实模型保持未验，不升级LiveRuntime/Full。生产Host仍属后续阶段。
+当前未提交Gemini六代码/测试文件：src/content.rs、src/history.rs、tests/history.rs、tests/response_stream.rs、tests/http.rs、tests/http/provider.rs。缺prompt usage下界和thought-only STOP文本phase已分别真实RED复现；共享逻辑最小修复后usage/phase/旧thought-only回放拒绝定向各1/0/0。缺失计数仍未知、不补零；cached只作prompt下界不重复相加。新phase用例JSON/SSE逐字节及完整native恢复、真实调用对照通过；自动回放拒绝未放宽。整组外来载体JSON/SSE来源及Classic/Lite目标在Key/POST前400拒绝定向通过；原生/投影未消费队列cancel/Drop与旧已消费分支通过，cancel先观察socket关闭再排空缓存、无成功终态/载体、后续许可释放。Google94/0/0、workspace623/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过（exec14633 exit0）；最终双向完整组互换1/0/0复验通过，最终diff已检查。尚未提交/CI。
+
+下一步：提交/push本地通过Gemini阶段并完整核验精确CI。同步读取Anthropic精确CI全日志，不将本地写成CI结果。随后逐route报告及固定Runtime compaction证据。F/G目标保持active。用户明确真实模型验收最后全项目完成后自行执行；当前继续可离线任务。不再询问Key/API、不读取用户Key或调用商业API；真实模型保持未验，不升级LiveRuntime/Full。生产Host属后续阶段。
 
 ## 当前状态与第一步
 

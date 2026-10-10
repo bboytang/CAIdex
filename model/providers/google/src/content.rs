@@ -43,9 +43,9 @@ impl NativeResponse {
                 if candidate["content"]["parts"]
                     .as_array()
                     .is_some_and(|parts| {
-                        parts
-                            .iter()
-                            .any(|part| present(part, "functionCall").is_some())
+                        parts.iter().any(|part| {
+                            part["thought"] != true && present(part, "functionCall").is_some()
+                        })
                     }) =>
             {
                 CandidateOutcome::ToolCall

@@ -67,6 +67,74 @@ fn run(
     (output, native)
 }
 
+#[test]
+fn thought_only_calls_leave_final_text_final_without_executable_tools() {
+    let tools = tools();
+    for thought in [true, false] {
+        let chunks = vec![chunk(
+            json!([
+                {"functionCall":{"name":tools.native_tools()[0]["name"],"args":{}},"thought":thought,"thoughtSignature":"opaque-call"},
+                {"text":"done"}
+            ]),
+            Some("STOP"),
+        )];
+        for split in [1, 512] {
+            let (events, native) = run(&chunks, split);
+            let streamed = &events.last().unwrap().response.wire()["response"];
+            let json_response = NativeHistory::from_response(
+                native.response(),
+                MODEL,
+                &request(&tools),
+                Some(0),
+                "fixture",
+                LIMIT,
+            )
+            .unwrap()
+            .with_tools(&tools, LIMIT)
+            .unwrap()
+            .to_responses(LIMIT)
+            .unwrap();
+            for response in [streamed, json_response.wire()] {
+                let output = response["output"].as_array().unwrap();
+                assert_eq!(response["status"], "completed");
+                assert_eq!(
+                    output
+                        .iter()
+                        .filter(|v| v["type"] == "function_call")
+                        .count(),
+                    usize::from(!thought)
+                );
+                let text = output.iter().find(|v| v["type"] == "message").unwrap();
+                assert_eq!(
+                    text["phase"],
+                    if thought {
+                        "final_answer"
+                    } else {
+                        "commentary"
+                    }
+                );
+                assert_eq!(text["content"][0]["text"], "done");
+                let restored =
+                    NativeHistory::from_responses_output(output, MODEL, &request(&tools), LIMIT)
+                        .unwrap();
+                assert_eq!(restored.native_response(), native.response().wire());
+            }
+            assert!(
+                events
+                    .iter()
+                    .filter(|e| e.response.kind() == "response.output_item.done")
+                    .filter(|e| e.response.wire()["item"]["type"] == "message")
+                    .all(|e| e.response.wire()["item"]["phase"]
+                        == if thought {
+                            "final_answer"
+                        } else {
+                            "commentary"
+                        })
+            );
+        }
+    }
+}
+
 // Catches buffering ordinary text, early executable calls/signatures, misplaced
 // indices after opaque Parts, and loss of late native metadata or signed chunks.
 #[test]

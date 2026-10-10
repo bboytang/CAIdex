@@ -399,6 +399,16 @@ fn normalized_usage(native: &NativeResponse) -> ProviderResult<Value> {
     {
         return Err(inconsistent());
     }
+    // Missing counts stay unknown; known subsets still bound the total.
+    if let Some(total) = provided_total {
+        let input_floor = input
+            .or_else(|| count("cachedContentTokenCount"))
+            .unwrap_or(0);
+        let output_floor = add(candidates.unwrap_or(0), thoughts.unwrap_or(0))?;
+        if add(input_floor, output_floor)? > total {
+            return Err(inconsistent());
+        }
+    }
     let (Some(input), Some(output)) = (input, output) else {
         return Ok(Value::Null);
     };

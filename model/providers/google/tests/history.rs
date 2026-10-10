@@ -296,6 +296,15 @@ fn usage_accounts_for_thoughts_once_without_adding_cached_or_tool_prompt_tokens(
             json!({"promptTokenCount":10,"candidatesTokenCount":7}),
             None,
         ),
+        (
+            json!({"candidatesTokenCount":7,"thoughtsTokenCount":3,"cachedContentTokenCount":4,"totalTokenCount":14}),
+            None,
+        ),
+        (
+            json!({"cachedContentTokenCount":2,"totalTokenCount":2}),
+            None,
+        ),
+        (json!({"candidatesTokenCount":7,"totalTokenCount":7}), None),
         (json!({"totalTokenCount":20}), None),
         (Value::Null, None),
     ] {
@@ -328,6 +337,30 @@ fn usage_accounts_for_thoughts_once_without_adding_cached_or_tool_prompt_tokens(
         );
     }
     for (raw, code) in [
+        (
+            json!({"candidatesTokenCount":7,"thoughtsTokenCount":3,"totalTokenCount":9}),
+            "google_usage_inconsistent",
+        ),
+        (
+            json!({"candidatesTokenCount":7,"totalTokenCount":6}),
+            "google_usage_inconsistent",
+        ),
+        (
+            json!({"thoughtsTokenCount":3,"totalTokenCount":2}),
+            "google_usage_inconsistent",
+        ),
+        (
+            json!({"cachedContentTokenCount":2,"totalTokenCount":1}),
+            "google_usage_inconsistent",
+        ),
+        (
+            json!({"cachedContentTokenCount":4,"candidatesTokenCount":7,"thoughtsTokenCount":3,"totalTokenCount":13}),
+            "google_usage_inconsistent",
+        ),
+        (
+            json!({"cachedContentTokenCount":u64::MAX,"candidatesTokenCount":1,"totalTokenCount":u64::MAX}),
+            "google_usage_overflow",
+        ),
         (
             json!({"promptTokenCount":10,"totalTokenCount":9}),
             "google_usage_inconsistent",

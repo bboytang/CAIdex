@@ -324,3 +324,14 @@ Ruling: 递归检查active路径最多64级并按节点去重，避免引用DAG�
 定向3/0/0（含旧单调用测试）、Google完整92/0/0、workspace621/0/73、Clippy workspace/all-targets-D warnings与fmt/diff通过；固定Runtime完整71/0/0及schema指纹通过；workspace通过名精确旧CI+2、Runtime通过名保持，无遗漏/重复。精确源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)三平台完整验收通过。首次定向失败仅为沙箱禁止loopback监听，允许socket环境复跑通过；不是生产缺陷RED。完整Runtime首次启动因本会话未安装项目固定二进制而71项NotFound，按既有CI安装0.160.1、版本与schema校验后完整重跑71/0/0，不以全局0.162.1替代。唯一独立只读审查无Critical/Important；计划中多余“无调用正例”措辞已删，实际只认领上述范围。thought-only文本phase、usage下界、整组互换/满槽cancel及商业/Host等其他缺口仍保留核对表，不因本轮测试宣布F/G完成。
 
 三平台收尾：[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)整体completed/success，Linux114293993979/Windows114293994016/macOS114293993905各17steps成功或条件跳过，完整日志2298/1984/1995行。workspace621/616/620（0失败、忽略73/71/71），固定Runtime71/70/70（0失败/忽略）；Google92每名每平台一次，全通过名693/686/690精确旧CI38072098372+2，旧Runtime保持。watch、三日志下载及精确SHA/步骤/逐名checker通过；不因本轮2项测试升级商业能力或F/G整体状态。
+
+
+## F/G 剩余离线边界补齐（2026-10-10）
+
+缺prompt计数时仍验证usage已知下界：cached只作为prompt子集，candidate与thought各计算一次，已知下界超total报google_usage_inconsistent，checked加法溢出报google_usage_overflow。不完整计数继续返回usage=null，原始usage保留，不补零或重复加toolUsePrompt。既有usage表增加合法缺计数、单项/组合矛盾及溢出。修复前矛盾用例真实RED，修复后通过。
+
+STOP分类仅将非thought的functionCall视为可执行工具调用。thought-only原生调用不生成客户端工具，最终可见文本为final_answer；有真实调用仍为commentary。JSON/SSE（含逐字节）完整native及signature恢复、done/终态phase对照已验；旧自动回放拒绝用例继续报unsupported_google_replay_call，不放宽历史门控。修复前phase专项真实RED，修复后通过。
+
+新增完整载体组互换专项：同模型两条不同输入的JSON/SSE完整组均先验证自身合法并序列化恢复，双向移入对方历史；Classic/Lite、JSON/SSE目标入口均在Key/POST前400 google_history_request_mismatch。不修改组内内容，也不认为载体JSON是加密认证。原生/投影已有cancel/Drop用例扩展到不消费队列：多帧停流，cancel先观察socket关闭再排空缓存并验证终止错误，不交付工具done/载体/成功终态；Drop关闭socket、共享permit可复用，Key读取恰好2次。既有消费后取消/截断及满槽deadline用例保持。
+
+本地Google94/0/0、workspace623/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；最终双向组互换专项复验1/0/0。当前待提交及精确三平台CI。新增2测试、增强3既有用例；生产仅调整共享usage校验与outcome分类，无依赖/fixture/workflow变更。商业真实模型由用户在全项目完成后自行验证，当前未验，不升级LiveRuntime/Full。

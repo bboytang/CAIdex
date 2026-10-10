@@ -37,8 +37,8 @@
 | --- | --- | --- |
 | Gemini单调用thought豁免/无tools/未opt-in none | [provider测试](../model/providers/google/tests/http/provider.rs)已有opt-in auto/none/多调用/MAX_TOKENS；缺上述三个专项。[请求编译器](../model/providers/google/src/request.rs)已有0/1/无限分支，[数量校验](../model/providers/google/src/provider.rs)排除thought调用 | 本次新增两项回归覆盖三个分支，JSON/SSE×Classic/Lite本地已验；实现未改动，精确新CI三平台已验 |
 | Gemini重复/部分SSE usage | [history测试](../model/providers/google/tests/history.rs)已有专项更新与raw保留 | 旧缺口已覆盖，不重复补 |
-| Gemini缺prompt的usage下界、thought-only call文本phase | normalized_usage提前返回null；outcome看到任意functionCall即ToolCall，投影phase沿outcome | 仍有代码边界，后续分别独立复现/定向修复；本次不夹带修改 |
-| Gemini整组载体互换/满槽取消 | 现有组内编辑/错model/request拒绝；投影取消测试先消费到text，native满槽已有deadline测试 | 精确整组互换及满槽cancel/Drop仍未专项覆盖，后续补真实入口测试；不是断言已存在漏洞 |
+| Gemini缺prompt的usage下界、thought-only call文本phase | normalized_usage提前返回null；outcome看到任意functionCall即ToolCall，投影phase沿outcome | 两项分别真实RED→GREEN；共享usage下界/非thought执行分类最小修复，本地JSON/SSE/旧回放拒绝通过，待精确CI |
+| Gemini整组载体互换/满槽取消 | 现有组内编辑/错model/request拒绝；投影取消测试先消费到text，native满槽已有deadline测试 | 本轮完整JSON/SSE组双向互换在Key/POST前400拒绝；原生/投影未消费多帧cancel/Drop专项本地通过，待精确CI；未暴露需修改生产的载体/传输漏洞 |
 | Gemini整数/空ID | catalog只接受canonical整数，content拒绝显式空ID | 已记录兼容表示限制，无实际端点新依据，不泛化codec |
 | Anthropic重启第三轮/完整Lite结果 | [Runtime测试](../runtime/bridge/tests/real_runtime.rs)重启只比旧请求前缀；Lite结果只contains marker，没有完整canonical/disk→native结果逐值核对 | 本轮复用两个既有用例补齐：完整第三native回复、Lite落盘调用及完整结果逐值对照；定向各1/0/0，workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过，待精确CI |
 | Runtime远端opaque compaction/Lite | [能力对照](CAIdex-Runtime-能力对照.md)仍只有Classic手动摘要证据 | 尚未验，不用doctor/Classic摘要代验；选定后按固定wire独立复现 |
@@ -60,4 +60,4 @@
 
 源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)整体completed/success；三job各17steps成功或条件跳过，完整日志逐名核验通过。Linux/Windows/macOS workspace621/616/620（0失败、忽略73/71/71）、固定Runtime71/70/70（0失败/忽略）；Google92逐名每平台一次。全通过名693/686/690精确旧基线CI+2，无旧名遗漏/重复；raw日志2298/1984/1995行，watch与下载exit0。仅Google新增2测试，其余Adapter及固定Runtime保持。上述执行计划已经完成；纯文档收尾不重复Rust CI。
 
-下一步：Anthropic精确断言本地已补、待精确CI；继续逐项处理表中Gemini usage下界/thought-only phase/整组互换/满槽cancel、各route版本化报告索引等缺口。商业真实模型与生产Host仍未验，F/G不标整体完成，不跳H。
+下一步：Anthropic精确断言本地已补、待精确CI；Gemini四类边界本地已补、待精确CI；继续各route版本化报告索引及远端opaque/Lite compaction门槛。商业真实模型与生产Host仍未验，F/G不标整体完成，不跳H。

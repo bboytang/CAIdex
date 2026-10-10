@@ -401,6 +401,90 @@ async fn provider_json_sse_and_persisted_three_turn_replay_keep_profiles_and_sig
     }
 }
 
+#[tokio::test]
+async fn complete_foreign_history_groups_reject_before_credentials_or_post() {
+    for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
+        let mut fixture = Fixture::start(vec![
+            Reply::json(native_reply("STOP")),
+            Reply::sse(&[native_reply("STOP")]),
+        ])
+        .await;
+        let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+        let provider = GeminiProvider::new(client, vec![profile()], 8).unwrap();
+        let first = vec![json!({"role":"user","content":"first conversation"})];
+        let second = vec![json!({"role":"user","content":"second conversation"})];
+        let first_response = provider
+            .create_response(
+                canonical(dialect, first.clone(), &json!([]), false),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        let first_sent = request_body(&fixture.request().await);
+        let mut stream = provider
+            .stream_response(
+                canonical(dialect, second.clone(), &json!([]), true),
+                RequestContext::default(),
+            )
+            .await
+            .unwrap();
+        let mut group = None;
+        while let Some(event) = stream.events.next().await {
+            if let ProviderStreamEvent::Model(event) = event.unwrap()
+                && event.response.kind() == "response.completed"
+            {
+                group = Some(
+                    event.response.wire()["response"]["output"]
+                        .as_array()
+                        .unwrap()
+                        .clone(),
+                );
+            }
+        }
+        let sent = request_body(&fixture.request().await);
+        for (group, sent, mut swapped) in [
+            (
+                first_response.response.output().to_vec(),
+                first_sent,
+                second,
+            ),
+            (group.unwrap(), sent, first),
+        ] {
+            let group: Vec<Value> =
+                serde_json::from_slice(&serde_json::to_vec(&group).unwrap()).unwrap();
+            // Each complete persisted group is valid for its own request, with no edits.
+            assert_eq!(
+                NativeHistory::from_responses_output(&group, MODEL, &sent, LIMIT)
+                    .unwrap()
+                    .native_response(),
+                &native_reply("STOP")
+            );
+            swapped.extend(group);
+            swapped.push(json!({"role":"user","content":"continue"}));
+            for streaming in [false, true] {
+                let request = canonical(dialect, swapped.clone(), &json!([]), streaming);
+                let error = if streaming {
+                    provider
+                        .stream_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                } else {
+                    provider
+                        .create_response(request, RequestContext::default())
+                        .await
+                        .err()
+                        .unwrap()
+                };
+                assert_eq!(error.http_status, 400);
+                assert_eq!(error.code, "google_history_request_mismatch");
+                assert_eq!(reads.load(Ordering::SeqCst), 2);
+                assert!(fixture.requests.try_recv().is_err());
+            }
+        }
+    }
+}
+
 // Catches accepting duplicate, empty, overlong or non-ASCII native context,
 // leaking raw headers, and retrying a rejected response.
 #[tokio::test]
@@ -452,8 +536,12 @@ async fn provider_rejects_invalid_native_response_headers_without_retry() {
 // publishing tools/history before EOF, or fabricating completion after errors.
 #[tokio::test]
 async fn projected_stream_cancellation_drop_and_truncation_never_publish_terminal_history() {
-    for cancel in [false, true] {
-        let mut reply = Reply::sse(&[native_reply("STOP")]);
+    for (cancel, unconsumed) in [(false, false), (true, false), (false, true), (true, true)] {
+        let mut reply = Reply::sse(&[
+            native_reply("STOP"),
+            json!({"future":1}),
+            json!({"future":2}),
+        ]);
         reply.stall = 3;
         let mut fixture = Fixture::start(vec![reply, Reply::json(json!({}))]).await;
         let (client, reads) = client(
@@ -483,16 +571,20 @@ async fn projected_stream_cancellation_drop_and_truncation_never_publish_termina
             .unwrap();
         fixture.request().await;
         let mut progress = Vec::new();
-        while let Some(Ok(event)) = stream.events.next().await {
-            if let ProviderStreamEvent::Model(event) = event {
-                let visible = event.response.text_delta().is_some();
-                progress.push(event);
-                if visible {
-                    break;
+        if unconsumed {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        } else {
+            while let Some(Ok(event)) = stream.events.next().await {
+                if let ProviderStreamEvent::Model(event) = event {
+                    let visible = event.response.text_delta().is_some();
+                    progress.push(event);
+                    if visible {
+                        break;
+                    }
                 }
             }
+            assert!(!progress.is_empty());
         }
-        assert!(!progress.is_empty());
         assert!(progress.iter().all(|e| e.response.terminal().is_none()
             && !e.frame.data.contains("encrypted_content")
             && e.response.kind() != "response.output_item.done"));
@@ -503,24 +595,40 @@ async fn projected_stream_cancellation_drop_and_truncation_never_publish_termina
         assert_eq!(reads.load(Ordering::SeqCst), 1);
         if cancel {
             cancellation.cancel();
-            assert_eq!(
-                tokio::time::timeout(WAIT, stream.events.next())
-                    .await
-                    .unwrap()
-                    .unwrap()
-                    .err()
-                    .unwrap()
-                    .code,
-                "provider_cancelled"
-            );
+            fixture.disconnected().await; // No consumer polls are needed to release the native slot.
+            let mut cancelled = false;
+            while let Some(event) = tokio::time::timeout(WAIT, stream.events.next())
+                .await
+                .unwrap()
+            {
+                match event {
+                    Ok(ProviderStreamEvent::Model(event)) => {
+                        assert!(unconsumed);
+                        assert!(
+                            event.response.terminal().is_none()
+                                && !event.frame.data.contains("encrypted_content")
+                                && event.response.kind() != "response.output_item.done"
+                        );
+                    }
+                    Err(error) => {
+                        assert_eq!(error.code, "provider_cancelled");
+                        cancelled = true;
+                    }
+                    _ => panic!("unexpected heartbeat"),
+                }
+            }
+            assert!(cancelled);
             assert!(stream.events.next().await.is_none());
         }
         drop(stream);
-        fixture.disconnected().await;
+        if !cancel {
+            fixture.disconnected().await;
+        }
         assert!(provider.list_models().await.unwrap().is_empty());
         fixture.request().await;
         assert_eq!(reads.load(Ordering::SeqCst), 2);
     }
+
     for body in [
         format!(
             "data: {}\n\n",

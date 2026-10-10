@@ -1415,13 +1415,13 @@ async fn native_stream_safe_errors_truncation_media_and_limits_never_retry_or_co
 
 #[tokio::test]
 async fn native_stream_drop_and_cancel_close_socket_and_release_shared_permit() {
-    for cancel in [false, true] {
+    for (cancel, unconsumed) in [(false, false), (true, false), (false, true), (true, true)] {
         let mut open = native_reply("");
         open["candidates"][0]
             .as_object_mut()
             .unwrap()
             .remove("finishReason");
-        let mut reply = Reply::sse(&[open]);
+        let mut reply = Reply::sse(&[open.clone(), open.clone(), open]);
         reply.stall = 3;
         let mut fixture = Fixture::start(vec![reply, Reply::json(json!({}))]).await;
         let (client, reads) = client(
@@ -1445,10 +1445,14 @@ async fn native_stream_drop_and_cancel_close_socket_and_release_shared_permit() 
             .await
             .unwrap();
         fixture.request().await;
-        assert!(matches!(
-            stream.next().await.unwrap().unwrap(),
-            NativeStreamEvent::Event(_)
-        ));
+        if unconsumed {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        } else {
+            assert!(matches!(
+                stream.next().await.unwrap().unwrap(),
+                NativeStreamEvent::Event(_)
+            ));
+        }
         assert_eq!(
             client
                 .discover_models(1, RequestContext::default())
@@ -1461,14 +1465,32 @@ async fn native_stream_drop_and_cancel_close_socket_and_release_shared_permit() 
         assert_eq!(reads.load(Ordering::SeqCst), 1);
         if cancel {
             cancellation.cancel();
-            assert_eq!(
-                stream.next().await.unwrap().err().unwrap().code,
-                "provider_cancelled"
-            );
-            assert!(stream.next().await.is_none());
+            fixture.disconnected().await; // Must close before draining the occupied slot.
+            if unconsumed {
+                assert!(matches!(
+                    stream.next().await.unwrap().unwrap(),
+                    NativeStreamEvent::Event(_)
+                ));
+            }
+            let mut cancelled = false;
+            while let Some(event) = tokio::time::timeout(WAIT, stream.next()).await.unwrap() {
+                match event {
+                    Ok(NativeStreamEvent::Event(_)) => assert!(!unconsumed),
+                    Ok(NativeStreamEvent::Completed(_)) => panic!("cancelled stream completed"),
+                    Err(error) => {
+                        assert_eq!(error.code, "provider_cancelled");
+                        cancelled = true;
+                        assert!(stream.next().await.is_none());
+                        break;
+                    }
+                }
+            }
+            assert!(cancelled);
         }
         drop(stream);
-        fixture.disconnected().await;
+        if !cancel {
+            fixture.disconnected().await;
+        }
         assert!(
             client
                 .discover_models(1, RequestContext::default())
