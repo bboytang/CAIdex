@@ -288,4 +288,4 @@ OpenRouter显式原生summary/context/include组合已实现，新增8项，Prov
 
 新增7项Core路由与2项Gateway OpenRouter/Custom回环测试完整本地通过：workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff；精确HEAD `e2f3039c6c4f82898f2a30246e6bd1981ffec671`/[CI38063184946](https://github.com/bboytang/CAIdex/actions/runs/38063184946)三平台成功，workspace619/614/618、固定Runtime64/63/63，新增9项逐名一次、完整通过名精确旧基线+9，各17steps成功或条件跳过。此阶段不证明商业Live/Full，也不实现Host线程切换。跨Provider切换仍按V3创建关联新线程并适配历史，同Provider在已验组合的轮次边界切换。
 
-固定Runtime模型切换新增3项离线定向通过：同OpenAI Adapter经ModelRouter的轮次边界覆盖、后续轮次/磁盘重启保持模型和既有文本/opaque history；fork模型覆盖保留forkedFromId，创建不推理，父线程模型和历史独立；未知模型Key/POST零访问及显式恢复。范围仅显式离线Classic组合，完整本地workspace619/0/69、固定Runtime67/0/0（精确旧64+3）、Clippy/fmt/diff通过，精确三平台待验；不证明商业兼容性或跨Provider签名迁移，也未实现生产Host切换。
+固定Runtime模型切换新增3项离线定向通过：同OpenAI Adapter经ModelRouter的轮次边界覆盖、后续轮次/磁盘重启保持模型和既有文本/opaque history；fork模型覆盖保留forkedFromId，创建不推理，父线程模型和历史独立；未知模型Key/POST零访问及显式恢复。范围仅显式离线Classic组合，完整本地workspace619/0/69、固定Runtime67/0/0（精确旧64+3）、Clippy/fmt/diff通过，精确源码`430305d`/[CI38069700504](https://github.com/bboytang/CAIdex/actions/runs/38069700504)三平台已验，workspace619/614/618、固定Runtime67/66/66，完整通过名精确旧基线+3，各17steps成功或条件跳过；不证明商业兼容性或跨Provider签名迁移，也未实现生产Host切换。
