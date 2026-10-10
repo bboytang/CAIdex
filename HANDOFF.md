@@ -2,6 +2,12 @@
 
 更新：2026-10-10。会话切换专用恢复点；Final Architecture First，继续既定 V3，不重新设计。正式目录 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
 
+## 当前完整F/G目标恢复点（本轮）
+
+本轮恢复HEAD=origin/main=`4931b58663435448139d725ed2414db496a001e4`，开始干净。已加强两个既有Anthropic固定Runtime用例：Classic重启第四POST逐值回放第三native回复全组（含opaque）；Lite落盘custom调用input/身份与完整结果逐值转native text核对，并断言Key读取2次。无生产/fixture/依赖/workflow变更。定向各1/0/0、完整workspace621/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；最终diff已检查。当前待提交/push及精确三平台CI，不能将本地结果记成CI证据。
+
+下一步：提交本阶段并核验精确CI，继续Gemini缺prompt usage下界、thought-only phase、整组互换/满槽cancel，随后逐route报告及固定Runtime compaction证据。F/G目标保持active，不能以两断言替代全部。用户已明确：真实模型验收最后全项目完成后由用户自行执行；当前先完成可离线实现/验证任务。不再询问Key/API，不读取用户Key或调用商业API；真实模型保持未验，不升级LiveRuntime/Full。生产Host仍属后续阶段。
+
 ## 当前状态与第一步
 
 本会话恢复基线 `a9502451bbe392a5fd00bd39e073caef17c20960` 与用户交接一致，开始时 main=origin/main、工作区干净。最新源码 `d9b0d1a49d2aa78822d4110d07a5dc91a22e0800` 已提交/push；[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190) 已完整三平台核验成功。本次重要步骤已完成，纯文档收尾提交号以最终 `git log -1` 为准；不能把恢复基线或源码SHA当作收尾HEAD。
@@ -10,13 +16,13 @@
 
 核对后补齐Gemini单调用thought豁免、无tools、未opt-in none三个专项，新增2个HTTP/Provider测试覆盖JSON/SSE×Classic/Lite。生产源码、固定Runtime、fixture、依赖与workflow未改；225个其他tracked文件保持恢复基线。定向3/0/0（含旧测试）、Google92/0/0、workspace621/0/73、固定Runtime71/0/0、Clippy全workspace/all-targets-D warnings、fmt/diff与schema指纹通过；新CI全部通过名精确旧CI+2、旧Runtime保持。唯一独立只读审查无Critical/Important，文档多余承诺已修。
 
-**没有未完成代码、运行中测试/CI、当前已知失败或推送阻塞。** 本次纯文档收尾仅涉及HANDOFF、Gemini验收及离线核对V1；最终HEAD/origin与干净工作区以提交后的检查为准。F/G仍未整体完成；下一步先按核对表补Anthropic现有Runtime用例的重启第三轮内容及完整Lite结果/落盘精确断言，再处理其他明确缺口；尚未实施这些下一项。商业API/LiveRuntime/Full与生产Host仍未验，不从fixture升级Registry能力。
+上轮收尾时没有未完成代码、运行中测试/CI、已知失败或推送阻塞；本轮状态以上方当前恢复点为准。 本次纯文档收尾仅涉及HANDOFF、Gemini验收及离线核对V1；最终HEAD/origin与干净工作区以提交后的检查为准。F/G仍未整体完成；Anthropic断言本轮本地通过，后续Gemini等恢复点以上方为准。商业API/LiveRuntime/Full与生产Host仍未验，不从fixture升级Registry能力。
 
 新 Codex 顺序：
 
 1. 先读本文件、[AGENTS](AGENTS.md)，运行 `git status --short --branch`、`git log -4 --oneline`、`git rev-parse HEAD origin/main`，核实恢复点和用户新改动。
 2. 读[实施计划 V3](docs/CAIdex-实施计划-V3.md)、[Gateway验收](docs/CAIdex-Model-Gateway-设计与验收.md)、[模型切换报告V1](docs/CAIdex-模型切换-离线兼容性报告-V1.md)，对照 Registry/Router、Runtime切换测试及各Provider验收。
-3. 本次核对与Gemini三个单调用分支专项已完成；下一步补Anthropic现有Runtime精确恢复/结果断言，再按表处理Gemini usage下界、thought-only文本phase、整组载体互换/满槽cancel等已确认缺口。每模型商业报告/真实API、生产Host仍未验，不自动升级Registry能力。
+3. 本次核对与Gemini三个单调用分支专项已完成；Anthropic本轮本地已补精确恢复/结果断言，再按表处理Gemini usage下界、thought-only文本phase、整组载体互换/满槽cancel等已确认缺口。每模型商业报告/真实API、生产Host仍未验，不自动升级Registry能力。
 4. 每重要步骤更新本文件。代码改动按定向→相关完整本地→最终diff→提交/push→精确源码三平台CI推进；CI必须核对实际SHA、3jobs/步骤、完整日志及测试名，不仅查看绿色状态。纯文档无需重复Rust CI。
 5. 商业API/真实Key、生产Host持久关联/通用历史适配、客户端等另有边界。不能把这些缺口伪装成离线完成；满足V3前置门槛后按 H→I→J/K→L→M/N/O→P→Q→R，不据fixture跳H。
 

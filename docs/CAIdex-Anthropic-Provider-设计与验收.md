@@ -275,3 +275,10 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 依据：[OpenAI text.verbosity](https://developers.openai.com/api/docs/guides/deployment-checklist#set-up-textverbosity)、[Anthropic response length guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5#response-length-and-verbosity)。该原生指导说明 effort 与可见回复长度不同；CAIdex 不把 verbosity 偷换为 effort。
 
 生产提示映射/partial usage 修复源码 aa5d3bfeeeafbe8e1465daca22cecc60f501bf45 的 [CI 37641597463](https://github.com/bboytang/CAIdex/actions/runs/37641597463) 三平台全部 completed/success，逐平台核对新增 2 项提示映射、style v3 HTTP 门控及 usage/fallback 回归通过（结构化6、HTTP45、投影9、协议15）；workspace/fmt/Clippy/native credentials/schema/doctor 与既有 Runtime Linux25/WindowsmacOS24通过。独立审查无重要问题。Runtime 新接线两文件仍未提交，本地 Lite3与经典 RED 不属于本次 CI；完整 Adapter 和商业能力仍未验收。
+
+
+## F/G 离线证据补齐（2026-10-10）
+
+在两个既有固定Runtime用例内补精确断言，不改生产实现或fixture。Classic动态MCP用例的实际app-server重启后，第四POST完整assistant内容逐值等于第三原生回复，签名/脱敏/未知opaque块保持。Lite Code Mode真实审批/执行后，读取实际rollout核对custom调用身份与完整input，并将落盘结果的每个input_text逐值映射为native text，对照完整tool_result；Key解析恰好2次。
+
+本地两项定向各1/0/0，完整workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过。当前待精确源码三平台CI；商业模型、签名真实性、生产Host仍未验，不授Full。

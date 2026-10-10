@@ -2380,6 +2380,11 @@ async fn real_classic_native_anthropic_discovers_and_executes_mcp_tools() {
         &fourth["messages"].as_array().unwrap()[..third_prefix.len()],
         third_prefix
     );
+    assert_eq!(
+        fourth["messages"][third_prefix.len()],
+        json!({"role":"assistant","content":trace["nativeResponses"][2]["content"]}),
+        "disk resume must replay the complete third native response, including opaque blocks"
+    );
     let mcp: Value =
         serde_json::from_slice(&std::fs::read(harness.directory.0.join("mcp-trace.json")).unwrap())
             .unwrap();
@@ -2703,6 +2708,44 @@ async fn real_lite_native_anthropic_code_mode_executes_tool_and_replays_result()
             .to_string()
             .contains("CAIDEX_NATIVE_CODE_MODE")
     );
+    let read = client.read_thread(&thread, true, DEADLINE).await.unwrap();
+    let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+    let items: Vec<Value> = rollout
+        .lines()
+        .filter_map(|line| {
+            let entry: Value = serde_json::from_str(line).unwrap();
+            (entry["type"] == "response_item").then(|| entry["payload"].clone())
+        })
+        .collect();
+    let call = items
+        .iter()
+        .find(|item| {
+            item["type"] == "custom_tool_call" && item["call_id"] == "native-code-mode-one"
+        })
+        .unwrap();
+    assert_eq!(call["name"], "exec");
+    assert_eq!(call["namespace"], "functions");
+    assert_eq!(
+        call["input"],
+        trace["nativeResponses"][0]["content"][2]["input"]["input"]
+    );
+    let saved = items
+        .iter()
+        .find(|item| {
+            item["type"] == "custom_tool_call_output" && item["call_id"] == "native-code-mode-one"
+        })
+        .unwrap();
+    let native_output: Vec<Value> = saved["output"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|part| {
+            assert_eq!(part["type"], "input_text");
+            json!({"type":"text","text":part["text"]})
+        })
+        .collect();
+    assert_eq!(results[0]["content"], json!(native_output));
+    assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 2);
     assert_eq!(trace["authorizationSeen"], false);
     harness.shutdown().await;
 }
