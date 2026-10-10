@@ -1,0 +1,17 @@
+[package]
+name = "caidex-provider-chat-completions"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+caidex-credentials = { path = "../../../credentials/core", default-features = false }
+caidex-model-core = { path = "../../core" }
+caidex-provider-custom = { path = "../custom" }
+futures-util = "=0.3.34"
+sha2 = "=0.10.9"
+serde_json.workspace = true
+
+[dev-dependencies]
+caidex-model-gateway = { path = "../../gateway" }
+tokio = { workspace = true, features = ["net"] }

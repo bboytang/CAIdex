@@ -8,6 +8,7 @@ mod transfer;
 pub use catalog::{NativeModel, parse_model_catalog};
 pub use config::{ConfiguredModel, CustomResponses};
 pub use limits::Limits;
+pub use transfer::NativeStreamingResponse;
 
 use caidex_credentials::{Broker, SecretStore};
 use caidex_model_core::{
@@ -131,6 +132,48 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
     ) -> ProviderResult<serde_json::Value> {
         self.json_request(configuration, Some(body), &[], context)
             .await
+    }
+    /// Native SSE POST using the same bounded transport. Framing is shared;
+    /// the calling adapter owns native lifecycle and terminal validation.
+    pub async fn post_sse(
+        &self,
+        configuration: &CustomResponses,
+        body: serde_json::Value,
+        context: RequestContext,
+    ) -> ProviderResult<NativeStreamingResponse> {
+        let deadline = request_deadline(&self.state, &context)?;
+        let bytes = serde_json::to_vec(&body).expect("valid JSON");
+        if bytes.len() > self.state.limits.request_bytes {
+            return Err(ProviderError::new(413, "invalid_or_oversized_body"));
+        }
+        let permit = self
+            .state
+            .permits
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| ProviderError::new(503, "provider_busy"))?;
+        let outgoing = self
+            .state
+            .client
+            .post(configuration.endpoint.clone())
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::ACCEPT, "text/event-stream")
+            .body(bytes);
+        let upstream = execute(&self.state, outgoing, configuration, &context, deadline).await?;
+        if !is_media_type(upstream.headers(), "text/event-stream") {
+            return Err(ProviderError::new(502, "provider_invalid_content_type"));
+        }
+        let headers = response_headers(upstream.headers())?;
+        Ok(NativeStreamingResponse {
+            headers,
+            events: transfer::native_stream(
+                upstream,
+                self.state.clone(),
+                context,
+                deadline,
+                permit,
+            ),
+        })
     }
     async fn json_request(
         &self,

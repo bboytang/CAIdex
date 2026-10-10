@@ -1,6 +1,6 @@
 # CAIdex Provider 路由离线兼容性报告 V1
 
-报告修订1；CompatibilityReport schemaVersion=1；Runtime固定Codex0.160.1/d27764b82f7118f674371e6d6e76271d9d606edb。此索引覆盖八Adapter实际固定Runtime正例的16个公共路由/方言，profile配置以[Harness](../runtime/bridge/tests/real_runtime.rs)对应模式和Provider验收为准。它没有新增路由，不自动挂生产Registry。公共slug只选择固定Runtime协议，native模型和回复均为loopback合成fixture；`testedModelVersion`表示本报告的fixture/profile修订，**不是商业模型的服务版本**。单元/HTTP中的临时alias仅作为各Provider协议分支证据，不独立授予模型兼容性。
+报告修订2；CompatibilityReport schemaVersion=1；Runtime固定Codex0.160.1/d27764b82f7118f674371e6d6e76271d9d606edb。此索引覆盖九Adapter实际固定Runtime正例的18个公共路由/方言，profile配置以[Harness](../runtime/bridge/tests/real_runtime.rs)对应模式和Provider验收为准。它没有新增路由，不自动挂生产Registry。公共slug只选择固定Runtime协议，native模型和回复均为loopback合成fixture；`testedModelVersion`表示本报告的fixture/profile修订，**不是商业模型的服务版本**。单元/HTTP中的临时alias仅作为各Provider协议分支证据，不独立授予模型兼容性。
 
 | Provider | 公共路由ID | 原生fixture模型 | 方言 | testedModelVersion | 精确profile入口与限制 |
 | --- | --- | --- | --- | --- | --- |
@@ -20,6 +20,8 @@
 | qwen | `caidex-qwen-lite-fixture` | `native-fixture` | Lite | `qwen-runtime-lite-fixture-v1` | `gateway-qwen-tools-lite`；[限制/验收](CAIdex-Qwen-Provider-设计与验收.md) |
 | openrouter | `caidex-openrouter-classic-fixture` | `native-fixture` | Classic | `openrouter-runtime-classic-fixture-v1` | `gateway-openrouter-tools-classic`；[限制/验收](CAIdex-OpenRouter-Provider-设计与验收.md) |
 | openrouter | `caidex-openrouter-lite-fixture` | `native-fixture` | Lite | `openrouter-runtime-lite-fixture-v1` | `gateway-openrouter-tools-lite`；[限制/验收](CAIdex-OpenRouter-Provider-设计与验收.md) |
+| custom-chat | `caidex-chat-classic-fixture` | `native-fixture` | Classic | `custom-chat-runtime-classic-fixture-v1` | `gateway-chat-tools-classic`；[限制/验收](CAIdex-Custom-Chat-Completions-设计与验收.md) |
+| custom-chat | `caidex-chat-lite-fixture` | `native-fixture` | Lite | `custom-chat-runtime-lite-fixture-v1` | `gateway-chat-tools-lite`；[限制/验收](CAIdex-Custom-Chat-Completions-设计与验收.md) |
 
 每行对应一个独立CompatibilityReport记录：reference为本文件路径，testedModelVersion逐行采用表中值，level均为experimental，source均为protocolFixture；limitations由以下共有限制和该Provider段落共同构成。记录不合并Classic/Lite方言或不同profile能力。既有四条OpenAI切换路由报告仍见[模型切换V1](CAIdex-模型切换-离线兼容性报告-V1.md)，不重复生成或升级。
 
@@ -49,6 +51,8 @@
 - DeepSeek：Runtime context、低/中/高effort映射、verbosity指导；Classic tools模式显式native apply_patch，另有native tools分支证据；Lite显式options/native tools。默认无能力或多调用明确拒绝；通用custom/媒体/真实版本未开放或未验。
 - Qwen：Runtime context、custom tool mapping（包含native tools/history）、逐route effort及verbosity映射；summary/context只限既有验收契约；Lite另需显式options。地域/计划/API版本与grammar硬约束未验；不能按slug推断支持。
 - OpenRouter：逐route显式backend=fixture-backend/region、runtime/native/advanced tools、native history、auto summary/all_turns context、effort/verbosity映射；Lite显式options。默认或部分政策拒绝Key/POST前发送；实际后端身份/版本、商业Full未验。
+
+- Custom Chat：标准Chat Completions，显式no-reasoning Runtime profile、grammar仅提示映射及Lite工具编译；关闭web/search并使用独立fixture catalog。终态前缓冲，媒体/签名/compaction/未映射推理拒绝；JSON context headers不透传，模型返回名必须与显式native_model一致。真实原生审批/隔离执行/完整结果、磁盘恢复和取消已本地定向验；全体回归/精确CI待核验，不用旧八Adapter CI代验。
 
 基础证据：源码`9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`/[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)八Adapter及固定Runtime三平台完整日志已核验，workspace621/616/620、Runtime71/70/70，0失败，旧通过名保持。Gemini边界增强源码`57451e9996aee201954ee5d404dd02e22dba8dd2`/[CI38081567944](https://github.com/bboytang/CAIdex/actions/runs/38081567944)三平台完整日志已核验，workspace623/618/622、Runtime71/70/70、Google94，0失败，旧集合+2。compaction源码`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`/[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)三平台完整日志已验：workspace623/618/622、Runtime73/72/72、0失败，旧集合+2Runtime；新增Lite本地摘要、Classic/Lite远端opaque及实际磁盘恢复仅属于上文明确配置。
 

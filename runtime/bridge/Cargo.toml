@@ -11,6 +11,7 @@ thiserror.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+caidex-provider-chat-completions = { path = "../../model/providers/chat-completions" }
 base64 = "=0.22.1"
 caidex-model-core = { path = "../../model/core" }
 caidex-model-gateway = { path = "../../model/gateway" }

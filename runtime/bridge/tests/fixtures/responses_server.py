@@ -484,10 +484,46 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def native_chat(self, body):
+        assert self.path == "/v1/chat/completions"
+        assert body["model"] == "native-fixture" and body["stream"] and not body["store"]
+        assert "input" not in body and "include" not in body and "reasoning" not in body
+        trace["gatewayCredentialMatched"] = self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
+        assert trace["gatewayCredentialMatched"]
+        assert not self.headers.get("x-openai-internal-codex-responses-lite")
+        trace.setdefault("nativeRequests", []).append(body)
+        data = {"id": f"chat-{trace['requests']}", "object": "chat.completion.chunk", "created": 1, "model": "native-fixture", "choices": [{"index": 0, "delta": {"role": "assistant", "content": "CAIdex local fixture complete"}, "finish_reason": "stop"}], "usage": None}
+        if "tools" in mode and trace["requests"] == 1:
+            if mode.endswith("-lite"):
+                tool = next(t for t in body["tools"] if t["function"].get("description", "").startswith("Tool identity: functions::exec."))
+                command = {"cmd": "echo CAIDEX_NATIVE_CHAT > caidex-native-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated Chat Completions fixture marker only", "yield_time_ms": 1000}
+                arguments = {"input": "const result = await tools.exec_command(" + json.dumps(command) + "); text(result); text('CAIDEX_NATIVE_CHAT');"}
+            else:
+                tool = next(t for t in body["tools"] if "cmd" in t["function"].get("parameters", {}).get("properties", {}))
+                arguments = {"cmd": "echo CAIDEX_NATIVE_CHAT > caidex-native-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Isolated Chat Completions fixture marker only", "yield_time_ms": 1000}
+            data["choices"][0]["delta"] = {"role": "assistant", "tool_calls": [{"index": 0, "id": "chat-tool-one", "type": "function", "function": {"name": tool["function"]["name"], "arguments": json.dumps(arguments)}}]}
+            data["choices"][0]["finish_reason"] = "tool_calls"
+        elif "tools" in mode:
+            results = [m for m in body["messages"] if m["role"] == "tool"]
+            assert len(results) == 1 and results[0]["tool_call_id"] == "chat-tool-one"
+            assert isinstance(results[0]["content"], str) and results[0]["content"]
+            if mode.endswith("-lite"):
+                assert "CAIDEX_NATIVE_CHAT" in results[0]["content"]
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(("data: " + json.dumps(data) + "\n\ndata: [DONE]\n\n").encode())
+        self.wfile.flush()
+        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         trace["requests"] += 1
         trace["authorizationSeen"] |= "Authorization" in self.headers
+        if mode.startswith("native-chat-"):
+            self.native_chat(body)
+            return
         if mode.startswith("native-openrouter-"):
             self.native_openrouter(body)
             return

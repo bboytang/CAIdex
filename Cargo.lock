@@ -454,6 +454,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-provider-chat-completions"
+version = "0.1.0"
+dependencies = [
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-model-gateway",
+ "caidex-provider-custom",
+ "futures-util",
+ "serde_json",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
 name = "caidex-provider-custom"
 version = "0.1.0"
 dependencies = [
@@ -578,6 +592,7 @@ dependencies = [
  "caidex-model-core",
  "caidex-model-gateway",
  "caidex-provider-anthropic",
+ "caidex-provider-chat-completions",
  "caidex-provider-deepseek",
  "caidex-provider-google",
  "caidex-provider-ollama",

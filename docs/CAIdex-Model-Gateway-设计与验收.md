@@ -2,7 +2,7 @@
 
 阶段F/G，按V3最终架构推进。当前八个Adapter（Custom Responses、OpenAI、Anthropic、Gemini、Ollama、DeepSeek、Qwen、OpenRouter）的明确协议/工具/推理范围已有三平台离线证据；Registry/ModelRouter、逐route版本报告、Classic/Lite切换、Runtime idle及本地/远端压缩的已验范围见[要求级核对](CAIdex-FG-离线验收核对-V1.md)、[路由报告](CAIdex-Provider-路由离线兼容性报告-V1.md)和[Runtime能力对照](CAIdex-Runtime-能力对照.md)。最新精确源码47b6b519d69955328218b2b7953794641090de52/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)完整三平台通过。
 
-F/G整体未完成：原V2两类Custom与V3明确的Custom Responses之间，通用Chat Completions入口范围正在向用户澄清，实际仓库没有通用chat/completions Adapter，不能以现有Responses兼容API代验。真实商业模型/实际Ollama由用户项目最终自验；生产Host、UI与完整CLI分别归V3后续阶段。下文较早基线保留为历史证据，不用于重复开发已完成任务；当前准确下一步以[HANDOFF](../HANDOFF.md)为准，不直接转H或授LiveRuntime/Full。
+F/G整体未完成：用户于2026-10-10正式确认V3保留两类Custom；新增标准`/chat/completions` Adapter已纳入正式范围，已开始实现，[独立设计与验收](CAIdex-Custom-Chat-Completions-设计与验收.md)记录定向证据；整体/三平台验证待完成，不能以现有Responses兼容API代验。复用共享传输/六方法/Canonical/Broker/Router/Gateway，固定Runtime保留执行与审批；现有Provider不重写，只有具体测试证明必要时最小扩展共享接口。真实商业模型/实际Ollama由用户项目最终自验；生产Host、UI与完整CLI分别归V3后续阶段。下文较早基线保留为历史证据，不用于重复开发已完成任务；当前准确下一步以[HANDOFF](../HANDOFF.md)为准，不直接转H或授LiveRuntime/Full。
 
 ## 固定协议依据
 

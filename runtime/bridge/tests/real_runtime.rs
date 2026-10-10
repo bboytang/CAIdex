@@ -1,4 +1,5 @@
 //! Real pinned app-server and scripted loopback Responses; no paid model or key.
+mod chat_completions;
 mod deepseek;
 mod openrouter;
 mod qwen;
@@ -90,6 +91,10 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-chat-classic" => "native-chat-classic",
+            "gateway-chat-tools-classic" => "native-chat-tools-classic",
+            "gateway-chat-tools-lite" => "native-chat-tools-lite",
+            "gateway-chat-lite" => "native-chat-lite",
             "gateway-model-switching" => "wire-classic",
             "gateway-model-switching-lite" => "wire-lite",
             "gateway-openrouter-classic"
@@ -237,7 +242,14 @@ impl Harness {
         let deepseek = mode.starts_with("gateway-deepseek-");
         let openrouter = mode.starts_with("gateway-openrouter-");
         let qwen = mode.starts_with("gateway-qwen-");
-        let model = if openrouter {
+        let chat = mode.starts_with("gateway-chat-");
+        let model = if chat {
+            if mode.ends_with("-lite") {
+                "caidex-chat-lite-fixture"
+            } else {
+                "caidex-chat-classic-fixture"
+            }
+        } else if openrouter {
             if mode.ends_with("-lite") {
                 "caidex-openrouter-lite-fixture"
             } else {
@@ -352,7 +364,49 @@ impl Harness {
                 owner,
                 GatewayFixtureStore(credential_reads.clone()),
             ));
-            if openrouter {
+            if chat {
+                use caidex_provider_chat_completions::{
+                    ChatCompletionsConfig, ChatCompletionsProvider,
+                };
+                let lite = mode.ends_with("-lite");
+                let mut config = ChatCompletionsConfig::new(
+                    &format!("http://127.0.0.1:{port}/v1/chat/completions"),
+                    Some(credential),
+                )
+                .unwrap()
+                .with_no_reasoning_runtime()
+                .with_grammar_prompt_mapping();
+                if lite {
+                    config = config.with_lite();
+                }
+                let models = vec![caidex_model_core::ModelMetadata::configured(
+                    model.into(),
+                    "native-fixture".into(),
+                    vec![if lite {
+                        ResponsesDialect::Lite
+                    } else {
+                        ResponsesDialect::Classic
+                    }],
+                )];
+                let provider =
+                    ChatCompletionsProvider::new(config, models, broker.clone(), Limits::default())
+                        .unwrap();
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        Arc::new(
+                            caidex_model_core::ModelRouter::new(vec![(
+                                model.into(),
+                                Arc::new(provider),
+                            )])
+                            .unwrap(),
+                        ),
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if openrouter {
                 use caidex_provider_openrouter::{OpenRouterConfig, OpenRouterProvider};
                 let config = OpenRouterConfig::new(credential)
                     .unwrap()
@@ -846,7 +900,8 @@ impl Harness {
         };
         // Explicit fixture scope: native Anthropic has no verified equivalent
         // for Codex cached web search. Never filter it inside the Gateway.
-        let web_search = if openrouter
+        let web_search = if chat
+            || openrouter
             || qwen
             || deepseek
             || ollama_lite
@@ -885,7 +940,11 @@ impl Harness {
         } else {
             ""
         };
-        let catalog = if openrouter {
+        let catalog = if chat {
+            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/chat_model_catalog.json");
+            format!("model_catalog_json = {}\n", json!(path))
+        } else if openrouter {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures/openrouter_model_catalog.json");
             format!("model_catalog_json = {}\n", json!(path))

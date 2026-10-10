@@ -9,7 +9,7 @@
 - Codex 使用固定 commit 的真实 Runtime/app-server，最小补丁；协议边界隔离上游。接口在验证后版本化，允许明确迁移，不实施原 V2 的永久冻结。
 - 普通 Chat 在客户端独立调用模型核心，没有 Shell/Git/项目写权限；与 Codex 共用模型/凭据基础能力。模型和工具支持以实际兼容性报告为准。
 - Codex Gateway 对外提供 Responses HTTP/SSE，向内适配提供商；保存不透明签名/推理信息，统一工具 JSON/文本消息，不执行工具。
-- Provider 分阶段接入：OpenAI、Anthropic、自定义 Responses、Gemini、兼容 API（DeepSeek/Qwen/OpenRouter 等）及 Ollama。每个模型单独验证支持范围。
+- Provider 分阶段接入：OpenAI、Anthropic、自定义 Responses-compatible、自定义 OpenAI-compatible（Chat Completions）、Gemini、兼容 API（DeepSeek/Qwen/OpenRouter 等）及 Ollama。每个模型单独验证支持范围。
 - 模型在轮次边界切换；同提供商仅支持已验证兼容组合，跨提供商使用关联分支/新线程及适配后的历史。
 - 凭据绑定执行端，Windows 系统凭据、iOS Keychain、Linux 受保护存储；不进入 Git、日志和历史同步。手机 Remote 使用 Host 保存的凭据。
 - Host 独立管理 app-server 与线程，GUI/SSH 退出不终止任务；进程/机器重启不盲目重跑工具。Runtime 是执行、队列、Steer 和审批的真源。
@@ -34,8 +34,8 @@
 | C 工程与 CI | 按既定 monorepo 路径建立所需工程，锁依赖和 action SHA；Linux/Windows/macOS 基础检查 | 各 runner 实际运行通过；iOS 工程建立后追加真实 iOS 检查 |
 | D Runtime 边界 | 完整线程/turn facade，审批、用户输入、工具事件、能力协商与 CLI 对照 | 不吞事件/请求；与固定上游行为一致，未知能力不冒充支持 |
 | E 凭据 | 执行端凭据存储、配置归属、统一脱敏 | 秘密不出现在代码、日志、快照和同步；跨设备归属正确 |
-| F 模型核心与 Gateway | Responses 流、取消、工具 normalization、opaque 信息、错误/限流 | 协议测试服务验证后，用授权凭据做真实模型兼容性验证 |
-| G 多模型 Codex | 各 Provider 工具/推理/切换与模型注册 | 每模型有版本化兼容性报告，未支持能力清楚展示 |
+| F 模型核心与 Gateway | Responses 流及 Custom Chat Completions 转换、取消、工具 normalization、opaque 信息、错误/限流 | 协议测试服务验证后，用授权凭据做真实模型兼容性验证 |
+| G 多模型 Codex | 各 Provider（含两类 Custom）工具/推理/切换与模型注册 | 每模型有版本化兼容性报告，未支持能力清楚展示 |
 | H Host 与持久化 | 背景 Host生命周期/attach-detach、SQLite journal、线程/持久任务、快照/event sequence、提交幂等/结果未知、真实审批持久化及多端竞争/安全阻塞 | GUI/CLI/SSH连接退出不自动取消Host任务；首次有效审批、断连/重启恢复不盲重跑未知工具；不改为云端Agent，账户不代替Host授权 |
 | I Chat/账户/云同步/记忆核心 | 共享Rust/API；独立Chat；官方账户/PostgreSQL/Passkey/auth_sessions；CLI公开客户端PKCE/Device协议、token轮换/撤销/settings；Linux本地memory/cache DTO；Memory Engine/混合检索/Embedding；账户开关/继承/首次上传授权/epoch/删除；EmailSender/本机备份 | 无执行工具权限；ACC/SEC/MEM/SYN/REC/OPS及CLI认证/同步核心具备证据，GUI/终端/真实部署仍待验；完整CLI登录交互归P |
 | J Windows 框架 | 应用壳、会话/Composer、模型/Key、主题/i18n/品牌；原生注册/登录/恢复、账户/设备/记忆/云同步设置 | 本机可做检查及 Windows 运行/构建通过；原生认证、独立开关/A/B/切账户交互有证据 |
@@ -99,3 +99,9 @@ P/R的CLI-11/15/34另验无头exec fork的ForkOnly例外：无prompt时仅确认
 - 只创建当前阶段用到的模块，保留整体路径方向；不提前填满空抽象或假功能。
 - 对接口和运行风险做有意义测试，按真实结果记录。原始 V2 的 CLI/Provider/Remote/工具能力需求仍需逐项验收。
 - 实际付费 API 调用与凭据复用/创建需先明确授权；在此之前使用离线元数据与协议测试服务，不读取用户密钥。
+
+## F/G Custom 正式范围补充（2026-10-10）
+
+用户确认V2两类Custom全部保留；V3未逐字列出通用Chat Completions不构成取消。新增独立标准`/chat/completions` Adapter，复用现有ModelProvider、Canonical Protocol、共享传输、Credential Broker、ModelRouter、Responses Gateway及固定Codex Runtime原生执行/审批，不改变A–R顺序。既有DeepSeek/Qwen/OpenRouter/Custom Responses不重写，只有具体测试证明必要时最小扩展共享接口。
+
+请求、JSON/SSE、工具调用与结果、usage、reasoning能力边界、错误/限流、取消/超时及历史安全必须逐项离线验收；不支持能力明确拒绝，不宣称完整原生Responses。新增Adapter定向测试、整体回归、Linux/Windows/macOS精确CI均为门槛；现阶段范围已确认、实现待完成、验证待执行。新增Adapter不自动完成F/G，[要求级验收矩阵](CAIdex-FG-离线验收核对-V1.md)继续核实全部剩余项；商业真实验收由用户在全项目完成后执行，fixture不授商业兼容性或生产Host证据。

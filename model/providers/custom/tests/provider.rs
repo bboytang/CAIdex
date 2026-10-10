@@ -674,3 +674,92 @@ async fn tls_validates_trust_hostname_and_expiry_with_explicit_client_roots() {
         assert_eq!(fixture.accepted.load(Ordering::SeqCst), 1);
     }
 }
+
+#[tokio::test]
+async fn native_chat_sse_uses_shared_transport_without_responses_decoding() {
+    let reply = Reply {
+        status: 200,
+        content_type: "text/event-stream",
+        headers: "x-request-id: native-chat\r\n".into(),
+        body: b"data: {\"choices\":[{\"delta\":{\"content\":\"hello\"}}]}\n\ndata: [DONE]\n\n"
+            .to_vec(),
+        stall: false,
+    };
+    let mut fixture = Fixture::start(reply, None).await;
+    let reads = Arc::new(AtomicUsize::new(0));
+    let provider = CustomResponsesProvider::new(
+        vec![model(&fixture.endpoint)],
+        Arc::new(Broker::new(
+            Id::new("executor").unwrap(),
+            Store(reads.clone()),
+        )),
+        Limits::default(),
+    )
+    .unwrap();
+    let endpoint = CustomResponses::new(&fixture.endpoint, Some(reference())).unwrap();
+    let response = provider
+        .post_sse(
+            &endpoint,
+            json!({"model":"native","stream":true}),
+            RequestContext::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.headers.get("x-request-id"), Some("native-chat"));
+    let mut events = response.events;
+    assert!(
+        events
+            .next()
+            .await
+            .unwrap()
+            .unwrap()
+            .data
+            .contains("choices")
+    );
+    assert_eq!(events.next().await.unwrap().unwrap().data, "[DONE]");
+    assert!(events.next().await.is_none());
+    assert_eq!(fixture.request().await.body["model"], "native");
+    assert_eq!(reads.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn native_sse_unpolled_cancel_closes_socket_before_queue_drain() {
+    let reply = Reply {
+        status: 200,
+        content_type: "text/event-stream",
+        headers: String::new(),
+        body: b"data: {\"choices\":[]}\n\ndata: {\"choices\":[]}\n\n".to_vec(),
+        stall: true,
+    };
+    let mut fixture = Fixture::start(reply, None).await;
+    let (provider, _) = provider(
+        vec![model(&fixture.endpoint)],
+        Limits {
+            in_flight: 1,
+            ..Limits::default()
+        },
+        ClientOptions::default(),
+    );
+    let context = RequestContext::default();
+    let cancellation = context.cancellation.clone();
+    let endpoint = CustomResponses::new(&fixture.endpoint, Some(reference())).unwrap();
+    let mut events = provider
+        .post_sse(&endpoint, json!({"stream":true}), context)
+        .await
+        .unwrap()
+        .events;
+    fixture.request().await;
+    cancellation.cancel();
+    fixture.disconnected().await;
+    assert_eq!(
+        events.next().await.unwrap().err().unwrap().code,
+        "provider_cancelled"
+    );
+    assert!(events.next().await.is_none());
+    let response = provider
+        .post_sse(&endpoint, json!({"stream":true}), RequestContext::default())
+        .await
+        .unwrap();
+    drop(response);
+    fixture.request().await;
+}

@@ -2,15 +2,16 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G恢复点：Custom范围待答，阻塞复核已满足阈值
+## 当前F/G恢复点：两类 Custom 已正式确认，新增 Chat Completions Adapter
 
-2026-10-10本轮实际恢复branch main，main=origin/main=`3457270e5be8792a178dba3c5e991000ac85d7c7`，工作区干净。最新源码仍47b6b519d69955328218b2b7953794641090de52，精确CI38086078152已完整三平台核验成功；其后仅审计/文档状态修正，无运行中测试或CI，不重复已通过测试。已验细节见[要求级审计矩阵](docs/CAIdex-FG-离线验收核对-V1.md)和下方精确证据；F/G整体未完成，不转H或授LiveRuntime/Full。
+2026-10-10 用户正式确认 V3 范围补充：F/G 保留 Custom Responses-compatible，并实现 Custom OpenAI-compatible（标准 /chat/completions）。此前范围待答已解除，无需再次确认。恢复实际 main=origin/main=be83c88f90c1f37926dcec453b9322390e9267e3，工作区起始干净；最新已验证源码仍47b6b519d69955328218b2b7953794641090de52，精确三平台CI38086078152成功。新增范围已开始实现，尚未整体/三平台验证，不沿旧CI认领。
 
-当前唯一影响继续F/G实现的范围未决：原V2第17节分列Custom OpenAI-compatible及Custom Responses-compatible；V3第2节只明确自定义Responses与DeepSeek/Qwen/OpenRouter等兼容API。仓库Custom及这三个兼容API Adapter均为Responses端点，不存在通用chat/completions Adapter。已向用户提出两选一范围澄清，尚无答复。自动goal续轮不是答案，不能擅自删除最终范围或新增Adapter；这个问题决定实现内容，不是常规提交/推送审批。真实商业API/实际daemon验收按用户确认在项目最终由用户执行，不能以需要商业Key为阻塞借口。
+当前任务：V3/Gateway架构/验收矩阵已同步正式范围；新增独立`model/providers/chat-completions` crate（workspace/Cargo.lock内部路径条目），复用共享传输。复用ModelProvider/Canonical/Broker/ModelRouter/Gateway，不新增执行器或审批；现有DeepSeek/Qwen/OpenRouter/Custom Responses不重写。共享Custom新增`post_sse`，使用原认证/TLS/并发/guard/限额；原Responses路径不改。原始SSE接口缺失编译RED→新增测试GREEN；未消费双帧取消测试socket不关闭真实RED→后台单槽交付修复GREEN（先关闭，再拒绝缓存帧，许可释放）。新Adapter7项定向全部通过：六方法/JSON与usage/终态、Classic及Lite namespace/custom文本工具往返、SSE文本usage生命周期、非法历史与reasoning/媒体/控制Key前拒绝、原生非成功/漂移/半流零调用交付、HTTP429/无重试/错误不回显、取消/idle/deadline/Drop关闭和许可复用。Clippy初跑仅两处collapsible_if已修改，待复验。
 
-阻塞审计：ec539e1审计轮首次提出、3457270文档修正轮复核、本轮再次复核，相同范围问题连续三个目标轮次未答；前两轮已完成可独立审计与文档冲突修正，当前没有其他明确且可独立补齐的F/G任务。目标应标blocked等待范围答案，不标complete或自行paused。本轮只维护此准确停止恢复点，无源码/新测试/新CI。原架构、凭据与持续提交/push授权保持。
+重要进度：新Adapter15项及共享Custom9项定向全通过；新增固定Runtime3项通过（Classic/Lite真实文本/disk resume、批准后隔离执行/完整参数结果/重启不重复、Cancel及等待审批interrupt/迟到Accept拒绝）。新增Chat专属设计验收文档、无推理fixture catalog与Router/Gateway接线；原Runtime路径仅增加chat分支，原Provider源码未改。显式no-reasoning Runtime配置允许固定可选encrypted include空结果，实际推理/签名仍拒绝；grammar默认拒绝，显式prompt映射不提供原生强制约束。SSE终态缓冲有下游延迟限制；JSON context headers暂不透传，不授Full。
 
-准确恢复动作：用户答复并恢复目标后，重新读取本文件/AGENTS及实际Git。若保留两类Custom，核实native Chat Completions请求/回复/SSE及现有共享传输复用边界，再实施Adapter和独立离线证据；若用户确认当前F/G以V3明确Custom Responses为范围，记录该确认后继续要求级完成审计。不得用现有Responses Adapter、可配置base URL或目录API代验Chat Completions；不得用fixture代真实模型或生产Host。最终收尾提交/HEAD/origin/工作区以实际Git检查为准。
+准确下一步：最终检查扩展SSE name/arguments与optional null、历史/预算边界，整体workspace/固定Runtime回归、Clippy/fmt/diff与文档链接；随后聚焦提交/push及新精确三平台CI。源码/范围文档、专属文档、路由报告修订2、Runtime dev接线与fixture均未提交，尚无新CI；精确三平台CI未验，不沿旧成功报告冒认新增Adapter。新增Adapter之后继续要求级整体审计，不自动跳H。最终简化源码的workspace639/0/83、全workspace/all-targets Clippy -D warnings、fmt/diff、fixture语法和160个本地Markdown目标通过；固定Runtime完整81/0/0（另1非忽略fixture测试按过滤未执行，workspace已覆盖）通过。曾因磁盘满导致workspace构建失败，清理本项目可重建Runtime编译缓存5.0GiB后完整重跑成功，不删源码/用户文件。当前最终状态以实际工具结果为准。
+
 
 ## 既有阶段与用户顺序
 
