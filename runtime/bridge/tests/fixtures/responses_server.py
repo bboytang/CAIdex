@@ -509,13 +509,14 @@ class Handler(BaseHTTPRequestHandler):
             assert isinstance(results[0]["content"], str) and results[0]["content"]
             if mode.endswith("-lite"):
                 assert "CAIDEX_NATIVE_CHAT" in results[0]["content"]
+        # Commit evidence before terminal delivery; readers never race truncation.
+        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(("data: " + json.dumps(data) + "\n\ndata: [DONE]\n\n").encode())
         self.wfile.flush()
-        Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))

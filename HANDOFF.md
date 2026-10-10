@@ -2,16 +2,19 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G恢复点：两类 Custom 已正式确认，新增 Chat Completions Adapter
+## 当前F/G恢复点：Chat Completions CI修复已本地复验，准备提交/push
 
-2026-10-10 用户正式确认 V3 范围补充：F/G 保留 Custom Responses-compatible，并实现 Custom OpenAI-compatible（标准 /chat/completions）。此前范围待答已解除，无需再次确认。恢复实际 main=origin/main=be83c88f90c1f37926dcec453b9322390e9267e3，工作区起始干净；最新已验证源码仍47b6b519d69955328218b2b7953794641090de52，精确三平台CI38086078152成功。新增范围已开始实现，尚未整体/三平台验证，不沿旧CI认领。
+2026-10-10用户正式确认V3保留两类Custom，范围阻塞已解除。当前main=origin/main=18249beabed7702581cc033f88b1922da975b1f3；[CI38089213569](https://github.com/bboytang/CAIdex/actions/runs/38089213569)整体completed/failure，macOS成功，Linux/Windows固定Runtime失败。完整失败日志已读：Linux新增工具恢复测试trace.json EOF（80通过/1失败）；Windows新增文本恢复测试trace.requests旧值1而非2（79通过/1失败）。共同根因为新Chat fixture在终态flush后才截断重写证据，读者可能抢先读取；已将写入移至终态交付前，不加轮询掩盖。job：Windows114321996516、Linux114321996732、macOS114321996776。旧源码47b6b519/CI38086078152仅作旧范围基线。
 
-当前任务：V3/Gateway架构/验收矩阵已同步正式范围；新增独立`model/providers/chat-completions` crate（workspace/Cargo.lock内部路径条目），复用共享传输。复用ModelProvider/Canonical/Broker/ModelRouter/Gateway，不新增执行器或审批；现有DeepSeek/Qwen/OpenRouter/Custom Responses不重写。共享Custom新增`post_sse`，使用原认证/TLS/并发/guard/限额；原Responses路径不改。原始SSE接口缺失编译RED→新增测试GREEN；未消费双帧取消测试socket不关闭真实RED→后台单槽交付修复GREEN（先关闭，再拒绝缓存帧，许可释放）。新Adapter7项定向全部通过：六方法/JSON与usage/终态、Classic及Lite namespace/custom文本工具往返、SSE文本usage生命周期、非法历史与reasoning/媒体/控制Key前拒绝、原生非成功/漂移/半流零调用交付、HTTP429/无重试/错误不回显、取消/idle/deadline/Drop关闭和许可复用。Clippy初跑仅两处collapsible_if已修改，待复验。
+要求级复核另发现无tools却tool_choice=required会访问凭据/上游：新增既有负例先真实RED（502而非400），最小三行门控后GREEN，凭据零读取。当前未提交为该request/test、Chat fixture与HANDOFF/验收矩阵；完整本地复验workspace640/0/83（本次含原生凭据子进程项）、固定Runtime81/0/0，Clippy全workspace/all-targets-D warnings、fmt/diff通过。下一步提交/push修复并核验新的精确三平台CI，不能拿失败运行或旧绿色代验。
 
-重要进度：新Adapter15项及共享Custom9项定向全通过；新增固定Runtime3项通过（Classic/Lite真实文本/disk resume、批准后隔离执行/完整参数结果/重启不重复、Cancel及等待审批interrupt/迟到Accept拒绝）。新增Chat专属设计验收文档、无推理fixture catalog与Router/Gateway接线；原Runtime路径仅增加chat分支，原Provider源码未改。显式no-reasoning Runtime配置允许固定可选encrypted include空结果，实际推理/签名仍拒绝；grammar默认拒绝，显式prompt映射不提供原生强制约束。SSE终态缓冲有下游延迟限制；JSON context headers暂不透传，不授Full。
+已实现：独立`model/providers/chat-completions`标准/chat/completions Adapter，复用六方法/Canonical/共享传输/Broker/ModelRouter/Gateway；固定Runtime仍执行/审批真源。共享Custom仅新增post_sse及单槽后台framing，原Responses路径不改；没有改现有其他Provider/Core/Gateway/Broker/workflow。正式范围同步V3/Gateway/验收矩阵，新增[Chat设计验收](docs/CAIdex-Custom-Chat-Completions-设计与验收.md)，[路由报告修订2](docs/CAIdex-Provider-路由离线兼容性报告-V1.md)现有9Adapter18个route/方言，只授ProtocolFixture/Experimental，不自动挂Registry或授真实能力。
 
-准确下一步：最终检查扩展SSE name/arguments与optional null、历史/预算边界，整体workspace/固定Runtime回归、Clippy/fmt/diff与文档链接；随后聚焦提交/push及新精确三平台CI。源码/范围文档、专属文档、路由报告修订2、Runtime dev接线与fixture均未提交，尚无新CI；精确三平台CI未验，不沿旧成功报告冒认新增Adapter。新增Adapter之后继续要求级整体审计，不自动跳H。最终简化源码的workspace639/0/83、全workspace/all-targets Clippy -D warnings、fmt/diff、fixture语法和160个本地Markdown目标通过；固定Runtime完整81/0/0（另1非忽略fixture测试按过滤未执行，workspace已覆盖）通过。曾因磁盘满导致workspace构建失败，清理本项目可重建Runtime编译缓存5.0GiB后完整重跑成功，不删源码/用户文件。当前最终状态以实际工具结果为准。
+已本地验证：新Adapter15、Custom9（旧7+新2）、固定Runtime新增3项全部通过；最终workspace639/0/83，固定Runtime完整81/0/0（1个普通fixture测试由workspace覆盖），全workspace/all-targets Clippy -D warnings、fmt/diff、fixture语法、160个本地Markdown目标通过。共享原始SSE接口缺失编译RED→GREEN；未消费双帧cancel socket不关闭真实RED→后台单槽交付GREEN。实际Classic/Lite原生批准后隔离执行、完整参数/结果及disk resume逐值一致、不重跑；Cancel/等待审批interrupt/迟到Accept不执行。首次workspace构建因磁盘满失败，清理本项目可重建Runtime编译缓存5.0GiB后完整重跑成功，未删源码/用户文件。
 
+限制：无推理Runtime profile仅显式允许固定optional encrypted include空结果，非none effort/summary/签名/opaque仍拒绝；grammar默认拒绝，显式prompt映射没有原生强制约束。SSE终态缓冲受Runtime idle与累计投影预算限制；JSON context headers不透传，native_model返回名必须精确匹配，不猜别名。普通媒体/结构输出/状态/未知控制拒绝，模型能力/限额仍Unknown/None；商业真实验收由用户全项目完成后自验，fixture不代商业兼容性或生产Host。
+
+准确下一步：提交上述已复验修复，核验新精确CI全部三job/17steps及完整日志，逐名比较旧CI38086078152集合+15Chat+2Custom+3Runtime；处理真实新失败后完整相关复验。并继续对V2第14–19节/V3 F/G逐要求核对，区分离线已验、用户最终商业验收与H/J/P等后续阶段，不因新增Adapter自动宣布F/G整体通过。完成后把精确证据、残余边界及下一步写入本文件/验收矩阵/Chat文档，提交push纯文档收尾；不重复实现已验任务或擅自改变A–R顺序。
 
 ## 既有阶段与用户顺序
 
@@ -82,7 +85,7 @@ Gemini已验：Linux/Windows/macOS job114299375039/114299374956/114299375049；r
 - I账户/PostgreSQL/Memory/同步/邮件和J–O客户端、L SSH、P完整CLI、Q Relay、R实际平台/终端/认证/多端验收仍待。apps/cli现有doctor、credentials status/set/remove、version/help，不冒称CLI-01～34/账户55项/UI16项完成。
 - 未开放语义仍明确拒绝：各Provider差异见验收/route报告；未知Runtime扩展不保证类型化持久化全量往返。native载体是JSON一致性门控而非签名真实性/来源认证，backend配置不是实际endpoint证明；完整前缀二次增长/预算、文本终态缓冲保持。
 - compaction手动正常、本地/远端Classic/Lite失败/取消，以及Total scope采样前自动阈值与磁盘恢复已离线验证；其他scope/轮末/TokenBudget/无限历史或生产恢复未验，不由已验路径认领。同步SecretStore开始后不能强停，仅保证取消后不POST；OpenAI Classic/Lite Runtime下游idle已验，Gemini Classic/Lite纯comment下游idle时序已专门离线验证，但不承诺跨Gateway keepalive支持。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
-- 无当前权限/推送阻塞或已知失败；旧自动审批拒绝已由持续授权解除，不能当成当前阻塞。
+- 无当前权限/推送阻塞；新Chat首次CI失败已定位且本地修复，新CI尚待验证；旧自动审批拒绝已由持续授权解除，不能当成当前阻塞。
 
 ## 代码与设计入口
 

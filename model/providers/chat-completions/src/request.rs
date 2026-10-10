@@ -166,6 +166,9 @@ pub(crate) fn prepare(
         wire["tools"] = tools.native.clone().into();
     }
     if let Some(choice) = source.get("tool_choice") {
+        if choice == "required" && tools.native.is_empty() {
+            return Err(invalid());
+        }
         wire["tool_choice"] = tools.choice(choice)?;
     }
     let single = match source.get("parallel_tool_calls") {

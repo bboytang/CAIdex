@@ -249,6 +249,7 @@ async fn unsupported_reasoning_state_media_and_controls_never_resolve_keys() {
         json!({"input":[{"type":"function_call_output","call_id":"orphan","output":"result"}]}),
         json!({"temperature":3}),
         json!({"parallel_tool_calls":"false"}),
+        json!({"tool_choice":"required"}),
     ];
     for mutation in mutations {
         let mut wire = json!({"model":"public","input":"hello"});

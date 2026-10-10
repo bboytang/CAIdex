@@ -1,8 +1,8 @@
 # CAIdex F/G 离线验收核对 V1
 
-核对日期：2026-10-10；恢复基线 main / origin/main=`a9502451bbe392a5fd00bd39e073caef17c20960`，工作区干净；最新源码 `3a57bcbfb8f4aa942019c081404b6833daa57642`。依据[实施计划 V3](CAIdex-实施计划-V3.md)、[Gateway 验收](CAIdex-Model-Gateway-设计与验收.md)、各 Provider 验收、实际源码/测试及精确 CI。此文是剩余门槛索引，不是商业模型兼容性报告，也不宣布 F/G 完成。
+核对日期：2026-10-10。当前源码main/origin/main=18249beabed7702581cc033f88b1922da975b1f3：两类Custom已正式确认，新Chat Adapter15项及完整本地回归通过；[精确CI38089213569](https://github.com/bboytang/CAIdex/actions/runs/38089213569)整体失败（Linux trace EOF、Windows trace旧值、macOS成功）；fixture写证据先于终态及required无tools门控已本地复验，新精确三平台CI待提交修复后核验，未认领三平台成功。依据[实施计划V3](CAIdex-实施计划-V3.md)、[Gateway验收](CAIdex-Model-Gateway-设计与验收.md)、各Provider验收及仓库/精确CI。当前要求级矩阵见本文末节；此前基线和已完成步骤保留为历史证据，不是当前待办。本文件不宣布商业F/G完成或把fixture当生产Host。
 
-## 基线证据
+## 基线证据（历史起点）
 
 重新读取 [CI38072098372](https://github.com/bboytang/CAIdex/actions/runs/38072098372) 的精确 head、三个 job/全部17steps与完整日志；整体 completed/success，各步骤成功或条件跳过。Linux/Windows/macOS workspace 分别619/614/618通过（0失败、73/71/71忽略），固定 Runtime 71/70/70通过（0失败/忽略）。忽略项由独立 Runtime/native credential 步骤补验，不能算作 workspace 通过。下面八个 Adapter 的529个测试函数名在三平台日志分别匹配通过；这是既有回归证据，不是新增测试或真实模型验证。
 
@@ -45,7 +45,7 @@
 
 本表针对交接点名门槛和源码分支，不声称全仓穷举或全时序形式验证。后续按确认缺口逐项推进；商业/Host边界保持V3最终方案。
 
-## 本次执行计划与验收
+## 起点执行计划与验收（已完成历史）
 
 沿既定V3细化验收，不重新设计：
 
@@ -60,7 +60,7 @@
 
 源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)整体completed/success；三job各17steps成功或条件跳过，完整日志逐名核验通过。Linux/Windows/macOS workspace621/616/620（0失败、忽略73/71/71）、固定Runtime71/70/70（0失败/忽略）；Google92逐名每平台一次。全通过名693/686/690精确旧基线CI+2，无旧名遗漏/重复；raw日志2298/1984/1995行，watch与下载exit0。仅Google新增2测试，其余Adapter及固定Runtime保持。上述执行计划已经完成；纯文档收尾不重复Rust CI。
 
-下一步：Anthropic精确断言已三平台CI核验；Gemini四类边界已三平台精确CI核验；16个route/profile离线报告已写，compaction两个新增用例本地及精确三平台CI通过。已确认的可离线补齐缺口均已实施/验证，没有据此认领全参数/全时序形式证明。商业真实模型与生产Host仍未验，F/G不标商业整体完成；该前轮离线复核与压缩精确CI已完成；后续补证与当前Custom范围未决见本文末节及HANDOFF，不据此转H或用fixture认领商业门槛。
+下一步：Anthropic精确断言已三平台CI核验；Gemini四类边界已三平台精确CI核验；16个route/profile离线报告已写，compaction两个新增用例本地及精确三平台CI通过。已确认的可离线补齐缺口均已实施/验证，没有据此认领全参数/全时序形式证明。商业真实模型与生产Host仍未验，F/G不标商业整体完成；该前轮离线复核与压缩精确CI已完成；后续补证与新增Chat正式范围见本文末节及HANDOFF，不据此转H或用fixture认领商业门槛。
 
 
 ## 前轮压缩离线复核（2026-10-10，历史证据）
