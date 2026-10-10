@@ -1,0 +1,63 @@
+{
+  "evidence_version": 1,
+  "milestone": "H-1",
+  "source_sha": "dec3a374228a75b9a6600715b0d56bf5047b12b0",
+  "platform": "Linux",
+  "host": {
+    "passed": 15,
+    "failed": 0,
+    "ignored": 0
+  },
+  "host_test_names": [
+    "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+    "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+    "failed_commit_does_not_advance_event_or_snapshot",
+    "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+    "offline_inspection_never_migrates_or_creates_a_database",
+    "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+    "second_owner_is_rejected_and_lock_releases_after_close",
+    "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+    "oversized_event_is_rejected_without_advancing_watermark",
+    "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+    "partial_client_frame_survives_interleaved_event_broadcast",
+    "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+    "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+    "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+    "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+  ],
+  "demo": {
+    "status": "ok",
+    "codex_version": "0.160.1",
+    "host_id": "251335f26d8c459ac90be2d25429a608",
+    "before_restart_seq": 5,
+    "after_restart_seq": 7,
+    "clients": 2,
+    "observer_process_exit_detaches": true,
+    "replay_identical": true,
+    "snapshot_restored": true,
+    "old_runtime_state": "unknown",
+    "restart_resubmissions": 0,
+    "model_turns": 0,
+    "commercial_calls": 0,
+    "user_keys_read": false
+  },
+  "checked_file_sha256": {
+    ".github/workflows/ci.yml": "bc0695b58c31db06c972a44fdb242887699bcd97368f7e28907bbf6ccc5d9d41",
+    "Cargo.lock": "2cedd30ba87dcc92604bc3e7561be1ae537f69d733517624123f9ee317080fca",
+    "Cargo.toml": "31c86553a617a9ee0ea09ced2854842ee40faa4fb043b2ac915cdf35df4a6306",
+    "runtime/host/Cargo.toml": "bb8657fb733031d24ae8fff11ef1433200e3d5c71aea77d7959b857f7088f052",
+    "runtime/host/src/journal.rs": "af59f075e1f5c2703ff320b8f99748d9814a9adcc5cef64781e1ffa53d348632",
+    "runtime/host/src/lib.rs": "72e41bd12711711d9317f42b3d621c1f81a8f9d7e27d6fdcec22d064490a4a22",
+    "runtime/host/src/main.rs": "dadf3a42105cc65be4c71abc607b109ac035a23130226a5c4bcdf2b0b4d1280b",
+    "runtime/host/src/security.rs": "74e3669c9982e796270bdea86989e2bc4f5f2e240d6111b562d3a4b798e21490",
+    "runtime/host/src/service.rs": "8ae368586b5d53dc595b2fa992d31169cdbdce20ac65253d9c12b8d0248d6811",
+    "runtime/host/tests/fixtures/peer.py": "1f6287f28717c771104c2d268375d03ee6882ec998061f75b917c3961621fa6d",
+    "runtime/host/tests/journal.rs": "cbd6d4843c05d33e1968b5b7ba959e09bc6611a70311c6052463659dbd7ef9ad",
+    "runtime/host/tests/service.rs": "0dc7be48a8ba0172db9411b04d6a67b87a32427e5d8f708acaf85f380156d94a",
+    "scripts/h1-demo.py": "137f9419147dd4c1f86bedc92c5e004f8680e2954e9f33ecd39cb17932dba7b8"
+  },
+  "clippy": "cargo clippy -p caidex-host --all-targets --locked -- -D warnings passed after lifecycle fix",
+  "format": "cargo fmt --all -- --check passed",
+  "independent_audit": "not performed",
+  "workspace_and_runtime": "See exact-source three-platform CI evidence; earlier baseline local checks retained in h1-local.json."
+}

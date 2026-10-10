@@ -80,10 +80,36 @@ CAIDEX_CODEX_BIN="$(node scripts/codex-binary.mjs)" cargo test -p caidex-runtime
 
 ## 交付记录与独立审计
 
-H-1已实现并本地验证，功能提交/精确CI收尾中。Linux workspace655/0/83（严格请求解码最终修复之前），最终H-1定向15/0/0（含参数拒绝无副作用）、全仓Clippy及最终Host Clippy/fmt、固定Runtime81/0/0、stable/experimental schema指纹均通过。实现中发现flatten忽略额外字段，由失败测试推动改为严格带标签请求；最终定向回归及真实演示已复验，精确CI再验最终源码全仓。
+最终功能源码：`dec3a374228a75b9a6600715b0d56bf5047b12b0`，已提交/push main；[精确CI38095166217](https://github.com/bboytang/CAIdex/actions/runs/38095166217)三平台完整成功，完整原始日志已核对测试名/计数、schema及演示JSON。封存文档提交不改变该源码、依赖或workflow。H-1已交付并停止，不开始H-2；用户验收与独立审计仍待执行。
 
-Linux独立真实进程演示：旧stream1 seq5→新stream2 seq7，seq6=host/started、seq7=真实remoteControl/status/changed；同Host、旧线程unknown、0重发、0模型轮次。完整本地H-1输出见[测试日志](evidence/h1-host-tests.log)，[初版本地证据摘要/测试名/文件指纹/演示结果](evidence/h1-local.json)可独立核对；该文件指纹对应db8bf47初版，不冒充Windows后续修复版本。构建前约4GB空闲，验证后约3.1GB；仅复用缓存及新建隔离证据，无用户/全局Codex清理。
+| 实际runner / 完整job | workspace 通过/失败/忽略 | H-1（包含于workspace） | 固定Runtime 通过/失败/忽略 | 真实Host双端演示 |
+| --- | --- | --- | --- | --- |
+| [Linux ubuntu-24.04](https://github.com/bboytang/CAIdex/actions/runs/38095166217/job/114339472553) | 655/0/83 | 15/0/0 | 81/0/0 | 成功，seq6→9 |
+| [Windows windows-2022](https://github.com/bboytang/CAIdex/actions/runs/38095166217/job/114339472633) | 649/0/81 | 14/0/0 | 80/0/0 | 成功，seq5→7 |
+| [macOS macos-15](https://github.com/bboytang/CAIdex/actions/runs/38095166217/job/114339472658) | 654/0/81 | 15/0/0 | 80/0/0 | 成功，seq5→7 |
 
-初版`db8bf47a5b0e44d8efdc64ec72006adf594889b6`/[CI38093594306](https://github.com/bboytang/CAIdex/actions/runs/38093594306)整体failure：Linux/macOS完整成功，Windows在Host私有目录ACL初始化失败，不能认领三平台完成。按阻断修复为`8dfa3be7b74fef8d75a3077df3fe9e38bdf182e6`（SID值/强类型flags比较、只输出错误step），增加Windows早期边界检查直接执行生产脚本，覆盖新建/复开和拒绝不安全继承；权限门槛未放宽。Linux15项Host测试/Clippy相关复验通过，[新精确CI38094110441](https://github.com/bboytang/CAIdex/actions/runs/38094110441)中Windows早期边界检查成功，完整结果待核验。旧版具体失败于哪个比较没有逐项重演，不将推断写成已证根因。
+ignored不计入通过；固定Runtime的ignored用例在后续实际原生执行步骤单独运行。Windows不运行Unix权限/硬链接专属测试，另有直接生产ACL脚本与真实Rust子进程边界检查，均成功。Linux另行隔离原生凭据service测试1/0/0。三平台fmt、全仓Clippy、stable/experimental schema指纹、doctor及H-1实际演示均成功；不是Windows11桌面或iOS验收。三个演示均model_turns=0/commercial_calls=0/user_keys_read=false/restart_resubmissions=0。
 
-独立审计输入：不可变提交、该提交完整CI三job步骤/日志、上述运行命令与隔离journal、journal/service测试及故障夹具。重点检查actor所有调用是否先持久提交、广播顺序、attach水位/部分帧/慢客户端缺口、旧Runtime失效与未知intent、文件/授权/凭据边界、范围是否止于H-1。尚未安排或执行独立审计；不据此自行启动H-2。
+[最终精确CI摘要](evidence/h1-ci.json)保存完整step状态、实际测试名/计数、演示JSON及原始日志SHA256；完整日志归档：[Linux](evidence/h1-ci-linux.log.gz)、[Windows](evidence/h1-ci-windows.log.gz)、[macOS](evidence/h1-ci-macos.log.gz)。解压后的原始字节SHA256须与摘要一致，压缩文件自身SHA256也已记录。
+
+最终Linux定向H-1 **15/0/0**、Host Clippy/fmt及独立真实进程演示通过，见[最终本地测试日志](evidence/h1-final-host-tests.log)和[最终源码文件指纹/测试名/演示JSON](evidence/h1-final-local.json)。最终演示stream1 seq5→stream2 seq7、同Host、旧线程unknown、0重发、0模型轮次；CI上真实Runtime通知可产生不同seq，验证只要求连续提交/恢复、不固定事件数。构建前约4GB空闲，完成验证约3.1GB；复用缓存、限制构建并行，没有清理用户资料或全局Codex。
+
+历史本地workspace655/0/83、固定Runtime81/0/0及stable/experimental schema有效记录在[初版本地摘要](evidence/h1-local.json)和[初版本地测试日志](evidence/h1-host-tests.log)。初版文件指纹对应db8bf47，不冒充最终版本；最终完整workspace/Runtime以精确CI为准。Linux本地默认沙箱不允许socket/原生执行，已在授权环境复验；/tmp自身为Git工作树，凭据保护测试改用新建Git外私有TMPDIR，没有删除.git或改变保护。最终CI仍使用既有三平台流程，不新增分支制度。
+
+### 实际失败与修复记录
+
+| 不可变源码 / CI | 实际结果与最小修复 |
+| --- | --- |
+| db8bf47 / [38093594306](https://github.com/bboytang/CAIdex/actions/runs/38093594306) | Linux/macOS成功；Windows私有目录ACL初始化失败。后继增加安全step诊断、SID值/强类型flags比较及直接生产脚本新建/复开/拒绝继承检查；未放宽owner-only权限。首次具体比较没有逐项重演，不冒充已证根因 |
+| 8dfa3be / [38094110441](https://github.com/bboytang/CAIdex/actions/runs/38094110441) | Linux/macOS成功；Windows直接脚本成功，但Rust子进程step17 Set-Acl失败。仅在该PowerShell子进程移除继承PSModulePath，增加早期真实Rust边界检查；后继CI证实两项Windows权限检查均成功 |
+| d62ee4f / [38094678640](https://github.com/bboytang/CAIdex/actions/runs/38094678640) | Linux成功；macOS测试发现任务completion先于参数journal锁析构；Windows认证交互测试中Host正确停止，却抢在夹具注入RPC回复之前。最终修复显式drop journal后返回，并将启动提交纳入同一清理；夹具先确认注入再发故障事件。既有测试复验，不加重试/睡眠掩盖 |
+
+Windows PSModulePath跨版本继承问题见[微软官方说明](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath?view=powershell-7.6)。同步改用absolute路径，避免canonicalize生成Windows verbatim路径传给PowerShell（[Rust官方说明](https://doc.rust-lang.org/std/fs/fn.canonicalize.html)），夹具marker固定LF。实现中额外字段拒绝测试还暴露serde flatten忽略未知字段，已改严格带标签struct请求，参数拒绝无Runtime副作用/秘密无journal记录由最终测试覆盖。
+
+### 独立只读审计输入与边界
+
+输入为上述不可变源码、最终本地文件指纹/日志、精确CI摘要和三job完整日志归档、独立演示命令、保留的隔离journal，以及journal/service测试和故障夹具。GitHub job原始日志可用`gh api repos/bboytang/CAIdex/actions/jobs/<job_id>/logs`读取；当前运行证据不依赖实施会话/tmp临时文件。需要复跑时使用上节运行步骤，留存新建私有目录，不能覆盖现存用户数据。
+
+重点核对：所有Host动作是否先提交intent；event/snapshot是否原子推进；提交后广播/回复；attach水位/部分帧/慢客户端缺口；旧Runtime状态失效与未知结果不重发；独占锁与文件/授权/凭据边界；范围是否止于H-1。
+
+尚未执行独立新会话/其他模型审计，不将实施自查或CI成功冒充独立验收。F/G-Live、生产多用户/Remote ACL、持久任务/执行/审批、高负载/日志裁剪/备份恢复及Windows11桌面/iOS Simulator/Archive/真机/安装包仍未验或属于后续授权范围。

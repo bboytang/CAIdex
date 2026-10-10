@@ -1,0 +1,473 @@
+{
+  "evidence_version": 1,
+  "source_sha": "dec3a374228a75b9a6600715b0d56bf5047b12b0",
+  "run_id": "38095166217",
+  "url": "https://github.com/bboytang/CAIdex/actions/runs/38095166217",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "platform": "linux",
+      "job_id": 114339472553,
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38095166217/job/114339472553",
+      "workspace": {
+        "passed": 655,
+        "failed": 0,
+        "ignored": 83
+      },
+      "fixed_runtime": {
+        "passed": 81,
+        "failed": 0,
+        "ignored": 0
+      },
+      "host_tests_passed_once": [
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+      ],
+      "demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "0a10a02c91c55c1a0553ce5261d1d089",
+        "before_restart_seq": 6,
+        "after_restart_seq": 9,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false
+      },
+      "raw_log_lines": 2434,
+      "raw_log_sha256": "8fc194ddb18af7becfde1c1542a00bfcf21c3b078e39b32d55b57a691f87722b",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "separate_native_credentials_passed": 1,
+      "raw_log_archive": "h1-ci-linux.log.gz",
+      "archive_sha256": "f14cae84cece27be55bc10eafdf7730406585ca4134488f3d36a029f35999115"
+    },
+    {
+      "platform": "windows",
+      "job_id": 114339472633,
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38095166217/job/114339472633",
+      "workspace": {
+        "passed": 649,
+        "failed": 0,
+        "ignored": 81
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "host_tests_passed_once": [
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+      ],
+      "demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "ca28fd8e2a68c9d601ddbdb8b7dc91f9",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false
+      },
+      "raw_log_lines": 2169,
+      "raw_log_sha256": "10c2b50c9298a4c46f2f73280bb3e3c959173ce5ab669949eed3669dfa3e1bc9",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "raw_log_archive": "h1-ci-windows.log.gz",
+      "archive_sha256": "934a4788b53cd0d784ac1fd3b4f4cb280c6984e7bdc65ed1699da23929c77a26"
+    },
+    {
+      "platform": "macos",
+      "job_id": 114339472658,
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38095166217/job/114339472658",
+      "workspace": {
+        "passed": 654,
+        "failed": 0,
+        "ignored": 81
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "host_tests_passed_once": [
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+      ],
+      "demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "586e86fea42b414b5427b72e39a604c7",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false
+      },
+      "raw_log_lines": 2133,
+      "raw_log_sha256": "6ad0dab31b29a471c7afb20ccd1a4e7118d2f3c5674b775d247c63cc96ec8073",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "raw_log_archive": "h1-ci-macos.log.gz",
+      "archive_sha256": "eeb171be3c55f8e33c5cf7d47a56d222f9d6bacd092344f422acdc0eacbd3519"
+    }
+  ],
+  "independent_audit": "not performed"
+}
