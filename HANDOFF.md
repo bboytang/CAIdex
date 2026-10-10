@@ -1,14 +1,16 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，OpenRouter Lite步骤1契约核对完成，步骤2定向100项通过，步骤3完整本地已验，步骤4源码发布/CI待执行；OpenRouter原生summary/context/include组合四步骤完成，Provider90与源码fa42c22/CI38052051289精确三平台已验；下一步Lite→实际Runtime。 正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
+更新：2026-10-10，OpenRouter Lite四步骤完成，Provider100与源码1d0749e/CI38055815533精确三平台已验；下一步实际固定Classic/Lite Runtime。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改、不作为架构依据。
 
 ## 当前阶段与恢复点
+
+Lite步骤4已完成：精确源码`1d0749ead8c927d1544497174df2854d4689d77c`/[CI38055815533](https://github.com/bboytang/CAIdex/actions/runs/38055815533)整体completed/success。linux job114224037448，workspace610/0/59、既有固定Runtime57/0/0，raw2252行/通过名668；windows job114224037421，workspace605/0/57、既有固定Runtime56/0/0，raw1938行/通过名661；macos job114224037245，workspace609/0/57、既有固定Runtime56/0/0，raw1949行/通过名665。各17steps成功或条件跳过，OpenRouter100/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38052051289+10，无遗漏/重复，旧Runtime名完全保持。watch和三份完整日志下载exit0，ci-check通过。收尾仅四文档，215个其他tracked文件逐字保持已验SHA；最新纯文档提交号以git log -1为准。
 
 Lite步骤3已完成：workspace610/0/59、既有固定Runtime57/0/0、最终OpenRouter100/0/0、Clippy全workspace/all-targets -D warnings、fmt/diff和18份Markdown/103本地链接/22锚点通过。全通过名精确旧workspace600+10，旧Runtime57保持；旧90测试正文逐字保持，仅history模块追加Lite接线，Cargo.lock/共享源码/其他Provider/Runtime/workflow未改。目录返回Classic/Lite配置且Unknown保持；无工具Lite默认策略请求已验。
 
 OpenRouter Lite步骤2已完成：显式with_lite_options保留route Classic/Lite元数据，native Classic传输；首项developer additional_tools/稳定ID原生工具编译，developer消息ID复用显式Runtime上下文；namespace/custom与grammar原样，parallel=false复用JSON/SSE终态单调用门控。v2完整政策载体绑定原始工具前缀/ID/parallel及既有scope/model/backend/正文/前缀，Classic v1不变，public decoder也核对内部Lite政策和版本。新增10项，Provider100/0/0；覆盖JSON/SSE、多轮原序恢复、非法前缀与async/deferred、跨Classic/篡改拒绝、预算、取消/deadline/Drop/满槽释放和Gateway隔离。初期fixture方法/字段类型编译问题已修正；首可执行99/1为第二轮SSE response.created ID夹具不一致，修正后100/0/0，无已知失败。共享栈/执行器/依赖不变；实际OpenRouter Runtime和商业Full仍未验。
 
-当前Lite阶段：main基线3972816=origin/main，干净；上一源码fa42c22/CI38052051289已验90项。固定Runtime client.rs实际首项developer additional_tools及稳定ID、developer消息ID、Lite无顶层tools/instructions已核对；官方OpenRouter stateless Responses与native工具契约已读。显式with_lite_options保留route Classic/Lite元数据、底层Classic传输；工具原生namespace/custom不映射别名，parallel=false复用已有JSON/SSE终态单调用门控。Lite原始additional_tools及ID绑定独立v2政策载体，Classic v1不变；复用完整历史/正文配置。范围OpenRouter lib/request/history与独立Lite测试、四文档，无共享栈/依赖/执行器修改。下一步完整本地→精确源码三平台CI；实际OpenRouter Runtime仍待后续。
+当前Lite阶段：main基线3972816=origin/main，干净；上一源码fa42c22/CI38052051289已验90项。固定Runtime client.rs实际首项developer additional_tools及稳定ID、developer消息ID、Lite无顶层tools/instructions已核对；官方OpenRouter stateless Responses与native工具契约已读。显式with_lite_options保留route Classic/Lite元数据、底层Classic传输；工具原生namespace/custom不映射别名，parallel=false复用已有JSON/SSE终态单调用门控。Lite原始additional_tools及ID绑定独立v2政策载体，Classic v1不变；复用完整历史/正文配置。范围OpenRouter lib/request/history与独立Lite测试、四文档，无共享栈/依赖/执行器修改。本地与精确源码三平台CI均已验，下一步实际OpenRouter Runtime。
 
 
 本轮正文控制组合步骤1已完成：main=origin/main=2e8485d且干净，上一源码ebd8c9a/CI38050867010与82项基线一致。固定Runtime client build_reasoning会按metadata产生summary（auto/concise/detailed）、Lite all_turns及include reasoning.encrypted_content；固定OpenRouter SDK de9aa273对应enum及官方Responses手动历史契约已核对。采用runtime_context+native_history双策略才接受已知include（null/空/单一encrypted_content），逐route显式summary/context允许值配置，原生传递而非复制Qwen本地消费；context模型限制由执行端显式声明，不按slug猜测、不升级Unknown。绑定原source控制和允许值政策；无控制配置时保留旧v1 policy字段，兼容既有载体；effort/verbosity/tier仍只编译一次。默认/部分策略/未知控制/hosted工具继续拒绝。范围仅OpenRouter lib/request/history、定向控制子模块和四文档，旧测试一项include拒绝样例改为未支持值以适应新契约；步骤2已完成：with_reasoning_summary/context需双策略和既有history/backend，逐route原生允许值；include仅已知null/空/单一encrypted_content，非空reasoning控制遵守Unsupported门槛，Unknown保持。原source与新allowlist政策绑定，effort只编译一次，无配置省略新policy字段以兼容旧v1。新增8项，Provider90/0/0；旧81项正文不变，旧历史1项只将include拒绝样例改未支持logprobs，新增controls模块。首90通过后补充public NativeHistory内部政策负例0/1复现，统一校验非空/已知/唯一/排序/双策略后最终90/0/0，无当前已知失败。步骤3已完成：workspace600/0/59、既有固定Runtime57/0/0、Clippy全workspace/all-targets -D warnings、fmt/diff及18份Markdown/103本地链接/22锚点通过；全通过名精确旧workspace592+8，旧Runtime57保持，原82项名完整且仅一项include拒绝值按新契约调整；Cargo.lock/共享/其他Provider/Runtime/workflow未改。步骤4源码`fa42c2214e2c3ef9ac40ba8971e83db12cbab5c8`已提交/push，精确CI38052051289整体与三平台completed/success，完整日志/步骤/通过名已精确核验，证据见末节。
@@ -25,7 +27,7 @@ OpenRouter Lite步骤2已完成：显式with_lite_options保留route Classic/Lit
 
 本轮 **OpenRouter Classic平面function工具** 已完成契约核对→最小实现/15项新增→完整本地→精确源码三平台CI，各步均更新交接。逐route显式with_native_tools须先配backend；原生声明/auto-none-required-named选择/原顺序成对文本结果，JSON与SSE调用身份/参数/终态门控、旧工具call_id/item ID复用拒绝；SSE预算内缓冲模型事件到终态，Heartbeat继续传递，取消/deadline/Drop与满槽释放已验，不执行工具。opaque reasoning/未知输出扩展及大整数ID保留，但其输入回放仍关闭；Unknown不升级，Unsupported显式拒绝。旧36项测试正文逐字保留，Provider51/0/0、本地workspace561/0/59、既有固定Runtime57/0/0及Clippy/fmt/diff通过；全通过名精确旧workspace546+15、旧Runtime57完全保持，依赖/共享生产源码/Runtime/其他Provider/workflow不变。源码`65001cd0952685d635d61e4d6d682e174928eb01`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)三平台已验，完整证据见末节。
 
-准确恢复点：OpenRouter Lite Adapter步骤1–3已完成，下一步按已授权提交/push并核验精确源码三平台CI，然后实际Classic/Lite Runtime审批/执行/取消/磁盘恢复。Lite显式入口/v2全历史、Classic v1不变；裸reasoning、deferred/server/async仍拒绝。context由执行端显式声明支持，不按slug猜测。工具原生namespace/custom，不复制Qwen别名或summary-only；共享执行器/审批保持。文本终态缓冲、完整前缀二次增长/预算限制、载体非加密/来源认证、backend政策非实际endpoint证明保留；商业调用未授权，不跳H/I/CLI/UI。
+准确恢复点：OpenRouter Lite Adapter四步已完成，下一步实际固定OpenRouter Classic/Lite Runtime审批、隔离执行、取消、重启与磁盘恢复。既有57/56/56回归不代验新接线；商业Live/Full、生产Host及iOS应用未验。context依执行端显式模型/backend支持声明，不按slug猜测。载体非加密/来源认证，backend政策非实际endpoint证明；文本终态缓冲、完整前缀二次增长/预算限制保留。继续既定F/G，不跳H/I/CLI/UI。
 
 新会话先读本文件、[AGENTS.md](AGENTS.md)，检查 `git status --short --branch`、`git log -3 --oneline`，再按下方步骤继续。历史 HANDOFF 已逐字保存到[历史记录](docs/CAIdex-HANDOFF-历史记录-2026-10-09.md)；其中旧失败、旧“下一步”和旧 Git 状态只代表当时，不覆盖本文件当前恢复点。
 
@@ -77,7 +79,7 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 1. **三份F/G文档已收尾**：README、Qwen/Gateway验收文档核对79本地链接/22锚点、源码与0858493一致、完整旧CI日志逐名检查和GitHub源码/成功终态通过；纯文档提交`165d905`已推送，不启动Rust CI。
 2. **Qwen Lite Adapter已收尾**：固定Runtime真实wire及Qwen官方契约已核对，显式Lite/v4策略、70项测试与3ec8ca7/CI37978406850精确三平台已验；保留证据，不重复已验适配。
 3. **实际固定Qwen Classic/Lite Runtime已精确三平台收尾**：真实审批、隔离执行、工具结果、取消、重启与磁盘恢复不重跑未知工具；离线fixture先验，商业Live/Full另需明确授权。不要借既有50/49/49回归代验新接线。
-4. **OpenRouter基础/上下文/effort/正文/backend路由与平面function已精确三平台收尾；namespace/custom精确三平台已验；完整政策绑定历史精确三平台已验；本轮summary/context/include策略90项与完整本地/精确源码CI已验，再Lite/实际Runtime**，继续F/G未完范围；满足V3门槛后再 **H → I → J/K Windows → L SSH → M/N/O iOS → P CLI → Q Relay → R**。不因账户/CLI文档存在跳过Provider或提前标完成。
+4. **OpenRouter基础/上下文/effort/正文/backend路由与平面function已精确三平台收尾；namespace/custom精确三平台已验；完整政策绑定历史精确三平台已验；summary/context/include与显式Lite Adapter100项、完整本地/精确源码CI均已验，下一步实际固定Classic/Lite Runtime**，继续F/G未完范围；满足V3门槛后再 **H → I → J/K Windows → L SSH → M/N/O iOS → P CLI → Q Relay → R**。不因账户/CLI文档存在跳过Provider或提前标完成。
 5. H：持久Host/SQLite journal/事件恢复/审批竞争/幂等；I：官方账户/PostgreSQL、独立Chat/Memory/同步/邮件/本机恢复共享核心；P：完整英文TUI/exec/task/登录/记忆/Remote整合；R：真实平台、认证、多端、迁移与性能。Windows/iOS客户端、生产Host/Remote/Relay、账户服务、Memory Engine、同步及完整CLI均尚未实现。
 
 每个重要步骤：先检查→最小实现→定向及相关回归→diff→更新HANDOFF→按授权提交/push与精确源码三平台CI；旧CI只证明对应源码，不冒充新功能通过。
@@ -106,7 +108,7 @@ CLI最终设计已归档；最新文档提交 `c766d93f35acb1a4fafa60118834ae42b
 
 ## Git、环境与操作授权
 
-- 分支 **main**，本轮恢复HEAD=origin/main=`3972816581b4863ff4fcbd3cb3b8740b13083637`且干净，上一源码fa42c22/CI38052051289已验。当前未提交OpenRouter lib/request/history、Lite测试和四文档；Provider100及完整本地已验；不认领新源码CI。
+- 分支 **main**，本轮恢复3972816=origin且干净；源码`1d0749ead8c927d1544497174df2854d4689d77c`已提交/push，精确CI38055815533已完整核验。纯文档收尾核验仅HANDOFF/README/OpenRouter/Gateway变化，215个其他tracked文件逐字保持已验SHA；最新main提交号及工作区状态以git log/status为准。Provider100与完整本地已验，无依赖/共享源码/Runtime/其他Provider/workflow改动。
 - 新会话用户已明确授权本次核验通过的文档与Qwen Lite源码提交推送main及源码三平台CI；首次推送曾因自动审批不认可旧交接授权被拒，取得本会话明确授权后推送成功。
 - 用户2026-10-08持续授权本地检查通过后直接commit/push、源码三平台CI，不再重复询问；纯文档不运行完整Rust CI。离线合成fixture/临时marker已授权；未授权读取用户Key、商业API/邮件/生产部署/模型下载或购买服务。
 - `.git`普通沙箱只读，Git写入/push需授权执行环境。push使用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，不改全局凭据或输出秘密。
@@ -198,3 +200,16 @@ OpenRouter收尾核对：18份Markdown/87本地链接/22锚点、git diff --chec
 精确源码`fa42c2214e2c3ef9ac40ba8971e83db12cbab5c8`/[CI38052051289](https://github.com/bboytang/CAIdex/actions/runs/38052051289)整体completed/success。linux job114212988549，workspace600/0/59、既有固定Runtime57/0/0，raw2242行/通过名658；windows job114212988428，workspace595/0/57、既有固定Runtime56/0/0，raw1928行/通过名651；macos job114212988540，workspace599/0/57、既有固定Runtime56/0/0，raw1939行/通过名655；各17steps成功或条件跳过，OpenRouter90/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38050867010+8，无遗漏/重复，旧Runtime名完全保持。watch和三份最终完整日志下载exit0，ci-check通过；Linux首次gh日志出口exit0但仅1217行/64通过名，首次checker拒绝不完整记录；只读job logs API重取2242行/658通过名后逐名检查通过，不是CI失败；/tmp/caidex-openrouter-controls/及/tmp/caidex-ci-38052051289-{linux,windows,macos}-raw.log与status.json只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线、商业Live/Full或iOS应用构建。
 
 收尾仅四文档；18份Markdown/103本地链接/22锚点、diff及源码保持精确CI版本检查通过；纯文档提交推送后核对HEAD/origin与工作区，提交号依git log -1。下一步Lite Adapter→实际固定Classic/Lite Runtime。实际OpenRouter Runtime/商业Full未验；context是执行端显式支持声明，模型/backend须另验，不推断slug。载体非加密/来源认证及backend非实际endpoint证明，文本终态缓冲/完整前缀二次增长和预算限制保留。全部本地/watch/下载句柄结束。
+
+
+## OpenRouter Lite四步完成
+
+显式`with_lite_options`保留route Classic/Lite元数据，底层native始终Classic；消费首项developer additional_tools，原生namespace/custom/grammar原样编译，保留developer稳定ID。Lite parallel=false在JSON/SSE终态交付前强制最多一个调用，缺省/true仍绑定原政策；不另造执行器。v2载体绑定原始工具前缀/稳定ID/parallel、CredentialRef/profile/配置endpoint/backend/model/能力/完整原生前缀及正文控制，Classic v1不变；跨政策、跨Classic和篡改拒绝。summary/context/include仍按逐route显式支持声明原生传递，effort/verbosity/tier仅编译一次。
+
+新增10项，OpenRouter100/0/0；本地workspace610/0/59、既有固定Runtime57/0/0、Clippy全workspace/all-targets -D warnings、fmt/diff通过。旧90测试正文逐字保持，仅history模块追加Lite接线；全通过名精确旧workspace600+10，旧Runtime57保持，Cargo.lock/共享源码/其他Provider/Runtime/workflow未改。目录元数据、无工具Lite、JSON/SSE、多轮恢复、非法前缀与async/deferred、预算、取消/deadline/Drop/满槽释放及Gateway隔离已验。
+
+精确源码`1d0749ead8c927d1544497174df2854d4689d77c`/[CI38055815533](https://github.com/bboytang/CAIdex/actions/runs/38055815533)整体completed/success。linux job114224037448，workspace610/0/59、既有固定Runtime57/0/0，raw2252行/通过名668；windows job114224037421，workspace605/0/57、既有固定Runtime56/0/0，raw1938行/通过名661；macos job114224037245，workspace609/0/57、既有固定Runtime56/0/0，raw1949行/通过名665。各17steps成功或条件跳过，OpenRouter100/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38052051289+10，无遗漏/重复，旧Runtime名完全保持。watch和三份完整日志下载exit0，ci-check通过。
+
+下一步实际固定OpenRouter Classic/Lite Runtime审批、隔离执行、取消、重启与磁盘恢复。既有57/56/56回归不代验新接线；商业Live/Full、生产Host及iOS应用未验。context依执行端显式模型/backend支持声明，不按slug猜测。载体非加密/来源认证，backend政策非实际endpoint证明；文本终态缓冲、完整前缀二次增长/预算限制保留。
+
+补充证据`/tmp/caidex-openrouter-lite/`下local-check.py/local-result.json、ci-check.py/ci-result.json和workspace-final/runtime-final/clippy-final/focused-final/ci-watch日志；完整CI`/tmp/caidex-ci-38055815533-{linux,windows,macos}-raw.log`和status.json，续接不依赖/tmp。全部本地/watch/下载句柄结束，纯文档收尾不重复Rust CI。

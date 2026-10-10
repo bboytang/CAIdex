@@ -1,6 +1,6 @@
 # CAIdex OpenRouter Provider：设计与验收
 
-阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。基础文本、显式上下文/effort/正文/backend路由及逐route Classic平面function工具已分别三平台离线验收；平面阶段Provider51项；本轮namespace/custom新增12项、Provider63已精确三平台验收。本轮完整原生历史载体新增19项定向已验，Provider82；完整本地已通过，新源码精确三平台已验。Lite、实际固定OpenRouter Runtime及商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
+阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。Classic基础/正文/工具/完整原生历史/summary/context/include已分别三平台离线验收；本轮显式Lite Adapter新增10项、Provider100及精确源码三平台已验，证据见末节。下一步实际固定OpenRouter Runtime；商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
 
 ## 官方契约与默认入口范围
 
@@ -140,6 +140,14 @@
 精确源码`fa42c2214e2c3ef9ac40ba8971e83db12cbab5c8`/[CI38052051289](https://github.com/bboytang/CAIdex/actions/runs/38052051289)整体completed/success。linux job114212988549，workspace600/0/59、既有固定Runtime57/0/0，raw2242行/通过名658；windows job114212988428，workspace595/0/57、既有固定Runtime56/0/0，raw1928行/通过名651；macos job114212988540，workspace599/0/57、既有固定Runtime56/0/0，raw1939行/通过名655；各17steps成功或条件跳过，OpenRouter90/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38050867010+8，无遗漏/重复，旧Runtime名完全保持。watch和三份最终完整日志下载exit0，ci-check通过；Linux首次gh日志出口exit0但仅1217行/64通过名，首次checker拒绝不完整记录；只读job logs API重取2242行/658通过名后逐名检查通过，不是CI失败；/tmp/caidex-openrouter-controls/及/tmp/caidex-ci-38052051289-{linux,windows,macos}-raw.log与status.json只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线、商业Live/Full或iOS应用构建。
 
 
-## OpenRouter Lite Adapter（完整本地已验）
+## OpenRouter Lite Adapter（三平台离线已验）
 
-OpenRouter Lite步骤2已完成：显式with_lite_options保留route Classic/Lite元数据，native Classic传输；首项developer additional_tools/稳定ID原生工具编译，developer消息ID复用显式Runtime上下文；namespace/custom与grammar原样，parallel=false复用JSON/SSE终态单调用门控。v2完整政策载体绑定原始工具前缀/ID/parallel及既有scope/model/backend/正文/前缀，Classic v1不变，public decoder也核对内部Lite政策和版本。新增10项，Provider100/0/0；覆盖JSON/SSE、多轮原序恢复、非法前缀与async/deferred、跨Classic/篡改拒绝、预算、取消/deadline/Drop/满槽释放和Gateway隔离。初期fixture方法/字段类型编译问题已修正；首可执行99/1为第二轮SSE response.created ID夹具不一致，修正后100/0/0，无已知失败。共享栈/执行器/依赖不变；实际OpenRouter Runtime和商业Full仍未验。Lite步骤3已完成：workspace610/0/59、既有固定Runtime57/0/0、最终OpenRouter100/0/0、Clippy全workspace/all-targets -D warnings、fmt/diff和18份Markdown/103本地链接/22锚点通过。全通过名精确旧workspace600+10，旧Runtime57保持；旧90测试正文逐字保持，仅history模块追加Lite接线，Cargo.lock/共享源码/其他Provider/Runtime/workflow未改。目录返回Classic/Lite配置且Unknown保持；无工具Lite默认策略请求已验。精确新源码三平台CI待核验，下一步实际固定Classic/Lite Runtime接线。
+显式`with_lite_options`保留route Classic/Lite元数据，底层native始终Classic；消费首项developer additional_tools，原生namespace/custom/grammar原样编译，保留developer稳定ID。Lite parallel=false在JSON/SSE终态交付前强制最多一个调用，缺省/true仍绑定原政策；不另造执行器。v2载体绑定原始工具前缀/稳定ID/parallel、CredentialRef/profile/配置endpoint/backend/model/能力/完整原生前缀及正文控制，Classic v1不变；跨政策、跨Classic和篡改拒绝。summary/context/include仍按逐route显式支持声明原生传递，effort/verbosity/tier仅编译一次。
+
+新增10项，OpenRouter100/0/0；本地workspace610/0/59、既有固定Runtime57/0/0、Clippy全workspace/all-targets -D warnings、fmt/diff通过。旧90测试正文逐字保持，仅history模块追加Lite接线；全通过名精确旧workspace600+10，旧Runtime57保持，Cargo.lock/共享源码/其他Provider/Runtime/workflow未改。目录元数据、无工具Lite、JSON/SSE、多轮恢复、非法前缀与async/deferred、预算、取消/deadline/Drop/满槽释放及Gateway隔离已验。
+
+精确源码`1d0749ead8c927d1544497174df2854d4689d77c`/[CI38055815533](https://github.com/bboytang/CAIdex/actions/runs/38055815533)整体completed/success。linux job114224037448，workspace610/0/59、既有固定Runtime57/0/0，raw2252行/通过名668；windows job114224037421，workspace605/0/57、既有固定Runtime56/0/0，raw1938行/通过名661；macos job114224037245，workspace609/0/57、既有固定Runtime56/0/0，raw1949行/通过名665。各17steps成功或条件跳过，OpenRouter100/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38052051289+10，无遗漏/重复，旧Runtime名完全保持。watch和三份完整日志下载exit0，ci-check通过。
+
+下一步实际固定OpenRouter Classic/Lite Runtime审批、隔离执行、取消、重启与磁盘恢复。既有57/56/56回归不代验新接线；商业Live/Full、生产Host及iOS应用未验。context依执行端显式模型/backend支持声明，不按slug猜测。载体非加密/来源认证，backend政策非实际endpoint证明；文本终态缓冲、完整前缀二次增长/预算限制保留。
+
+Lite契约依据：[固定Runtime请求构建](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs)、[OpenRouter无状态Responses](https://openrouter.ai/docs/api_reference/responses/overview)及[原生工具请求](https://openrouter.ai/docs/api_reference/responses/tool-calling)。不把兼容说明或离线fixture当商业模型能力证明。
