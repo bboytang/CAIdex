@@ -12,7 +12,7 @@
 
 CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通exec默认Never，特定AutoReview配置按最终解析策略处理；规划中的task继承Host持久任务审批配置。F/G DeepSeek实际Runtime离线接线已完成三平台验收，Qwen实际Runtime也已完成三平台离线验收，下一步OpenRouter；规范补全不表示提前开展H/I/P/R实现。
 
-完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter原生工具/后端绑定历史；上下文/effort/逐route正文控制已三平台验收；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
+完整CLI规范及V3、账户、UI、凭据设计已正式衔接；固定stdin、观察端detach、超时已确认/未知及登录取消规则保留。十一份固定上游源码与六项版本/help复核后，补清旧Profile显式导入/冲突拒绝、命令作用域及账户认证端点信任隔离；模型Endpoint或项目配置不能接收Account Token。34项CLI验收仍全部待实现、未执行。Qwen custom/v3历史也已独立三平台验收，当前F/G恢复点为OpenRouter完整政策绑定历史；namespace/custom已精确三平台验收；上下文/effort/逐route正文控制已三平台验收；Qwen Classic/Lite固定Runtime新增7项、累计57/56/56项及Qwen72项已精确三平台通过；精确源码和CI证据见HANDOFF。
 
 续接复核补清无头 `exec fork` 的ForkOnly：不带prompt只创建分支，成功不代表执行任务；恢复目标不存在时不静默新建任务。此为P/R待实现契约，当前开发CLI仍无exec/fork/resume。F/G控制组合独立推进，验证结果见Qwen专属文档和HANDOFF，CLI文档核对不代验源码。
 
@@ -87,4 +87,4 @@ OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_b
 OpenRouter显式逐route Classic平面function工具已实现：须配置backend后启用with_native_tools，声明/选择/文本结果配对及JSON/SSE终态门控；工具仍由固定Codex执行，Provider只交付数据。新增15项/Provider51定向通过；旧36项保持，原生opaque/未知输出扩展无损。工具SSE缓冲到终态核验，会延迟文本显示；完整本地workspace561/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff通过，通过名精确旧workspace+15；源码`65001cd`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)精确三平台已验，workspace561/556/560、既有Runtime57/56/56、OpenRouter51每名一次，完整通过名精确旧CI+15；该源码尚不含namespace/custom；新增高级工具进度见下段，完整政策绑定历史/Lite/实际Runtime仍待。
 
 
-OpenRouter逐route显式advanced工具已实现：须先配置backend/native_tools，namespace/function/custom原生身份与自由文本保留，具名高级/allowed_tools通过精确声明子集+auto/required编译一次；kind配对与混合SSE终态校验、默认拒绝、source/compiled预算及Gateway身份隔离覆盖。新增12项/Provider63定向通过，旧51项保持；完整本地workspace573/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff及18份Markdown/95本地链接/22锚点通过；通过名精确旧workspace+12、旧Runtime不变，新源码三平台CI进行中。完整政策绑定历史/Lite/实际OpenRouter Runtime与商业Live/Full未验；工具流文本仍延迟到终态。详见[OpenRouter验收](docs/CAIdex-OpenRouter-Provider-设计与验收.md)和[HANDOFF](HANDOFF.md)。
+OpenRouter逐route显式advanced工具已实现：须先配置backend/native_tools，namespace/function/custom原生身份与自由文本保留，具名高级/allowed_tools通过精确声明子集+auto/required编译一次；kind配对与混合SSE终态校验、默认拒绝、source/compiled预算及Gateway身份隔离覆盖。新增12项/Provider63定向通过，旧51项保持；完整本地workspace573/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff及18份Markdown/95本地链接/22锚点通过；通过名精确旧workspace+12、旧Runtime不变，源码`ca2cf58`/[CI38047726929](https://github.com/bboytang/CAIdex/actions/runs/38047726929)精确三平台已验，workspace573/568/572、既有固定Runtime57/56/56、OpenRouter63每名一次，完整通过名精确旧CI+12，无遗漏/重复。完整政策绑定历史/Lite/实际OpenRouter Runtime与商业Live/Full未验；工具流文本仍延迟到终态。详见[OpenRouter验收](docs/CAIdex-OpenRouter-Provider-设计与验收.md)和[HANDOFF](HANDOFF.md)。

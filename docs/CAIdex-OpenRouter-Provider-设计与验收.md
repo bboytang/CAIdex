@@ -1,6 +1,6 @@
 # CAIdex OpenRouter Provider：设计与验收
 
-阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。基础文本、显式上下文/effort/正文/backend路由及逐route Classic平面function工具已分别三平台离线验收；平面阶段Provider51项；本轮namespace/custom新增12项定向已验、Provider63，完整验收进行中。完整推理/工具历史载体、Lite、实际固定OpenRouter Runtime及商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
+阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。基础文本、显式上下文/effort/正文/backend路由及逐route Classic平面function工具已分别三平台离线验收；平面阶段Provider51项；本轮namespace/custom新增12项、Provider63已精确三平台验收。完整推理/工具历史载体、Lite、实际固定OpenRouter Runtime及商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
 
 ## 官方契约与默认入口范围
 
@@ -34,7 +34,7 @@
 ## 后续顺序
 
 1. 本步完整本地检查、差异审查、源码9563df0推送与CI38004040230精确三平台已完成；保留证据，不重复基础适配。
-2. 显式上下文/neutral text/effort已三平台收尾；逐route正文控制也已三平台收尾，平面function也已精确三平台收尾，下一步namespace/custom及完整政策绑定历史；官方推理/工具/路由契约已核对，不复制Qwen summary或DeepSeek明文规则。
+2. 显式上下文/neutral text/effort已三平台收尾；逐route正文控制也已三平台收尾，平面function及namespace/custom也已精确三平台收尾，下一步完整政策绑定历史；官方推理/工具/路由契约已核对，不复制Qwen summary或DeepSeek明文规则。
 3. 再验Lite与实际固定Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业模型兼容性另需授权。
 4. 保持V3 F/G→H/I→Windows/SSH/iOS/CLI/Relay/R；生产Host、GUI、账户/记忆及完整CLI均仍待实现。
 
@@ -92,13 +92,13 @@
 
 新增15项独立`tests/tools/mod.rs`，旧36测试正文逐字保持。初期RequestContext非Clone及测试编译问题已修正；首可执行47/1、补充50/1为取消旧断言499不符共享503契约，统一后51/0/0。最终差异核对发现新call_id复用旧item ID，负例先失败再最小修复，51/0/0重验通过。Clippy首轮仅新测试初始化写法已修正。最终workspace561/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；完整通过名精确旧workspace546+15、旧Runtime名完全保持，旧36测试正文逐字保留、Cargo.lock不变、共享/其他Provider/Runtime/workflow未改。未知item大整数ID夹具无损保留，不把工具身份约束套到未知输出上。18份Markdown/91本地链接/22锚点及差异边界通过；精确源码三平台CI已验，见下段；既有固定Runtime57/0/0已通过，未改生产/fixture，不是实际OpenRouter接线。日志`/tmp/caidex-openrouter-tools/`。
 
-恢复顺序：原生工具其余namespace/custom适配及完整后端/执行端/profile/endpoint/model/完整前缀/instructions/verbosity/tier/effort/工具政策绑定历史→Lite→实际Classic/Lite固定Runtime审批/执行/取消/磁盘恢复；不照搬Qwen summary-only或DeepSeek明文规则，不调用商业API或读取真实Key。
+当前恢复顺序见末节；完整政策绑定历史→Lite→实际Classic/Lite固定Runtime审批/执行/取消/磁盘恢复；不照搬Qwen summary-only或DeepSeek明文规则，不调用商业API或读取真实Key。
 
 
 精确源码`65001cd0952685d635d61e4d6d682e174928eb01`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)整体completed/success。linux job114087959146，workspace561/0/59、既有固定Runtime57/0/0，raw2203行/通过名619；windows job114087959047，workspace556/0/57、既有固定Runtime56/0/0，raw1889行/通过名612；macos job114087959157，workspace560/0/57、既有固定Runtime56/0/0，raw1900行/通过名616。各17steps成功或条件跳过，OpenRouter51/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38008446175+15，无遗漏/重复，旧Runtime名完全保持。watch和完整日志下载exit0，ci-check通过；/tmp/caidex-openrouter-tools/及/tmp/caidex-ci-38010128508-{linux,windows,macos}-raw.log只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线或商业Live/Full。
 
 
-## OpenRouter原生namespace/custom与选择子集（本轮定向已验）
+## OpenRouter原生namespace/custom与选择子集（三平台离线已验）
 
 - 官方Python SDK固定`de9aa273aa0ba658bdbd55e56f2f999c2dce782e`的[请求工具union](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/docs/components/responsesrequesttoolunion.mdx)、[namespace](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/src/openrouter/components/namespacetool.py)、[custom](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/src/openrouter/components/customtool.py)和[custom SSE](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/src/openrouter/components/customtoolcallinputdeltaevent.py)已核对；真实后端支持仍须逐模型另验。
 - `with_backend_selection`→`with_native_tools`→`with_advanced_tools`逐route显式启用。默认/仅平面route仍关闭高级声明。原生namespace分组、描述及function/custom身份直接保留，不生成alias、不把freeform改JSON function。name/namespace为1–64 ASCII字母数字/下划线/短横线；同qualified name不能跨kind重复，namespace组唯一且非空/有字符串描述；不接受嵌套namespace或server工具。
@@ -106,6 +106,9 @@
 - [官方choice union](https://github.com/OpenRouterTeam/python-sdk/blob/de9aa273aa0ba658bdbd55e56f2f999c2dce782e/src/openrouter/components/openairesponsestoolchoice_union.py)未定义具名custom/namespace字段；具名高级及allowed_tools精确限制原生声明子集，再编译一次auto/required，保留namespace描述/声明顺序。不假设未定义的原生selector格式；完成响应仍检查qualified身份、kind、必需/并行政策。旧平面named choice不变。
 - 同轮function/custom call_id与item ID共同唯一，拒绝复用；custom结果须custom_tool_call_output，function须function_call_output，文本字符串/input_text数组原顺序保留。这里只做明文成对校验；未知call扩展输入及reasoning输入回放仍关闭，不能冒充完整绑定历史。
 - 混合SSE分别累积function arguments/custom input，added/delta/done/terminal的kind/namespace/id/call_id/name/内容校验；交付前拒绝损坏流，终态/仅done路径保留；复用原缓冲预算/cancel/deadline/Drop/Heartbeat。工具route文本仍延迟到终态，Provider不执行工具。
-- 新增12项，最终Provider63/0/0；旧51项正文保持，source/compiled预算先于Broker/POST，Gateway原生custom交付与身份隔离通过。本轮workspace573/0/59、Clippy全workspace/all-targets -D warnings、既有固定Runtime57/0/0、fmt/diff及18份Markdown/95本地链接/22锚点通过，旧workspace通过名精确+12、旧Runtime保持；新源码三平台验收进行中；旧CI不代验本轮，商业API/实际OpenRouter Runtime未验。
+- 新增12项，最终Provider63/0/0；旧51项正文保持，source/compiled预算先于Broker/POST，Gateway原生custom交付与身份隔离通过。本轮workspace573/0/59、Clippy全workspace/all-targets -D warnings、既有固定Runtime57/0/0、fmt/diff及18份Markdown/95本地链接/22锚点通过，旧workspace通过名精确+12、旧Runtime保持；新源码精确三平台已验，证据见下段；旧CI不代验本轮，商业API/实际OpenRouter Runtime未验。
 
-恢复顺序：本轮完整验收收尾→完整执行端/profile/endpoint/backend政策/model/compiled前缀/instructions/verbosity/tier/effort/工具政策绑定历史→Lite→实际固定Classic/Lite Runtime。不复制Qwen summary-only或DeepSeek明文规则，不据base slug/metadata显示名认领实际稳定endpoint。
+恢复顺序：完整执行端/profile/endpoint/backend政策/model/compiled前缀/instructions/verbosity/tier/effort/工具政策绑定历史→Lite→实际固定Classic/Lite Runtime。不复制Qwen summary-only或DeepSeek明文规则，不据base slug/metadata显示名认领实际稳定endpoint。
+
+
+精确源码`ca2cf5870e691183dc888657773e2ae993d52e8e`/[CI38047726929](https://github.com/bboytang/CAIdex/actions/runs/38047726929)整体completed/success。linux job114200540663，workspace573/0/59、既有固定Runtime57/0/0，raw2215行/通过名631；windows job114200540664，workspace568/0/57、既有固定Runtime56/0/0，raw1901行/通过名624；macos job114200540515，workspace572/0/57、既有固定Runtime56/0/0，raw1912行/通过名628；各17steps成功或条件跳过，OpenRouter63/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38010128508+12，无遗漏/重复，旧Runtime名完全保持。watch和三份完整日志下载exit0，ci-check通过；/tmp/caidex-openrouter-advanced/及/tmp/caidex-ci-38047726929-{linux,windows,macos}-raw.log与status.json只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线、商业Live/Full或iOS应用构建。
