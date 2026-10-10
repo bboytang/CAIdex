@@ -11,7 +11,7 @@
 | gpt-6.1-sol | native-switch-0 | Lite | openai-router-lite-fixture-v1 | 与下行切换、磁盘恢复、fork 隔离、Lite header/工具前缀、未知模型拒绝/显式恢复 |
 | gpt-6-sol | native-switch-1 | Lite | openai-router-lite-fixture-v1 | 同上，仅该明确组合 |
 
-Classic 精确源码430305d/[CI38069700504](https://github.com/bboytang/CAIdex/actions/runs/38069700504)三平台已验。Lite 新增2项完整本地通过：workspace619/0/73、固定Runtime71/0/0（精确旧69+2）、Clippy/fmt/diff；精确三平台待验。实际证据更新见本报告及[交接](../HANDOFF.md)。
+Classic 精确源码430305d/[CI38069700504](https://github.com/bboytang/CAIdex/actions/runs/38069700504)三平台已验。Lite 新增2项完整本地通过：workspace619/0/73、固定Runtime71/0/0（精确旧69+2）、Clippy/fmt/diff。精确源码`3a57bcbfb8f4aa942019c081404b6833daa57642`/[CI38072098372](https://github.com/bboytang/CAIdex/actions/runs/38072098372)三平台已验：Linux/Windows/macOS workspace619/614/618、固定Runtime71/70/70全部通过，各17steps成功或条件跳过；完整通过名精确旧CI38071015251+2，无遗漏/重复。实际证据更新见本报告及[交接](../HANDOFF.md)。
 
 报告引用使用既有 CompatibilityReport 契约；每行的 testedModelVersion 取上表相应值，其余字段如下：
 
