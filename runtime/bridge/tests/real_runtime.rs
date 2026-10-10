@@ -138,6 +138,7 @@ impl Harness {
             "gateway-google-mcp-classic" => "native-google-mcp",
             "gateway-google-lite" => "native-google-lite",
             "gateway-google-stall-classic" | "gateway-google-stall-lite" => "native-google-stall",
+            "gateway-google-idle-classic" | "gateway-google-idle-lite" => "native-google-idle",
             "gateway-anthropic-classic" => "native-anthropic-classic",
             "gateway-anthropic-discovery-classic" => "native-anthropic-discovery",
             "gateway-anthropic-lite" => "native-anthropic-lite",
@@ -217,6 +218,8 @@ impl Harness {
                 | "gateway-google-mcp-classic"
                 | "gateway-google-stall-lite"
                 | "gateway-google-stall-classic"
+                | "gateway-google-idle-classic"
+                | "gateway-google-idle-lite"
         );
         let ollama_lite = matches!(
             mode,
@@ -612,7 +615,11 @@ impl Harness {
                     .with_base_url(&format!("http://127.0.0.1:{port}/v1beta"))
                     .unwrap()
                     .with_local_runtime_context();
-                let client = GeminiClient::new(config, broker.clone(), Limits::default()).unwrap();
+                let mut limits = Limits::default();
+                if mode.starts_with("gateway-google-idle-") {
+                    limits.in_flight = 1;
+                }
+                let client = GeminiClient::new(config, broker.clone(), limits.clone()).unwrap();
                 let mut profile = GeminiModel::new(
                     caidex_model_core::ModelMetadata::configured(
                         model.into(),
@@ -629,6 +636,7 @@ impl Harness {
                         | "gateway-google-tools-lite"
                         | "gateway-google-multi-lite"
                         | "gateway-google-stall-lite"
+                        | "gateway-google-idle-lite"
                 );
                 profile.verbosity_mappings = vec![
                     VerbosityMapping::new(
@@ -648,13 +656,9 @@ impl Harness {
                     .collect();
                 let provider = Arc::new(GeminiProvider::new(client, vec![profile], 10).unwrap());
                 Some(
-                    caidex_model_gateway::start_with_provider(
-                        provider,
-                        broker.redactor(),
-                        Limits::default(),
-                    )
-                    .await
-                    .unwrap(),
+                    caidex_model_gateway::start_with_provider(provider, broker.redactor(), limits)
+                        .await
+                        .unwrap(),
                 )
             } else if native_anthropic {
                 use caidex_provider_anthropic::{
@@ -840,6 +844,8 @@ impl Harness {
                     | "gateway-google-mcp-classic"
                     | "gateway-google-stall-lite"
                     | "gateway-google-stall-classic"
+                    | "gateway-google-idle-classic"
+                    | "gateway-google-idle-lite"
             ) {
             "web_search = \"disabled\"\n"
         } else {
@@ -887,7 +893,9 @@ impl Harness {
         } else {
             "CAIdex local protocol fixture"
         };
-        let idle = if mode.starts_with("gateway-openai-idle-") {
+        let idle = if mode.starts_with("gateway-openai-idle-")
+            || mode.starts_with("gateway-google-idle-")
+        {
             "stream_idle_timeout_ms = 500\n"
         } else {
             ""
@@ -2939,10 +2947,19 @@ async fn real_runtime_interrupt_via_native_openai_closes_provider_socket() {
 #[tokio::test]
 #[ignore = "requires pinned Codex; Classic/Lite downstream idle failure and explicit recovery"]
 async fn real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_slots() {
-    for (mode, lite) in [
-        ("gateway-openai-idle-classic", false),
-        ("gateway-openai-idle-lite", true),
-    ] {
+    runtime_idle_recovery(&["gateway-openai-idle-classic", "gateway-openai-idle-lite"]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex; Gemini comments do not refresh downstream Runtime idle"]
+async fn real_google_comments_do_not_prevent_runtime_idle_and_explicit_recovery() {
+    runtime_idle_recovery(&["gateway-google-idle-classic", "gateway-google-idle-lite"]).await;
+}
+
+async fn runtime_idle_recovery(modes: &[&str]) {
+    for mode in modes {
+        let lite = mode.ends_with("-lite");
+        let google = mode.starts_with("gateway-google-");
         let mut harness = Harness::start(mode).await;
         let thread = harness.create_thread().await;
         harness
@@ -3044,18 +3061,27 @@ async fn real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_sl
         let trace = harness.trace();
         assert_eq!(trace["requests"], 2);
         assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 2);
-        assert_eq!(trace["wireResponses"].as_array().unwrap().len(), 1);
-        for request in trace["wireRequests"].as_array().unwrap() {
-            assert_eq!(
-                request["body"]["model"],
-                if lite { "gpt-6.1-sol" } else { "gpt-5.5" }
-            );
-            assert_eq!(request["organization"], "org-fixture");
-            assert_eq!(request["project"], "proj-fixture");
-            assert_eq!(
-                request["liteHeader"],
-                if lite { json!("true") } else { Value::Null }
-            );
+        if google {
+            assert!(trace["commentFrames"].as_u64().unwrap() >= 2);
+            assert_eq!(trace["nativeResponses"].as_array().unwrap().len(), 1);
+            assert_eq!(trace["nativeRequests"].as_array().unwrap().len(), 2);
+            for request in trace["nativeRequests"].as_array().unwrap() {
+                assert!(request.get("contents").is_some());
+            }
+        } else {
+            assert_eq!(trace["wireResponses"].as_array().unwrap().len(), 1);
+            for request in trace["wireRequests"].as_array().unwrap() {
+                assert_eq!(
+                    request["body"]["model"],
+                    if lite { "gpt-6.1-sol" } else { "gpt-5.5" }
+                );
+                assert_eq!(request["organization"], "org-fixture");
+                assert_eq!(request["project"], "proj-fixture");
+                assert_eq!(
+                    request["liteHeader"],
+                    if lite { json!("true") } else { Value::Null }
+                );
+            }
         }
         assert_eq!(trace["gatewayCredentialMatched"], true);
         harness.shutdown().await;

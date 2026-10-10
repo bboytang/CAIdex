@@ -5,6 +5,7 @@ The only command offered by the approval cases writes a marker in a temp project
 """
 
 import json
+import select
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from socketserver import TCPServer
@@ -140,18 +141,24 @@ class Handler(BaseHTTPRequestHandler):
                     "usageMetadata": {"promptTokenCount": 3, "candidatesTokenCount": 2, "thoughtsTokenCount": 4, "totalTokenCount": 9}}
         chunks = [{"candidates": [{"index": 0, "content": {"role": "model", "parts": parts[:2]}}]},
                   {"candidates": [{"index": 0, "content": {"role": "model", "parts": parts[2:]}, "finishReason": "STOP"}]}, metadata]
-        if mode == "native-google-stall":
+        if mode == "native-google-stall" or (mode == "native-google-idle" and trace["requests"] == 1):
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
             self.protocol_version = "HTTP/1.1"
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Transfer-Encoding", "chunked")
             self.end_headers()
-            data = f"data: {json.dumps(chunks[0])}\n\n".encode()
+            data = b": keepalive\n\n" if mode == "native-google-idle" else f"data: {json.dumps(chunks[0])}\n\n".encode()
             self.wfile.write(f"{len(data):x}\r\n".encode() + data + b"\r\n")
             self.wfile.flush()
             Path(trace_path).with_name("gateway-streaming").touch()
             try:
+                if mode == "native-google-idle":
+                    trace["commentFrames"] = 1
+                    while not select.select([self.connection], [], [], 0.1)[0]:
+                        self.wfile.write(f"{len(data):x}\r\n".encode() + data + b"\r\n")
+                        self.wfile.flush()
+                        trace["commentFrames"] += 1
                 disconnected = self.connection.recv(1) == b""
             except OSError:
                 disconnected = True

@@ -2,13 +2,13 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G完成核对恢复点（2026-10-10续轮）
+## 当前F/G完成核对恢复点（2026-10-10 Gemini idle续轮）
 
-实际恢复main=origin/main=`e258828446d8aad4920a76154e61121fcab4623c`，开始干净；上一轮重要源码/文档/精确CI进展已核实。目标仍F/G全部，不因已补部分确认缺口就转H或标整体完成。本轮要求级完成核对发现文档明确未验的下游固定Runtime idle路径；Provider/Gateway超时和interrupt不是这条路径证据。
+实际恢复main=origin/main=`4f3fd254c143914e23134e10e9551c327c5581ae`，开始干净。上一轮为实质进展：OpenAI idle与远端压缩非成功测试，源码8c3ecc8/精确CI38083310797完整三平台通过。目标仍F/G全部，不直接转H或标整体完成；真实模型按用户顺序最终自行验，开发端继续离线任务。
 
-当前修改tests/real_runtime.rs、tests/fixtures/responses_server.py：新增Classic/Lite Runtime idle500ms、Provider/Gateway仍默认90s/600s且各单许可，真实失败终态/上游socket关闭/无自动重试与显式同线程恢复验证；合成fixture首POST停流、次POST正常。配置字段及idle错误读取固定d27764b公开源码核实，非猜测。idle定向测试1/0/0通过；另新增Classic/Lite远端压缩失败及取消四路径，实际失败/中断、取消关闭上游、无成功checkpoint，重启/disk resume后完整原历史逐值继续；定向1/0/0通过。完整workspace623/0/77、固定Runtime75/0/0、Clippy/fmt/diff及fixture语法通过；141个Markdown本地目标有效。最终diff仅Harness/合成fixture/两份证据文档和本交接，无生产、依赖、schema和审批变更。已提交/push源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`，精确CI38083310797三平台完整核验成功；main=origin/main，源码提交后干净，本次仅文档收尾。
+本轮检查Gemini transfer/投影/Gateway：native收到chunk重设idle，纯SSE comment不产生投影事件。新增Classic/Lite显式idle profile，固定Runtime idle500ms，Provider/Gateway保留默认90s/600s且各单许可；首POST每100ms持续comment、次POST正常。复用上一轮idle断言流程，验证真实idle失败、无partial assistant/reasoning/tool历史、socket关闭、无重试、2次Key/POST和同线程显式恢复；Gemini额外核对至少2个comment及仅第二次完整native response。定向1/0/0通过。一次测试接线误替换已由编译检查发现并恢复其他Provider，完整workspace623/0/78、固定Runtime76/0/0、Clippy/fmt/diff及fixture语法通过，旧OpenAI idle回归保持；143个Markdown本地目标/锚点有效。尚未提交/CI；当前未提交仅Runtime Harness及合成fixture、三份证据文档、本交接，无生产实现/依赖/schema/审批变化。
 
-下一步：继续F/G要求级完成核对，先核实Gemini纯comment/keepalive的下游idle专属缺口，再核实本地compaction失败/取消及自动阈值的既定验收范围；Registry/Router与报告门控已核实，不新增注册栈或自动升级报告。不将API用户最终自验当作已经完成，不转H或标F/G整体完成。用户继续可离线任务的授权保持，不读取用户Key/商业API。
+下一步：commit/push精确三平台CI并逐名核验；然后核实本地compaction失败/取消及自动阈值的既定门槛，并继续要求级F/G完成审计。Registry/Router与版本报告不升级生产能力，不重复已有实现。无需商业Key/API授权，不读用户Key/调用商业API。
 
 ## 前轮已验基线（当前进度以上方恢复点为准）
 

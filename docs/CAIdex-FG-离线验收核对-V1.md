@@ -76,3 +76,6 @@
 
 
 源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`/[CI38083310797](https://github.com/bboytang/CAIdex/actions/runs/38083310797)整体completed/success，三job各17steps成功或预期跳过。完整日志精确旧CI38081995688通过集合+2Runtime，无遗漏/重复；Linux/Windows/macOS workspace623/618/622（忽略77/75/75），固定Runtime75/74/74（无忽略），全部0失败。raw2308/1994/2005行、函数通过名698/691/695，另Secret doctest1；watch与日志下载exit0。 本阶段离线证据已验证；后续未验范围保持上述说明。
+
+
+Gemini comment/下游idle续轮：复用已验idle恢复流程，新增Classic/Lite纯comment持续输入专项，定向1/0/0通过；当前完整回归/精确CI状态见HANDOFF。该原明确证据缺口已实施，不改变生产行为；后续核对本地compaction非成功、自动阈值及整体要求。真实模型仍由用户最后验收。
