@@ -281,4 +281,4 @@ replay_message 仅生成原生 Messages echo，不改持久化 wire/载体。依
 
 在两个既有固定Runtime用例内补精确断言，不改生产实现或fixture。Classic动态MCP用例的实际app-server重启后，第四POST完整assistant内容逐值等于第三原生回复，签名/脱敏/未知opaque块保持。Lite Code Mode真实审批/执行后，读取实际rollout核对custom调用身份与完整input，并将落盘结果的每个input_text逐值映射为native text，对照完整tool_result；Key解析恰好2次。
 
-本地两项定向各1/0/0，完整workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过。当前待精确源码三平台CI；商业模型、签名真实性、生产Host仍未验，不授Full。
+本地两项定向各1/0/0，完整workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过。源码`9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`/[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)三平台completed/success，各17steps成功或条件跳过，完整日志逐名保持前置CI集合。Linux/Windows/macOS workspace621/616/620、固定Runtime71/70/70，0失败。商业模型、签名真实性、生产Host仍未验，不授Full。

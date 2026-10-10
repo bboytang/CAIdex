@@ -145,6 +145,8 @@ impl Harness {
             "gateway-anthropic-stall-classic" | "gateway-anthropic-stall-lite" => {
                 "native-anthropic-stall"
             }
+            "gateway-openai-compact-classic" => "wire-compact-classic",
+            "gateway-openai-compact-lite" => "wire-compact-lite",
             "gateway-classic" | "gateway-openai-classic" => "wire-classic",
             "gateway-lite" | "gateway-openai-lite" => "wire-lite",
             "gateway-stall-classic"
@@ -246,6 +248,8 @@ impl Harness {
             match (fixture_mode, mode) {
                 (
                     "wire-lite"
+                    | "wire-compact-lite"
+                    | "compact-lite"
                     | "wire-anthropic-lite"
                     | "native-anthropic-lite"
                     | "native-anthropic-tools-lite"
@@ -261,6 +265,7 @@ impl Harness {
                 ) => "gpt-6.1-sol",
                 (
                     "wire-classic"
+                    | "wire-compact-classic"
                     | "wire-stall"
                     | "wire-anthropic-classic"
                     | "native-anthropic-classic"
@@ -860,8 +865,14 @@ impl Harness {
         } else {
             String::new()
         };
+        // Fixed upstream selects remote v2 by provider identity; inference stays on loopback.
+        let provider_name = if mode.starts_with("gateway-openai-compact-") {
+            "OpenAI"
+        } else {
+            "CAIdex local protocol fixture"
+        };
         std::fs::write(data.join("config.toml"), format!(
-            "{catalog}{google_summary}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"CAIdex local protocol fixture\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
+            "{catalog}{google_summary}model = \"{model}\"\nmodel_provider = \"caidex_fixture\"\n{web_search}[model_providers.caidex_fixture]\nname = \"{provider_name}\"\nbase_url = \"http://127.0.0.1:{port}/v1\"\nwire_api = \"responses\"\n{authentication}requires_openai_auth = false\nrequest_max_retries = 0\nstream_max_retries = 0\n[analytics]\nenabled = false\n"
         )).unwrap();
         if mode.starts_with("goal-") {
             use std::io::Write;
@@ -1853,7 +1864,17 @@ async fn real_goal_empty_continuations_block_without_client_retry() {
 #[tokio::test]
 #[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
 async fn real_manual_compaction_emits_lifecycle_and_carries_summary_forward() {
-    let mut harness = Harness::start("compact").await;
+    real_local_compaction("compact").await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; CI runs this explicitly"]
+async fn real_lite_manual_compaction_emits_lifecycle_and_carries_summary_forward() {
+    real_local_compaction("compact-lite").await;
+}
+
+async fn real_local_compaction(mode: &str) {
+    let mut harness = Harness::start(mode).await;
     let thread = harness.create_thread().await;
     let client = harness.runtime.client();
     client
@@ -1924,6 +1945,146 @@ async fn real_manual_compaction_emits_lifecycle_and_carries_summary_forward() {
     assert_eq!(trace["summarySeen"], json!([false, false, true]));
     assert_eq!(trace["authorizationSeen"], false);
     harness.shutdown().await;
+}
+
+#[tokio::test]
+#[ignore = "requires pinned Codex and loopback; explicit remote v2 Classic/Lite fixture"]
+async fn real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume() {
+    for (mode, lite) in [
+        ("gateway-openai-compact-classic", false),
+        ("gateway-openai-compact-lite", true),
+    ] {
+        let mut harness = Harness::start(mode).await;
+        let thread = harness.create_thread().await;
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":"Seed remote compaction history"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await
+                && event.method == "turn/completed"
+            {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+        assert_eq!(
+            harness
+                .runtime
+                .client()
+                .call(
+                    "thread/compact/start",
+                    Some(json!({"threadId":thread})),
+                    DEADLINE
+                )
+                .await
+                .unwrap(),
+            json!({})
+        );
+        let mut started = None;
+        let mut completed = None;
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await {
+                if event.raw["params"]["item"]["type"] == "contextCompaction" {
+                    if event.method == "item/started" {
+                        started = Some(event.raw["params"]["item"]["id"].clone());
+                    }
+                    if event.method == "item/completed" {
+                        completed = Some(event.raw["params"]["item"]["id"].clone());
+                    }
+                }
+                if event.method == "turn/completed" {
+                    assert_eq!(
+                        event.raw["params"]["turn"]["status"], "completed",
+                        "{}",
+                        event.raw
+                    );
+                    break;
+                }
+            }
+        }
+        assert!(started.is_some());
+        assert_eq!(started, completed);
+        let read = harness
+            .runtime
+            .client()
+            .read_thread(&thread, true, DEADLINE)
+            .await
+            .unwrap();
+        let rollout = std::fs::read_to_string(read["thread"]["path"].as_str().unwrap()).unwrap();
+        let checkpoint: Value = rollout
+            .lines()
+            .map(|l| serde_json::from_str::<Value>(l).unwrap())
+            .find(|v| v["type"] == "compacted")
+            .unwrap();
+        let stored = checkpoint["payload"]["replacement_history"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|v| v["type"] == "compaction")
+            .unwrap()
+            .clone();
+        assert_eq!(stored["encrypted_content"], "CAIDEX_REMOTE_COMPACT+/==");
+        assert_eq!(harness.trace()["requests"], 2);
+        restart_google_runtime(&mut harness, &thread).await;
+        assert_eq!(harness.trace()["requests"], 2, "resume must not infer");
+        harness
+            .runtime
+            .client()
+            .start_turn(
+                &thread,
+                vec![json!({"type":"text","text":"Continue after opaque compaction"})],
+                json!({}),
+                DEADLINE,
+            )
+            .await
+            .unwrap();
+        loop {
+            if let RuntimeEvent::Notification(event) = harness.next().await
+                && event.method == "turn/completed"
+            {
+                assert_eq!(event.raw["params"]["turn"]["status"], "completed");
+                break;
+            }
+        }
+        let trace = harness.trace();
+        assert_eq!(trace["requests"], 3);
+        let requests = trace["wireRequests"].as_array().unwrap();
+        assert_eq!(
+            requests[1]["body"]["input"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|v| v["type"] == "compaction_trigger")
+                .count(),
+            1
+        );
+        let compacted: Vec<&Value> = requests[2]["body"]["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|v| v["type"] == "compaction")
+            .collect();
+        assert_eq!(compacted, vec![&stored]);
+        assert!(
+            requests[2]["body"]["input"]
+                .to_string()
+                .contains("Continue after opaque compaction")
+        );
+        for request in requests {
+            assert_eq!(request["liteHeader"].as_str().is_some(), lite);
+        }
+        assert_eq!(harness.credential_reads.load(Ordering::SeqCst), 3);
+        assert_eq!(trace["gatewayCredentialMatched"], true);
+        harness.shutdown().await;
+    }
 }
 
 #[tokio::test]

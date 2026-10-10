@@ -508,7 +508,7 @@ class Handler(BaseHTTPRequestHandler):
         for item in body.get("input", []):
             if item.get("type") in ["function_call_output", "custom_tool_call_output"]:
                 trace["toolOutputs"].append(item.get("output"))
-        if mode == "compact":
+        if mode in ["compact", "compact-lite"]:
             trace.setdefault("summarySeen", []).append("CAIDEX_COMPACT_SUMMARY" in json.dumps(body.get("input", [])))
         identity = f"fixture-response-{trace['requests']}"
         events = [event("response.created", response={"id": identity})]
@@ -532,7 +532,8 @@ class Handler(BaseHTTPRequestHandler):
             Path(trace_path).with_name("gateway-disconnected").touch()
             self.close_connection = True
             return
-        if mode.startswith("wire-"):
+        remote_compact = mode.startswith("wire-compact-") and any(item.get("type") == "compaction_trigger" for item in body.get("input", []))
+        if mode.startswith("wire-") and not remote_compact:
             reasoning = {"type": "reasoning", "id": f"rs_{identity}", "summary": [], "encrypted_content": "CAIDEX_OPAQUE_REASONING+/==", "provider_signature": "CAIDEX_FUTURE_SIGNATURE=="}
             if mode.startswith("wire-anthropic-"):
                 native = {"type": "message", "id": identity, "model": "native-fixture", "role": "assistant", "content": [
@@ -544,7 +545,9 @@ class Handler(BaseHTTPRequestHandler):
                 reasoning["summary"] = [{"type": "summary_text", "text": "Native fixture thinking"}]
                 reasoning["encrypted_content"] = "caidex.anthropic.native-message.v1:" + json.dumps({"provider": "anthropic", "version": 1, "message": native})
             events.append(event("response.output_item.done", item=reasoning))
-        if mode == "patch" and trace["requests"] == 1:
+        if remote_compact:
+            events.append(event("response.output_item.done", item={"type": "compaction", "encrypted_content": "CAIDEX_REMOTE_COMPACT+/=="}))
+        elif mode == "patch" and trace["requests"] == 1:
             trace["offeredTools"] = [{"name": tool.get("name"), "type": tool.get("type"), "nestedNames": [nested.get("name") for nested in tool.get("tools", [])]} for tool in body.get("tools", [])]
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
             if not any(tool.get("name") == "apply_patch" for tool in body.get("tools", [])):
@@ -575,9 +578,9 @@ class Handler(BaseHTTPRequestHandler):
             trace["tool"] = name
             events.append(event("response.output_item.done", item={"type": "function_call", "call_id": "fixture-command-1", "name": name, "arguments": json.dumps(arguments)}))
         else:
-            text = "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode == "compact" and trace["requests"] == 2 else "CAIdex local fixture complete"
+            text = "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode in ["compact", "compact-lite"] and trace["requests"] == 2 else "CAIdex local fixture complete"
             item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": text}]}
-            if mode.startswith("goal-") or mode.startswith("wire-"):
+            if mode.startswith("goal-") or mode.startswith("wire-") or mode == "compact-lite":
                 item["phase"] = "final_answer"
             events.append(event("response.output_item.added", item={**item, "content": []}))
             if text:

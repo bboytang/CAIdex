@@ -4,11 +4,13 @@
 
 ## 当前完整F/G目标恢复点（本轮）
 
-本轮恢复HEAD=origin/main=`4931b58663435448139d725ed2414db496a001e4`，开始干净。Anthropic两个既有固定Runtime断言已提交/push `9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`；精确[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)正在运行，watch会话61234。Classic重启第四POST完整回放第三native回复全组；Lite落盘custom调用input/身份及完整结果逐值转native text，Key读取2次。定向各1/0/0、workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过；生产/fixture/依赖/workflow未改。
+本轮恢复HEAD=`4931b58663435448139d725ed2414db496a001e4`，开始干净。Anthropic精确断言源码`9db1fe7edeca3ce1e262f6cbdbafdc6b2261609f`已push；[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)三平台completed/success，各17steps成功或条件跳过。完整日志逐名保持前置CI38079737190集合；Linux/Windows/macOS workspace621/616/620、Runtime71/70/70，0失败、workspace ignored73/71/71。Classic重启第四POST完整第三native回复；Lite落盘custom身份/input/完整结果逐值核对。本地定向各1/0/0、workspace621/0/73、Runtime71/0/0、Clippy/fmt/diff通过。
 
-当前未提交Gemini六代码/测试文件：src/content.rs、src/history.rs、tests/history.rs、tests/response_stream.rs、tests/http.rs、tests/http/provider.rs。缺prompt usage下界和thought-only STOP文本phase已分别真实RED复现；共享逻辑最小修复后usage/phase/旧thought-only回放拒绝定向各1/0/0。缺失计数仍未知、不补零；cached只作prompt下界不重复相加。新phase用例JSON/SSE逐字节及完整native恢复、真实调用对照通过；自动回放拒绝未放宽。整组外来载体JSON/SSE来源及Classic/Lite目标在Key/POST前400拒绝定向通过；原生/投影未消费队列cancel/Drop与旧已消费分支通过，cancel先观察socket关闭再排空缓存、无成功终态/载体、后续许可释放。Google94/0/0、workspace623/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过（exec14633 exit0）；最终双向完整组互换1/0/0复验通过，最终diff已检查。尚未提交/CI。
+最新main=origin/main=`57451e9996aee201954ee5d404dd02e22dba8dd2`，Gemini六代码/测试文件阶段已push：[CI38081567944](https://github.com/bboytang/CAIdex/actions/runs/38081567944)运行中，watch75279。缺prompt usage下界/thought-only phase真实RED→GREEN；缺失计数仍未知，cached不重复计算，自动回放拒绝保持。JSON/SSE完整组双向互换Key/POST前400、原生/投影未消费多帧cancel/Drop专项通过。Google94/0/0、workspace623/0/73、Runtime71/0/0、Clippy/fmt/diff通过；最终双向互换复验1/0/0，等待精确CI。
 
-下一步：提交/push本地通过Gemini阶段并完整核验精确CI。同步读取Anthropic精确CI全日志，不将本地写成CI结果。随后逐route报告及固定Runtime compaction证据。F/G目标保持active。用户明确真实模型验收最后全项目完成后自行执行；当前继续可离线任务。不再询问Key/API、不读取用户Key或调用商业API；真实模型保持未验，不升级LiveRuntime/Full。生产Host属后续阶段。
+当前未提交Runtime两文件：tests/real_runtime.rs、tests/fixtures/responses_server.py。按固定d27764b的tasks/compact.rs、model-provider/src/provider.rs及compact_remote_v2*.rs核实远端V2选择和compaction_trigger→compaction wire。新增Classic/Lite远端opaque压缩、实际rollout checkpoint、真实进程重启/disk resume后完整compaction item逐值承接定向1/0/0；Lite本地摘要复用旧Classic生命周期用例，定向2/0/0（含旧Classic）。远端fixture仅在这两个显式loopback模式使用OpenAI provider身份选择上游原生V2，不修改生产能力/认证，不调用商业API。定向远端1/0/0、本地2/0/0，完整workspace623/0/75、固定Runtime73/0/0、Clippy/fmt/diff通过，最终diff已检查。尚未提交/CI。新增[Provider路由离线报告V1](docs/CAIdex-Provider-路由离线兼容性报告-V1.md)索引八Adapter16个正例route/方言的明确profile、fixture版本、限制及既有CI证据，不自动挂Registry。
+
+下一步：提交/push本地通过的压缩与route报告阶段；完整核验Gemini及新精确CI。同时更新Provider/Runtime/核对文档；随后最终复核离线门槛，区分用户最终真实模型验收与H后续实现。F/G目标保持active，真实模型由用户全项目完成后自行验证，继续可离线任务，不再询问Key/API，不读用户Key/商业API，不升级LiveRuntime/Full。生产Host属后续阶段。
 
 ## 当前状态与第一步
 

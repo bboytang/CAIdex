@@ -43,7 +43,7 @@
 
 - Queue reorder 要求每个现存 submission ID 恰好出现一次；busy start 不消费条目；中断后队列暂停，显式 start 可选非队首。用户消息事件的 `clientId` 对应队列 `clientUserMessageId`。
 - Goal 另需 `features.goals`，不是 initialize 的实验 opt-in 就能保证支持。active 可自动开始轮次；负预算拒绝；budgetLimited/blocked 是上游状态。blocked 更新可先于最后一轮 turn/completed，UI 分别处理目标与轮次终态。
-- 手动 compact/start 返回 `{}` 只代表请求受理；最终依据 contextCompaction item 与 turn/completed。本轮本地经典摘要可进入后续模型输入，未证明远端 encrypted_content 或 Lite 路径。
+- 手动 compact/start 返回 `{}` 只代表请求受理；最终依据 contextCompaction item 与 turn/completed。原有经典本地摘要证据保持；2026-10-10新增Lite本地摘要和Classic/Lite远端v2 opaque压缩/磁盘恢复本地通过，精确CI待验，详下文。
 
 ## 原 V2 原生能力逐项验收
 
@@ -66,7 +66,7 @@
 | Tool auto-selection | 工具仍由真实 Runtime 执行 | 真实模型选择；fixture 不做推理 |
 | requestUserInput | 真实 Plan 问题→答案→工具结果链路通过 | 前端交互、非阻塞/secret/超时 |
 | MCP elicitation | 三平台真实 MCP form accept/decline/cancel 均显式处理 | url/富表单/UI 验证 |
-| Context compaction | 三平台经典手动压缩 lifecycle/后续摘要承接通过 | 远端 opaque 与 Lite 路径 F/G |
+| Context compaction | 三平台经典本地摘要已验；Lite本地摘要及Classic/Lite远端opaque/重启本地已验 | 新精确三平台CI及商业模型，详下文 |
 | Interrupt | 真实 Steer 中断、终态和审批撤销通过 | 多客户端恢复前台后的状态核对 |
 | Resume | 真实存储历史及已加载线程 resume | 进程/机器重启恢复 H |
 | Queue | 三平台 CRUD/reorder/分页/busy/中断保留/指定及默认/自动启动通过 | 多端与持久 Host H |
@@ -406,3 +406,12 @@ cargo test -p caidex-runtime --test real_runtime --locked -- --ignored
 ## Qwen实际Classic/Lite Runtime（三平台离线已验）
 
 新增7项真实固定Runtime离线回归：Classic/Lite审批批准后临时执行、原生summary/v3/v4与工具结果落盘、重启恢复完整前缀且不重跑、默认/部分策略Key前拒绝、双调用及半流不交付、stream/待审批取消、迟到审批拒绝及真实Cancel。Runtime两路径提供developer/user消息ID，Qwen仅在显式runtime_context下接受typed数组消息有效ID并保留完整绑定；默认/状态门控不放宽，新增Provider2项与Qwen72通过。完整本地workspace510/0/59、实际Runtime57/0/0、Clippy/fmt/diff通过，精确源码bf94c9d/[CI37982550340](https://github.com/bboytang/CAIdex/actions/runs/37982550340)三平台完整通过（workspace510/505/509、实际Runtime57/56/56、Qwen72/新增Qwen Runtime7逐名一次、全通过名568/561/565精确为旧CI+2/+7）；旧Lite CI不代验。仅Qwen生产校验及Runtime测试dev接线变化，无新外部依赖或共享生产实现/workflow改动；商业Live/Full、H生产Host及iOS构建未验。详[Qwen验收](CAIdex-Qwen-Provider-设计与验收.md)/[HANDOFF](../HANDOFF.md)。
+
+
+## F/G compaction 独立离线验收（2026-10-10）
+
+固定上游[选择分支](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tasks/compact.rs)按Provider能力选择本地摘要或remote V2；[能力来源](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/model-provider/src/provider.rs)及[远端请求](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/compact_remote_v2_attempt.rs)已读取核实。不是旧responses/compact端点：当前v2在Responses请求input末尾附compaction_trigger，接收原生compaction/encrypted_content。测试显式loopback配置采用OpenAI provider身份选择这个固定分支，requires_openai_auth=false，使用既有Gateway合成凭据；没有更改生产Provider能力或增加独立执行器。
+
+新增real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume分别覆盖两个明确模式：种子轮次、compact/start受理、同ID contextCompaction started/completed及完成终态、实际rollout compacted checkpoint中的完整compaction item、实际app-server重启/disk resume（没有额外POST）、后续轮次完整item逐值承接。Classic/Lite header、compaction_trigger恰好一个、Key/POST各3次和合成认证均核对。opaque值仅合成载体，不证明模型服务解密或签名认证。
+
+Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Lifecycle完成且第三请求包含压缩摘要；不以远端证据代验本地分支。定向远端1/0/0（含Classic/Lite）、本地2/0/0（旧Classic+新Lite），完整workspace623/0/75、固定Runtime73/0/0、Clippy workspace/all-targets-D warnings、fmt/diff通过；旧Runtime保持，新增2名。当前待精确源码三平台CI。未证明压缩失败/取消/自动阈值/无限历史/生产Host恢复/商业模型；fixture不授LiveRuntime/Full。

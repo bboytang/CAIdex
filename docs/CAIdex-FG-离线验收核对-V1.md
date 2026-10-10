@@ -26,7 +26,7 @@
 | F Responses/取消/工具/opaque/错误 | Core、Gateway及各Adapter已有离线回归；Runtime执行与审批保持固定0.160.1/d27764b | 已验证具体范围；不是所有Provider×参数×时序的穷举证明 |
 | G Registry/ModelRouter | [Registry](../model/core/src/registry.rs)、[Router测试7项](../model/core/tests/router.rs)、[Gateway Router测试2项](../model/gateway/tests/router/mod.rs)：显式ID、目录归属、漂移拒绝、未知模型/方言/streaming门控，无fallback | 已实现/离线已验；不新建Registry或HTTP栈 |
 | Unknown/Unsupported展示与拒绝 | ModelMetadata/六方法公开三态及未知限额；目录不升级能力/报告。Router检查dialect/streaming，其余请求语义由Adapter门控；Provider测试含Key/POST前拒绝 | 核心数据与拒绝已验；最终GUI/CLI展示归J/P，不伪造当前产品UI |
-| 每模型版本化报告 | CompatibilityReport schemaVersion=1、reference/testedModelVersion/source/level门控已有；[切换报告V1](CAIdex-模型切换-离线兼容性报告-V1.md)仅四条合成route | 各Provider文档是分阶段证据，尚非每个商业版本报告；其他fixture报告仍须逐route/配置索引，不批量赋Full或自动挂生产Registry |
+| 每模型版本化报告 | CompatibilityReport schemaVersion=1、reference/testedModelVersion/source/level门控已有；[切换报告V1](CAIdex-模型切换-离线兼容性报告-V1.md)仅四条合成route | 各Provider文档是分阶段证据，尚非每个商业版本报告；八Adapter16个正例route/方言已有[路由离线报告V1](CAIdex-Provider-路由离线兼容性报告-V1.md)，逐profile/版本/限制绑定，不批量赋Full或自动挂生产Registry |
 | 模型切换 | Classic3、Lite2与跨Provider2项真实Runtime测试已验；同Provider只限两个明确同方言route组合；跨Provider只显式可见文本新线程及foreign reasoning拒绝 | 不重复既有测试；完整工具状态/其他组合未验，活动轮次约束/持久关联/通用历史适配归H，不能用云专用history入口替代 |
 | Provider工具/推理边界 | 配置、签名载体和完整前缀绑定已有；Gemini单调用3分支已补专项；Anthropic恢复/完整结果本地精确断言已补，详下表 | 补已有契约的离线证据；未开放功能继续明确拒绝，不按slug猜支持 |
 | F真实模型验收与G商业报告 | 当前没有授权的真实Key/API/daemon证据 | 用户确认全项目完成后自行验收；当前继续可离线任务，真实模型仍未验，不宣称商业Compatible/Full |
@@ -40,8 +40,8 @@
 | Gemini缺prompt的usage下界、thought-only call文本phase | normalized_usage提前返回null；outcome看到任意functionCall即ToolCall，投影phase沿outcome | 两项分别真实RED→GREEN；共享usage下界/非thought执行分类最小修复，本地JSON/SSE/旧回放拒绝通过，待精确CI |
 | Gemini整组载体互换/满槽取消 | 现有组内编辑/错model/request拒绝；投影取消测试先消费到text，native满槽已有deadline测试 | 本轮完整JSON/SSE组双向互换在Key/POST前400拒绝；原生/投影未消费多帧cancel/Drop专项本地通过，待精确CI；未暴露需修改生产的载体/传输漏洞 |
 | Gemini整数/空ID | catalog只接受canonical整数，content拒绝显式空ID | 已记录兼容表示限制，无实际端点新依据，不泛化codec |
-| Anthropic重启第三轮/完整Lite结果 | [Runtime测试](../runtime/bridge/tests/real_runtime.rs)重启只比旧请求前缀；Lite结果只contains marker，没有完整canonical/disk→native结果逐值核对 | 本轮复用两个既有用例补齐：完整第三native回复、Lite落盘调用及完整结果逐值对照；定向各1/0/0，workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过，待精确CI |
-| Runtime远端opaque compaction/Lite | [能力对照](CAIdex-Runtime-能力对照.md)仍只有Classic手动摘要证据 | 尚未验，不用doctor/Classic摘要代验；选定后按固定wire独立复现 |
+| Anthropic重启第三轮/完整Lite结果 | [Runtime测试](../runtime/bridge/tests/real_runtime.rs)重启只比旧请求前缀；Lite结果只contains marker，没有完整canonical/disk→native结果逐值核对 | 本轮复用两个既有用例补齐：完整第三native回复、Lite落盘调用及完整结果逐值对照；定向各1/0/0，workspace621/0/73、固定Runtime71/0/0、Clippy/fmt/diff通过；精确源码9db1fe7/[CI38081159725](https://github.com/bboytang/CAIdex/actions/runs/38081159725)三平台完整日志保持旧通过名，已验 |
+| Runtime远端opaque compaction/Lite | [能力对照](CAIdex-Runtime-能力对照.md)仍只有Classic手动摘要证据 | 固定wire独立核实；Classic/Lite远端opaque压缩+磁盘恢复、新Lite本地摘要共新增2Runtime测试，本地73/0/0通过；待新精确CI |
 
 本表针对交接点名门槛和源码分支，不声称全仓穷举或全时序形式验证。后续按确认缺口逐项推进；商业/Host边界保持V3最终方案。
 
@@ -60,4 +60,4 @@
 
 源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)整体completed/success；三job各17steps成功或条件跳过，完整日志逐名核验通过。Linux/Windows/macOS workspace621/616/620（0失败、忽略73/71/71）、固定Runtime71/70/70（0失败/忽略）；Google92逐名每平台一次。全通过名693/686/690精确旧基线CI+2，无旧名遗漏/重复；raw日志2298/1984/1995行，watch与下载exit0。仅Google新增2测试，其余Adapter及固定Runtime保持。上述执行计划已经完成；纯文档收尾不重复Rust CI。
 
-下一步：Anthropic精确断言本地已补、待精确CI；Gemini四类边界本地已补、待精确CI；继续各route版本化报告索引及远端opaque/Lite compaction门槛。商业真实模型与生产Host仍未验，F/G不标整体完成，不跳H。
+下一步：Anthropic精确断言已三平台CI核验；Gemini四类边界本地已补、待精确CI；16个route/profile离线报告已写，compaction两个新增用例完整本地通过；下一步精确源码三平台CI及最终门槛复核。商业真实模型与生产Host仍未验，F/G不标整体完成，不跳H。
