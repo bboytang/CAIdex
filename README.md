@@ -81,7 +81,7 @@ node scripts/codex-binary.mjs
 上游 Codex 与归档协议遵循 `upstream/codex/LICENSE`、`NOTICE`。CAIdex 自有代码及品牌的对外分发许可证尚未确定。
 
 
-OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_backend_selection`逐route配置单一`provider.only`，保留禁fallback与参数要求，调用方不能覆盖；不升级能力、不将base slug冒充实际稳定endpoint。新增5项/Provider36、本地workspace546/0/59及既有Runtime57/0/0、Clippy/fmt/diff通过；源码`2c9954c`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)精确三平台已验，workspace546/541/545、既有Runtime57/56/56，全通过名精确旧CI+5。原生工具/完整政策绑定历史→Lite→实际OpenRouter Runtime仍待实现，最新恢复点见HANDOFF。
+OpenRouter后端绑定历史的前置路由政策已本地实现：显式`with_backend_selection`逐route配置单一`provider.only`，保留禁fallback与参数要求，调用方不能覆盖；不升级能力、不将base slug冒充实际稳定endpoint。新增5项/Provider36、本地workspace546/0/59及既有Runtime57/0/0、Clippy/fmt/diff通过；源码`2c9954c`/[CI38008446175](https://github.com/bboytang/CAIdex/actions/runs/38008446175)精确三平台已验，workspace546/541/545、既有Runtime57/56/56，全通过名精确旧CI+5。该阶段新增范围为路由政策；后续工具及历史进度见下段与HANDOFF。
 
 
-OpenRouter显式逐route Classic平面function工具已实现：须配置backend后启用with_native_tools，声明/选择/文本结果配对及JSON/SSE终态门控；工具仍由固定Codex执行，Provider只交付数据。新增15项/Provider51定向通过；旧36项保持，原生opaque/未知输出扩展无损。工具SSE缓冲到终态核验，会延迟文本显示；完整本地workspace561/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff通过，通过名精确旧workspace+15；精确源码三平台CI待验，namespace/custom、完整政策绑定历史、Lite与实际OpenRouter Runtime仍待实施，恢复点见HANDOFF。
+OpenRouter显式逐route Classic平面function工具已实现：须配置backend后启用with_native_tools，声明/选择/文本结果配对及JSON/SSE终态门控；工具仍由固定Codex执行，Provider只交付数据。新增15项/Provider51定向通过；旧36项保持，原生opaque/未知输出扩展无损。工具SSE缓冲到终态核验，会延迟文本显示；完整本地workspace561/0/59、既有固定Runtime57/0/0、Clippy/fmt/diff通过，通过名精确旧workspace+15；源码`65001cd`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)精确三平台已验，workspace561/556/560、既有Runtime57/56/56、OpenRouter51每名一次，完整通过名精确旧CI+15；namespace/custom、完整政策绑定历史、Lite与实际OpenRouter Runtime仍待实施，恢复点见HANDOFF。

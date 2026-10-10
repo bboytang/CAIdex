@@ -1,8 +1,8 @@
 # CAIdex OpenRouter Provider：设计与验收
 
-阶段F/G；2026-10-09。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。当前基础Classic文本Adapter已实现，14项定向、完整本地及精确源码三平台离线验收通过。工具/推理回放/Lite/实际固定Runtime接线与商业Live/Full尚未验收，不修改Codex唯一执行/审批真源或V3阶段顺序。
+阶段F/G；2026-10-10。源码`model/providers/openrouter`，复用ModelProvider、CustomResponses传输、执行端Credential Broker和Gateway。基础文本、显式上下文/effort/正文/backend路由及逐route Classic平面function工具已分别三平台离线验收；Provider当前51项。namespace/custom、完整推理/工具历史载体、Lite、实际固定OpenRouter Runtime及商业Live/Full尚未验，不修改Codex唯一执行/审批真源或V3阶段顺序。
 
-## 官方契约与本步范围
+## 官方契约与默认入口范围
 
 已核对[Responses概览](https://openrouter.ai/docs/api_reference/responses/overview)、[基础文本与多轮](https://openrouter.ai/docs/api_reference/responses/basic-usage)、[请求参考](https://openrouter.ai/docs/api/api-reference/responses/create-responses)、[目录](https://openrouter.ai/docs/api/api-reference/models/list-all-models-and-their-properties)及[提供商路由](https://openrouter.ai/docs/guides/routing/provider-selection)。API及模型后端会变化，后续接线仍须重新核对，不以OpenAI兼容说明授Full。
 
@@ -34,7 +34,7 @@
 ## 后续顺序
 
 1. 本步完整本地检查、差异审查、源码9563df0推送与CI38004040230精确三平台已完成；保留证据，不重复基础适配。
-2. 显式上下文/neutral text/effort已三平台收尾；逐route正文控制也已三平台收尾，下一步原生工具及后端绑定历史；官方推理/工具/路由契约先核对，不复制Qwen summary或DeepSeek明文规则。
+2. 显式上下文/neutral text/effort已三平台收尾；逐route正文控制也已三平台收尾，平面function也已精确三平台收尾，下一步namespace/custom及完整政策绑定历史；官方推理/工具/路由契约已核对，不复制Qwen summary或DeepSeek明文规则。
 3. 再验Lite与实际固定Classic/Lite Runtime审批/执行/取消/磁盘恢复；商业模型兼容性另需授权。
 4. 保持V3 F/G→H/I→Windows/SSH/iOS/CLI/Relay/R；生产Host、GUI、账户/记忆及完整CLI均仍待实现。
 
@@ -90,6 +90,9 @@
 - SSE在预算内缓冲模型事件，到终态核对完整调用身份/索引、参数delta/arguments.done/output_item.done与最终输出后原样交付；支持交错Unicode参数流、done-only与terminal-only，不提前交付任何模型/工具事件，传输Heartbeat继续传递。此选择会延迟文本显示；实际Runtime、commercial和下游长流体验仍待验。累计decoded事件预算、取消503/provider_cancelled、deadline504/provider_timeout、Drop、错误后满槽释放及完成后取消待交付队列均有定向证据，不自动重连或补跑工具。
 - 源预算在工具字段提取前；编译后共享预算仍Key/POST前。client_metadata/Runtime header仅本地消费，provider.only/禁fallback/store=false继续强制。summary/context/include/原生推理输入、Lite仍关闭；显式backend只是路由政策，不证明实际endpoint稳定。
 
-新增15项独立`tests/tools/mod.rs`，旧36测试正文逐字保持。初期RequestContext非Clone及测试编译问题已修正；首可执行47/1、补充50/1为取消旧断言499不符共享503契约，统一后51/0/0。最终差异核对发现新call_id复用旧item ID，负例先失败再最小修复，51/0/0重验通过。Clippy首轮仅新测试初始化写法已修正。最终workspace561/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；完整通过名精确旧workspace546+15、旧Runtime名完全保持，旧36测试正文逐字保留、Cargo.lock不变、共享/其他Provider/Runtime/workflow未改。未知item大整数ID夹具无损保留，不把工具身份约束套到未知输出上。18份Markdown/91本地链接/22锚点及差异边界通过；精确源码三平台CI待验，既有固定Runtime57/0/0已通过，未改生产/fixture，不是实际OpenRouter接线。日志`/tmp/caidex-openrouter-tools/`。
+新增15项独立`tests/tools/mod.rs`，旧36测试正文逐字保持。初期RequestContext非Clone及测试编译问题已修正；首可执行47/1、补充50/1为取消旧断言499不符共享503契约，统一后51/0/0。最终差异核对发现新call_id复用旧item ID，负例先失败再最小修复，51/0/0重验通过。Clippy首轮仅新测试初始化写法已修正。最终workspace561/0/59、既有固定Runtime57/0/0、全workspace/all-targets Clippy -D warnings、fmt/diff通过；完整通过名精确旧workspace546+15、旧Runtime名完全保持，旧36测试正文逐字保留、Cargo.lock不变、共享/其他Provider/Runtime/workflow未改。未知item大整数ID夹具无损保留，不把工具身份约束套到未知输出上。18份Markdown/91本地链接/22锚点及差异边界通过；精确源码三平台CI已验，见下段；既有固定Runtime57/0/0已通过，未改生产/fixture，不是实际OpenRouter接线。日志`/tmp/caidex-openrouter-tools/`。
 
 恢复顺序：原生工具其余namespace/custom适配及完整后端/执行端/profile/endpoint/model/完整前缀/instructions/verbosity/tier/effort/工具政策绑定历史→Lite→实际Classic/Lite固定Runtime审批/执行/取消/磁盘恢复；不照搬Qwen summary-only或DeepSeek明文规则，不调用商业API或读取真实Key。
+
+
+精确源码`65001cd0952685d635d61e4d6d682e174928eb01`/[CI38010128508](https://github.com/bboytang/CAIdex/actions/runs/38010128508)整体completed/success。linux job114087959146，workspace561/0/59、既有固定Runtime57/0/0，raw2203行/通过名619；windows job114087959047，workspace556/0/57、既有固定Runtime56/0/0，raw1889行/通过名612；macos job114087959157，workspace560/0/57、既有固定Runtime56/0/0，raw1900行/通过名616。各17steps成功或条件跳过，OpenRouter51/Qwen72/DeepSeek57每名每平台一次；全通过名精确旧CI38008446175+15，无遗漏/重复，旧Runtime名完全保持。watch和完整日志下载exit0，ci-check通过；/tmp/caidex-openrouter-tools/及/tmp/caidex-ci-38010128508-{linux,windows,macos}-raw.log只作补充，仓库证据足够跨机器恢复。这些既有Runtime回归不是实际OpenRouter接线或商业Live/Full。
