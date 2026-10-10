@@ -72,6 +72,9 @@ jobs:
           $global:LASTEXITCODE = 0
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy
+      - name: Windows Host storage through the Rust process boundary
+        if: runner.os == 'Windows'
+        run: cargo test -p caidex-host --lib --locked
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Clippy

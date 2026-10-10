@@ -58,7 +58,8 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("expected pinned Codex 0.160.1; no automatic upgrade".into());
     }
     let journal = Journal::open(&directory)?;
-    let directory = std::fs::canonicalize(directory)?;
+    // Keep an absolute path without Windows' verbatim prefix for PowerShell.
+    let directory = std::path::absolute(directory)?;
     let data = directory.join("runtime");
     let project = directory.join("probe-project");
     private_directory(&data)?;

@@ -17,7 +17,7 @@ for line in sys.stdin:
     if method == "initialize":
         emit({"id": request["id"], "result": {"userAgent": "fixture"}})
     elif method == "thread/start":
-        with open(marker, "a", encoding="utf-8") as stream:
+        with open(marker, "a", encoding="utf-8", newline="\n") as stream:
             stream.write("thread/start\n")
             stream.flush()
             os.fsync(stream.fileno())

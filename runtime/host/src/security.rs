@@ -73,6 +73,9 @@ if ($rules[0].InheritanceFlags -ne $inherit) { throw 'Unsafe ACL inheritance' }
 } catch { exit $step }
 "#])
             .env("CAIDEX_PRIVATE_DIRECTORY", path)
+            // Cargo can inherit PowerShell 7's incompatible module path; let
+            // Windows PowerShell resolve its own built-in Get-Acl/Set-Acl module.
+            .env_remove("PSModulePath")
             .output()?;
         if !output.status.success() {
             return Err(Error::WindowsAcl(output.status.code().unwrap_or(0)));

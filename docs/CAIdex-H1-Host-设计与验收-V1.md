@@ -82,6 +82,8 @@ CAIDEX_CODEX_BIN="$(node scripts/codex-binary.mjs)" cargo test -p caidex-runtime
 
 H-1已实现并本地验证，功能提交/精确CI收尾中。Linux workspace655/0/83（严格请求解码最终修复之前），最终H-1定向15/0/0（含参数拒绝无副作用）、全仓Clippy及最终Host Clippy/fmt、固定Runtime81/0/0、stable/experimental schema指纹均通过。实现中发现flatten忽略额外字段，由失败测试推动改为严格带标签请求；最终定向回归及真实演示已复验，精确CI再验最终源码全仓。
 
-Linux独立真实进程演示：旧stream1 seq5→新stream2 seq7，seq6=host/started、seq7=真实remoteControl/status/changed；同Host、旧线程unknown、0重发、0模型轮次。完整本地H-1输出见[测试日志](evidence/h1-host-tests.log)，[本地证据摘要/测试名/文件指纹/演示结果](evidence/h1-local.json)可独立核对。正式源码SHA/三平台CI待封存后填写。构建前约4GB空闲，验证后约3.1GB；仅复用缓存及新建隔离证据，无用户/全局Codex清理。
+Linux独立真实进程演示：旧stream1 seq5→新stream2 seq7，seq6=host/started、seq7=真实remoteControl/status/changed；同Host、旧线程unknown、0重发、0模型轮次。完整本地H-1输出见[测试日志](evidence/h1-host-tests.log)，[初版本地证据摘要/测试名/文件指纹/演示结果](evidence/h1-local.json)可独立核对；该文件指纹对应db8bf47初版，不冒充Windows后续修复版本。构建前约4GB空闲，验证后约3.1GB；仅复用缓存及新建隔离证据，无用户/全局Codex清理。
+
+初版`db8bf47a5b0e44d8efdc64ec72006adf594889b6`/[CI38093594306](https://github.com/bboytang/CAIdex/actions/runs/38093594306)整体failure：Linux/macOS完整成功，Windows在Host私有目录ACL初始化失败，不能认领三平台完成。按阻断修复为`8dfa3be7b74fef8d75a3077df3fe9e38bdf182e6`（SID值/强类型flags比较、只输出错误step），增加Windows早期边界检查直接执行生产脚本，覆盖新建/复开和拒绝不安全继承；权限门槛未放宽。Linux15项Host测试/Clippy相关复验通过，[新精确CI38094110441](https://github.com/bboytang/CAIdex/actions/runs/38094110441)中Windows早期边界检查成功，完整结果待核验。旧版具体失败于哪个比较没有逐项重演，不将推断写成已证根因。
 
 独立审计输入：不可变提交、该提交完整CI三job步骤/日志、上述运行命令与隔离journal、journal/service测试及故障夹具。重点检查actor所有调用是否先持久提交、广播顺序、attach水位/部分帧/慢客户端缺口、旧Runtime失效与未知intent、文件/授权/凭据边界、范围是否止于H-1。尚未安排或执行独立审计；不据此自行启动H-2。
