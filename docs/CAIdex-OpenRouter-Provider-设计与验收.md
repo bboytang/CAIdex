@@ -151,3 +151,10 @@
 下一步实际固定OpenRouter Classic/Lite Runtime审批、隔离执行、取消、重启与磁盘恢复。既有57/56/56回归不代验新接线；商业Live/Full、生产Host及iOS应用未验。context依执行端显式模型/backend支持声明，不按slug猜测。载体非加密/来源认证，backend政策非实际endpoint证明；文本终态缓冲、完整前缀二次增长/预算限制保留。
 
 Lite契约依据：[固定Runtime请求构建](https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/client.rs)、[OpenRouter无状态Responses](https://openrouter.ai/docs/api_reference/responses/overview)及[原生工具请求](https://openrouter.ai/docs/api_reference/responses/tool-calling)。不把兼容说明或离线fixture当商业模型能力证明。
+
+
+## 实际OpenRouter Classic/Lite Runtime（完整本地已验）
+
+OpenRouter实际Runtime步骤2已完成：独立catalog/原生Responses SSE fixture与Harness模式接线，新增7项真实固定Codex0.160.1离线用例全部通过。Classic function与Lite原生custom/namespace，真实CommandApproval前无marker/Accept后仅写隔离marker；重启磁盘恢复完整JSON/SSE原序与签名/未知扩展、不重复执行、文本工具结果原样、稳定工具前缀ID；Cancel/interrupt/迟到审批无执行，partial流关闭socket，多调用不交付/carrier不落盘；默认与部分政策Key/POST零访问。首次3/4为新SSE reasoning缺content_index且added content已含终态文本，按已验原生增量契约修正后7/0/0，无已知失败。OpenRouter生产源码与旧100项正文不变；Runtime生产执行器/审批和其他Provider保持，仅增加内部dev依赖Cargo.lock一行，无外部依赖。下一步完整workspace/Runtime/Clippy→精确源码三平台CI；商业Live/Full和生产Host未验。
+
+OpenRouter实际Runtime步骤3已完成：workspace610/0/66、全部固定Runtime64/0/0（精确既有57+7 OpenRouter）、Clippy全workspace/all-targets -D warnings、fmt/diff、Python fixture语法及18份Markdown/103链接/22锚点通过。workspace通过名完全保持，新增7项仅增加ignored等待显式固定Runtime步骤；旧Runtime/Qwen/DeepSeek/Provider测试正文保持，211个其他tracked文件逐字不变。Cargo.lock仅Runtime内部dev dependency增加OpenRouter，外部package/version不变；OpenRouter生产源码和100项回归完全保持。下一步按授权提交/push，核验精确新源码三平台CI（预期Runtime Linux64/Windows63/macOS63，不以本地推断CI）。

@@ -19,5 +19,6 @@ caidex-provider-anthropic = { path = "../../model/providers/anthropic" }
 caidex-provider-google = { path = "../../model/providers/google" }
 caidex-provider-ollama = { path = "../../model/providers/ollama" }
 caidex-provider-deepseek = { path = "../../model/providers/deepseek" }
+caidex-provider-openrouter = { path = "../../model/providers/openrouter" }
 caidex-provider-qwen = { path = "../../model/providers/qwen" }
 caidex-credentials = { path = "../../credentials/core", default-features = false }

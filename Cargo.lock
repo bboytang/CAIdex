@@ -581,6 +581,7 @@ dependencies = [
  "caidex-provider-google",
  "caidex-provider-ollama",
  "caidex-provider-openai",
+ "caidex-provider-openrouter",
  "caidex-provider-qwen",
  "serde",
  "serde_json",

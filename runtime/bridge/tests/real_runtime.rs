@@ -1,5 +1,6 @@
 //! Real pinned app-server and scripted loopback Responses; no paid model or key.
 mod deepseek;
+mod openrouter;
 mod qwen;
 
 use std::{
@@ -88,6 +89,16 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-openrouter-classic"
+            | "gateway-openrouter-context-classic"
+            | "gateway-openrouter-native-tools-classic"
+            | "gateway-openrouter-tools-classic" => "native-openrouter-tools-classic",
+            "gateway-openrouter-lite" | "gateway-openrouter-tools-lite" => {
+                "native-openrouter-tools-lite"
+            }
+            "gateway-openrouter-multi-lite" => "native-openrouter-multi-lite",
+            "gateway-openrouter-stall-classic" => "native-openrouter-stall-classic",
+            "gateway-openrouter-stall-lite" => "native-openrouter-stall-lite",
             "gateway-qwen-classic"
             | "gateway-qwen-context-classic"
             | "gateway-qwen-native-tools-classic"
@@ -200,8 +211,15 @@ impl Harness {
             "gateway-ollama-tools-lite" | "gateway-ollama-multi-lite" | "gateway-ollama-stall-lite"
         );
         let deepseek = mode.starts_with("gateway-deepseek-");
+        let openrouter = mode.starts_with("gateway-openrouter-");
         let qwen = mode.starts_with("gateway-qwen-");
-        let model = if qwen {
+        let model = if openrouter {
+            if mode.ends_with("-lite") {
+                "caidex-openrouter-lite-fixture"
+            } else {
+                "caidex-openrouter-classic-fixture"
+            }
+        } else if qwen {
             if mode.ends_with("-lite") {
                 "caidex-qwen-lite-fixture"
             } else {
@@ -265,7 +283,9 @@ impl Harness {
             let owner = Id::new("fixture-host").unwrap();
             let credential = CredentialRef {
                 owner: owner.clone(),
-                provider: Id::new(if qwen {
+                provider: Id::new(if openrouter {
+                    "openrouter"
+                } else if qwen {
                     "qwen"
                 } else if deepseek {
                     "deepseek"
@@ -288,7 +308,87 @@ impl Harness {
                 owner,
                 GatewayFixtureStore(credential_reads.clone()),
             ));
-            if qwen {
+            if openrouter {
+                use caidex_provider_openrouter::{OpenRouterConfig, OpenRouterProvider};
+                let config = OpenRouterConfig::new(credential)
+                    .unwrap()
+                    .with_base_url(&format!("http://127.0.0.1:{port}/v1/"))
+                    .unwrap();
+                let lite = mode.ends_with("-lite") && mode != "gateway-openrouter-lite";
+                let models = vec![caidex_model_core::ModelMetadata::configured(
+                    model.into(),
+                    "native-fixture".into(),
+                    vec![if lite {
+                        ResponsesDialect::Lite
+                    } else {
+                        ResponsesDialect::Classic
+                    }],
+                )];
+                let mut provider = if lite {
+                    OpenRouterProvider::with_lite_options(
+                        config,
+                        models,
+                        broker.clone(),
+                        Limits::default(),
+                        Default::default(),
+                    )
+                } else {
+                    OpenRouterProvider::new(config, models, broker.clone(), Limits::default())
+                }
+                .unwrap();
+                if mode != "gateway-openrouter-classic" {
+                    provider = provider.with_runtime_context();
+                }
+                if !matches!(
+                    mode,
+                    "gateway-openrouter-classic"
+                        | "gateway-openrouter-context-classic"
+                        | "gateway-openrouter-lite"
+                ) {
+                    provider = provider
+                        .with_backend_selection(model.into(), "fixture-backend/region".into())
+                        .unwrap()
+                        .with_native_tools(model.into())
+                        .unwrap();
+                    if mode != "gateway-openrouter-native-tools-classic" {
+                        provider = provider
+                            .with_advanced_tools(model.into())
+                            .unwrap()
+                            .with_native_history(model.into())
+                            .unwrap()
+                            .with_reasoning_summary(model.into(), "auto".into())
+                            .unwrap()
+                            .with_reasoning_context(model.into(), "all_turns".into())
+                            .unwrap();
+                    }
+                    for (effort, native) in [("low", "low"), ("medium", "high"), ("high", "high")] {
+                        provider = provider
+                            .with_reasoning_effort_mapping(
+                                model.into(),
+                                effort.into(),
+                                native.into(),
+                            )
+                            .unwrap();
+                    }
+                    provider = provider
+                        .with_verbosity_instruction(
+                            model.into(),
+                            "low".into(),
+                            "Keep user-facing answers concise while preserving required detail."
+                                .into(),
+                        )
+                        .unwrap();
+                }
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        Arc::new(provider),
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if qwen {
                 use caidex_provider_qwen::{QwenConfig, QwenProvider};
                 let config =
                     QwenConfig::new(&format!("http://127.0.0.1:{port}/"), credential).unwrap();
@@ -650,7 +750,8 @@ impl Harness {
         };
         // Explicit fixture scope: native Anthropic has no verified equivalent
         // for Codex cached web search. Never filter it inside the Gateway.
-        let web_search = if qwen
+        let web_search = if openrouter
+            || qwen
             || deepseek
             || ollama_lite
             || matches!(
@@ -671,7 +772,8 @@ impl Harness {
         };
         // Executor-owned catalog declares unsupported client tool search. This
         // uses the fixed Runtime's public config, never strips Gateway tools.
-        let google_summary = if qwen
+        let google_summary = if openrouter
+            || qwen
             || deepseek
             || ollama_lite
             || mode.starts_with("gateway-google-")
@@ -685,7 +787,11 @@ impl Harness {
         } else {
             ""
         };
-        let catalog = if qwen {
+        let catalog = if openrouter {
+            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/openrouter_model_catalog.json");
+            format!("model_catalog_json = {}\n", json!(path))
+        } else if qwen {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures/qwen_model_catalog.json");
             format!("model_catalog_json = {}\n", json!(path))
