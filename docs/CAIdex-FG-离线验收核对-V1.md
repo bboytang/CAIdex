@@ -73,3 +73,6 @@
 2026-10-10从实际e258828恢复后继续F/G完成核对，不能将前轮“确认缺口已补”视为全F/G证明或直接转H。新增Runtime idle Classic/Lite，以及远端压缩Classic/Lite失败/取消四路径，定向各1/0/0通过，详[Runtime能力对照](CAIdex-Runtime-能力对照.md)。完整回归/提交/精确CI状态见HANDOFF。
 
 下一步继续核对Gemini纯comment/下游idle、本地压缩非成功与自动阈值是否属于既定离线门槛，并逐项核对Registry/Router、报告和各Provider明确拒绝范围；尚未确认整体离线闭环。真实商业模型按用户要求留到项目最后自行验收，仍未验证，不用fixture代验。
+
+
+源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`/[CI38083310797](https://github.com/bboytang/CAIdex/actions/runs/38083310797)整体completed/success，三job各17steps成功或预期跳过。完整日志精确旧CI38081995688通过集合+2Runtime，无遗漏/重复；Linux/Windows/macOS workspace623/618/622（忽略77/75/75），固定Runtime75/74/74（无忽略），全部0失败。raw2308/1994/2005行、函数通过名698/691/695，另Secret doctest1；watch与日志下载exit0。 本阶段离线证据已验证；后续未验范围保持上述说明。

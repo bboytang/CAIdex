@@ -424,3 +424,6 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 `real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume` 覆盖Classic/Lite远端v2各失败/取消：实际contextCompaction及failed/interrupted终态、取消关闭上游、无额外POST/Key读取、rollout无成功compacted记录；重启实际app-server并disk resume不发POST，显式下一轮逐值保留原历史前缀，移除compaction_trigger且无伪造compaction。复用既有Harness与fixture，无生产远端能力升级。
 
 两项定向各1/0/0通过；完整回归和精确三平台CI状态见HANDOFF。此证据不覆盖Gemini纯comment keepalive专属时序、本地压缩失败/取消、自动阈值、商业模型或生产Host，不能授LiveRuntime/Full。
+
+
+源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`/[CI38083310797](https://github.com/bboytang/CAIdex/actions/runs/38083310797)整体completed/success，三job各17steps成功或预期跳过。完整日志精确旧CI38081995688通过集合+2Runtime，无遗漏/重复；Linux/Windows/macOS workspace623/618/622（忽略77/75/75），固定Runtime75/74/74（无忽略），全部0失败。raw2308/1994/2005行、函数通过名698/691/695，另Secret doctest1；watch与日志下载exit0。 本阶段离线证据已验证；后续未验范围保持上述说明。

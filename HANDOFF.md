@@ -6,11 +6,11 @@
 
 实际恢复main=origin/main=`e258828446d8aad4920a76154e61121fcab4623c`，开始干净；上一轮重要源码/文档/精确CI进展已核实。目标仍F/G全部，不因已补部分确认缺口就转H或标整体完成。本轮要求级完成核对发现文档明确未验的下游固定Runtime idle路径；Provider/Gateway超时和interrupt不是这条路径证据。
 
-当前修改tests/real_runtime.rs、tests/fixtures/responses_server.py：新增Classic/Lite Runtime idle500ms、Provider/Gateway仍默认90s/600s且各单许可，真实失败终态/上游socket关闭/无自动重试与显式同线程恢复验证；合成fixture首POST停流、次POST正常。配置字段及idle错误读取固定d27764b公开源码核实，非猜测。idle定向测试1/0/0通过；另新增Classic/Lite远端压缩失败及取消四路径，实际失败/中断、取消关闭上游、无成功checkpoint，重启/disk resume后完整原历史逐值继续；定向1/0/0通过。完整workspace623/0/77、固定Runtime75/0/0、Clippy/fmt/diff及fixture语法通过；141个Markdown本地目标有效。最终diff仅Harness/合成fixture/两份证据文档和本交接，无生产、依赖、schema和审批变更。尚未提交/CI。
+当前修改tests/real_runtime.rs、tests/fixtures/responses_server.py：新增Classic/Lite Runtime idle500ms、Provider/Gateway仍默认90s/600s且各单许可，真实失败终态/上游socket关闭/无自动重试与显式同线程恢复验证；合成fixture首POST停流、次POST正常。配置字段及idle错误读取固定d27764b公开源码核实，非猜测。idle定向测试1/0/0通过；另新增Classic/Lite远端压缩失败及取消四路径，实际失败/中断、取消关闭上游、无成功checkpoint，重启/disk resume后完整原历史逐值继续；定向1/0/0通过。完整workspace623/0/77、固定Runtime75/0/0、Clippy/fmt/diff及fixture语法通过；141个Markdown本地目标有效。最终diff仅Harness/合成fixture/两份证据文档和本交接，无生产、依赖、schema和审批变更。已提交/push源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`，精确CI38083310797三平台完整核验成功；main=origin/main，源码提交后干净，本次仅文档收尾。
 
-下一步：读定向终态，按实际wire核对断言，相关完整workspace/固定Runtime/Clippy/fmt/diff，提交/push精确三平台CI；并继续要求级完成核对（compaction失败/取消、报告与模型注册范围），不将API用户最终自验当作已经完成。用户继续可离线任务的授权保持，不读取用户Key/商业API。
+下一步：继续F/G要求级完成核对，先核实Gemini纯comment/keepalive的下游idle专属缺口，再核实本地compaction失败/取消及自动阈值的既定验收范围；Registry/Router与报告门控已核实，不新增注册栈或自动升级报告。不将API用户最终自验当作已经完成，不转H或标F/G整体完成。用户继续可离线任务的授权保持，不读取用户Key/商业API。
 
-## 当前状态与准确下一步
+## 前轮已验基线（当前进度以上方恢复点为准）
 
 branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`，提交后main=origin/main、工作区干净。本轮开始基线`4931b58663435448139d725ed2414db496a001e4`。当前仅维护交接与验收证据文档；源码无未完成修改或已知失败。最新[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)已完整三平台核验成功；Gemini、Anthropic前置精确CI同样通过。本轮确认的F/G离线缺口均已实施/验证，无运行中测试或CI，本次收尾仅五份证据文档，225个其他tracked文件保持精确CI源码；收尾提交号/HEAD/origin/干净工作区以最终Git检查为准。F/G商业验收仍未完成，目标保持active，按用户确认顺序继续可独立推进的后续阶段。
 
@@ -32,6 +32,10 @@ branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b
 - 核对、Registry/Router、Classic/Lite切换、跨Provider显式文本交接均沿旧已验实现，不重复。生产执行器/审批、依赖、workflow未改。
 
 ## 精确CI证据
+
+源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`/[CI38083310797](https://github.com/bboytang/CAIdex/actions/runs/38083310797)整体completed/success，三job各17steps成功或预期跳过。完整日志精确旧CI38081995688通过集合+2Runtime，无遗漏/重复；Linux/Windows/macOS workspace623/618/622（忽略77/75/75），固定Runtime75/74/74（无忽略），全部0失败。raw2308/1994/2005行、函数通过名698/691/695，另Secret doctest1；watch与日志下载exit0。
+
+本次141个Markdown本地目标及锚点检查通过；225个非任务tracked文件与e258828基线逐字节保持。纯文档收尾提交以实际HEAD为准，无源码变更不重跑Rust CI。
 
 每个已验运行均整体completed/success，三个job各17steps成功或预期条件跳过，完整raw日志逐名核验，新旧回归无遗漏/重复；workspace ignored不能记为通过，固定Runtime另显式执行。Linux原生凭据及Secret compile-fail doctest保持。
 
@@ -71,7 +75,7 @@ Gemini已验：Linux/Windows/macOS job114299375039/114299374956/114299375049；r
 - H的持久journal、快照/sequence、结果未知与提交幂等、审批多端竞争、活动轮次模型边界及跨Provider持久关联/一般历史适配待实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
 - I账户/PostgreSQL/Memory/同步/邮件和J–O客户端、L SSH、P完整CLI、Q Relay、R实际平台/终端/认证/多端验收仍待。apps/cli现有doctor、credentials status/set/remove、version/help，不冒称CLI-01～34/账户55项/UI16项完成。
 - 未开放语义仍明确拒绝：各Provider差异见验收/route报告；未知Runtime扩展不保证类型化持久化全量往返。native载体是JSON一致性门控而非签名真实性/来源认证，backend配置不是实际endpoint证明；完整前缀二次增长/预算、文本终态缓冲保持。
-- compaction新测试仅明确手动正常流程，不证明失败/取消/自动阈值/无限历史或生产恢复。同步SecretStore开始后不能强停，仅保证取消后不POST；Runtime下游idle未单独验。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
+- compaction手动正常与远端失败/取消已离线验证；本地失败/取消、自动阈值、无限历史或生产恢复未验。同步SecretStore开始后不能强停，仅保证取消后不POST；OpenAI Classic/Lite Runtime下游idle已验，Gemini纯comment时序未专门验证。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
 - 无当前权限/推送阻塞或已知失败；旧自动审批拒绝已由持续授权解除，不能当成当前阻塞。
 
 ## 代码与设计入口
