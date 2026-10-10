@@ -1,10 +1,12 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，显式多Provider ModelRouter本地步骤3完成：新增9项、workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff与文档检查通过，待提交/推送并核验精确三平台CI。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
+更新：2026-10-10，显式多Provider ModelRouter本地步骤3完成：新增9项、workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff与文档检查通过，本地c0fffad已提交；用户已明确授权重新推送，待精确三平台CI。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
 
 ## 当前阶段与恢复点
 
-模型路由步骤3已完成：workspace619/0/66，全部通过名精确旧610+9；固定Codex0.160.1 Runtime64/0/0且旧通过名完全保持。Clippy workspace/all-targets -D warnings、fmt/diff及18份Markdown/103链接/22锚点通过。214个其他tracked文件逐字不变，Gateway旧http测试正文保持；Cargo.lock仅Gateway内部OpenRouter dev dependency增加，无外部package/version改变。最终diff已检查；当前main未提交Core路由/导出/7项测试、Gateway内部dev依赖/2项独立测试接线及三文档。下一步按授权提交/push，核验精确源码三平台CI，尚无本次CI证据。Host线程切换与商业Live/Full未实现/未验。
+模型路由步骤4进行中：本地源码提交`c0fffad673717366610144d2d0d8e940ffff681b`已完成，完整本地workspace619/0/66、Runtime64/0/0、Clippy/fmt/diff及文档已验。此前push被自动审批认为授权范围不足而拒绝；用户2026-10-10明确回复“你重新推送，我给你授权”，本次ModelRouter源码/文档公开main推送与三平台CI已获授权。当前提交交接授权记录后重新push，等待并核验精确HEAD三平台CI；尚未认领新CI通过。商业API/用户Key/生产Host无调用。
+
+模型路由步骤3已完成：workspace619/0/66，全部通过名精确旧610+9；固定Codex0.160.1 Runtime64/0/0且旧通过名完全保持。Clippy workspace/all-targets -D warnings、fmt/diff及18份Markdown/103链接/22锚点通过。214个其他tracked文件逐字不变，Gateway旧http测试正文保持；Cargo.lock仅Gateway内部OpenRouter dev dependency增加，无外部package/version改变。最终diff已检查；上述Core路由/导出/7项测试、Gateway内部dev依赖/2项独立测试接线及三文档已提交c0fffad。下一步按授权push，核验精确源码三平台CI，尚无本次CI证据。Host线程切换与商业Live/Full未实现/未验。
 
 模型路由步骤2：Core六方法ModelRouter和Gateway双Adapter真实回环验收已实现；首6项Core和2项Gateway通过，新增版本化报告守门用例待完整回归覆盖。显式ID/确定目录顺序、每Adapter目录调用一次、能力/报告绑定漂移拒绝、无fallback/重试、完整wire/context/取消/流Drop、两独立凭据与JSON/SSE均覆盖。仅新增Gateway内部OpenRouter dev dependency，无外部依赖。当前完整workspace、Clippy和固定Runtime回归运行中，未认领完整验证或新CI。
 
