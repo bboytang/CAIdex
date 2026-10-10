@@ -94,3 +94,28 @@ Gemini comment/下游idle续轮：复用已验idle恢复流程，新增Classic/L
 
 
 源码`47b6b519d69955328218b2b7953794641090de52`/[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38085110360集合+1自动压缩Runtime。Linux/Windows/macOS workspace623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），全部0失败；raw2314/2000/2011行、函数通过名701/694/698，另Secret doctest1。旧Provider/本地与远端手动及非成功/idle/执行审批回归无遗漏或重复，watch与下载exit0。 本专项已完整离线验证；整体F/G审计未完成，商业模型与生产Host未验。
+
+
+## 要求级整体审计恢复点（2026-10-10，整体未完成）
+
+恢复实际main/origin/main=`64176a2edd5b5bedf7f8d4fef00fa0c0113de604`，工作区干净。本轮重新读取V3 F/G、第2节与原V2第14–19节、当前六方法接口/Registry/Router、Custom及兼容API实际端点、Provider/route报告与固定Runtime证据；从GitHub重新读取精确源码47b6b519d69955328218b2b7953794641090de52的[CI38086078152](https://github.com/bboytang/CAIdex/actions/runs/38086078152)元数据、三job全部17steps和完整日志，不沿/tmp旧状态恢复。
+
+以下是门槛状态及证据范围，不将未知或后续阶段项计为已通过：
+
+| 要求 / 权威来源 | 当前可证事实 | 状态与准确剩余 |
+| --- | --- | --- |
+| V3 F：Responses、工具 normalization、opaque、错误/限流 | [Core视图与协议测试](../model/core/tests/responses.rs)、[终态/流测试](../model/core/tests/stream.rs)、[Gateway HTTP](../model/gateway/tests/http.rs)：经典/Lite、工具参数原值/文本及媒体结果、usage缺值、opaque/未知字段、大数字、终态区别；429/HTTP-date、认证/TLS/预算及关闭路径已有回归 | 明确协议范围已离线验；不是每个未知商业端点支持证明 |
+| V2第16节 / V3 G：六方法最终接口 | [ModelProvider](../model/core/src/provider.rs)六方法已定义；八Adapter及ModelRouter实现同一trait，编译/测试通过；Gateway复用注入接口，不执行工具 | 已实现/离线已验；通用Chat Completions Custom是否属本次范围见末行 |
+| V3 G：模型注册及显式路由 | [Registry](../model/core/src/registry.rs)、[Router](../model/core/src/router.rs)校验固定ID/能力/版本报告；目录只归属显式注册Adapter，重复/漂移拒绝，未知路由/方言/streaming拒绝，无自动fallback/推理重试 | Core Router7项及Gateway Router2项三平台通过；不重复实现 |
+| V2第18–19节 / V3 G：能力与兼容等级 | 三态、context/output未知限额、prompt profile、版本/来源及四级兼容性公开；配置/目录不授报告，fixture Full/Compatible拒绝，漂移报告拒绝 | 数据及门控已验；最终GUI/CLI展示归J/P；商业能力未知，不能用模型slug或fixture赋支持 |
+| V3 G：逐模型版本报告 | [16个route/方言报告](CAIdex-Provider-路由离线兼容性报告-V1.md)与[4条切换route报告](CAIdex-模型切换-离线兼容性报告-V1.md)绑定fixture/profile版本、来源与限制 | 上述离线路由有版本化证据；尚无每个真实商业版本报告，不自动挂生产Registry或授LiveRuntime/Full |
+| V3 G：各Provider工具/推理 | 原有Adapter表及各专属文档保留准确配置、native历史绑定、工具/推理/媒体/结构输出转换、Key/POST前明确拒绝范围 | 八个现有Adapter具体范围已实现/离线验；未开放功能不是隐含支持，不能推给任意兼容端点 |
+| V3 G：切换与不透明历史 | 同Provider Classic/Lite明确组合；跨Provider显式文本新线程/foreign reasoning拒绝；本地/远端手动成功、失败/取消及Total采样前自动阈值/实际disk resume均有固定Runtime证据 | 当前离线路径已验；活动轮次边界、持久关联与通用历史适配按V3归H，其他压缩scope/轮末/TokenBudget未由当前路径认领 |
+| V3 F：取消、超时、恢复 | Provider/Gateway guard/Drop/背压、实际socket与permit；OpenAI Classic/Lite Runtime idle、Gemini持续comment下游idle及显式恢复已独立验证 | 当前路径已验；同步SecretStore已开始读取不能强停，但取消后不POST；不承诺所有时序穷举 |
+| V3：固定原生Runtime执行/审批 | 固定0.160.1/d27764b；实际批准执行、取消不执行、拒绝前无副作用、多轮工具/rollout/disk resume，Runtime为执行/审批真源 | 已有离线真实进程证据；生产Host及客户端端到端分别归H/K/O/P/R，fixture不代验 |
+| V3 F真实模型门槛 / G商业报告 | 没有本轮商业Key/API、真实Ollama daemon/模型/性能或商业签名推理证据 | 用户明确全项目完成后自行验证；保持未验，不再询问Key/商业费用，不因该用户顺序停止独立开发 |
+| V2第17节两类Custom / V3第2节接入范围 | 原V2分列Custom OpenAI-compatible与Custom Responses-compatible；V3明确自定义Responses及DeepSeek/Qwen/OpenRouter等兼容API。实际Custom仅CustomResponses，DeepSeek/OpenRouter端点responses、Qwen端点compatible-mode/v1/responses；不存在通用chat/completions Adapter | **范围待澄清，整体未完成**。已向用户询问是否仍要求通用Chat Completions自定义入口；未收到答复前不以现有原生Responses Adapter代验，也不擅自新增/删除最终范围 |
+
+精确CI重新核验：整体completed/success；三平台Core29、Gateway24、Provider533个源码测试函数各出现一次。Provider计数为Custom7/OpenAI11/Anthropic123/Google94/Ollama69/DeepSeek57/Qwen72/OpenRouter100；这些是现有范围回归，并不证明商业支持。Linux/Windows/macOS workspace623/618/622（忽略80/78/78），固定Runtime78/77/77（无忽略），全部0失败；函数通过名701/694/698、raw2314/2000/2011行。全部17steps成功或仅非Linux跳过两项Linux原生凭据步骤，完整下载exit0。
+
+准确下一步：获取Custom入口范围答复；若保留两类，先核实原生Chat Completions请求/回复/流与现有共享传输复用边界，再实施既定Adapter及独立证据；若用户确认当前F/G以V3自定义Responses范围为准，记录该确认后继续未决要求的整体审计。未作出上述范围选择，不能宣布F/G全部完成或跳到H。已有离线验证不重做；纯文档审计不重新触发完整Rust CI。

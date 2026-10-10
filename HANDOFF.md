@@ -2,15 +2,15 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G完成核对恢复点（2026-10-10 自动阈值续轮）
+## 当前F/G完成核对恢复点（2026-10-10 要求级整体审计）
 
-实际恢复main=origin/main=`d4471cbe8f8754b846de7823478a9ce0b59952b1`，开始干净。上一阶段本地非成功验收为实质进展，源码d72c88a/精确CI38085110360完整三平台通过。目标保持F/G全部，真实模型由用户项目最终自验，不转H或标整体完成。
+实际恢复main=origin/main=`64176a2edd5b5bedf7f8d4fef00fa0c0113de604`，开始干净。上一阶段自动阈值四路径为实质进展，源码47b6b51/精确CI38086078152完整三平台成功，无运行中CI/测试。目标仍F/G全部，真实模型按用户顺序由用户项目最终自验；不把ProtocolFixture升级为LiveRuntime/Full，不转H或标整体完成。
 
-本轮重新核实固定d27764b config/mod.rs、models-manager/model_info.rs、session/context_window.rs与session/turn.rs：model_auto_compact_token_limit覆盖模型阈值，默认scope=Total，采样前检查先于新用户输入。新增单用例四路径：Classic/Lite本地摘要与远端V2，测试配置阈值10000、轮末压缩percent=0、首轮合成usage20000，后续usage=0。不调用compact/start；首轮仅1POST无compaction，下一轮自动contextCompaction开始/完成及正常推理共3POST；仅一个实际checkpoint。实际app-server重启/disk resume无POST，显式第三轮正常完成、无再压缩，总4POST/4Key。远端opaque item整值回放；本地摘要完整正文/角色/ID回放，仅模型wire省略Runtime内部summary归属metadata，checkpoint中content_item_kinds与turn_id另验。
+本轮重新读取计划/接口/Registry/Router/当前Adapter端点与报告，新增[要求级审计矩阵](docs/CAIdex-FG-离线验收核对-V1.md)，列出可证范围与真实未验项；重新下载精确CI元数据/三job各17steps/完整日志，Core29、Gateway24、八Provider533源码测试函数每平台各通过一次。workspace Linux/Windows/macOS623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），0失败；通过名701/694/698、raw2314/2000/2011，完整下载exit0。没有源码变更，不重复Rust测试/CI。
 
-首定向仅因本地checkpoint内部metadata与模型wire差异失败；按实际wire精确排除一个已识别字段后四路径1/0/0通过，随后增强归属断言，完整workspace623/0/80、固定Runtime78/0/0、Clippy/fmt/diff、fixture语法和143个Markdown目标/锚点通过；225个非任务tracked文件逐字节保持。源码已提交/push`47b6b519d69955328218b2b7953794641090de52`，精确CI38086078152完整三平台逐名核验通过；main=origin/main，源码提交后干净，当前仅文档收尾。生产实现/审批/依赖/schema未改。下一步按V3 F/G和各Provider/Registry/ModelRouter/report完成要求级审计，不以新增测试数代替整体证明。商业模型/实际daemon和生产Host未验，不自动授LiveRuntime/Full。
+发现材料范围差异需澄清：原V2第17节分列Custom OpenAI-compatible及Custom Responses-compatible；V3第2节明确自定义Responses与DeepSeek/Qwen/OpenRouter等兼容API。实际Custom仅Responses，三个兼容API Adapter也仅Responses端点，不能据此认领通用chat/completions。已用异步问题询问用户是否F/G仍须补通用Chat Completions自定义入口，尚未答复。这个答复决定是否新增Adapter，不是常规开发审批；无权静默选择旧计划或缩小最终方案。其他独立门槛已整理，依赖该答复的实现不启动。
 
-本轮审计预查尚未结论：原V2第17节分别列Custom OpenAI-compatible及Custom Responses-compatible，V3第2节当前明确自定义Responses及DeepSeek/Qwen/OpenRouter等兼容API；实际custom crate仅CustomResponses。下一步核实通用Chat Completions入口的最终计划归属/真实六方法实现与拒绝边界，不将具体Provider的base URL或目录API等同通用Adapter，不预选实现或擅自缩小最终方案。该审计未完成，不能标F/G整体闭环或直接转H。
+本次纯文档收尾范围仅HANDOFF及审计文档；152个Markdown目标/锚点、16route/profile记录及报告schema/source/level通过，227个其他tracked文件与精确CI源码47b6b51逐字节一致，最终diff已检查。本次按既有授权commit/push纯文档，最终HEAD/origin/工作区以实际Git检查为准。准确下一步：获取Custom范围答复后按矩阵继续，若要求两类则核实native Chat Completions协议/共享传输复用边界并实现/验证，不把具体Provider可配置base URL当通用Adapter；若用户确认V3当前范围则记录确认继续整体审计。商业API/真实daemon用户最终自验、Host/UI/完整CLI仍各按V3后续门槛，不用fixture代验。所有既有提交、验证和推送授权/架构边界保持。
 
 ## 既有阶段与用户顺序
 
