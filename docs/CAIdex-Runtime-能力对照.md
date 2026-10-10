@@ -434,3 +434,6 @@ Lite本地摘要新增独立用例，复用旧Classic流程与fixture，实际Li
 新增`real_google_comments_do_not_prevent_runtime_idle_and_explicit_recovery`，Classic/Lite均使用既有Google catalog/profile、明确关闭web及Lite单调用opt-in；只在测试设置Runtime idle500ms和Provider/Gateway各单许可。首POST每100ms仅SSE comment（至少2帧），上游native默认idle90s/total600s，不能以native超时替代下游路径。纯comment不生成投影事件，实际Runtime明确idle失败，未落盘partial assistant/reasoning/tool；真实上游socket关闭、无自动重试。显式同线程新轮次成功，Key/POST恰2次，仅第二次记录完整native回复，证明许可回收。
 
 复用OpenAI idle断言，未改生产keepalive、Gateway或审批；定向1/0/0通过，完整回归与精确CI状态见HANDOFF。本证据验证comment未传到Runtime的现有边界，不承诺keepalive支持、真实商业推理或生产Host。
+
+
+源码`74bc3205ca52c129a8a723624cb453b97fbfccea`/[CI38084218039](https://github.com/bboytang/CAIdex/actions/runs/38084218039)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38083310797集合+1Runtime。Linux/Windows/macOS workspace623/618/622（忽略78/76/76）、固定Runtime76/75/75（无忽略），全部0失败；raw2310/1996/2007行、函数通过名699/692/696，另Secret doctest1。旧Provider、OpenAI idle、远端压缩及审批回归无遗漏/重复，watch和下载exit0。 本专项离线验证完成，商业模型/生产Host未验。

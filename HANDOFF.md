@@ -6,22 +6,13 @@
 
 实际恢复main=origin/main=`4f3fd254c143914e23134e10e9551c327c5581ae`，开始干净。上一轮为实质进展：OpenAI idle与远端压缩非成功测试，源码8c3ecc8/精确CI38083310797完整三平台通过。目标仍F/G全部，不直接转H或标整体完成；真实模型按用户顺序最终自行验，开发端继续离线任务。
 
-本轮检查Gemini transfer/投影/Gateway：native收到chunk重设idle，纯SSE comment不产生投影事件。新增Classic/Lite显式idle profile，固定Runtime idle500ms，Provider/Gateway保留默认90s/600s且各单许可；首POST每100ms持续comment、次POST正常。复用上一轮idle断言流程，验证真实idle失败、无partial assistant/reasoning/tool历史、socket关闭、无重试、2次Key/POST和同线程显式恢复；Gemini额外核对至少2个comment及仅第二次完整native response。定向1/0/0通过。一次测试接线误替换已由编译检查发现并恢复其他Provider，完整workspace623/0/78、固定Runtime76/0/0、Clippy/fmt/diff及fixture语法通过，旧OpenAI idle回归保持；143个Markdown本地目标/锚点有效。尚未提交/CI；当前未提交仅Runtime Harness及合成fixture、三份证据文档、本交接，无生产实现/依赖/schema/审批变化。
+本轮检查Gemini transfer/投影/Gateway：native收到chunk重设idle，纯SSE comment不产生投影事件。新增Classic/Lite显式idle profile，固定Runtime idle500ms，Provider/Gateway保留默认90s/600s且各单许可；首POST每100ms持续comment、次POST正常。复用上一轮idle断言流程，验证真实idle失败、无partial assistant/reasoning/tool历史、socket关闭、无重试、2次Key/POST和同线程显式恢复；Gemini额外核对至少2个comment及仅第二次完整native response。定向1/0/0通过。一次测试接线误替换已由编译检查发现并恢复其他Provider，完整workspace623/0/78、固定Runtime76/0/0、Clippy/fmt/diff及fixture语法通过，旧OpenAI idle回归保持；143个Markdown本地目标/锚点有效。已提交/push源码`74bc3205ca52c129a8a723624cb453b97fbfccea`，精确CI38084218039完整三平台核验成功。当前仅文档收尾，源码提交后main=origin/main、工作区干净；无生产实现/依赖/schema/审批变化。
 
-下一步：commit/push精确三平台CI并逐名核验；然后核实本地compaction失败/取消及自动阈值的既定门槛，并继续要求级F/G完成审计。Registry/Router与版本报告不升级生产能力，不重复已有实现。无需商业Key/API授权，不读用户Key/调用商业API。
+下一步：补本地compaction Classic/Lite失败/取消及磁盘恢复独立测试，复用已验非成功流程，按固定上游compact.rs真实wire及终态核对，不能沿远端v2分支认领；随后核实自动阈值及整体要求级F/G门槛。已只读核实固定d27764b compact.rs失败/中断先返回、成功才replace_compacted_history，stream重试由既有配置控制；自动触发入口为session/turn.rs run_pre_sampling_compact/run_auto_compact与session/context_window.rs，预算/使用量/上下文窗口共同判断，分local与remote V2。不得依赖/tmp源码恢复，可重新读取精确固定提交。Registry/Router与版本报告不升级生产能力，不重复已有实现。无需商业Key/API授权，不读用户Key/调用商业API。
 
-## 前轮已验基线（当前进度以上方恢复点为准）
+## 既有阶段与用户顺序
 
-branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b1`，提交后main=origin/main、工作区干净。本轮开始基线`4931b58663435448139d725ed2414db496a001e4`。当前仅维护交接与验收证据文档；源码无未完成修改或已知失败。最新[CI38081995688](https://github.com/bboytang/CAIdex/actions/runs/38081995688)已完整三平台核验成功；Gemini、Anthropic前置精确CI同样通过。本轮确认的F/G离线缺口均已实施/验证，无运行中测试或CI，本次收尾仅五份证据文档，225个其他tracked文件保持精确CI源码；收尾提交号/HEAD/origin/干净工作区以最终Git检查为准。F/G商业验收仍未完成，目标保持active，按用户确认顺序继续可独立推进的后续阶段。
-
-用户确认真实模型验收在全项目完成后由用户自行执行；当前继续开发端可完成的既定实现/离线验证，不再询问Key/API、不读用户Key或调用商业API。F/G商业门槛仍未验，fixture不授LiveRuntime/Full；这项用户执行顺序允许继续独立后续开发，不能以等待商业授权为由停下。
-
-下一步顺序：
-
-1. 先读HANDOFF/AGENTS，核对实际Git与精确CI。最新源码9b0b48f、CI38081995688已完整验证；本次纯文档收尾HEAD以最终git log -1为准，不能把源码SHA当作收尾HEAD。无源码变更不重复Rust CI。
-2. [离线核对V1](docs/CAIdex-FG-离线验收核对-V1.md)中已确认的Anthropic、Gemini、compaction和逐route报告缺口已完成，不重复实现，不标F/G商业整体完成。
-3. 本条为前轮候选顺序，当前以顶部F/G要求级核对恢复点为准，未批准跳过未核实离线门槛。待F/G离线闭环后按V3推进H Host与持久化：先读既定Host/journal/审批/幂等设计并检查实际仓库，再选择明确未实现的最小阶段。当前workspace没有Host工程，仍只有Runtime facade、model/credentials与开发CLI；尚未选定H第一项实现，不重新设计最终方案。真实模型由用户最终验，生产Host不能用fixture代验。
-4. 每重要步骤更新本文件。代码按定向→相关完整本地→diff→提交/push→精确三平台CI推进；CI核对SHA/三个job/完整步骤与通过名。保持持续授权和边界，常规开发不重新确认。
+用户确认真实模型验收在全项目完成后自行执行。开发端继续既定实现/离线验证，不询问Key/API、不读取用户Key或调用商业API；F/G商业门槛仍未验，fixture不授LiveRuntime/Full。当前先完成F/G要求级审计，未选H实现；后续H–R按V3，生产Host不能由临时Runtime fixture代验。每重要步骤更新本文件，代码沿定向→完整本地→diff→提交/push→精确三平台CI，不重复已完成任务。
 
 ## 本轮已实施与本地验证
 
@@ -32,6 +23,10 @@ branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b
 - 核对、Registry/Router、Classic/Lite切换、跨Provider显式文本交接均沿旧已验实现，不重复。生产执行器/审批、依赖、workflow未改。
 
 ## 精确CI证据
+
+源码`74bc3205ca52c129a8a723624cb453b97fbfccea`/[CI38084218039](https://github.com/bboytang/CAIdex/actions/runs/38084218039)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38083310797集合+1Runtime。Linux/Windows/macOS workspace623/618/622（忽略78/76/76）、固定Runtime76/75/75（无忽略），全部0失败；raw2310/1996/2007行、函数通过名699/692/696，另Secret doctest1。旧Provider、OpenAI idle、远端压缩及审批回归无遗漏/重复，watch和下载exit0。
+
+本次最终143个Markdown本地目标及锚点通过；224个非任务tracked文件与4f3fd25逐字节一致。文档收尾HEAD以实际Git为准，无源码修改不重跑Rust CI。
 
 源码`8c3ecc86d2b212522bb5aeecf26ad8e272a8320f`/[CI38083310797](https://github.com/bboytang/CAIdex/actions/runs/38083310797)整体completed/success，三job各17steps成功或预期跳过。完整日志精确旧CI38081995688通过集合+2Runtime，无遗漏/重复；Linux/Windows/macOS workspace623/618/622（忽略77/75/75），固定Runtime75/74/74（无忽略），全部0失败。raw2308/1994/2005行、函数通过名698/691/695，另Secret doctest1；watch与日志下载exit0。
 
@@ -50,7 +45,7 @@ branch main，最新源码/已push HEAD=`9b0b48f6705c3847449ccd8cf0e1c3761300f4b
 | Classic切换 / 430305d5a0ae323b9d739bc6db05ae2dfc30c3bf | [38069700504](https://github.com/bboytang/CAIdex/actions/runs/38069700504) | 619/614/618 | 67/66/66 | 已完整核验 |
 | Registry/Router / e2f3039c6c4f82898f2a30246e6bd1981ffec671 | [38063184946](https://github.com/bboytang/CAIdex/actions/runs/38063184946) | 619/614/618 | 64/63/63 | 已完整核验 |
 
-最新源码压缩CI：Linux/Windows/macOS job114300649493/114300649731/114300649671；raw2304/1990/2001行、函数通过名696/689/693（另Secret doctest1），workspace ignored75/73/73、失败0，Runtime73/72/72（0失败/忽略）；完整集合精确Gemini旧CI+2、533个Provider函数保持。watch与全部下载exit0，20份Markdown/140本地链接/22锚点检查通过，215个其他tracked文件保持恢复基线，架构/授权正文原样保持。
+前轮压缩CI：Linux/Windows/macOS job114300649493/114300649731/114300649671；raw2304/1990/2001行、函数通过名696/689/693（另Secret doctest1），workspace ignored75/73/73、失败0，Runtime73/72/72（0失败/忽略）；完整集合精确Gemini旧CI+2、533个Provider函数保持。watch与全部下载exit0，20份Markdown/140本地链接/22锚点检查通过，215个其他tracked文件保持恢复基线，架构/授权正文原样保持。
 
 Gemini已验：Linux/Windows/macOS job114299375039/114299374956/114299375049；raw2300/1986/1997行、函数通过名694/687/691（另Secret doctest1），workspace ignored73/71/71、失败0。Google94、Anthropic123、Custom7/OpenAI11/Ollama69/DeepSeek57/Qwen72/OpenRouter100；所有旧通过名保持，新增2名每平台一次，Runtime集合保持。Anthropic上轮job114298181143/114298181177/114298180978；raw2298/1984/1995行，workspace ignored73/71/71、失败0。
 
@@ -75,7 +70,7 @@ Gemini已验：Linux/Windows/macOS job114299375039/114299374956/114299375049；r
 - H的持久journal、快照/sequence、结果未知与提交幂等、审批多端竞争、活动轮次模型边界及跨Provider持久关联/一般历史适配待实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
 - I账户/PostgreSQL/Memory/同步/邮件和J–O客户端、L SSH、P完整CLI、Q Relay、R实际平台/终端/认证/多端验收仍待。apps/cli现有doctor、credentials status/set/remove、version/help，不冒称CLI-01～34/账户55项/UI16项完成。
 - 未开放语义仍明确拒绝：各Provider差异见验收/route报告；未知Runtime扩展不保证类型化持久化全量往返。native载体是JSON一致性门控而非签名真实性/来源认证，backend配置不是实际endpoint证明；完整前缀二次增长/预算、文本终态缓冲保持。
-- compaction手动正常与远端失败/取消已离线验证；本地失败/取消、自动阈值、无限历史或生产恢复未验。同步SecretStore开始后不能强停，仅保证取消后不POST；OpenAI Classic/Lite Runtime下游idle已验，Gemini纯comment时序未专门验证。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
+- compaction手动正常与远端失败/取消已离线验证；本地失败/取消、自动阈值、无限历史或生产恢复未验。同步SecretStore开始后不能强停，仅保证取消后不POST；OpenAI Classic/Lite Runtime下游idle已验，Gemini Classic/Lite纯comment下游idle时序已专门离线验证，但不承诺跨Gateway keepalive支持。jsonschema0.58.6有离线字节/regex限额但无硬CPU抢占，H隔离待验。
 - 无当前权限/推送阻塞或已知失败；旧自动审批拒绝已由持续授权解除，不能当成当前阻塞。
 
 ## 代码与设计入口

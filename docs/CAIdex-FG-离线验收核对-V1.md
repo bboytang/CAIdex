@@ -79,3 +79,6 @@
 
 
 Gemini comment/下游idle续轮：复用已验idle恢复流程，新增Classic/Lite纯comment持续输入专项，定向1/0/0通过；当前完整回归/精确CI状态见HANDOFF。该原明确证据缺口已实施，不改变生产行为；后续核对本地compaction非成功、自动阈值及整体要求。真实模型仍由用户最后验收。
+
+
+源码`74bc3205ca52c129a8a723624cb453b97fbfccea`/[CI38084218039](https://github.com/bboytang/CAIdex/actions/runs/38084218039)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38083310797集合+1Runtime。Linux/Windows/macOS workspace623/618/622（忽略78/76/76）、固定Runtime76/75/75（无忽略），全部0失败；raw2310/1996/2007行、函数通过名699/692/696，另Secret doctest1。旧Provider、OpenAI idle、远端压缩及审批回归无遗漏/重复，watch和下载exit0。 本专项离线验证完成，商业模型/生产Host未验。

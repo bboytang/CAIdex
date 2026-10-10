@@ -340,3 +340,6 @@ STOP分类仅将非thought的functionCall视为可执行工具调用。thought-o
 ## 下游固定Runtime idle专项（2026-10-10续轮）
 
 历史段落中的下游idle待验范围现在新增Classic/Lite独立定向证据：实际Gemini原生comment持续输入时，下游Runtime idle失败，关闭上游，无自动重试、无partial assistant/reasoning/tool历史；同线程显式恢复成功，各层单许可回收。定向1/0/0通过，详[Runtime能力对照](CAIdex-Runtime-能力对照.md)，完整回归/精确CI状态见[HANDOFF](../HANDOFF.md)。生产纯comment仍不产生投影事件，不改为跨Gateway keepalive支持，不授商业Full。
+
+
+源码`74bc3205ca52c129a8a723624cb453b97fbfccea`/[CI38084218039](https://github.com/bboytang/CAIdex/actions/runs/38084218039)整体completed/success，三job各17steps成功或预期跳过，完整日志精确旧CI38083310797集合+1Runtime。Linux/Windows/macOS workspace623/618/622（忽略78/76/76）、固定Runtime76/75/75（无忽略），全部0失败；raw2310/1996/2007行、函数通过名699/692/696，另Secret doctest1。旧Provider、OpenAI idle、远端压缩及审批回归无遗漏/重复，watch和下载exit0。 本专项离线验证完成，商业模型/生产Host未验。
