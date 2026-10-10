@@ -2,6 +2,7 @@
 mod deepseek;
 mod openrouter;
 mod qwen;
+mod switching;
 
 use std::{
     collections::HashMap,
@@ -89,6 +90,7 @@ impl Harness {
     async fn start(mode: &str) -> Self {
         let through_gateway = mode.starts_with("gateway-");
         let fixture_mode = match mode {
+            "gateway-model-switching" => "wire-classic",
             "gateway-openrouter-classic"
             | "gateway-openrouter-context-classic"
             | "gateway-openrouter-native-tools-classic"
@@ -289,7 +291,7 @@ impl Harness {
                     "qwen"
                 } else if deepseek {
                     "deepseek"
-                } else if native_openai {
+                } else if native_openai || mode == "gateway-model-switching" {
                     "openai"
                 } else if native_anthropic {
                     "anthropic"
@@ -707,6 +709,48 @@ impl Harness {
                 Some(
                     caidex_model_gateway::start_with_provider(
                         provider,
+                        broker.redactor(),
+                        Limits::default(),
+                    )
+                    .await
+                    .unwrap(),
+                )
+            } else if mode == "gateway-model-switching" {
+                use caidex_model_core::{ModelMetadata, ModelProvider, ModelRouter};
+                use caidex_provider_openai::{OpenAiConfig, OpenAiProvider};
+                let models = ["gpt-5.5", "gpt-5.1-codex"]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, id)| {
+                        ModelMetadata::configured(
+                            id.into(),
+                            format!("native-switch-{index}"),
+                            vec![ResponsesDialect::Classic],
+                        )
+                    })
+                    .collect();
+                let provider: Arc<dyn ModelProvider> = Arc::new(
+                    OpenAiProvider::new(
+                        OpenAiConfig::new(credential)
+                            .unwrap()
+                            .with_base_url(&format!("http://127.0.0.1:{port}/v1"))
+                            .unwrap(),
+                        models,
+                        broker.clone(),
+                        Limits::default(),
+                    )
+                    .unwrap(),
+                );
+                let router = ModelRouter::new(
+                    ["gpt-5.5", "gpt-5.1-codex"]
+                        .into_iter()
+                        .map(|id| (id.into(), provider.clone()))
+                        .collect(),
+                )
+                .unwrap();
+                Some(
+                    caidex_model_gateway::start_with_provider(
+                        Arc::new(router),
                         broker.redactor(),
                         Limits::default(),
                     )

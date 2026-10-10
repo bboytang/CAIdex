@@ -1,8 +1,14 @@
 # CAIdex 开发交接
 
-更新：2026-10-10，显式多Provider ModelRouter四步骤完成，新增9项；精确HEAD e2f3039/CI38063184946三平台workspace619/614/618、固定Runtime64/63/63已核验。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
+更新：2026-10-10，固定Runtime模型切换步骤2完成，新增3项离线定向通过；ModelRouter上一基线e2f3039/CI38063184946三平台已验，完整本地workspace619/0/69、Runtime67/0/0与Clippy/fmt/diff已验，待精确三平台CI。正式项目仅 `/root/projects/CAIdex-v1.0`；废弃 `/root/projects/CAIdex` 不修改。
 
 ## 当前阶段与恢复点
+
+模型切换步骤3完成：workspace619/0/69（通过名保持，新3项ignored等待显式执行）、全部固定Runtime67/0/0精确旧64+3；Clippy全workspace/all-targets-D warnings、fmt/diff和18份Markdown/103链接/22锚点通过。220个其他tracked文件逐字不变，旧Runtime测试正文保持；Cargo.lock/依赖、所有生产源码、现有fixture/workflow不变。最终diff已检查，范围仅Harness路由模式/新switching模块与三文档；下一步按持续授权提交/push并核验精确三平台CI，尚无本次CI证据。
+
+模型切换步骤2完成：新增switching模块3项真实固定Runtime离线测试全通过：同OpenAI Adapter两个显式公共模型经ModelRouter在完成轮次后切换，后续轮次及disk restart保留模型/既有文本与opaque reasoning；fork model覆盖返回forkedFromId且创建不推理，分支继承历史、父线程模型/历史隔离；未知模型失败Key/POST零访问，显式恢复原线程成功。首次编译缺Custom直接依赖，改为复用已有OpenAI dev依赖后3/0/0；无生产/依赖/fixture/执行器/审批变更。当前main未提交Harness模式/独立模块与文档，下一步完整workspace/Runtime/Clippy/fmt/diff，尚无本轮完整或CI证据；只证明已验离线同Provider组合，不授商业Full/跨Provider迁移/Host切换。
+
+模型切换步骤1完成：main=origin/main=05717ea且起始干净。实际固定0.160.1 schema确认turn/start.model覆盖本轮与后续轮次，thread/fork支持model与forkedFromId；现有普通fork未证明模型切换。新增仅Runtime测试Harness模式/独立switching模块及三文档，复用已有OpenAI Adapter测试依赖、ModelRouter、Gateway与既有wire-classic fixture和disk restart helper；无依赖/生产代码/执行器/审批修改。验证同Provider两显式离线组合的轮次边界覆盖与重启、fork关联/父线程隔离、未知模型Key/POST零访问及显式恢复。三个新测试已编写，定向运行中，未认领通过；跨Provider适配/生产Host/商业Live/Full未验。下一步查看定向结果，按实际行为校验，不以架构要求猜测Runtime恢复政策。
 
 模型路由步骤4已完成：源码提交`c0fffad673717366610144d2d0d8e940ffff681b`，授权交接提交/精确CI HEAD `e2f3039c6c4f82898f2a30246e6bd1981ffec671`已push。[CI38063184946](https://github.com/bboytang/CAIdex/actions/runs/38063184946)整体completed/success，linux job114245430482、windows job114245430661、macos job114245430672各17steps成功或条件跳过。workspace619/0/66、614/0/64、618/0/64；固定Runtime64/0/0、63/0/0、63/0/0。完整raw日志2282/1968/1979行，通过名684/677/681，精确旧CI38057298047+9，无遗漏/重复；新增Core7/Gateway2与OpenRouter100/Qwen72/DeepSeek57每名每平台一次，旧Runtime全部保持。watch和三份完整日志下载exit0，checker/result在`/tmp/caidex-model-router/`。用户2026-10-10已明确授权本次公开main推送，审批阻塞已解除。收尾仅HANDOFF/README/Gateway三文档，221个其他tracked文件逐字保持精确已验HEAD；最新文档提交与branch/工作区以git log/status为准。
 
