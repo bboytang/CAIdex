@@ -2,17 +2,15 @@
 
 更新：2026-10-10。Final Architecture First，继续既定V3；正式目录`/root/projects/CAIdex-v1.0`，废弃目录不修改。恢复依据为仓库、文档和精确CI，不依赖旧会话记忆或/tmp日志。
 
-## 当前F/G完成核对恢复点（2026-10-10 要求级整体审计）
+## 当前F/G恢复点：Custom范围待答，阻塞复核已满足阈值
 
-本轮恢复main=origin/main=`ec539e10ec05c906769f17715dee74da51bb9b3a`，开始干净；上一轮要求级审计已提交/push。上一阶段自动阈值四路径为实质进展，源码47b6b51/精确CI38086078152完整三平台成功，无运行中CI/测试。目标仍F/G全部，真实模型按用户顺序由用户项目最终自验；不把ProtocolFixture升级为LiveRuntime/Full，不转H或标整体完成。
+2026-10-10本轮实际恢复branch main，main=origin/main=`3457270e5be8792a178dba3c5e991000ac85d7c7`，工作区干净。最新源码仍47b6b519d69955328218b2b7953794641090de52，精确CI38086078152已完整三平台核验成功；其后仅审计/文档状态修正，无运行中测试或CI，不重复已通过测试。已验细节见[要求级审计矩阵](docs/CAIdex-FG-离线验收核对-V1.md)和下方精确证据；F/G整体未完成，不转H或授LiveRuntime/Full。
 
-上一轮已读取计划/接口/Registry/Router/当前Adapter端点与报告，新增[要求级审计矩阵](docs/CAIdex-FG-离线验收核对-V1.md)，列出可证范围与真实未验项；上一轮重新下载精确CI元数据/三job各17steps/完整日志，Core29、Gateway24、八Provider533源码测试函数每平台各通过一次。workspace Linux/Windows/macOS623/618/622（忽略80/78/78）、固定Runtime78/77/77（无忽略），0失败；通过名701/694/698、raw2314/2000/2011，完整下载exit0。没有源码变更，不重复Rust测试/CI。
+当前唯一影响继续F/G实现的范围未决：原V2第17节分列Custom OpenAI-compatible及Custom Responses-compatible；V3第2节只明确自定义Responses与DeepSeek/Qwen/OpenRouter等兼容API。仓库Custom及这三个兼容API Adapter均为Responses端点，不存在通用chat/completions Adapter。已向用户提出两选一范围澄清，尚无答复。自动goal续轮不是答案，不能擅自删除最终范围或新增Adapter；这个问题决定实现内容，不是常规提交/推送审批。真实商业API/实际daemon验收按用户确认在项目最终由用户执行，不能以需要商业Key为阻塞借口。
 
-发现材料范围差异需澄清：原V2第17节分列Custom OpenAI-compatible及Custom Responses-compatible；V3第2节明确自定义Responses与DeepSeek/Qwen/OpenRouter等兼容API。实际Custom仅Responses，三个兼容API Adapter也仅Responses端点，不能据此认领通用chat/completions。已用异步问题询问用户是否F/G仍须补通用Chat Completions自定义入口，尚未答复。这个答复决定是否新增Adapter，不是常规开发审批；无权静默选择旧计划或缩小最终方案。其他独立门槛已整理，依赖该答复的实现不启动。
+阻塞审计：ec539e1审计轮首次提出、3457270文档修正轮复核、本轮再次复核，相同范围问题连续三个目标轮次未答；前两轮已完成可独立审计与文档冲突修正，当前没有其他明确且可独立补齐的F/G任务。目标应标blocked等待范围答案，不标complete或自行paused。本轮只维护此准确停止恢复点，无源码/新测试/新CI。原架构、凭据与持续提交/push授权保持。
 
-本轮独立复核发现并修正文档状态冲突：Gateway开头仍将已验Adapter列待接入，旧核对段落仍指向H；更新Gateway当前摘要，基础wire表/接入顺序标历史，旧核对恢复点指向现要求级矩阵，不重新规划或重做已完成任务。无新源码/测试/CI；当前仅三个文档修改。Custom范围异步问题仍无答复，本轮自动goal续接不是范围确认，依赖实现不启动。
-
-本次纯文档收尾范围仅HANDOFF、审计文档与Gateway文档；本轮153个Markdown目标/锚点、16route/profile记录及报告schema/source/level通过，本轮226个其他tracked文件与精确CI源码47b6b51逐字节一致，最终diff已检查。本次按既有授权commit/push纯文档，最终HEAD/origin/工作区以实际Git检查为准。准确下一步：获取Custom范围答复后按矩阵继续，若要求两类则核实native Chat Completions协议/共享传输复用边界并实现/验证，不把具体Provider可配置base URL当通用Adapter；若用户确认V3当前范围则记录确认继续整体审计。商业API/真实daemon用户最终自验、Host/UI/完整CLI仍各按V3后续门槛，不用fixture代验。所有既有提交、验证和推送授权/架构边界保持。
+准确恢复动作：用户答复并恢复目标后，重新读取本文件/AGENTS及实际Git。若保留两类Custom，核实native Chat Completions请求/回复/SSE及现有共享传输复用边界，再实施Adapter和独立离线证据；若用户确认当前F/G以V3明确Custom Responses为范围，记录该确认后继续要求级完成审计。不得用现有Responses Adapter、可配置base URL或目录API代验Chat Completions；不得用fixture代真实模型或生产Host。最终收尾提交/HEAD/origin/工作区以实际Git检查为准。
 
 ## 既有阶段与用户顺序
 
