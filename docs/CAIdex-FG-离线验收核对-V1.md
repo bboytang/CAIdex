@@ -35,7 +35,7 @@
 
 | 项目 | 实际源码/测试核对结果 | 动作 |
 | --- | --- | --- |
-| Gemini单调用thought豁免/无tools/未opt-in none | [provider测试](../model/providers/google/tests/http/provider.rs)已有opt-in auto/none/多调用/MAX_TOKENS；缺上述三个专项。[请求编译器](../model/providers/google/src/request.rs)已有0/1/无限分支，[数量校验](../model/providers/google/src/provider.rs)排除thought调用 | 本次新增两项回归覆盖三个分支，JSON/SSE×Classic/Lite本地已验；实现未改动，精确新CI待验 |
+| Gemini单调用thought豁免/无tools/未opt-in none | [provider测试](../model/providers/google/tests/http/provider.rs)已有opt-in auto/none/多调用/MAX_TOKENS；缺上述三个专项。[请求编译器](../model/providers/google/src/request.rs)已有0/1/无限分支，[数量校验](../model/providers/google/src/provider.rs)排除thought调用 | 本次新增两项回归覆盖三个分支，JSON/SSE×Classic/Lite本地已验；实现未改动，精确新CI三平台已验 |
 | Gemini重复/部分SSE usage | [history测试](../model/providers/google/tests/history.rs)已有专项更新与raw保留 | 旧缺口已覆盖，不重复补 |
 | Gemini缺prompt的usage下界、thought-only call文本phase | normalized_usage提前返回null；outcome看到任意functionCall即ToolCall，投影phase沿outcome | 仍有代码边界，后续分别独立复现/定向修复；本次不夹带修改 |
 | Gemini整组载体互换/满槽取消 | 现有组内编辑/错model/request拒绝；投影取消测试先消费到text，native满槽已有deadline测试 | 精确整组互换及满槽cancel/Drop仍未专项覆盖，后续补真实入口测试；不是断言已存在漏洞 |
@@ -52,6 +52,12 @@
 1. 在既有 `model/providers/google/tests/http/provider.rs` 增加thought调用不占可执行单调用额度的正例；JSON/SSE×Classic/Lite，完整native history往返，只有一个真实function_call交付。
 2. 增加无tools/未opt-in none的零调用额度负例；JSON/SSE×Classic/Lite，负例502且不交付call/载体/成功终态，认证与原生POST各一次。
 3. 定向→Google完整→workspace与固定Runtime完整→Clippy/fmt→最终diff；不修改生产实现/依赖/fixture/workflow，除非新测试实际暴露既有缺陷。
-4. 本地通过后按已有授权commit/push main；核对精确源码三平台CI全部job/步骤/完整测试名，更新本报告、Provider文档及HANDOFF。本地已验：定向3/0/0（含旧单调用测试）、Google92/0/0、workspace621/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff、固定schema。workspace函数通过名精确旧CI+2，Runtime通过名保持，无遗漏/重复。新精确CI待收尾。首次沙箱拒绝loopback监听，允许本地socket的验证环境复跑通过；不是生产缺陷RED。
+4. 本地通过后按已有授权commit/push main；核对精确源码三平台CI全部job/步骤/完整测试名，更新本报告、Provider文档及HANDOFF。本地已验：定向3/0/0（含旧单调用测试）、Google92/0/0、workspace621/0/73、固定Runtime71/0/0、Clippy workspace/all-targets-D warnings、fmt/diff、固定schema。workspace函数通过名精确旧CI+2，Runtime通过名保持，无遗漏/重复。精确源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)三平台已验。首次沙箱拒绝loopback监听，允许本地socket的验证环境复跑通过；不是生产缺陷RED。
 
 固定Runtime本会话首次缺少项目二进制，71项NotFound；按CI安装隔离0.160.1、版本/schema校验后重跑完整通过，未使用全局0.162.1。唯一独立只读审查无Critical/Important，文档中多余的“无调用正例”承诺已删除。225个其他tracked文件保持恢复基线；旧Provider/Runtime用例正文未改。本次只有本核对文档、Gemini验收、Google测试与HANDOFF变更。
+
+## 本次完成证据与准确下一步
+
+源码`d9b0d1a49d2aa78822d4110d07a5dc91a22e0800`/[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)整体completed/success；三job各17steps成功或条件跳过，完整日志逐名核验通过。Linux/Windows/macOS workspace621/616/620（0失败、忽略73/71/71）、固定Runtime71/70/70（0失败/忽略）；Google92逐名每平台一次。全通过名693/686/690精确旧基线CI+2，无旧名遗漏/重复；raw日志2298/1984/1995行，watch与下载exit0。仅Google新增2测试，其余Adapter及固定Runtime保持。上述执行计划已经完成；纯文档收尾不重复Rust CI。
+
+下一步：先补Anthropic既有真实Runtime用例的重启第三轮内容、完整Lite结果及落盘原文精确断言（尚未实施），再逐项处理表中Gemini usage下界/thought-only phase/整组互换/满槽cancel、各route版本化报告索引等缺口。商业真实模型与生产Host仍未验，F/G不标整体完成，不跳H。

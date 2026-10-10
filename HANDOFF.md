@@ -4,23 +4,39 @@
 
 ## 当前状态与第一步
 
-本会话恢复基线为 main=origin/main=`a9502451bbe392a5fd00bd39e073caef17c20960`；最新已验源码仍为 `3a57bcbfb8f4aa942019c081404b6833daa57642`。本次F/G核对与Gemini专项测试尚未提交；不能将恢复基线的CI用作新增源码三平台证据。
+本会话恢复基线 `a9502451bbe392a5fd00bd39e073caef17c20960` 与用户交接一致，开始时 main=origin/main、工作区干净。最新源码 `d9b0d1a49d2aa78822d4110d07a5dc91a22e0800` 已提交/push；[CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190) 已完整三平台核验成功。本次重要步骤已完成，纯文档收尾提交号以最终 `git log -1` 为准；不能把恢复基线或源码SHA当作收尾HEAD。
 
-本会话已核实 main=origin/main=`a9502451bbe392a5fd00bd39e073caef17c20960`，开始时工作区干净。上一任务Lite切换与版本化报告保持完成。本次已核对V3 F/G门槛、Registry/Router、各Provider与Runtime的交接缺口，见[离线核对V1](docs/CAIdex-FG-离线验收核对-V1.md)。重新下载精确CI38072098372三个完整日志，确认全部job/steps、八Adapter529测试名三平台通过。
+已完成[离线门槛核对V1](docs/CAIdex-FG-离线验收核对-V1.md)：对照V3 F/G、Registry/Router、八Adapter和Runtime，区分已实现/已验/明确拒绝/后续阶段/真实API门槛；重新下载旧精确CI三个日志，529个Adapter测试名三平台保持。Lite切换/报告及既有Router不重复实现。
 
-当前选定任务：补Gemini单调用thought豁免、无tools、未opt-in none三个缺失专项的JSON/SSE×Classic/Lite验收；新增两个测试已实现，定向3/0/0通过（含旧测试）；首次沙箱拒绝loopback监听，允许socket环境复跑通过，非生产缺陷RED。Google92/0/0、workspace621/0/73、Clippy/fmt/diff通过，完整固定Runtime71/0/0通过；workspace通过名精确旧CI+2、Runtime通过名保持，无遗漏/重复。固定Runtime首次因项目二进制缺失71项NotFound，按CI安装隔离0.160.1并通过版本/schema校验后重跑已恢复，全局0.162.1未用于验收。唯一独立只读审查无Critical/Important，计划多余承诺已修。未提交：Google测试、Google验收、离线核对V1与HANDOFF；CI尚未启动。生产实现/依赖/Runtime固定版本不改；F/G仍未整体完成。
+核对后补齐Gemini单调用thought豁免、无tools、未opt-in none三个专项，新增2个HTTP/Provider测试覆盖JSON/SSE×Classic/Lite。生产源码、固定Runtime、fixture、依赖与workflow未改；225个其他tracked文件保持恢复基线。定向3/0/0（含旧测试）、Google92/0/0、workspace621/0/73、固定Runtime71/0/0、Clippy全workspace/all-targets-D warnings、fmt/diff与schema指纹通过；新CI全部通过名精确旧CI+2、旧Runtime保持。唯一独立只读审查无Critical/Important，文档多余承诺已修。
+
+**没有未完成代码、运行中测试/CI、当前已知失败或推送阻塞。** 本次纯文档收尾仅涉及HANDOFF、Gemini验收及离线核对V1；最终HEAD/origin与干净工作区以提交后的检查为准。F/G仍未整体完成；下一步先按核对表补Anthropic现有Runtime用例的重启第三轮内容及完整Lite结果/落盘精确断言，再处理其他明确缺口；尚未实施这些下一项。商业API/LiveRuntime/Full与生产Host仍未验，不从fixture升级Registry能力。
 
 新 Codex 顺序：
 
 1. 先读本文件、[AGENTS](AGENTS.md)，运行 `git status --short --branch`、`git log -4 --oneline`、`git rev-parse HEAD origin/main`，核实恢复点和用户新改动。
 2. 读[实施计划 V3](docs/CAIdex-实施计划-V3.md)、[Gateway验收](docs/CAIdex-Model-Gateway-设计与验收.md)、[模型切换报告V1](docs/CAIdex-模型切换-离线兼容性报告-V1.md)，对照 Registry/Router、Runtime切换测试及各Provider验收。
-3. 本次核对已记录到离线核对V1；先完成Gemini三个单调用分支专项，再按表继续Anthropic精确恢复/结果断言及其余已确认缺口。每模型商业报告/真实API、生产Host仍未验，不自动升级Registry能力。
+3. 本次核对与Gemini三个单调用分支专项已完成；下一步补Anthropic现有Runtime精确恢复/结果断言，再按表处理Gemini usage下界、thought-only文本phase、整组载体互换/满槽cancel等已确认缺口。每模型商业报告/真实API、生产Host仍未验，不自动升级Registry能力。
 4. 每重要步骤更新本文件。代码改动按定向→相关完整本地→最终diff→提交/push→精确源码三平台CI推进；CI必须核对实际SHA、3jobs/步骤、完整日志及测试名，不仅查看绿色状态。纯文档无需重复Rust CI。
 5. 商业API/真实Key、生产Host持久关联/通用历史适配、客户端等另有边界。不能把这些缺口伪装成离线完成；满足V3前置门槛后按 H→I→J/K→L→M/N/O→P→Q→R，不据fixture跳H。
 
 ## 最新已验证证据
 
-最新源码 `3a57bcbfb8f4aa942019c081404b6833daa57642` / [CI38072098372](https://github.com/bboytang/CAIdex/actions/runs/38072098372)：整体completed/success，每job17steps成功或条件跳过。
+最新源码 `d9b0d1a49d2aa78822d4110d07a5dc91a22e0800` / [CI38079737190](https://github.com/bboytang/CAIdex/actions/runs/38079737190)：整体completed/success，三个job各17steps成功或条件跳过，完整日志下载exit0、watch exit0，精确SHA/步骤/通过名核对通过。
+
+| 平台 / job | workspace 通过/失败/忽略 | 固定Runtime 通过/失败/忽略 | 完整raw行数 / 通过名数 |
+| --- | --- | --- | --- |
+| Linux / 114293993979 | 621/0/73 | 71/0/0 | 2298 / 693 |
+| Windows / 114293994016 | 616/0/71 | 70/0/0 | 1984 / 686 |
+| macOS / 114293993905 | 620/0/71 | 70/0/0 | 1995 / 690 |
+
+每平台Google92、Anthropic123、Custom7/OpenAI11/Ollama69/DeepSeek57/Qwen72/OpenRouter100逐名一次；新增2名各一次、旧workspace/Runtime集合不漏不重复，Linux原生凭据及Secret编译失败doctest保持。离线fixture不证明商业模型或生产Host。19份Markdown/124本地链接/22锚点与最终diff检查通过。
+
+本会话环境问题已解决：定向首次因沙箱禁止loopback监听失败，允许socket环境复跑通过；固定Runtime首次因项目二进制缺失71项NotFound。按CI安装项目隔离0.160.1、版本/schema校验后完整71/0/0；全局0.162.1未用于验收。不是生产代码缺陷RED，无当前已知测试失败。
+
+### 前置Lite切换证据（保持）
+
+前置源码 `3a57bcbfb8f4aa942019c081404b6833daa57642` / [CI38072098372](https://github.com/bboytang/CAIdex/actions/runs/38072098372)：整体completed/success，每job17steps成功或条件跳过。
 
 | 平台 / job | workspace 通过/失败/忽略 | 固定Runtime 通过/失败/忽略 | 完整raw行数 / 通过名数 |
 | --- | --- | --- | --- |
@@ -79,7 +95,7 @@
 - F/G尚未整体完成：商业真实模型版本/兼容性/限额/性能与授权API验证待执行；版本化fixture报告不代表商业Full。Registry校验报告结构及来源范围，不认证报告真实性；公开目录/配置不自动赋予支持能力。
 - 生产Host线程持久关联、轮次边界约束、通用历史适配尚未实现。H持久Host/SQLite journal/竞争审批/幂等恢复尚未实现；不要把测试Harness当生产Host。
 - I账户/PostgreSQL/Memory/同步/邮件及J–O客户端、L SSH、P完整CLI、Q Relay、R真实平台/多端/性能验收待实现。`apps/cli`当前只有doctor、credentials status/set/remove、version/help；CLI-01～34、账户55项、UI16项仍待实现/未执行，文档归档不等于功能完成。
-- 各Provider文档中的既有覆盖空缺仍需核实：Gemini thought-call/无tools/none、整组载体互换、projection/满槽取消、整数/空ID、usage/thought-only；Anthropic重启第三轮/完整Lite custom结果等。没有在此次Lite任务修复这些项目，也未确认每项都仍缺失；接手应对实际当前代码/测试核实，避免重复或无关重构。
+- 本次已核实交接点名的覆盖缺口：Gemini thought-call/无tools/none已补并三平台验收；重复/部分SSE usage此前已覆盖。剩余Gemini整组载体互换、满槽cancel/Drop、缺prompt的usage下界及thought-only文本phase；canonical整数/显式空ID仍为既定兼容限制。Anthropic重启第三轮内容及完整Lite结果/落盘精确断言尚未补。具体范围见离线核对V1，不重复旧任务，不把结构校验当历史真实性认证。
 - native载体非加密/来源认证，backend配置不是实际服务端endpoint证明；文本终态缓冲、完整前缀二次增长及预算限制保留。context须执行端显式model/backend支持声明，不按slug猜测。Qwen自动截断风险待真实模型验收。
 - 同步SecretStore开始后不能强停，仅保证取消后不POST；Runtime下游idle单独未验。jsonschema0.58.6离线retriever有字节/regex限制但无硬CPU抢占，H隔离待验。不自动重试坏结果/未知操作。
 - 当前无活动阻塞。此前main推送自动审批拒绝已因用户明确“授权OpenRouter推送main并运行CI”及“你重新推送，我给你授权”解除；后续ModelRouter/切换及文档推送成功，不能把旧拒绝记作当前阻塞。
@@ -95,7 +111,7 @@
 ## 环境、复验与操作授权
 
 - repo origin `https://github.com/bboytang/CAIdex.git`，branch main。Git与公开CI可重新读取，临时日志不是交接必要条件。
-- 锁定Rust1.99.0（rust-toolchain.toml）、Codex0.160.1/固定commit；Node先按环境核实。本机2026-10-10磁盘剩余3.5GB，执行前重查 `df -h .`，不主动清缓存/用户数据。
+- 锁定Rust1.99.0（rust-toolchain.toml）、Codex0.160.1/固定commit；Node22.23.3已核实，项目.tools/codex固定0.160.1已安装（不改全局0.162.1）。本机2026-10-10磁盘剩余约1.9GB，执行前重查 `df -h .`，不主动清缓存/用户数据。
 - 本地loopback/固定Runtime测试使用允许启动本地进程/socket的环境及 `TMPDIR=/var/tmp`；常规沙箱限制时按平台审批机制执行。保留 `/tmp/.git`、target、已有测试成果，不做reset --hard/clean -fdx、历史重写或全局凭据修改。
 - 已有用户持续授权本地验证后commit/push main和源码三平台CI；纯文档不跑完整Rust CI。自动审批实际拒绝时解释具体原因，不能绕过。未授权读取用户Key、调用商业API/邮件、生产部署、模型下载或购买服务；授权离线合成fixture/隔离临时marker不扩大到这些操作。
 - 推送沿已验证命令：`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`。不输出任何秘密，推送后核对HEAD/origin及工作区。
@@ -123,4 +139,6 @@ schema/doctor依CI使用固定二进制：`scripts/verify-codex-schema.mjs`、`c
 
 ## 本次F/G核对与Gemini专项恢复点
 
-已完成离线门槛核对及两个测试/三个分支的本地完整验证，未改生产源码/依赖/fixture/workflow；225个其他tracked文件与a950245逐字保持，新增核对文档及其余三份改动的本地链接/最终diff检查通过。下一动作：提交/push当前四文件，精确新源码三平台CI逐job/step/完整名核验后更新文档；不能用旧3a57bcb CI代验新增测试。完整日志是本会话新生成的/tmp/caidex-fg-audit-20261010/{focused-allowed,google,workspace,runtime,clippy,schema}.log，持续恢复以仓库文档/精确CI为准，不要求/tmp保留。
+核对、两个测试/三个分支的本地与精确三平台CI已完成，源码d9b0d1a已push；本次收尾仅三份文档，226个其他tracked文件逐字保持精确CI源码；下一步Anthropic断言尚未实施，不重跑无变更源码Rust CI。相关日志是本会话新生成的/tmp/caidex-fg-audit-20261010/{focused-allowed,google,workspace,runtime,clippy,schema,ci-watch,ci-linux,ci-windows,ci-macos}.log，checker为check_evidence.py/check_status.py；持续恢复以本仓库与精确CI为准，不要求/tmp保留。上次交接a950245记录作为历史，不覆盖本次状态。
+
+下一项代码入口：runtime/bridge/tests/real_runtime.rs 的 real_classic_native_anthropic_discovers_and_executes_mcp_tools（重启第四POST补前一完整原生回复组）、real_lite_native_anthropic_code_mode_executes_tool_and_replays_result（canonical/disk custom结果与native tool_result完整逐值对照）。先读fixture实际格式与既有断言，定向复现，再决定是否只需补测试；本会话未修改这两个用例。
