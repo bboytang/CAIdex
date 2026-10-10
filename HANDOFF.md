@@ -20,7 +20,11 @@
 
 本地证据：workspace 655通过/0失败/83忽略（后续严格请求解码修复以最终H-1定向复验为准）；H-1最终15项定向及全仓Clippy/fmt、固定Runtime81/0/0与stable/experimental schema指纹已验证。真实独立Host进程演示通过：两客户端重连replay一致、第三观察客户端进程退出不终止Host、真实强杀重启同Host/旧线程unknown/探针0重发。初始本地测试受默认沙箱socket/原生执行限制，已在授权执行环境复验；/tmp为Git工作树导致既有凭据保护测试拒绝，换本会话Git外私有TMPDIR后通过，未改保护或/tmp/.git。额外参数拒绝测试暴露serde flatten忽略字段，已改严格带标签struct请求，最终H-1复验覆盖。
 
-[H-1设计/运行/失败与限制](docs/CAIdex-H1-Host-设计与验收-V1.md)提供独立复现及审计入口。初版db8bf47/[CI38093594306](https://github.com/bboytang/CAIdex/actions/runs/38093594306)失败；8dfa3be/[CI38094110441](https://github.com/bboytang/CAIdex/actions/runs/38094110441)仍失败：Linux/macOS均成功，Windows直接PowerShell边界检查成功，但Rust调用时step17 Set-Acl失败。微软文档说明pwsh→中间进程→Windows PowerShell继承PSModulePath会解析到不能加载的PowerShell7模块；当前最小修复仅移除该子进程的PSModulePath，让其重建正确原生模块路径，并加早期Rust边界检查，等待精确CI证实。权限仍owner-only，不输出秘密。同步将主程序路径改为absolute避免Windows canonicalize的verbatim前缀传给PowerShell，并固定故障夹具LF换行。Linux15项Host测试/Clippy相关复验中。完成本次H-1交付后停止；准确下一步为用户安排独立只读审计及验收，H-2必须另行明确批准。
+[H-1设计/运行/失败与限制](docs/CAIdex-H1-Host-设计与验收-V1.md)提供独立复现及审计入口。初版db8bf47/CI38093594306失败；8dfa3be/CI38094110441仍失败：Linux/macOS均成功，Windows直接PowerShell检查成功，但Rust调用时step17 Set-Acl失败。微软文档说明pwsh→中间进程→Windows PowerShell继承PSModulePath会解析到不能加载的PowerShell7模块；仅在子进程移除该变量、加早期Rust边界检查，权限仍owner-only。同步采用absolute避免Windows canonicalize的verbatim前缀，并固定故障夹具LF；Linux15项/Host Clippy/真实双端进程演示相关复验通过。
+
+当前main=`d62ee4f4ecf44794df4bfae73060362126f90c6c`已push；[CI38094678640](https://github.com/bboytang/CAIdex/actions/runs/38094678640)完成failure：Linux成功，Windows两项权限边界成功，但认证交互故障测试的夹具先发危险事件再回复注入RPC，Host正确停止导致注入调用Closed；macOS暴露任务completion早于参数journal锁析构。最小修复为夹具先确认注入、Host返回前显式drop journal，并将启动提交纳入统一清理。相关Linux15项/Clippy/fmt通过，待新源码提交和精确三平台CI，不认领三平台完成。
+
+当前未提交仅上述H-1生命周期/夹具修复及交接。不新增功能。完成本次H-1交付后停止；准确下一步为用户安排独立只读审计及验收，H-2必须另行明确批准。
 
 ## F/G 封存状态
 

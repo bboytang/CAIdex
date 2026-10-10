@@ -114,17 +114,9 @@ pub async fn serve(
     let mut connections = JoinSet::new();
     let mut probes = JoinSet::new();
     let mut probe_pending = false;
-    publish(
-        &mut journal,
-        &events,
-        "host/started",
-        json!({"codex_version": caidex_runtime::CODEX_VERSION}),
-    )?;
-    println!(
-        "{}",
-        json!({"protocol": 1, "address": listener.local_addr()?, "host_id": journal.snapshot().host_id, "pid": std::process::id()})
-    );
     let result = async {
+        publish(&mut journal, &events, "host/started", json!({"codex_version": caidex_runtime::CODEX_VERSION}))?;
+        println!("{}", json!({"protocol": 1, "address": listener.local_addr()?, "host_id": journal.snapshot().host_id, "pid": std::process::id()}));
         loop {
             tokio::select! {
                 accepted = listener.accept() => {
@@ -234,6 +226,8 @@ pub async fn serve(
     }
     connections.abort_all();
     drop(runtime);
+    // Release ownership before Tokio publishes this future's completion.
+    drop(journal);
     result
 }
 

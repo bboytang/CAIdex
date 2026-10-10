@@ -28,6 +28,7 @@ for line in sys.stdin:
         emit({"id": request["id"], "result": {"thread": {"id": "fixture-thread"}}})
         emit({"method": "thread/started", "params": {"thread": {"id": "fixture-thread", "unknown": "keep"}}})
     elif method == "config/read":
+        # Acknowledge injection before an event can deliberately stop the Host.
+        emit({"id": request["id"], "result": {}})
         for event in request.get("params", {}).get("fixtureEvents", []):
             emit(event)
-        emit({"id": request["id"], "result": {}})
