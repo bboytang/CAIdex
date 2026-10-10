@@ -123,4 +123,4 @@ OpenRouter显式原生summary/context/include组合已实现，新增8项，Prov
 
 下一步继续V3 F/G：对照`model/core` Registry、Gateway/Runtime测试与各Provider验收，核对模型注册/切换和版本化兼容性报告尚缺的范围；先核实代码/证据再补既定验收，不重做已验Adapter，不据离线fixture跳H。真实模型Live/Full须另有明确授权，不升级Unknown/Registry证据。商业API、生产Host、iOS应用未验；context仍依执行端显式model/backend支持声明，载体非加密/来源认证、backend政策非实际endpoint证明，文本终态缓冲及完整前缀二次增长/预算限制保留。
 
-共享Core新增显式`ModelRouter`六方法路由，可注入现有Gateway，在同一入口选择OpenRouter/Custom等既有Adapter。凭据、原生历史和HTTP仍由各Adapter负责，无默认Provider、重试或跨Provider签名迁移；新增9项与完整workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff本地通过，三平台CI待验；Host线程切换及商业模型兼容性仍待验。
+共享Core新增显式`ModelRouter`六方法路由，可注入现有Gateway，在同一入口选择OpenRouter/Custom等既有Adapter。凭据、原生历史和HTTP仍由各Adapter负责，无默认Provider、重试或跨Provider签名迁移；新增9项与完整workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff本地通过，精确HEAD `e2f3039`/[CI38063184946](https://github.com/bboytang/CAIdex/actions/runs/38063184946)三平台已验，workspace619/614/618、固定Runtime64/63/63，完整通过名精确旧基线+9；Host线程切换及商业模型兼容性仍待验。

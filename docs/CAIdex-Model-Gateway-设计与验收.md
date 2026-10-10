@@ -286,4 +286,4 @@ OpenRouter显式原生summary/context/include组合已实现，新增8项，Prov
 
 注册保留原生模型、方言、能力和版本化兼容性报告；Adapter元数据发生变化须重新注册。目录每个Adapter调用一次，仅返回已显式绑定且归属匹配的模型，按ID排序；ProviderCatalog只表示目录来源，不升级能力或报告，重复/绑定漂移拒绝，目录失败原样返回。请求、上下文、取消、错误及retry-after原样交给所选Adapter，未知模型/不支持方言/明确不支持流式在调用前拒绝。
 
-新增7项Core路由与2项Gateway OpenRouter/Custom回环测试完整本地通过：workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff；三平台CI待验。此阶段不证明商业Live/Full，也不实现Host线程切换。跨Provider切换仍按V3创建关联新线程并适配历史，同Provider在已验组合的轮次边界切换。
+新增7项Core路由与2项Gateway OpenRouter/Custom回环测试完整本地通过：workspace619/0/66、固定Runtime64/0/0、Clippy/fmt/diff；精确HEAD `e2f3039c6c4f82898f2a30246e6bd1981ffec671`/[CI38063184946](https://github.com/bboytang/CAIdex/actions/runs/38063184946)三平台成功，workspace619/614/618、固定Runtime64/63/63，新增9项逐名一次、完整通过名精确旧基线+9，各17steps成功或条件跳过。此阶段不证明商业Live/Full，也不实现Host线程切换。跨Provider切换仍按V3创建关联新线程并适配历史，同Provider在已验组合的轮次边界切换。
