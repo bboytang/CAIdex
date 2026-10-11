@@ -71,10 +71,18 @@ B 必须提供 I-2 新鲜会话绑定重认证proof，proof仅用于请求，不
 4. `needs_epoch_choice` 时显式 `reconcile_deleted_epoch(retain)` 或按 `sync_scopes` 的项目状态 `reconcile_project_epoch(&scope, retain)`；选择后仍按当前控制/双方ACL才可传输。`sync_operations(after,limit)`查看稳定operation/blocked，只有已确认冲突能明确discard。
 5. `python3 scripts/i6-memory-sync.py --output /absolute/new-report.json` 实际创建受限隔离PG17.10/vector0.8.2容器、普通非owner/NOBYPASS角色、合成账户和四份独立Cache，经真实HTTP执行规则/负例。需要Docker/固定镜像/Rust环境，脚本临时目录在Git外且私有；不读取真实Key或发送邮件。
 
-## 当前实际验证
+## 当前实际验证与证据
 
-功能已实现，最终本机PG/HTTP为56具名检查/0失败，cached单元7/0（2项数据库ignored用独立入口），Clippy sync-test全targets通过；首轮精确CI已执行，旧未来schema5及auth不可更新Memory开关断言过时，测试已最小修正，本机真实账户114具名检查/0失败、Chat存储6/0；首轮不授通过，第二轮Linux发现旧Memory迁移schema4断言，改5后本机Memory12/0通过；随后新精确提交CI仍待核验。早期54具名检查不替最终源码；补充跨epoch收据负例失败已最小修复并重跑通过。原始开发日志位于 `/tmp/caidex-i6-verification`，封存时归档到evidence并绑定完整功能SHA。
+最终不可变源码 [`04d770a789d6f528e2b4e7cf87b929bb9f026e09`](https://github.com/bboytang/CAIdex/commit/04d770a789d6f528e2b4e7cf87b929bb9f026e09)，[精确CI38163486201](https://github.com/bboytang/CAIdex/actions/runs/38163486201)。四job实际completed/success，各原始checkout完整SHA及报告指纹核对；开发验证和证据封存完成，停止等待独立审计。实现初始cfbf540，6526d0a及04d只更新随schema/权限改变的旧测试断言和交接，运行实现未再变。
 
-本机盘起点39GiB/余1.1GiB/98%，RAM1.9GiB、Swap4GiB；当前余约0.7GiB，保留Rust/PG缓存。按用户要求完成可行的cached Clippy/单元/真实PG检查，完整workspace及跨平台由GitHub验证。默认/tmp有.git保护标记，使用Git外私有TMPDIR，不放宽目录安全规则。云环境状态工具及策略文件未提供，不宣称就绪；Git/Docker经执行沙箱提升实际访问。
+本机：25项定向Rust测试（cached lib7、Chat存储6、Memory12）/0失败；Memory实际PG/HTTP56具名检查/0失败，账户回归114/0、Chat实际同步48/0各单独计数（分别1项Rust集成，不累加重复迁移检查）。Memory本机不可变报告source_head6526d0a，其44份源码指纹与最终04d的git show逐份一致，按规则复用；账户修正测试报告在提交前运行、记录旧HEAD，其24份指纹与最终04d一致；Chat同步回归实际source_head04d。Clippy sync-test全targets/locked/offline/-D warnings、fmt/Pythoncompile/文档链接/diff通过。7个单元通过与2个数据库ignored分开，后者已由实际PG入口执行，不把ignored当通过。
 
-限制：合成身份/一个Rust测试进程内隔离客户端与实际HTTP，不是物理多设备或正式GUI/CLI/iOS安装；SQLite明文/HTTPS云信任边界，未登记任意秘密仍需用户授权范围。没有商业模型/真实Key/F-G Live、生产容量/GC/备份净化/EmailSender部署证据；上述留既定阶段。实施验证不代独立审计，I-6完成后停止等待，不启动I-7。
+已核实精确CI：数据库114541106864 I-1 118、账户114、Chat同步48、Memory同步56具名检查/0失败，认证lib5/0；Linux114541106961 workspace724/0/83、固定Runtime81/0，原生凭据1另记；macOS114541106871 workspace723/0/81、固定Runtime80/0。Windows114541106913 workspace717/0/81、固定Runtime80/0，Host lib4另计；ignored不计通过。三平台fmt/Clippy/JS/schema/doctor及I-3/I-4.1/I-4.2/H-1/2/3内部演示步骤均实际成功。
+
+证据：[最终精确CI及原始日志](evidence/i6-ci.json)、[本机/开发原始日志和完整指纹](evidence/i6-local.json)、[首轮失败](evidence/i6-ci-first-failed.json)、[第二轮部分成功/失败](evidence/i6-ci-second-failed.json)。44份日志按gzip及原文两层SHA256核验，无ENOSPC；本轮最后仅本设计/HANDOFF/新i6证据封存，不把docs-only HEAD当功能CI SHA。过往I-1～I-5/H/F/G证据逐字保留；499旧证据/固定Runtime/Provider/upstream/旧DDL文件逐字核对，外部依赖version/source/checksum不变。
+
+开发失败保留且不授通过：首轮CI四job旧未来schema5/认证角色不能更新Memory开关断言过时，I-6实际schema5/受信任认证控制，最小更新未来schema6及权限断言且保留不能读正文/改user_id的负例；第二轮数据库成功、三平台旧Memory迁移最终schema4断言失败，更新为5并复验12项。早期本机fixture缺私有root/granted_by、SQL infinity类型42804，以及跨epoch旧操作收据误确认均已最小修复。早期清理触发器检查实际因42804失败，不能当有效故障注入；最终P0001清理回滚/恢复及32条分批进度均实际通过。非匹配feature的额外单元编译主动中断改cached sync-test，无中断通过声明。
+
+资源：起点39GiB盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，最终余约0.5GiB/99%；保留Rust/PG缓存。按用户要求本机执行可行的cached Clippy/单元/真实PG/HTTP，完整workspace及跨平台由GitHub验证，未清理有效缓存。默认/tmp有.git保护，使用Git外私有TMPDIR；云状态工具及策略文件未提供不宣称就绪，Git/Docker经执行沙箱提升实际访问。
+
+限制：合成身份/一个Rust测试进程内四份隔离客户端与实际HTTP，关闭排序额外使用两个独立Service worker，不是物理多设备或正式GUI/CLI/iOS安装。SQLite明文/HTTPS云信任边界，未登记任意秘密仍需用户授权范围。未验商业模型/真实Key/F-G Live、生产容量/GC/WAL及备份净化/EmailSender部署；B清理为实际数据库可访问数据和防复活屏障，不认领物理备份净化。独立审计仍须新会话或其他模型只读不可变源码/实际证据，实施验证不代审计。I-6完成封存后停止等待，不启动I-7。

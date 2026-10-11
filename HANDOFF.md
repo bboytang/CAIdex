@@ -2,23 +2,25 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前：I-6 实施中，项目协作规则已确认
+## 当前：I-6 开发验证已封存，停止等待独立审计
 
-2026-10-11 用户明确“确认I-5独立审计通过，启动 I-6”。这是用户审计确认，解除 I-5 的历史等待；本会话不自行授独立审计。I-6 有限目标/任务/非目标/依赖/验收/通过/停止见 [I-6设计验收](docs/CAIdex-I6-Memory同步-设计与验收-V1.md)。允许必要源码/迁移/测试/文档/commit/push main/精确CI；I-7及后续、商业API/真实Key/邮件/部署未授权。不使用ponytail技能。
+2026-10-11 用户确认I-5独立审计通过并批准I-6，随后确认“同步暂停，ACL保留”的七条正式规则并批准编码/测试/验证。授权只I-6必要源码/迁移/测试/文档/commit/push main/精确CI；I-7及后续、商业API/真实Key/邮件/部署未授权，不使用ponytail技能。有限目标/任务/非目标/通过/停止/契约/复现见 [I-6设计验收](docs/CAIdex-I6-Memory同步-设计与验收-V1.md)。本会话仅开发验证，未自行授I-6独立审计。
 
-启动起点 main `56ff013bee88b1183865d6af5f702c467fa6783d`，文档启动提交 `2a0645568d36f3318db27e98bbff0b1da7a1f129`。功能源码已提交/push main `cfbf5404a1150f1ac56f1f2a83ba397c263d6a3d`。精确 [CI38162746881](https://github.com/bboytang/CAIdex/actions/runs/38162746881) 数据库/Linux/macOS已因旧测试假设失败，Windows仍执行中；不授通过。已最小更新未来schema测试为6、认证角色受信任Memory控制权限断言，保留不能改user_id/不能读正文的负例，本机真实账户114具名检查/0失败、Chat6测试/0失败，修正后提交新SHA/精确CI。
+main起点56ff013，文档启动2a06455，初始实现cfbf540；最终不可变源码 [`04d770a789d6f528e2b4e7cf87b929bb9f026e09`](https://github.com/bboytang/CAIdex/commit/04d770a789d6f528e2b4e7cf87b929bb9f026e09)，[精确CI38163486201](https://github.com/bboytang/CAIdex/actions/runs/38163486201) 四job completed/success，原始checkout完整SHA及报告源码指纹逐份核对。最后封存仅本交接/本设计/新i6证据；恢复实际HEAD/工作区/远端仍用Git核实，不把docs-only封存HEAD当功能CI SHA。
 
-已实现用户确认的七条规则：PG schema4/SQLite5、控制与数据API、双方active/enabled/范围/ACL的RLS、独立持久intent/精确本机上传许可/队列/cursor、多revision冲突、A/B和永久删除屏障。所有者关闭保留ACL，成员访问暂停，恢复须当前范围及双方开启。B先独立提交关闭/epoch/pending，后每次最多32条清理，失败保持屏障，完整清理才清pending；不会误删成员独立Memory/其他owner项目/本地Chat。
+实现：PG4/SQLite5原子迁移保留旧Chat/Memory/队列，复用I-2 issuer/session及I-4 payload。Memory控制CAS/稳定收据/持久离线stop与未知回应恢复、精确本机上传许可、独立outbox/cursor和双方有效scope permit；每次RLS重验双方active/enabled/范围/pending/ACL，锁持至提交并与关闭/撤权排序。所有者关闭暂停成员、保留ACL，恢复须当前条件；reader只读/writer可写。immutable revision保留离线分支/disputed，显式head+generation选择；下载+cursor同事务无echo，切账户/撤销/迟到拒绝。
 
-不可变功能本机真实PG17.10/vector0.8.2+HTTP为56具名检查/0失败，44源码指纹与git show精确一致；cached单元7/0（2数据库ignored由独立入口），Clippy sync-test全targets/locked/offline/-D warnings及fmt/Python/链接/diff通过。41本地链接，499旧证据/Runtime/Provider/upstream/旧DDL文件逐字保留，外部依赖版本/source/checksum不变。证据 [i6-local](docs/evidence/i6-local.json) 含最终/开发失败/26原始压缩日志及两层SHA256；当前仅新证据和交接/验收文档未提交，实际状态恢复时核实。
+A保留云数据；B需新鲜会话绑定proof（不落盘），先独立提交disabled/epoch/pending，再每批最多32条实际删除本人云Memory正文/revision/来源摘录/向量/job，永久ID/来源hash墓碑防复活，全部清理完才清pending。故障可恢复，旧epoch操作收据也拒绝。成员独立Memory/其他owner项目/本地Chat保留。回连本地须显式epoch保留/丢弃，保留副本解除云关联/许可/队列且冻结派生任务，不自动回流；不明owner的未提交项目副本保守保留并冻结，避免误删。明确recreate须新ID/新授权；自动旧来源拒绝。
 
-开发负例：第七轮发现删除后重开跨epoch旧收据误确认（正文未复活），已校验epoch并精确复验通过。早期fixture私有root/granted_by和SQL infinity显式类型失败均有原日志；第三轮注入清理检查实际42804，不能当触发器回滚证据，最终为P0001故障后保持屏障且重试清理通过。未匹配缓存feature的单元额外编译主动中断，改既有sync-test，不授中断通过。
+本机：Rust定向25/0（lib7/Chat存储6/Memory12，2项数据库ignored用独立入口）；真实PG17.10/vector0.8.2+HTTP Memory56、账户114、Chat48具名检查/0失败，各为1项Rust集成、重复迁移检查不累加。Memory本机报告实际HEAD6526d0a，44指纹与最终04d一致；账户报告提交前修正测试记录旧HEAD，24指纹与最终一致；Chat同步报告精确04d。有效证据复用，Clippy/fmt/Pythoncompile/链接/diff通过。固定Runtime/Provider/upstream/旧DDL/过往证据逐字保留，外部依赖version/source/checksum不变。
 
-验证本机条件满足优先，否则GitHub。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前余约0.6GiB/99%；完整workspace及跨平台转GitHub，不清理有效缓存。Git外私有TMPDIR保留/tmp/.git安全保护；cloud状态工具/策略文件缺失不宣称就绪，GitHub/Docker经沙箱提升实际访问。未读真实Key/调用商业API/邮件/部署。
+精确CI：DB114541106864 I-1 118、账户114、Chat48、Memory56/0，认证lib5/0；Linux114541106961 workspace724/0/83及Runtime81/0；macOS114541106871 workspace723/0/81及Runtime80/0；Windows114541106913 workspace717/0/81及Runtime80/0。ignored不计通过，Linux原生凭据1/Windows Host lib4另记；fmt/Clippy/JS/schema/doctor及I-3/I-4.1/I-4.2/H-1/2/3演示实际成功。证据 [最终CI](docs/evidence/i6-ci.json)、[本机/开发原日志](docs/evidence/i6-local.json)、[首轮失败](docs/evidence/i6-ci-first-failed.json)、[第二轮部分成功/失败](docs/evidence/i6-ci-second-failed.json)；44份原日志压缩/原文SHA256核验，无ENOSPC，原始报告HEAD不重写。
 
-第二轮精确源码 `6526d0ae18199a05fafcc2a863e833b8cae6b114` / CI38163213716 Linux暴露既有Memory迁移最终schema断言仍为4，实际应5，最小更新后本机全部Memory12/0通过；运行源码未变，44份PG/HTTP指纹有效复用。此轮不授完整CI通过，随后新提交精确复验。
+开发失败已修并复验：私有fixture根/granted_by及SQL infinity显式类型；新增跨epoch旧收据负例揭示误确认（正文未复活）后加epoch检查；首轮旧未来schema5/auth不能控制Memory开关断言过时，改schema6及最小受信任权限断言，保留正文/用户ID拒绝；第二轮DB成功、平台旧迁移schema4断言失败，改5后本机12项及最终精确CI通过。早期清理注入因42804不能当触发器验证，最终P0001故障回滚/恢复、分批进度实际通过。额外非缓存feature编译主动中断不授通过，改缓存组合。
 
-准确下一步：核验精确功能CI四job实际完成/原始checkoutSHA/源码指纹与必要回归计数，归档原始日志与限制，更新本节并仅文档/证据封存commit/push main。完成后停止等待I-6独立审计及用户确认，不启动I-7。
+限制/环境：一个Rust进程内四份隔离Cache、真实HTTP/PG，关闭竞争两独立Service worker；不是正式GUI/CLI/iOS/物理多设备安装。SQLite明文/HTTPS云信任边界，来源引用不授额外ACL/Runtime权；事件/收据/墓碑永久留存，无GC/生产吞吐/备份净化承诺。真实模型及F/G-Live待用户最终验。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前余约0.5GiB/99%；本机可行定向验证优先，完整workspace/跨平台由GitHub，未清理有效缓存。Git外私有TMPDIR保留目录安全规则；cloud状态工具/策略文件缺失不宣称就绪，GitHub/Docker经沙箱提升实际访问，无商业API/真实Key/邮件/部署。
+
+准确下一步：停止I-6新增功能及跨里程碑开发，等待独立新会话/其他模型只读审计最终04d源码及原始证据；若有本范围阻断再最小修复复验。须用户确认I-6独立审计通过并明确批准，才启动I-7。
 
 ## 已关闭 I-5（用户确认独立审计通过）
 
