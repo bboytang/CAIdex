@@ -128,6 +128,9 @@ pub(crate) fn validate(s: &State, d: &Draft) -> Result<()> {
     Ok(())
 }
 pub(crate) fn load(s: &State, id: Uuid) -> Result<Memory> {
+    load_internal(s, id, true)
+}
+fn load_internal(s: &State, id: Uuid, disclose: bool) -> Result<Memory> {
     let row: Option<(String, String, String)> = s
         .cache
         .db
@@ -152,7 +155,7 @@ pub(crate) fn load(s: &State, id: Uuid) -> Result<Memory> {
     let mut revisions = Vec::new();
     for row in rows {
         let (rid, parent, created_millis, conflict, value) = row?;
-        if !s.memory.safe(&value) {
+        if disclose && !s.memory.safe(&value) {
             return Err(Error::Invalid);
         }
         let draft: Draft = decode(&value)?;
@@ -613,7 +616,8 @@ impl MemoryEngine<'_> {
     }
     pub fn delete(&self, id: Uuid) -> Result<()> {
         let mut s = self.chat.state()?;
-        let m = load(&s, id)?;
+        // Newly recognized credentials must remain deletable without exposing their payload.
+        let m = load_internal(&s, id, false)?;
         let affected = super::jobs::affected_jobs(&s, &m)?;
         s.memory.cancel_all();
         let tx = s.cache.db.transaction()?;

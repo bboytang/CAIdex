@@ -346,11 +346,23 @@ fn scoped_fresh_file_git_runtime_sources_and_known_credentials() {
     );
     e.revoke_project(&project).unwrap();
     assert!(e.export(&scope).is_err());
+    let newly_sensitive = e
+        .create(draft(Scope::Personal, "synthetic-known-credential"))
+        .unwrap();
     let guard = Arc::new(Redactor::default());
     guard
         .register(&Secret::new("synthetic-known-credential".into()).unwrap())
         .unwrap();
     e.protect_credentials(guard).unwrap();
+    assert!(e.get(newly_sensitive).is_err());
+    assert!(e.export(&Scope::Personal).is_err());
+    e.delete(newly_sensitive).unwrap();
+    assert_eq!(e.get(newly_sensitive).unwrap().state, "deleted");
+    assert!(
+        !e.export(&Scope::Personal)
+            .unwrap()
+            .contains("synthetic-known-credential")
+    );
     assert!(
         e.create(draft(Scope::Personal, "synthetic-known-credential"))
             .is_err()
