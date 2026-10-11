@@ -594,7 +594,10 @@ async fn automatic_queue_capacity_does_not_fail_completed_chat() {
     e.set_automatic(true).unwrap();
     for index in 0..1024 {
         e.queue_integration(
-            Source::user(Scope::Personal, format!("waiting without integrator {index}")),
+            Source::user(
+                Scope::Personal,
+                format!("waiting without integrator {index}"),
+            ),
             Privacy::LocalOnly,
         )
         .unwrap();
