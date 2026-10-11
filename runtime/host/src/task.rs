@@ -153,6 +153,7 @@ pub(crate) struct Tasks {
     project: std::path::PathBuf,
     task_started: BTreeMap<String, tokio::time::Instant>,
     approval_started: BTreeMap<(String, String), tokio::time::Instant>,
+    cancel_started: BTreeMap<String, tokio::time::Instant>,
 }
 
 impl Tasks {
@@ -170,10 +171,18 @@ impl Tasks {
             project,
             task_started: BTreeMap::new(),
             approval_started: BTreeMap::new(),
+            cancel_started: BTreeMap::new(),
         }
     }
 
     fn task_expired(&self, task: &Task, timestamp: u64) -> bool {
+        if task.status == "cancel-requested" {
+            return task.expires_at <= timestamp
+                || self
+                    .cancel_started
+                    .get(&task.task_id)
+                    .is_some_and(|start| start.elapsed() >= DEADLINE);
+        }
         task.expires_at <= timestamp
             || self
                 .task_started
@@ -314,11 +323,16 @@ impl Tasks {
                 let operation = match Self::operation(journal, &operation_id, &task_id, "cancel", &json!({"task_id": task_id}))? { Ok(value) => value, Err(previous) => return Ok(previous) };
                 let mut task = snapshot.tasks.get(&task_id).cloned().ok_or(Error::Refused("task not found"))?;
                 let mut operation = operation;
+                let first_cancel = !task.terminal() && !matches!(task.status.as_str(), "unknown" | "cancel-requested");
                 if task.terminal() { operation.outcome = "confirmed".into(); }
                 else if task.status == "unknown" { operation.outcome = "unknown".into(); }
-                else { task.status = "cancel-requested".into(); }
+                else if first_cancel {
+                    task.status = "cancel-requested".into();
+                    task.expires_at = now()?.checked_add(DEADLINE.as_secs()).ok_or(Error::Refused("cancel deadline exhausted"))?;
+                }
                 for pending in task.pending.values_mut() { if matches!(pending["status"].as_str(), Some("pending" | "sending")) { pending["status"] = json!("unavailable"); } }
                 persist(journal, events, &task, Some(&operation))?;
+                if first_cancel { self.cancel_started.insert(task_id.clone(), tokio::time::Instant::now()); }
                 self.after_event(journal, events)?;
                 Ok(json!({"operation": journal.snapshot().operations[&operation_id], "task": journal.snapshot().tasks[&task_id]}))
             }
@@ -543,7 +557,7 @@ impl Tasks {
             .values()
             .filter(|task| {
                 !task.terminal()
-                    && !matches!(task.status.as_str(), "unknown" | "cancel-requested")
+                    && task.status != "unknown"
                     && (self.task_expired(task, timestamp)
                         || task.pending.iter().any(|(key, request)| {
                             request["status"] == "pending"
@@ -553,6 +567,13 @@ impl Tasks {
             .cloned()
             .collect();
         for mut task in due {
+            if task.status == "cancel-requested" {
+                task.invalidate();
+                persist(journal, events, &task, None)?;
+                return Err(Error::Refused(
+                    "cancel terminal confirmation expired; result unknown, stop Runtime",
+                ));
+            }
             let expired: Vec<_> = task
                 .pending
                 .iter()
@@ -584,6 +605,12 @@ impl Tasks {
         events: &tokio::sync::broadcast::Sender<Event>,
     ) -> Result<()> {
         let snapshot = journal.snapshot();
+        self.cancel_started.retain(|id, _| {
+            snapshot
+                .tasks
+                .get(id)
+                .is_some_and(|task| task.status == "cancel-requested")
+        });
         self.task_started.retain(|id, _| {
             snapshot
                 .tasks
@@ -848,6 +875,62 @@ mod tests {
         assert_eq!(
             std::fs::read_to_string(directory.join("marker")).unwrap(),
             "turn/interrupt\nturn/interrupt\nturn/interrupt\n"
+        );
+        assert!(
+            tasks
+                .expire(
+                    &mut journal,
+                    &events,
+                    now().unwrap() + DEADLINE.as_secs() + 1
+                )
+                .is_err(),
+            "acknowledged cancel without terminal must expire, not remain busy forever"
+        );
+        assert!(
+            journal
+                .snapshot()
+                .tasks
+                .values()
+                .any(|task| task.status == "unknown")
+        );
+        let deadline = journal.snapshot().tasks["task"].expires_at;
+        let started = tasks.cancel_started["task"];
+        tasks
+            .command(
+                &mut journal,
+                &events,
+                Command::Cancel {
+                    task_id: "task".into(),
+                    operation_id: "repeat-cancel".into(),
+                },
+                crate::access::OWNER,
+            )
+            .unwrap();
+        assert_eq!(
+            journal.snapshot().tasks["task"].expires_at,
+            deadline,
+            "new cancel operation cannot extend the bound"
+        );
+        assert_eq!(tasks.cancel_started["task"], started);
+        let completion = tokio::time::timeout(DEADLINE, completions.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        tasks.complete(&mut journal, &events, completion).unwrap();
+        tasks
+            .cancel_started
+            .insert("task".into(), tokio::time::Instant::now() - DEADLINE);
+        assert!(
+            tasks
+                .expire(&mut journal, &events, now().unwrap() - 60)
+                .is_err(),
+            "UTC rollback cannot extend cancel confirmation"
+        );
+        assert_eq!(journal.snapshot().tasks["task"].status, "unknown");
+        assert_eq!(
+            std::fs::read_to_string(directory.join("marker")).unwrap(),
+            "turn/interrupt\nturn/interrupt\nturn/interrupt\nturn/interrupt\n",
+            "no automatic cancel resend or approval after timeout"
         );
         runtime.shutdown().await.unwrap();
         drop(tasks);

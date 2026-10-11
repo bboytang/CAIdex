@@ -2,7 +2,7 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
-## 当前批准工作：H-3 多端审批、Diff与纵向集成（root/非root本地验证通过，待新SHA精确CI）
+## 当前批准工作：H-3 多端审批、Diff与纵向集成（本地验证通过，最终源码精确CI运行中）
 
 2026-10-11用户确认H-2独立审计通过，并明确批准H-3。开始时main/HEAD/origin/main/GitHub main均为0151b488127f7357df3523176e5e2c24be63bdd8，工作区干净；磁盘2.4GiB可用。已读AGENTS/V3/CLI Host审批契约及H-1/2源码/测试，复用固定Codex0.160.1和原Facade，不读真实Key/不调商业模型。
 
@@ -10,11 +10,11 @@
 
 已实现schema v3及v1/v2事务升级、独立Host委托授权/撤销、审批持久首次claim/120秒有效期/单调时间上限/显式撤销、原生Diff/Review与工具artifact恢复；保持固定Runtime和旧operation hash边界。新增9项Host回归，另加强单调超时、迁移失败回滚及artifact字节上限测试。全仓fmt/Clippy/workspace实际682通过/0失败/83忽略（含Host42/0/0）、固定Runtime81/0/0、Linux原生凭据附加1/0/0、schema/doctor、H-1/2/3真实进程演示全部通过。H-3实测首次审批claim1、本机HTTP请求9、原生patch offer3、重启请求增量0，实际文件/Diff/Review/撤销/快照缺口恢复断言通过。固定离线声明不是独立全局遥测。
 
-已推送功能85faba6d4b9f1f9484a6c866cb1de40b7ccd3088；[首轮CI38105001809](https://github.com/bboytang/CAIdex/actions/runs/38105001809)与[第二轮CI38105455389](https://github.com/bboytang/CAIdex/actions/runs/38105455389)均Linux/Windows H-3演示失败、macOS成功，尚无最终三平台成功。首轮立即取聚合Diff KeyError；第二轮增加30秒等待仍失败，时序假设不足。以同一固定二进制、已有nobody用户、新私有目录复现：原始journal聚合事件0，原生fileChange Diff与实际文件完整，Runtime记录sandbox写入失败；固定源码失败写入使累计delta不精确并失效聚合tracker。Host没有遗漏已发出的聚合事件。
+中间源码dc38cfbce4827c87bd87ec2972f533db07368e89的[CI38106599664](https://github.com/bboytang/CAIdex/actions/runs/38106599664)三平台成功；最终检查另发现取消RPC有确认却无终态时cancel-requested永久跳过超时。先加失败回归0通过/1失败，再在task.rs增加15秒UTC/单调确认上限，重复取消不延长；逾期持久unknown并停止Runtime，不伪造终态/重发。修复后定向1/0/0、全仓682/0/83、固定Runtime81/0/0及H-1/2/3完整演示已通过。新修复尚待提交及最终SHA三平台精确CI，旧成功不可代替。首轮CI38105001809及第二轮38105455389因Linux/Windows聚合Diff假设失败；macOS成功，失败日志保留。非root原始journal聚合事件0、原生fileChange Diff与文件完整，固定Runtime sandbox失败写入使累计delta不精确并失效聚合tracker；Host没有遗漏已发聚合事件。
 
-最小修正只在演示明确核对真实逐文件Diff路径/内容与完整恢复，聚合Diff单独实测事件数并验证实际发出的数据；不更改Runtime、readonly/on-request/user权限或自行计算Diff。修正后的非root完整纵向演示已通过（claim1/本机HTTP9/聚合Diff0/重启增量0），root全仓fmt/Clippy/workspace682/0/83（Host42/0/0）、固定Runtime81/0/0、凭据/schema/doctor/构建及H-1/2/3演示完整重跑通过，root聚合Diff实际3。原生聚合Diff并非每次编辑必有，保留为固定Runtime能力限制；审计见H-3文档与diff-boundary证据。待提交新功能SHA、重新全量核对三平台，不沿用旧部分成功。
+最小修正只在演示明确核对真实逐文件Diff路径/内容与完整恢复，聚合Diff单独实测事件数并验证实际发出的数据；不更改Runtime、readonly/on-request/user权限或自行计算Diff。修正后的非root完整纵向演示已通过（claim1/本机HTTP9/聚合Diff0/重启增量0），root全仓fmt/Clippy/workspace682/0/83（Host42/0/0）、固定Runtime81/0/0、凭据/schema/doctor/构建及H-1/2/3演示完整重跑通过，root聚合Diff实际3。原生聚合Diff并非每次编辑必有，保留为固定Runtime能力限制；审计见H-3文档与diff-boundary证据。正在全量核对新SHA三平台，不沿用旧部分成功。
 
-[本地逐检查日志/最终源码指纹](docs/evidence/h3-local.json)、[Host42测试名](docs/evidence/h3-host-tests.log)、[HTTP trace](docs/evidence/h3-local-http-trace.json.gz)、[停止后v3快照](docs/evidence/h3-local-snapshot.json.gz)、[开发失败与修正](docs/evidence/h3-local-failed.json)、[首轮失败CI](docs/evidence/h3-failed-ci.json)已生成，待最终CI证据一起封存。当前未提交仅上述H-3演示修正、本轮证据与交接/验收更新；无用户修改被覆盖，磁盘约1.9GiB。下一步核对最终三平台实际checkout、各步骤及计数并封存，完成后停止待H-3独立审计；会话中断先核实Git和GitHub。
+[本地逐检查日志/最终源码指纹](docs/evidence/h3-local.json)、[Host42测试名](docs/evidence/h3-host-tests.log)、[HTTP trace](docs/evidence/h3-local-http-trace.json.gz)、[停止后v3快照](docs/evidence/h3-local-snapshot.json.gz)、[开发失败与修正](docs/evidence/h3-local-failed.json)、[首轮失败CI](docs/evidence/h3-failed-ci.json)已生成，待最终CI证据一起封存。当前未提交task.rs取消期限修复及本轮证据与交接/验收更新；无用户修改被覆盖，磁盘约1.7GiB。下一步核对最终三平台实际checkout、各步骤及计数并封存，完成后停止待H-3独立审计；会话中断先核实Git和GitHub。
 
 ## H-2 历史交付（用户已确认独立审计通过）
 
