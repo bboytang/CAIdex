@@ -1,6 +1,22 @@
 # CAIdex H-1 本地Host设计与验收 V1
 
-2026-10-10用户确认F/G-Offline关闭并批准H-1；F/G-Live仍待验。依据[V3 H-1](CAIdex-实施计划-V3.md)、[CLI第10节](CAIdex-CLI-完整交互与验收规范-V1.md#10-hostremote线程与任务)。本里程碑交付本地生命周期/journal与内部客户端，完成后停止，H-2/H-3/I未授权。独立审计尚未执行，实施会话自查不能替代。
+2026-10-10用户确认F/G-Offline关闭并批准H-1；F/G-Live仍待验。依据[V3 H-1](CAIdex-实施计划-V3.md)、[CLI第10节](CAIdex-CLI-完整交互与验收规范-V1.md#10-hostremote线程与任务)。本里程碑交付本地生命周期/journal与内部客户端，完成后停止，H-2/H-3/I未授权。初次封存时独立审计未执行；用户本轮已提供独立审计发现，修复后等待重新独立审计，开发自查不能替代。
+
+## 当前工作：AUD-001/AUD-002 阻断修复（2026-10-11）
+
+用户仅授权本轮H-1审计阻断最小修复，不扩大里程碑。审计基线`b516dbae41b252d365d8fad8848c197f2f6ccd51`、旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。本轮开发验证进行中，尚未重新独立审计；下文原交付SHA/CI均为历史，不代本轮修复验证。
+
+- **AUD-001根因/修复**：原版本Command直接继承Host环境，正式Runtime则已env_clear。入口现在共用`isolate_environment`，只保留原PATH/HOME/SystemRoot/USERPROFILE/TEMP/TMP；版本探测不继承CODEX_HOME或任何Host/API/Account变量，Runtime额外赋本次私有CODEX_HOME。严格0.160.1、15秒timeout、kill_on_drop及非零退出拒绝保持。新增[入口单元测试](../runtime/host/src/main.rs)和[合成环境替身](../runtime/host/tests/fixtures/environment.py)实际启动子进程，断言只有白名单（Python自身可增加LC_CTYPE），覆盖合成敏感变量、错误版本和正确输出但非零退出；不读取真实凭据。
+- **AUD-002根因/设计**：外部Notification曾经走可信append，方法名即可驱动Host状态。现由`Journal::append_runtime`隔离完整host/命名空间：事件顶层method=`runtime/notification`，data保留完整原始JSON（原method及未知字段），不能从载荷source/trusted字段获得控制权。其他Runtime方法保持原method，包括合法thread/started及future/event；Host内部常量方法仍使用可信append。SQLite V1 schema/事件结构不变，事务提交/广播/replay/snapshot逻辑保持。新增[journal](../runtime/host/tests/journal.rs)及[service](../runtime/host/tests/service.rs)回归覆盖started/stopped/stopping/runtimeUnavailable/probeStarted/probeResult/未知host事件、转义名称、未知intent、广播和回放原文、合法线程缓存与重启unknown/不重发。
+- **AUD-003最小调整**：演示restart_resubmissions改为SQLite探针intent计数差；新增evidence_basis明确区分该计数测量、进程/连接/快照的代码断言、model_turns/commercial_calls/user_keys_read固定场景声明。后者没有独立网络/凭据访问遥测，不能称为独立实测。历史报告中同名常量也按场景声明解释。
+
+修复是向前隔离，旧journal中若曾发生冲突，旧事件没有可信来源标记，不能追溯证明或自动修正；不重写历史、不升级schema掩盖旧污染。此限制记录供重新审计评估。
+
+### 本轮验证与停止
+
+新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。修复后Linux H-1定向19/0/0、workspace659/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor和真实双端强杀重启演示全部通过；最终源码三平台CI待提交核验。最终源码/CI/归档证据待完成后填写，不沿用旧SHA成功。
+
+两个阻断的开发验证和最终源码三平台CI全部完成、证据封存后立即停止；用户重新发起独立审计前不声明H-1独立审计通过，不启动H-2/H-3/I。
 
 ## 有限范围与实现
 
@@ -78,7 +94,7 @@ CAIDEX_CODEX_BIN="$(node scripts/codex-binary.mjs)" cargo test -p caidex-runtime
 
 当前本地/精确CI结果及源码SHA在本文件交付记录和[HANDOFF](../HANDOFF.md)更新，不把尚未执行的检查写成通过。
 
-## 交付记录与独立审计
+## 初次交付历史与独立审计（不代本轮修复验证）
 
 最终功能源码：`dec3a374228a75b9a6600715b0d56bf5047b12b0`，已提交/push main；[精确CI38095166217](https://github.com/bboytang/CAIdex/actions/runs/38095166217)三平台完整成功，完整原始日志已核对测试名/计数、schema及演示JSON。封存文档提交不改变该源码、依赖或workflow。H-1已交付并停止，不开始H-2；用户验收与独立审计仍待执行。
 

@@ -66,6 +66,76 @@ fn journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent() {
 }
 
 #[test]
+fn runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection() {
+    let directory = Directory::new();
+    let mut journal = Journal::open(&directory.0).unwrap();
+    journal.append("host/started", json!({})).unwrap();
+    journal
+        .append("host/probeStarted", json!({"probe_id": "lost-response"}))
+        .unwrap();
+    let before = journal.snapshot();
+    for encoded in [
+        r#""host\/started""#,
+        r#""\u0068ost/stopped""#,
+        r#""host/stopping""#,
+        r#""host/runtimeUnavailable""#,
+        r#""host/probeStarted""#,
+        r#""host/probeResult""#,
+        r#""host/future""#,
+    ] {
+        let method: String = serde_json::from_str(encoded).unwrap();
+        let raw = json!({"method": method, "probe_id": "lost-response", "params": {"source": "host", "trusted": true, "opaque": [1,2,3]}});
+        let event = journal.append_runtime(&method, raw.clone()).unwrap();
+        assert_eq!(event.method, "runtime/notification");
+        assert_eq!(event.data, raw);
+        assert_eq!(event.stream, before.stream);
+        assert_eq!(journal.snapshot().lifecycle, before.lifecycle);
+        assert_eq!(
+            journal.snapshot().unresolved_probes,
+            before.unresolved_probes
+        );
+    }
+    let raw = json!({"method": "thread/started", "params": {"thread": {"id": "legitimate", "opaque": true}}});
+    assert_eq!(
+        journal
+            .append_runtime("thread/started", raw.clone())
+            .unwrap()
+            .data,
+        raw
+    );
+    assert_eq!(
+        journal.snapshot().threads["legitimate"]["runtime_state"],
+        "loaded"
+    );
+    let unknown = json!({"method": "future/event", "params": {"opaque": true}});
+    assert_eq!(
+        journal
+            .append_runtime("future/event", unknown.clone())
+            .unwrap()
+            .data,
+        unknown
+    );
+    let saved = journal.snapshot();
+    drop(journal);
+    let mut journal = Journal::open(&directory.0).unwrap();
+    assert_eq!(journal.snapshot(), saved);
+    journal.append("host/started", json!({})).unwrap();
+    assert_eq!(journal.snapshot().stream, before.stream + 1);
+    assert_eq!(
+        journal.snapshot().unresolved_probes,
+        before.unresolved_probes
+    );
+    assert_eq!(
+        journal.snapshot().threads["legitimate"]["runtime_state"],
+        "unknown"
+    );
+    journal
+        .append("host/probeResult", json!({"probe_id": "lost-response"}))
+        .unwrap();
+    assert!(journal.snapshot().unresolved_probes.is_empty());
+}
+
+#[test]
 fn second_owner_is_rejected_and_lock_releases_after_close() {
     let directory = Directory::new();
     let journal = Journal::open(&directory.0).unwrap();

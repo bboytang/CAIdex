@@ -352,6 +352,96 @@ async fn unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected
 }
 
 #[tokio::test]
+async fn runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery() {
+    let mut harness = Harness::start("normal").await;
+    let mut client = Client::connect(harness.address).await;
+    client
+        .call(json!({"method": "attach", "host_id": harness.host}))
+        .await;
+    client.call(json!({"method": "probe"})).await;
+    client.event("thread/started").await;
+    let before = client.call(json!({"method": "snapshot"})).await["result"].clone();
+    let raw: Vec<Value> = ["host/started", "host/stopped", "host/stopping", "host/runtimeUnavailable", "host/probeStarted", "host/probeResult", "host/future"]
+        .into_iter()
+        .map(|method| json!({"method": method, "params": {"future": {"opaque": [1,2,3]}}, "probe_id": "forged", "source": "host", "trusted": true}))
+        .collect();
+    harness.inject(json!(raw)).await;
+    let after = tokio::time::timeout(DEADLINE, async {
+        loop {
+            let snapshot = client.call(json!({"method": "snapshot"})).await["result"].clone();
+            if snapshot["seq"].as_i64().unwrap()
+                >= before["seq"].as_i64().unwrap() + raw.len() as i64
+            {
+                break snapshot;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(after["lifecycle"], "running");
+    assert_eq!(after["stream"], before["stream"]);
+    assert_eq!(after["threads"], before["threads"]);
+    assert_eq!(after["unresolved_probes"], before["unresolved_probes"]);
+    for (index, original) in raw.iter().enumerate() {
+        let event = client.event("runtime/notification").await;
+        assert_eq!(event["data"], *original);
+        assert_eq!(
+            event["seq"],
+            before["seq"].as_i64().unwrap() + index as i64 + 1
+        );
+        assert_eq!(event["stream"], before["stream"]);
+    }
+    let replay = client
+        .call(json!({"method": "attach", "host_id": harness.host, "after": before["seq"]}))
+        .await;
+    assert_eq!(
+        replay["result"]["events"].as_array().unwrap().len(),
+        raw.len()
+    );
+    for (event, original) in replay["result"]["events"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .zip(&raw)
+    {
+        assert_eq!(event["method"], "runtime/notification");
+        assert_eq!(event["data"], *original);
+    }
+    client.call(json!({"method": "shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
+    drop(client);
+    let mut restarted = Harness::at(harness.directory.clone(), "normal").await;
+    let mut client = Client::connect(restarted.address).await;
+    let recovered = client.call(json!({"method": "snapshot"})).await["result"].clone();
+    assert_eq!(recovered["stream"], before["stream"].as_i64().unwrap() + 1);
+    assert_eq!(recovered["lifecycle"], "running");
+    assert_eq!(
+        recovered["threads"]["fixture-thread"]["runtime_state"],
+        "unknown"
+    );
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker")).unwrap(),
+        "thread/start\n"
+    );
+    client.call(json!({"method": "shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut restarted.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
 async fn failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event() {
     let mut harness = Harness::start("normal").await;
     let mut client = Client::connect(harness.address).await;

@@ -6,6 +6,30 @@ use tokio::{net::TcpListener, process::Command};
 
 const DEADLINE: Duration = Duration::from_secs(15);
 
+fn isolate_environment(command: &mut Command) {
+    command.env_clear();
+    for name in ["PATH", "HOME", "SystemRoot", "USERPROFILE", "TEMP", "TMP"] {
+        if let Some(value) = std::env::var_os(name) {
+            command.env(name, value);
+        }
+    }
+}
+
+async fn verify_version(mut command: Command) -> Result<(), Box<dyn std::error::Error>> {
+    isolate_environment(&mut command);
+    let version = tokio::time::timeout(
+        DEADLINE,
+        command.arg("--version").kill_on_drop(true).output(),
+    )
+    .await??;
+    if !version.status.success()
+        || String::from_utf8_lossy(&version.stdout).trim() != format!("codex-cli {CODEX_VERSION}")
+    {
+        return Err("expected pinned Codex 0.160.1; no automatic upgrade".into());
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> std::process::ExitCode {
     match run().await {
@@ -44,19 +68,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let binary = std::env::var_os("CAIDEX_CODEX_BIN")
         .ok_or("set CAIDEX_CODEX_BIN to the pinned executable")?;
-    let version = tokio::time::timeout(
-        DEADLINE,
-        Command::new(&binary)
-            .arg("--version")
-            .kill_on_drop(true)
-            .output(),
-    )
-    .await??;
-    if !version.status.success()
-        || String::from_utf8_lossy(&version.stdout).trim() != format!("codex-cli {CODEX_VERSION}")
-    {
-        return Err("expected pinned Codex 0.160.1; no automatic upgrade".into());
-    }
+    verify_version(Command::new(&binary)).await?;
     let journal = Journal::open(&directory)?;
     // Keep an absolute path without Windows' verbatim prefix for PowerShell.
     let directory = std::path::absolute(directory)?;
@@ -94,12 +106,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         Err(error) => return Err(error.into()),
     }
     let mut command = Command::new(binary);
-    command.env_clear();
-    for name in ["PATH", "HOME", "SystemRoot", "USERPROFILE", "TEMP", "TMP"] {
-        if let Some(value) = std::env::var_os(name) {
-            command.env(name, value);
-        }
-    }
+    isolate_environment(&mut command);
     command
         .env("CODEX_HOME", &data)
         .current_dir(&project)
@@ -120,4 +127,61 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn environment_peer(mode: &str) -> Command {
+        let python = std::env::var_os("CAIDEX_TEST_PYTHON")
+            .unwrap_or_else(|| if cfg!(windows) { "python" } else { "python3" }.into());
+        let mut command = Command::new(python);
+        command
+            .arg(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/environment.py"))
+            .arg(mode);
+        for name in [
+            "CAIDEX_HOST_TOKEN",
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "ACCOUNT_TOKEN",
+            "CAIDEX_ACCOUNT_TOKEN",
+            "UNKNOWN_FUTURE_SECRET",
+            "CODEX_HOME",
+        ] {
+            command.env(name, "synthetic-secret-not-a-user-credential");
+        }
+        command
+    }
+
+    #[tokio::test]
+    async fn version_probe_environment_is_private_and_version_rejection_remains_strict() {
+        verify_version(environment_peer("version")).await.unwrap();
+        assert!(
+            verify_version(environment_peer("wrong-version"))
+                .await
+                .is_err()
+        );
+        assert!(
+            verify_version(environment_peer("nonzero-exit"))
+                .await
+                .is_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn runtime_environment_uses_same_os_allowlist_and_owned_codex_home() {
+        let mut command = environment_peer("runtime");
+        isolate_environment(&mut command);
+        let output = command
+            .env("CODEX_HOME", "synthetic-owned-runtime-home")
+            .output()
+            .await
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 }

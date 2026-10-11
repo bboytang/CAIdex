@@ -138,7 +138,8 @@ pub async fn serve(
                                 publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "authentication event outside H-1"}))?;
                                 return Err(Error::Refused("authentication event outside H-1"));
                             }
-                            publish(&mut journal, &events, &event.method, event.raw)?;
+                            let event = journal.append_runtime(&event.method, event.raw)?;
+                            let _ = events.send(event);
                         }
                         Some(RuntimeEvent::Interaction(_)) => {
                             publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "interaction outside H-1"}))?;

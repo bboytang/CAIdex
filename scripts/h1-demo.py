@@ -131,7 +131,8 @@ def demo(binary, directory):
         recovered = a.call("snapshot")
         assert recovered["seq"] > cached["seq"]
         connection = sqlite3.connect(f"file:{directory / 'journal.sqlite3'}?mode=ro", uri=True)
-        assert connection.execute("SELECT COUNT(*) FROM events WHERE method='host/probeStarted'").fetchone()[0] == submitted, "restart must not replay probes"
+        restarted_submitted = connection.execute("SELECT COUNT(*) FROM events WHERE method='host/probeStarted'").fetchone()[0]
+        assert restarted_submitted == submitted, "restart must not replay probes"
         connection.close()
         assert recovered["stream"] == cached["stream"] + 1
         assert recovered["threads"]
@@ -145,8 +146,12 @@ def demo(binary, directory):
                   "before_restart_seq": cached["seq"], "after_restart_seq": recovered["seq"],
                   "clients": 2, "observer_process_exit_detaches": True,
                   "replay_identical": True, "snapshot_restored": True,
-                  "old_runtime_state": "unknown", "restart_resubmissions": 0,
-                  "model_turns": 0, "commercial_calls": 0, "user_keys_read": False}
+                  "old_runtime_state": "unknown", "restart_resubmissions": restarted_submitted - submitted,
+                  "model_turns": 0, "commercial_calls": 0, "user_keys_read": False,
+                  "evidence_basis": {
+                      "restart_resubmissions": "measured SQLite probeStarted count difference",
+                      "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+                      "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"}}
         print(json.dumps(report))
     finally:
         for client in clients:

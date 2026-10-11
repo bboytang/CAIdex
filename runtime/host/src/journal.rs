@@ -258,7 +258,18 @@ impl Journal {
         self.snapshot.clone()
     }
 
-    /// Event and projection advance in one transaction. Callers may publish only
+    /// Append external Runtime notifications without granting Host authority.
+    /// Reserved names retain their complete raw envelope under a neutral method.
+    pub fn append_runtime(&mut self, method: &str, raw: Value) -> Result<Event> {
+        let method = if method.starts_with("host/") {
+            "runtime/notification"
+        } else {
+            method
+        };
+        self.append(method, raw)
+    }
+
+    /// Trusted caller entry point. Event and projection advance in one transaction. Callers may publish only
     /// the returned event; an error leaves the in-memory watermark unchanged.
     pub fn append(&mut self, method: &str, data: Value) -> Result<Event> {
         if serde_json::to_vec(&data)?.len() > 1024 * 1024 {
