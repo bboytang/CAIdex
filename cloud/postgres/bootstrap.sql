@@ -1,0 +1,12 @@
+-- Run as the cluster administrator in a dedicated database, before migrations.
+-- Runtime logins inherit only caidex_app; neither migration nor guard membership.
+BEGIN;
+CREATE ROLE caidex_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+CREATE ROLE caidex_guard NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+CREATE ROLE caidex_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+CREATE EXTENSION vector VERSION '0.8.2';
+CREATE EXTENSION pgcrypto;
+CREATE SCHEMA caidex AUTHORIZATION caidex_owner;
+GRANT USAGE ON SCHEMA caidex TO caidex_app, caidex_guard;
+COMMIT;

@@ -19,13 +19,11 @@ CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通e
 
 ## 当前状态与里程碑授权
 
-2026-10-10治理复核基线为`0e9004b`，最新已验源码`586199f`的[三平台CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)整体成功；workspace Linux/Windows/macOS 640/635/639、固定Runtime81/80/80，0失败。九Adapter（含Custom Responses和Custom Chat Completions）、Registry/Router/Gateway及明确Classic/Lite/审批/恢复/切换路径已离线验，18条Provider route/方言和4条切换route有版本化fixture报告。
+F/G-Offline已关闭，F/G-Live由用户全项目完成后验收。H-1/H-2/H-3已完成开发验证、精确三平台CI和证据封存，用户于2026-10-11确认H-3独立审计通过。固定Runtime与Provider证据仍有效，不因账户数据库改为云端Agent。
 
-[F/G-Offline退出复核](docs/CAIdex-FG-离线验收核对-V1.md)当前明确源码/证据阻断为0，建议关闭，独立只读审计及用户确认仍待执行。F/G-Live由用户全项目完成后验收，不用fixture授LiveRuntime/Full；生产Host、官方账户/Chat/Memory/云、正式Windows/iOS/完整CLI尚未实现，macOS Rust CI不代iOS构建。
+当前批准[I-1账户/权限与数据库](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)：PostgreSQL+pgvector、17逻辑实体、项目ACL、RLS及共享DTO；提供隔离真实数据库运行检查。该工作不代表正式账户认证、Memory Engine、同步服务、GUI或完整CLI完成。I-2及后续/商业API/生产部署未授权。
 
-开发按[AGENTS](AGENTS.md)在**已批准里程碑内**持续自主实施/修复/测试/push main，关键里程碑提供源码/CI/可复现运行与限制供独立审计；通过后停止，用户确认并批准下一里程碑才启动。保留全部[V3架构与A–R顺序](docs/CAIdex-实施计划-V3.md)，不新增强制分支/PR/Tag；本次仅文档治理，完成后停止，不启动H。H首项建议为独立Host生命周期与SQLite事件journal/attach恢复，未批准/未实现。
-
-下述工程说明与Provider续轮记录含历史子阶段状态，不作为当前待办；当前范围以上述退出矩阵和[HANDOFF](HANDOFF.md)为准。已完成工作不重复开发。
+开发按[AGENTS](AGENTS.md)在已批准里程碑内自主实现/验证/push main，达到有限通过条件后封存源码/精确CI/可复现步骤，停止等待独立审计与下一里程碑批准。恢复事实与证据入口以[HANDOFF](HANDOFF.md)为准，保持[V3架构和A–R顺序](docs/CAIdex-实施计划-V3.md)。以下Provider子阶段记录保留为历史，不作为当前待办。
 
 ## 开发与验证
 
@@ -50,6 +48,7 @@ node scripts/codex-binary.mjs
 
 ## 工程位置
 
+- `cloud/core`、`cloud/postgres`：I-1共享ID/scope/同步控制DTO、PostgreSQL+pgvector版本化迁移、项目ACL/RLS及隔离数据库验证；认证和同步服务尚未实现。
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
 - `model/core`：ModelProvider 六方法接口、模型能力/兼容性 Registry、经典/Lite 请求/完整回复/工具/usage 视图、增量 SSE 和流生命周期。
 - `model/providers/custom`：可独立调用的 Custom Responses 推理 client，供普通 Chat 与 Gateway 共用；配置模型列表、Broker 认证、显式 context headers、TLS 验证、取消/超时/背压与安全错误。

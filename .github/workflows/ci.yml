@@ -11,6 +11,7 @@ on:
       - runtime/**
       - credentials/**
       - model/**
+      - cloud/**
       - apps/**
       - scripts/**
       - upstream/codex/**
@@ -22,6 +23,19 @@ permissions:
   contents: read
 
 jobs:
+  database:
+    name: I-1 PostgreSQL permissions (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Pull pinned PostgreSQL and pgvector test image
+        run: docker pull pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
+      - name: Rebuild and verify real database isolation and failure paths
+        run: python3 scripts/i1-database.py --output i1-database.json
+
   runtime:
     name: Runtime (${{ matrix.os }})
     strategy:

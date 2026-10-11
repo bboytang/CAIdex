@@ -395,6 +395,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-cloud-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "caidex-credentials"
 version = "0.1.0"
 dependencies = [
