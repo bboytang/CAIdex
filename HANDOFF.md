@@ -8,7 +8,7 @@
 
 本轮实现：schema5前向事务迁移；Brevo/Resend有限持久预算/幂等状态/认证回调/退信投诉抑制；Git外Broker秘密的loopback服务入口/磁盘预留；有限PG备份/最新检查点/新建隔离恢复；选定本机Chat导出。1000条精确向量压测发现逐行嵌套RLS重复检查，新增语句内授权scope集合并保留双方有效状态/范围/ACL与现有写权限，补普通FK索引保障B批清理。
 
-本机阶段验证：账户116、Memory58具名真实PG/HTTP检查，Chat本地26/0（ignored另记），Chat同步50、最终I-7隔离演练63项/0失败（含邮件回调/独立服务重启/物理ENOSPC/旧schema恢复/7天7份与预算）已验证，不将早期失败或工作区证据当精确提交CI。当前盘余约2.9GB，不清有效缓存；完整workspace/跨平台继续GitHub。操作与复现见 cloud/postgres/operations/README.md。精确初始功能dcd2967/CI38174081672运行中，暂不授最终通过。收尾发现CREATE DATABASE到REVOKE间连接抢占窗口：已改创建即ALLOW_CONNECTIONS=false并添加真实抢占负例，本机63/0及全部指纹匹配；提交最小修复后核验新的最终CI。准确下一步：commit/push main、核验最终精确四job CI并封存原始证据；达到有限条件后停止等独立审计，不启动J。
+本机阶段验证：账户116、Memory58具名真实PG/HTTP检查，Chat本地26/0（ignored另记），Chat同步50、最终I-7隔离演练63项/0失败（含邮件回调/独立服务重启/物理ENOSPC/旧schema恢复/7天7份与预算）已验证，不将早期失败或工作区证据当精确提交CI。当前盘余约2.9GB，不清有效缓存；完整workspace/跨平台继续GitHub。操作与复现见 cloud/postgres/operations/README.md。初始dcd2967/CI38174081672数据库功能62/0但非root清理私有PG绑定目录失败，job failure，不授通过；ef87af8/CI38174431345是连接隔离修复，仍有同一清理路径。已补仅本次测试绑定目录归还当前uid/gid，停止容器后执行，保持目录私有；复验/新精确CI后才封存。收尾发现CREATE DATABASE到REVOKE间连接抢占窗口：已改创建即ALLOW_CONNECTIONS=false并添加真实抢占负例，本机63/0及全部指纹匹配；提交最小修复后核验新的最终CI。准确下一步：commit/push main、核验最终精确四job CI并封存原始证据；达到有限条件后停止等独立审计，不启动J。
 
 ---
 

@@ -252,6 +252,15 @@ def main():
             print('I7_RESULT ' + json.dumps({'checks': len(checks), 'failures': 0}), flush=True)
         finally:
             subprocess.run(docker + ['rm', '-f', name], capture_output=True, env=env, timeout=30)
+            # Return only our private bind mounts to the caller, including stopped/OOM containers.
+            cleanup = subprocess.run(docker + ['run', '--rm', '--network', 'none', '--entrypoint', 'chown',
+                '--mount', f'type=bind,src={data},dst=/cleanup/data',
+                '--mount', f'type=bind,src={socket},dst=/cleanup/socket', IMAGE,
+                '-R', f'{os.geteuid()}:{os.getegid()}', '/cleanup/data', '/cleanup/socket'],
+                capture_output=True, env=env, timeout=30)
+            if cleanup.returncode:
+                raise RuntimeError('isolated fixture ownership cleanup failed')
+            socket.chmod(0o700)
 
 
 if __name__ == '__main__':
