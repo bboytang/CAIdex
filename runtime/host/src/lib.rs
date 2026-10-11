@@ -1,14 +1,16 @@
 //! Local Host lifecycle and persistent tasks. Execution and approvals remain in Codex.
 mod access;
 mod journal;
+mod memory;
 mod security;
 mod service;
 mod task;
 
 pub use access::{Grant, Scope};
 pub use journal::{Event, Journal, Snapshot};
+pub use memory::{MemoryGrant, MemoryProfile, MemoryService};
 pub use security::private_directory;
-pub use service::serve;
+pub use service::{serve, serve_with_memory};
 pub use task::{HostPolicy, Operation, Submission, Task};
 
 #[derive(Debug, thiserror::Error)]

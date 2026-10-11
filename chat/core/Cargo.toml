@@ -16,7 +16,7 @@ serde.workspace = true
 serde_json.workspace = true
 sha2 = "=0.10.9"
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["net"] }
 uuid = { version = "=1.23.0", features = ["v4", "serde"] }
 
 [target.'cfg(unix)'.dependencies]

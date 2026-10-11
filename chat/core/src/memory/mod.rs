@@ -1,5 +1,10 @@
 //! Account-local Memory. Sources are data, never Runtime instructions or approvals.
+mod host;
+mod inference;
 mod jobs;
+use host::Executor;
+pub use host::{HostConnection, HostModel, HostModelInfo, host_target};
+pub use inference::{Candidate, InferenceOutput, InferenceRequest, infer};
 mod store;
 pub(crate) use jobs::{automatic_chat_sources, injection};
 
@@ -197,8 +202,8 @@ pub struct Job {
 }
 #[derive(Default)]
 pub(crate) struct Session {
-    pub integration: Option<LocalModel>,
-    pub embedding: Option<(LocalModel, Space)>,
+    pub integration: Option<Executor>,
+    pub embedding: Option<(Executor, Space)>,
     pub resolver: Option<Arc<dyn EvidenceResolver>>,
     pub guards: Vec<Arc<Redactor>>,
     pub pending: BTreeMap<Uuid, CancellationToken>,
@@ -256,7 +261,7 @@ impl MemoryEngine<'_> {
             s.memory.guards.push(g);
         }
         s.memory.cancel_all();
-        s.memory.integration = Some(model);
+        s.memory.integration = Some(Executor::Local(model));
         Ok(())
     }
     pub fn configure_embedding(&self, model: LocalModel, space: Space) -> Result<()> {
@@ -275,7 +280,7 @@ impl MemoryEngine<'_> {
             s.memory.guards.push(g);
         }
         s.memory.cancel_all();
-        s.memory.embedding = Some((model, space));
+        s.memory.embedding = Some((Executor::Local(model), space));
         Ok(())
     }
 }

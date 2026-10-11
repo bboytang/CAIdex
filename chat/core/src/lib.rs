@@ -32,6 +32,12 @@ pub enum Error {
     ModelUnavailable,
     #[error("Chat credential belongs to another endpoint or account")]
     WrongCredentialOwner,
+    #[error("Host offline; no inference was submitted")]
+    HostOffline,
+    #[error("Host Memory authorization or pinned model refused")]
+    HostDenied,
+    #[error("Host inference outcome unknown; query the original operation, never replay")]
+    HostUnknown,
     #[error("Chat account changed or the turn was cancelled")]
     Cancelled,
 }

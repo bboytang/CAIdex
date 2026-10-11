@@ -337,16 +337,7 @@ pub(crate) fn permitted(
     }
     for value in values {
         let p: Permission = decode(&value)?;
-        if &p.target == target
-            && p.purpose == purpose
-            && p.scope == draft.scope
-            && p.kinds.contains(&draft.kind)
-            && draft
-                .sources
-                .iter()
-                .all(|src| p.source_types.contains(&src.origin.source_type()))
-            && (draft.privacy == Privacy::Shareable || p.allow_local_only)
-        {
+        if p.permits(target, purpose, draft) {
             return Ok(true);
         }
     }
@@ -419,11 +410,15 @@ impl MemoryEngine<'_> {
                     .integration
                     .as_ref()
                     .ok_or(Error::ModelUnavailable)?;
-                m.provider.memory_target(&m.model, false)
+                m.target(false).map_err(|_| {
+                    caidex_model_core::ProviderError::new(503, "memory_target_unavailable")
+                })
             }
             Purpose::Embedding => {
                 let (m, _) = s.memory.embedding.as_ref().ok_or(Error::ModelUnavailable)?;
-                m.provider.memory_target(&m.model, true)
+                m.target(true).map_err(|_| {
+                    caidex_model_core::ProviderError::new(503, "memory_target_unavailable")
+                })
             }
         }
         .map_err(|_| Error::ModelUnavailable)?;

@@ -5,6 +5,8 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+caidex-chat = { path = "../../chat/core" }
+caidex-model-core = { path = "../../model/core" }
 caidex-credentials = { path = "../../credentials/core", default-features = false }
 caidex-runtime = { path = "../bridge" }
 getrandom = "=0.4.3"
@@ -18,3 +20,8 @@ tokio = { workspace = true, features = ["net"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "=0.2.190"
+
+[dev-dependencies]
+caidex-auth = { path = "../../cloud/auth" }
+caidex-cloud-core = { path = "../../cloud/core" }
+caidex-provider-custom = { path = "../../model/providers/custom" }

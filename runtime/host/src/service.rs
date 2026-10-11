@@ -11,9 +11,11 @@ use tokio::{
 };
 
 use crate::access::{self, OWNER};
+use crate::memory;
 use crate::task::{self, Tasks};
 use crate::{Error, Event, HostPolicy, Journal, Result, Submission, random_id};
-use crate::{Grant, Scope};
+use crate::{Grant, MemoryService, Scope};
+use caidex_chat::memory::{InferenceRequest, Scope as MemoryScope};
 
 const DEADLINE: Duration = Duration::from_secs(15);
 const WRITE_DEADLINE: Duration = Duration::from_secs(5);
@@ -90,6 +92,40 @@ enum Request {
     },
     #[serde(rename = "client/revoke")]
     ClientRevoke { id: u64, client_id: String },
+    #[serde(rename = "memory/models")]
+    MemoryModels { id: u64, host_id: String },
+    #[serde(rename = "memory/submit")]
+    MemorySubmit {
+        id: u64,
+        host_id: String,
+        operation_id: String,
+        request: InferenceRequest,
+    },
+    #[serde(rename = "memory/release")]
+    MemoryRelease {
+        id: u64,
+        host_id: String,
+        operation_id: String,
+    },
+    #[serde(rename = "memory/status")]
+    MemoryStatus {
+        id: u64,
+        host_id: String,
+        operation_id: String,
+    },
+    #[serde(rename = "memory/cancel")]
+    MemoryCancel {
+        id: u64,
+        host_id: String,
+        operation_id: String,
+    },
+    #[serde(rename = "memory/evidence")]
+    MemoryEvidence {
+        id: u64,
+        host_id: String,
+        scope: MemoryScope,
+        task_id: String,
+    },
     #[serde(rename = "shutdown")]
     Shutdown { id: u64 },
 }
@@ -104,6 +140,7 @@ enum ClientCommand {
     Probe,
     Shutdown,
     Task(task::Command),
+    Memory(memory::Command),
     Grant {
         client_id: String,
         scopes: Vec<Scope>,
@@ -129,6 +166,7 @@ impl ClientCommand {
             Self::Task(task::Command::Approval { .. } | task::Command::Revoke { .. }) => {
                 Some(Scope::Approve)
             }
+            Self::Memory(_) => Some(Scope::Memory),
             Self::Shutdown | Self::Grant { .. } | Self::Revoke { .. } => None,
         }
     }
@@ -137,6 +175,69 @@ impl ClientCommand {
 impl Request {
     fn into_parts(self) -> (u64, ClientCommand) {
         match self {
+            Self::MemoryModels { id, host_id } => (
+                id,
+                ClientCommand::Memory(memory::Command::Models { host_id }),
+            ),
+            Self::MemorySubmit {
+                id,
+                host_id,
+                operation_id,
+                request,
+            } => (
+                id,
+                ClientCommand::Memory(memory::Command::Submit {
+                    host_id,
+                    operation_id,
+                    request,
+                }),
+            ),
+            Self::MemoryRelease {
+                id,
+                host_id,
+                operation_id,
+            } => (
+                id,
+                ClientCommand::Memory(memory::Command::Release {
+                    host_id,
+                    operation_id,
+                }),
+            ),
+            Self::MemoryStatus {
+                id,
+                host_id,
+                operation_id,
+            } => (
+                id,
+                ClientCommand::Memory(memory::Command::Status {
+                    host_id,
+                    operation_id,
+                }),
+            ),
+            Self::MemoryCancel {
+                id,
+                host_id,
+                operation_id,
+            } => (
+                id,
+                ClientCommand::Memory(memory::Command::Cancel {
+                    host_id,
+                    operation_id,
+                }),
+            ),
+            Self::MemoryEvidence {
+                id,
+                host_id,
+                scope,
+                task_id,
+            } => (
+                id,
+                ClientCommand::Memory(memory::Command::Evidence {
+                    host_id,
+                    scope,
+                    task_id,
+                }),
+            ),
             Self::Snapshot { id } => (id, ClientCommand::Snapshot),
             Self::Attach { id, host_id, after } => (id, ClientCommand::Attach { host_id, after }),
             Self::Detach { id } => (id, ClientCommand::Detach),
@@ -248,11 +349,43 @@ fn publish(
 /// A journal error is fatal: no further Runtime calls or uncommitted broadcasts.
 pub async fn serve(
     listener: TcpListener,
+    runtime: Runtime,
+    journal: Journal,
+    token: String,
+    project: PathBuf,
+    policy: HostPolicy,
+) -> Result<()> {
+    serve_inner(listener, runtime, journal, token, project, policy, None).await
+}
+/// Same Host transport and authorization; Memory is explicitly configured by the Host operator.
+pub async fn serve_with_memory(
+    listener: TcpListener,
+    runtime: Runtime,
+    journal: Journal,
+    token: String,
+    project: PathBuf,
+    policy: HostPolicy,
+    memory: MemoryService,
+) -> Result<()> {
+    serve_inner(
+        listener,
+        runtime,
+        journal,
+        token,
+        project,
+        policy,
+        Some(memory),
+    )
+    .await
+}
+async fn serve_inner(
+    listener: TcpListener,
     mut runtime: Runtime,
     mut journal: Journal,
     token: String,
     project: PathBuf,
     policy: HostPolicy,
+    mut memory: Option<MemoryService>,
 ) -> Result<()> {
     if !listener.local_addr()?.ip().is_loopback()
         || token.len() != 64
@@ -261,6 +394,9 @@ pub async fn serve(
         return Err(Error::Refused(
             "Host requires loopback and a 256-bit authorization token",
         ));
+    }
+    if let Some(memory) = &mut memory {
+        memory.protect(&token)?;
     }
     let (events, _) = broadcast::channel(EVENT_CAPACITY);
     let (access_send, access_receive) = watch::channel(journal.snapshot().clients);
@@ -276,6 +412,10 @@ pub async fn serve(
         println!("{}", json!({"protocol": 1, "address": listener.local_addr()?, "host_id": journal.snapshot().host_id, "pid": std::process::id()}));
         loop {
             tokio::select! {
+                _ = async { memory.as_mut().expect("configured Memory").jobs.join_next().await }, if memory.as_ref().is_some_and(|m| !m.jobs.is_empty()) => (),
+                completion = async { memory.as_mut().expect("configured Memory").receive.recv().await }, if memory.is_some() => {
+                    if let Some(completion) = completion { memory.as_mut().expect("configured Memory").complete(&journal.snapshot(), completion)?; }
+                }
                 _ = expiry.tick() => tasks.expire(&mut journal, &events, task::now()?)?,
                 accepted = listener.accept() => {
                     let (socket, _) = accepted?;
@@ -344,6 +484,7 @@ pub async fn serve(
                                 Err(Error::Refused(reason)) => { let _ = reply.send(Err(reason)); continue; }
                                 Err(error) => return Err(error),
                             };
+                            if let Some(memory) = &mut memory { memory.protect(&secret)?; }
                             let event = journal.append("host/access", json!({"grant": grant}))?;
                             access_send.send_replace(journal.snapshot().clients);
                             let _ = events.send(event);
@@ -355,11 +496,16 @@ pub async fn serve(
                             };
                             if !grant.revoked {
                                 grant.revoked = true;
+                                if let Some(memory) = &mut memory { memory.revoke(&client_id)?; }
                                 let event = journal.append("host/access", json!({"grant": grant}))?;
                                 access_send.send_replace(journal.snapshot().clients);
                                 let _ = events.send(event);
                             }
                             let _ = reply.send(Ok(Reply::Json(json!({"grant": grant}))));
+                        }
+                        Message::Client(ClientCommand::Memory(command), client, reply) => {
+                            let result = match &mut memory { Some(memory)=>memory.command(&journal.snapshot(), &client, command), None=>Err(Error::Refused("Host Memory not configured")) };
+                            match result { Ok(value)=>{ let _ = reply.send(Ok(Reply::Json(value))); }, Err(Error::Refused(reason))=>{ let _ = reply.send(Err(reason)); }, Err(error)=>return Err(error) }
                         }
                         Message::Client(ClientCommand::Task(command), client, reply) => {
                             match tasks.command(&mut journal, &events, command, &client) {
@@ -431,6 +577,7 @@ pub async fn serve(
             }
         }
     }.await;
+    drop(memory);
     probes.abort_all();
     tasks.jobs.abort_all();
     drop(messages);

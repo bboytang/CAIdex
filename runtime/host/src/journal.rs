@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use crate::{Error, Result, random_id};
 
 const APPLICATION_ID: i64 = 0x43414948; // CAIH: distinct from Chat/Memory databases.
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
 pub(crate) const REPLAY_LIMIT: i64 = 128;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -403,7 +403,7 @@ impl Journal {
         let version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
         let application: i64 =
             connection.pragma_query_value(None, "application_id", |row| row.get(0))?;
-        if !matches!(version, 1 | 2 | SCHEMA_VERSION) || application != APPLICATION_ID {
+        if !matches!(version, 1 | 2 | 3 | SCHEMA_VERSION) || application != APPLICATION_ID {
             return Err(Error::Refused(
                 "unsupported journal schema/application; no downgrade or repair",
             ));
@@ -424,7 +424,7 @@ impl Journal {
             object.entry("tasks").or_insert_with(|| json!({}));
             object.entry("operations").or_insert_with(|| json!({}));
         }
-        if version < SCHEMA_VERSION {
+        if version < 3 {
             wire.as_object_mut()
                 .ok_or(Error::Refused("invalid legacy snapshot"))?
                 .insert("clients".into(), json!({}));
@@ -462,7 +462,7 @@ impl Journal {
                     || grant.digest.len() != 64
                     || !grant.digest.bytes().all(|b| b.is_ascii_hexdigit())
                     || grant.scopes.is_empty()
-                    || grant.scopes.len() > 3
+                    || grant.scopes.len() > 4
             })
         {
             return Err(Error::Refused("invalid Host authorization projection"));

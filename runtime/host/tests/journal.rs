@@ -304,7 +304,7 @@ fn validated_v1_migration_preserves_identity_events_and_read_only_inspection() {
     );
     let migrated = Journal::open(&directory.0).unwrap();
     let actual = migrated.snapshot();
-    assert_eq!(actual.version, 3);
+    assert_eq!(actual.version, 4);
     assert_eq!(actual.host_id, saved.host_id);
     assert_eq!(actual.seq, saved.seq);
     assert_eq!(actual.threads, saved.threads);
@@ -314,7 +314,7 @@ fn validated_v1_migration_preserves_identity_events_and_read_only_inspection() {
     let version: i64 = connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 3);
+    assert_eq!(version, 4);
     assert_eq!(
         connection
             .query_row("SELECT COUNT(*) FROM events", [], |row| row
@@ -613,7 +613,7 @@ fn v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes() {
     drop(connection);
     let journal = Journal::open(&directory.0).unwrap();
     let upgraded = journal.snapshot();
-    assert_eq!(upgraded.version, 3);
+    assert_eq!(upgraded.version, 4);
     assert_eq!(upgraded.host_id, saved.host_id);
     assert_eq!(upgraded.seq, saved.seq);
     assert_eq!(upgraded.operations, saved.operations);

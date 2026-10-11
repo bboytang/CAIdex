@@ -14,6 +14,7 @@ pub enum Scope {
     Observe,
     Execute,
     Approve,
+    Memory,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -34,7 +35,7 @@ impl Grant {
                 .bytes()
                 .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b))
             || scopes.is_empty()
-            || scopes.len() > 3
+            || scopes.len() > 4
         {
             return Err(Error::Refused("invalid Host client/scopes"));
         }
