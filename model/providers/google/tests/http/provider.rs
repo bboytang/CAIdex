@@ -39,6 +39,51 @@ fn canonical(
     CanonicalRequest::new(source, dialect).unwrap()
 }
 
+#[tokio::test]
+async fn native_gemini_memory_guard_blocks_key_body_before_post_and_reports_exact_stream_target() {
+    let mut fixture = Fixture::start(vec![Reply::json(native_reply("STOP"))]).await;
+    let (client, reads) = client(&fixture.base, Some(KEY), Limits::default());
+    let provider = GeminiProvider::new(client, vec![profile()], 8).unwrap();
+    let target = provider.memory_target("alias", false).unwrap();
+    assert_eq!(
+        target.endpoint,
+        format!("{}/{MODEL}:generateContent", fixture.base)
+    );
+    assert_eq!(target.native_model, MODEL);
+    assert_eq!(
+        provider.memory_stream_target("alias").unwrap().endpoint,
+        format!("{}/{MODEL}:streamGenerateContent?alt=sse", fixture.base)
+    );
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    let context = || RequestContext {
+        memory_request: true,
+        ..Default::default()
+    };
+    let request = |text| {
+        canonical(
+            ResponsesDialect::Classic,
+            vec![json!({"role":"user","content":text})],
+            &json!([]),
+            false,
+        )
+    };
+    let error = provider
+        .create_response(request(KEY), context())
+        .await
+        .err()
+        .unwrap();
+    assert_eq!(error.code, "credential_in_memory_payload");
+    assert!(!format!("{error:?}").contains(KEY));
+    assert!(fixture.requests.try_recv().is_err());
+    provider
+        .create_response(request("safe memory context"), context())
+        .await
+        .unwrap();
+    let head = fixture.request().await;
+    assert!(head.starts_with("POST /proxy/v1beta/models/fixture-provider:generateContent "));
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+}
+
 // Catches config/metadata touching credentials, accepting unusable routes or
 // conflicting declarations, or granting compatibility from a model catalog.
 #[tokio::test]

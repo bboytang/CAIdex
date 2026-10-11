@@ -33,6 +33,44 @@ fn canonical(dialect: ResponsesDialect, tools: &[Value], stream: bool) -> Canoni
 }
 
 #[tokio::test]
+async fn native_anthropic_memory_guard_blocks_key_body_before_post_and_preserves_safe_requests() {
+    let (base, mut requests, _, task) = fixture(vec![(200, reply().to_string())], false).await;
+    let (client, reads) = client(&base, Some(KEY), Limits::default());
+    let provider = AnthropicProvider::new(client, vec![profile()], 10).unwrap();
+    let target = provider.memory_target("alias", false).unwrap();
+    assert_eq!(target.endpoint, format!("{base}messages"));
+    assert_eq!(target.native_model, "native");
+    assert_eq!(provider.memory_stream_target("alias").unwrap(), target);
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+    let request = CanonicalRequest::new(
+        json!({"model":"alias","input":[{"role":"user","content":KEY}],"tools":[],"stream":false}),
+        ResponsesDialect::Classic,
+    )
+    .unwrap();
+    let context = || RequestContext {
+        memory_request: true,
+        ..Default::default()
+    };
+    let error = provider
+        .create_response(request, context())
+        .await
+        .err()
+        .unwrap();
+    assert_eq!(error.code, "credential_in_memory_payload");
+    assert!(!format!("{error:?}").contains(KEY));
+    assert!(requests.try_recv().is_err());
+    provider
+        .create_response(canonical(ResponsesDialect::Classic, &[], false), context())
+        .await
+        .unwrap();
+    let (head, body) = received(&mut requests).await;
+    assert!(head.starts_with("POST /proxy/v1/messages "));
+    assert!(!std::str::from_utf8(&body).unwrap().contains(KEY));
+    assert_eq!(reads.load(Ordering::SeqCst), 2);
+    task.await.unwrap();
+}
+
+#[tokio::test]
 async fn provider_json_binding_reports_reject_lossy_history_without_retry_for_both_dialects() {
     for dialect in [ResponsesDialect::Classic, ResponsesDialect::Lite] {
         for (kind, reason, code) in [
