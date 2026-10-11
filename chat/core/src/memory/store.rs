@@ -278,7 +278,7 @@ pub(crate) fn search(
     limit: usize,
 ) -> Result<Vec<Memory>> {
     authorize(s, scope)?;
-    if !(1..=100).contains(&limit) || keyword.len() > 1024 || tag.is_some_and(|t| t.len() > 128) {
+    if !(1..=4096).contains(&limit) || keyword.len() > 1024 || tag.is_some_and(|t| t.len() > 128) {
         return Err(Error::Invalid);
     }
     let mut stmt=s.cache.db.prepare("SELECT m.id FROM memories m JOIN memory_revisions r ON r.id=m.head WHERE m.scope=?1 AND m.state='active' AND (?2 IS NULL OR r.created>=?2) ORDER BY r.created DESC,m.id LIMIT 4097")?;
@@ -507,6 +507,9 @@ impl MemoryEngine<'_> {
         after_millis: Option<i64>,
         limit: usize,
     ) -> Result<Vec<Memory>> {
+        if !(1..=100).contains(&limit) {
+            return Err(Error::Invalid);
+        }
         search(
             &*self.chat.state()?,
             scope,
@@ -515,6 +518,47 @@ impl MemoryEngine<'_> {
             after_millis,
             limit,
         )
+    }
+    pub fn list(&self, scope: &Scope, after: Option<Uuid>, limit: usize) -> Result<Vec<Memory>> {
+        let s = self.chat.state()?;
+        authorize(&s, scope)?;
+        if !(1..=100).contains(&limit) {
+            return Err(Error::Invalid);
+        }
+        let mut stmt=s.cache.db.prepare("SELECT id FROM memories WHERE scope=?1 AND state!='deleted' AND (?2 IS NULL OR id>?2) ORDER BY id LIMIT ?3")?;
+        let ids = stmt
+            .query_map(
+                params![scope.key(), after.map(|id| id.to_string()), limit as i64],
+                |r| r.get::<_, String>(0),
+            )?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        ids.into_iter().map(|id| load(&s, parse(&id)?)).collect()
+    }
+    pub fn permissions(&self, scope: &Scope) -> Result<Vec<(Uuid, Permission)>> {
+        let s = self.chat.state()?;
+        authorize(&s, scope)?;
+        let mut stmt = s
+            .cache
+            .db
+            .prepare("SELECT id,value FROM memory_permissions ORDER BY id LIMIT 1025")?;
+        let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+        let mut result = Vec::new();
+        let mut count = 0;
+        for row in rows {
+            count += 1;
+            if count > 1024 {
+                return Err(Error::Invalid);
+            }
+            let (id, value) = row?;
+            if !s.memory.safe(&value) {
+                return Err(Error::Invalid);
+            }
+            let p: Permission = decode(&value)?;
+            if &p.scope == scope {
+                result.push((parse(&id)?, p));
+            }
+        }
+        Ok(result)
     }
     pub fn export(&self, scope: &Scope) -> Result<String> {
         let s = self.chat.state()?;

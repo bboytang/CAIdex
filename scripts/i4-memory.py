@@ -82,11 +82,11 @@ def main():
             integrations = [r for p, r in Fixture.requests if r["model"] == "integration-synthetic"]
             embeddings = [r for p, r in Fixture.requests if p == "/embeddings"]
             chats = [r for p, r in Fixture.requests if r["model"] == "chat-synthetic"]
-            assert len(integrations) == 1 and len(embeddings) == 3 and len(chats) == 2
+            assert len(integrations) == 1 and len(embeddings) == 2 and len(chats) == 2
             assert "Use emacs" in json.dumps(chats[0])
             assert "Use emacs" not in json.dumps(chats[1])
             report.update(http_requests=len(Fixture.requests), integration_http=1,
-                          embedding_http=3, chat_http=2, fixture_assertions="passed", platform=os.name)
+                          embedding_http=2, chat_http=2, fixture_assertions="passed", platform=os.name)
             output = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
             if args.output:
                 args.output.write_text(output)

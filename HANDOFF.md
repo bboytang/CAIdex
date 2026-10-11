@@ -4,7 +4,7 @@
 
 ## 当前批准：I-4 Memory Engine，实施中
 
-用户已确认 I-3 独立审计通过并批准下一阶段 I-4，自动记忆首次默认关闭。范围/通过/停止见 [I-4 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。允许必要源码、迁移、测试、文档、commit/push main 与精确 CI；构建测试优先 GitHub，不使用 ponytail 技能。I-5 及后续未授权。起点 main/origin/main/GitHub main 为 67edfe8b8031a1329f7af0a68737318b12284322，工作区干净，盘可用 3.7GiB。当前仅建立范围文档，尚无 I-4 通过证据。
+用户已确认 I-3 独立审计通过并批准下一阶段 I-4，自动记忆首次默认关闭。范围/通过/停止见 [I-4 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。允许必要源码、迁移、测试、文档、commit/push main 与精确 CI；构建测试优先 GitHub，不使用 ponytail 技能。I-5 及后续未授权。起点 main/origin/main/GitHub main 为 67edfe8b8031a1329f7af0a68737318b12284322，工作区干净，盘可用 3.7GiB。当前 I-4 源码与测试已提交 a868a8e；首轮 CI38143641399 因 Memory scope 校验的一处 Clippy 嵌套条件失败，无 ENOSPC。补充提交 97f50d6 加入九原生/Custom Provider 目标与保护、来源类型授权，CI38143844052 运行中；当前仍有定向边界修复未提交（Memory 终态空输入、无 Embedding 配置等待、完整范围语义检索、恶意来源测试），尚无最终通过证据。
 
 准确下一步：实施 I-4 有限任务，完成相关验证与精确 CI，封存后停止等待独立审计。
 
