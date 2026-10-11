@@ -8,7 +8,7 @@
 
 非目标：I-5/I-6 云 Chat/Memory 同步及云观察器、I-7 运维、正式 GUI/CLI/SSH/Relay、商业 API/真实用户 Key/邮件/生产部署、iOS 安装。现有 Host loopback 经后续 L/Q 接远端传输；本轮不能认领生产 SSH/Relay。没有新 Agent、工具执行器或审批链，不修改固定 Codex 0.160.1。
 
-依赖：已通过的 H-3 Host 权限/Runtime/持久化与 I-4.1 Memory 核心，复用 ModelProvider/Router/Broker。原 Chat schema2、PostgreSQL迁移保持；Host journal 原子升级 schema3→4（新增 Memory scope，旧版拒读新版；保留原任务/事件/授权），Host 推理操作账本单独版本化。
+依赖：已通过的 H-3 Host 权限/Runtime/持久化与 I-4.1 Memory 核心，复用 ModelProvider/Router/Broker。原 Chat/Memory schema1/2 DDL、PostgreSQL迁移保持；本地 schema2→3 原子升级版本以保护新增目标固定字段，保留 Chat/Memory/许可/作业；Host journal 原子升级 schema3→4（新增 Memory scope，旧版拒读新版；保留原任务/事件/授权），Host 推理操作账本单独版本化。
 
 通过条件：Execute/Observe/Approve 均不隐授 Memory，Memory 不授 Runtime 执行/审批/全 journal；账户身份不代配对；跨客户端/作用域/模型/空间及 Host 凭据 owner 拒绝；客户端和 Host 分别检查外发许可及已知秘密；模型/工具输出有界且只为数据；离线不发客户端/云模型请求，恢复重验来源/revision/权限/模型目标；已受理操作不重发，丢回应可按原操作查，Host 重启未知不重放；关闭/取消/撤权/删除/切账户拒迟到结果；执行来源真实来自授权的完成任务摘要并在每次读取重新核验；精确 CI/原始日志/实际演示通过，限制和复现步骤完整。
 

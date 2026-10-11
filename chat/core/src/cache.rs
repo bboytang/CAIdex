@@ -109,7 +109,7 @@ impl Cache {
             tx.pragma_update(None, "application_id", APPLICATION_ID)?;
             tx.pragma_update(None, "user_version", 1)?;
             tx.commit()?;
-        } else if !(1..=2).contains(&version) || application != APPLICATION_ID {
+        } else if !(1..=3).contains(&version) || application != APPLICATION_ID {
             return Err(Error::UnsafeStorage);
         }
         let identity: String = db.query_row("SELECT namespace FROM identity", [], |r| r.get(0))?;
@@ -124,10 +124,14 @@ impl Cache {
             "PRAGMA foreign_keys=ON; PRAGMA secure_delete=ON; PRAGMA synchronous=FULL; PRAGMA journal_mode=DELETE;",
         )?;
         db.pragma_update(None, "max_page_count", 65536)?;
-        if db.pragma_query_value::<i64, _>(None, "user_version", |r| r.get(0))? == 1 {
+        let version = db.pragma_query_value::<i64, _>(None, "user_version", |r| r.get(0))?;
+        if version < 3 {
             let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-            tx.execute_batch(include_str!("memory/schema2.sql"))?;
-            tx.pragma_update(None, "user_version", 2)?;
+            if version == 1 {
+                tx.execute_batch(include_str!("memory/schema2.sql"))?;
+            }
+            // Host job references pin an exact target; old binaries must not read this new codec.
+            tx.pragma_update(None, "user_version", 3)?;
             tx.commit()?;
         }
         db.execute(

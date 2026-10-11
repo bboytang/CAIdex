@@ -623,7 +623,14 @@ fn v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes() {
 #[test]
 fn v3_memory_upgrade_keeps_existing_clients_artifacts_and_events() {
     let directory = Directory::new();
-    let journal = h3_journal(&directory);
+    let mut journal = h3_journal(&directory);
+    journal.append("host/access",json!({"grant":caidex_host::Grant {client_id:"old-client".into(),digest:"a".repeat(64),scopes:vec![caidex_host::Scope::Observe,caidex_host::Scope::Execute,caidex_host::Scope::Approve],revoked:false}})).unwrap();
+    journal
+        .append_runtime(
+            "turn/diff/updated",
+            json!({"params":{"threadId":"thread","turnId":"turn","diff":"native legacy artifact"}}),
+        )
+        .unwrap();
     let saved = journal.snapshot();
     assert!(!saved.clients.is_empty());
     drop(journal);

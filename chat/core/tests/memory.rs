@@ -801,3 +801,90 @@ async fn aborted_model_post_becomes_unknown_and_offline_semantic_search_keeps_ba
         1
     );
 }
+
+#[tokio::test]
+async fn schema_two_upgrade_preserves_chat_memory_permissions_and_unsubmitted_job_identity() {
+    let root = Root::new();
+    caidex_credentials::private_directory(&root.0).unwrap();
+    caidex_credentials::private_directory(&root.0.join("guest")).unwrap();
+    let path = root.0.join("guest/cache.sqlite3");
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch(include_str!("../src/schema.sql")).unwrap();
+    db.execute_batch(include_str!("../src/memory/schema2.sql"))
+        .unwrap();
+    db.execute("INSERT INTO identity VALUES('guest')", [])
+        .unwrap();
+    db.pragma_update(None, "application_id", 0x43414943)
+        .unwrap();
+    db.pragma_update(None, "user_version", 2).unwrap();
+    let conversation = Uuid::new_v4();
+    db.execute(
+        "INSERT INTO conversations VALUES(?1,NULL,'I41 Chat')",
+        [conversation.to_string()],
+    )
+    .unwrap();
+    let memory = Uuid::new_v4();
+    let head = Uuid::new_v4();
+    let job = Uuid::new_v4();
+    db.execute(
+        "INSERT INTO memories VALUES(?1,'personal',?2,'active')",
+        rusqlite::params![memory.to_string(), head.to_string()],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO memory_revisions VALUES(?1,?2,NULL,1,0)",
+        rusqlite::params![head.to_string(), memory.to_string()],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO memory_payloads VALUES(?1,?2)",
+        rusqlite::params![
+            head.to_string(),
+            serde_json::to_string(&draft(Scope::Personal, "I41 memory")).unwrap()
+        ],
+    )
+    .unwrap();
+    let source = Source::user(Scope::Personal, "legacy waiting".into());
+    let reference =
+        json!({"type":"integration","source":source,"privacy":"local_only"}).to_string();
+    db.execute(
+        "INSERT INTO memory_jobs VALUES(?1,'personal','integration','waiting',?2)",
+        rusqlite::params![job.to_string(), reference],
+    )
+    .unwrap();
+    drop(db);
+    let chat = Chat::open(&root.0, Namespace::guest()).unwrap();
+    assert_eq!(chat.conversations(None, 10).unwrap()[0].id, conversation);
+    assert_eq!(chat.memory().get(memory).unwrap().head, head);
+    assert_eq!(
+        chat.memory()
+            .queue_integration(source, Privacy::LocalOnly)
+            .unwrap(),
+        job
+    );
+    assert!(!chat.memory().automatic().unwrap());
+    let db = rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(
+        db.pragma_query_value::<i64, _>(None, "user_version", |r| r.get(0))
+            .unwrap(),
+        3
+    );
+    assert_eq!(
+        db.query_row(
+            "SELECT reference FROM memory_jobs WHERE id=?1",
+            [job.to_string()],
+            |r| r.get::<_, String>(0)
+        )
+        .unwrap(),
+        reference
+    );
+    drop(db);
+    chat.memory().set_automatic(true).unwrap();
+    let p = Mock::new(false);
+    chat.memory()
+        .configure_integration(model(p.clone(), "integration"))
+        .unwrap();
+    permit(&chat.memory(), target("integration"), Purpose::Integration);
+    assert_eq!(chat.memory().run(job).await.unwrap().len(), 1);
+    assert_eq!(p.calls.load(Ordering::SeqCst), 1);
+}
