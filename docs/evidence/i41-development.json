@@ -1,0 +1,4073 @@
+{
+  "schema_version": 1,
+  "milestone": "I-4.1",
+  "runs": [
+    {
+      "conclusion": "failure",
+      "databaseId": 38143641399,
+      "headSha": "a868a8efb0d1de4565d001073acd4b97dafc97c5",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T13:37:44Z",
+          "conclusion": "success",
+          "databaseId": 114482391061,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T13:33:22Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143641399/job/114482391061",
+          "checkout_sha": "a868a8efb0d1de4565d001073acd4b97dafc97c5",
+          "log": "i41-development-114482391061.log.gz",
+          "raw_sha256": "66ac9b41fd018cecdcced67d8cc3a364c6601362802347da7e239c5e71bb30a3",
+          "gzip_sha256": "fb8d9bed8ffea4173e709754588d1f7c3084ba218416999600c72bce34ab8480"
+        },
+        {
+          "completedAt": "2026-10-11T13:36:09Z",
+          "conclusion": "failure",
+          "databaseId": 114482391296,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T13:33:23Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143641399/job/114482391296",
+          "checkout_sha": "a868a8efb0d1de4565d001073acd4b97dafc97c5",
+          "log": "i41-development-114482391296.log.gz",
+          "raw_sha256": "5b4106ed0a98c5a7688aea784b2331b672794b1b505d511d0659c308c40e3e6f",
+          "gzip_sha256": "bf84aa57f0a6fbb2083868ffc37543e42cc6fc0670ddf29312d20b095937432e"
+        },
+        {
+          "completedAt": "2026-10-11T13:34:23Z",
+          "conclusion": "failure",
+          "databaseId": 114482391306,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T13:33:22Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143641399/job/114482391306",
+          "checkout_sha": "a868a8efb0d1de4565d001073acd4b97dafc97c5",
+          "log": "i41-development-114482391306.log.gz",
+          "raw_sha256": "7047b0e459639b1fb8fbef2016004ffc8995580b333c10a72ef7abc0e04bb753",
+          "gzip_sha256": "74c76f0dac5709d79fb8b7b63a7b6509e5b0760068779576854c6e0aedfae1a6"
+        },
+        {
+          "completedAt": "2026-10-11T13:34:57Z",
+          "conclusion": "failure",
+          "databaseId": 114482391332,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T13:33:27Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143641399/job/114482391332",
+          "checkout_sha": "a868a8efb0d1de4565d001073acd4b97dafc97c5",
+          "log": "i41-development-114482391332.log.gz",
+          "raw_sha256": "0f5518a79636c34291488a9260e524e8bb0864fbd19379dd8523d4c2179b9ce8",
+          "gzip_sha256": "02038a0ceb821af90409f229502ec6813ba521fff6550d2b57088a92b3af7466"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38143641399"
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 38143844052,
+      "headSha": "97f50d64be25901a1f87af60184c1e51d033b572",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T13:40:06Z",
+          "conclusion": "success",
+          "databaseId": 114482984585,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T13:36:23Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143844052/job/114482984585",
+          "checkout_sha": "97f50d64be25901a1f87af60184c1e51d033b572",
+          "log": "i41-development-114482984585.log.gz",
+          "raw_sha256": "70915fc6c8660348322a27a63d85bdc87826f93810b4ede53934ff7cc75a1ec8",
+          "gzip_sha256": "6d504c082fc38bc56cf9ab99f74573f7e464c0a048aba66c460180be66be1625"
+        },
+        {
+          "completedAt": "2026-10-11T13:39:09Z",
+          "conclusion": "failure",
+          "databaseId": 114482984665,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T13:36:23Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143844052/job/114482984665",
+          "checkout_sha": "97f50d64be25901a1f87af60184c1e51d033b572",
+          "log": "i41-development-114482984665.log.gz",
+          "raw_sha256": "e3529d7fdb4e22b37c306a231360018d745e9476dff669c9b32291a155631c49",
+          "gzip_sha256": "a579e50d98d85674f4d4d8ca9a9c0efa4277d102a569033a7ac34402029e688c"
+        },
+        {
+          "completedAt": "2026-10-11T13:40:08Z",
+          "conclusion": "failure",
+          "databaseId": 114482984721,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T13:36:28Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143844052/job/114482984721",
+          "checkout_sha": "97f50d64be25901a1f87af60184c1e51d033b572",
+          "log": "i41-development-114482984721.log.gz",
+          "raw_sha256": "43b87a5d5a37b23cec01496ee6a69e7d80a266117b655d619dcf23eb240d08b9",
+          "gzip_sha256": "0b7dc3f158d876ac065f3381ea1c2c617e150025a9ce0a12abcf81be21fad1a3"
+        },
+        {
+          "completedAt": "2026-10-11T13:42:07Z",
+          "conclusion": "failure",
+          "databaseId": 114482984723,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T13:36:24Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38143844052/job/114482984723",
+          "checkout_sha": "97f50d64be25901a1f87af60184c1e51d033b572",
+          "log": "i41-development-114482984723.log.gz",
+          "raw_sha256": "c5bf3be5c71006b90633adac907889bfe85e65d20e50f22dd652181a891a332e",
+          "gzip_sha256": "2f73aea7db4be304e3c496a92a589eb1ef7cfaaf72a68eb49f8485f529cddc85"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38143844052"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 38144172373,
+      "headSha": "c32c23b3ba681cac538f355ca35e10e78c42f606",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T13:47:48Z",
+          "conclusion": "success",
+          "databaseId": 114483951177,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T13:41:31Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38144172373/job/114483951177",
+          "checkout_sha": "c32c23b3ba681cac538f355ca35e10e78c42f606",
+          "log": "i41-development-114483951177.log.gz",
+          "raw_sha256": "9bd59298acbde8363756b96f8fafcd54fbd74923eb8a30b00cfd1a182dac1e85",
+          "gzip_sha256": "916860cd2cc00d303b15a1cd3bef6fb550eda8c36ce2ef1a75f0e761fc943139"
+        },
+        {
+          "completedAt": "2026-10-11T13:50:11Z",
+          "conclusion": "success",
+          "databaseId": 114483951266,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T13:41:23Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38144172373/job/114483951266",
+          "checkout_sha": "c32c23b3ba681cac538f355ca35e10e78c42f606",
+          "log": "i41-development-114483951266.log.gz",
+          "raw_sha256": "d034e08d8c22f02a54209ca4526c4b7d6853c9da3c66fd5479d45025f58adb4c",
+          "gzip_sha256": "19d0e81a0d83ff1ccecccb3ddbfedd0bac23c05b03f79738ef06343a6314f927"
+        },
+        {
+          "completedAt": "2026-10-11T13:46:44Z",
+          "conclusion": "success",
+          "databaseId": 114483951284,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T13:41:23Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38144172373/job/114483951284",
+          "checkout_sha": "c32c23b3ba681cac538f355ca35e10e78c42f606",
+          "log": "i41-development-114483951284.log.gz",
+          "raw_sha256": "1c64cb09b7115ae5f2b7edb0ab85827ed12f1a3a3893354161fda27adea48f84",
+          "gzip_sha256": "810b7684562eeeb0865f0dff3d511907ef940f2c74cd19c63b7976c04ff17701"
+        },
+        {
+          "completedAt": "2026-10-11T13:45:00Z",
+          "conclusion": "success",
+          "databaseId": 114483951317,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T13:41:23Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38144172373/job/114483951317",
+          "checkout_sha": "c32c23b3ba681cac538f355ca35e10e78c42f606",
+          "log": "i41-development-114483951317.log.gz",
+          "raw_sha256": "a6c704806a5be2e6fc62ea37a3d0bf36ed776df3a80eec083babd7ea31086bfc",
+          "gzip_sha256": "db11087cd8d81eebec81be91c46782ebbd1f1b21954c250ad855084b31c67bc1"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38144172373"
+    },
+    {
+      "conclusion": "cancelled",
+      "databaseId": 38145573110,
+      "headSha": "b912b9d01e72d5f567a6aa9e5af667ddbc4fa6ab",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T14:03:54Z",
+          "conclusion": "cancelled",
+          "databaseId": 114488068583,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T14:02:31Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "cancelled",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145573110/job/114488068583",
+          "checkout_sha": "b912b9d01e72d5f567a6aa9e5af667ddbc4fa6ab",
+          "log": "i41-development-114488068583.log.gz",
+          "raw_sha256": "d0971715f6896ce5783f4e6391a68e84d41496bd04677252f082e5c4d146401b",
+          "gzip_sha256": "b7fb1482bdb6f1abeb22914bd2ff7bbb13cb8d7c11469ba844c87264096015b1"
+        },
+        {
+          "completedAt": "2026-10-11T14:04:01Z",
+          "conclusion": "cancelled",
+          "databaseId": 114488068695,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T14:02:35Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "cancelled",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145573110/job/114488068695",
+          "checkout_sha": "b912b9d01e72d5f567a6aa9e5af667ddbc4fa6ab",
+          "log": "i41-development-114488068695.log.gz",
+          "raw_sha256": "d3b1c40f2e569f02ecfed63430070083e55d1ce4236607fadc9197637bee8176",
+          "gzip_sha256": "312393a82e0ce23b71b6233adc142aa4b51a48374c202118cdc809e045033bad"
+        },
+        {
+          "completedAt": "2026-10-11T14:04:06Z",
+          "conclusion": "cancelled",
+          "databaseId": 114488068703,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T14:02:31Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "cancelled",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145573110/job/114488068703",
+          "checkout_sha": "b912b9d01e72d5f567a6aa9e5af667ddbc4fa6ab",
+          "log": "i41-development-114488068703.log.gz",
+          "raw_sha256": "31d88b2965af7560d212ccbc50210c7f51aca33a40d88de9dc35cb828a44d649",
+          "gzip_sha256": "a13b08d0c99931d0b992a44611d655b6e318b593957c17e38fba69b426c85191"
+        },
+        {
+          "completedAt": "2026-10-11T14:03:55Z",
+          "conclusion": "cancelled",
+          "databaseId": 114488068758,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T14:02:32Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "cancelled",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145573110/job/114488068758",
+          "checkout_sha": "b912b9d01e72d5f567a6aa9e5af667ddbc4fa6ab",
+          "log": "i41-development-114488068758.log.gz",
+          "raw_sha256": "62dab5a16e005294747bcb31d17d1da3cca7aa95173b7ca7864dc9a190a646eb",
+          "gzip_sha256": "ff67a3596e0a6f0c0bc9ed25b602f79562811fa6f52574e2a2832dfc06fed5fc"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38145573110"
+    },
+    {
+      "conclusion": "cancelled",
+      "databaseId": 38145601605,
+      "headSha": "ca674a56e15b13d75b66fd5fd7bb4fdf1912d711",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T14:04:08Z",
+          "conclusion": "cancelled",
+          "databaseId": 114488156192,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T14:02:58Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "cancelled",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145601605/job/114488156192",
+          "checkout_sha": "ca674a56e15b13d75b66fd5fd7bb4fdf1912d711",
+          "log": "i41-development-114488156192.log.gz",
+          "raw_sha256": "b1a4f81f616f3b8cfca344b60d8bff2596430c05ac0afe8b42828af5845b3c8d",
+          "gzip_sha256": "46d53671e056f216dd2f9b9999aa4f699f0b36c978c82359611e06bd693379c8"
+        },
+        {
+          "completedAt": "2026-10-11T14:03:13Z",
+          "conclusion": "failure",
+          "databaseId": 114488156270,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T14:02:57Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145601605/job/114488156270",
+          "checkout_sha": "ca674a56e15b13d75b66fd5fd7bb4fdf1912d711",
+          "log": "i41-development-114488156270.log.gz",
+          "raw_sha256": "fa83518f42617d53cb9743ba32e6b56f111c40ed3c8d47b56d8ebdcaf0b8578f",
+          "gzip_sha256": "708cf0c0c7dbde4b40241326fd78968d5678361e362a946a0f292739ece81769"
+        },
+        {
+          "completedAt": "2026-10-11T14:03:57Z",
+          "conclusion": "cancelled",
+          "databaseId": 114488156274,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T14:02:58Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "cancelled",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145601605/job/114488156274",
+          "checkout_sha": "ca674a56e15b13d75b66fd5fd7bb4fdf1912d711",
+          "log": "i41-development-114488156274.log.gz",
+          "raw_sha256": "00de6bc384c6ca0f0318569d8e3f1d3b79ecf1ba1a5db035e0cae1e6621875cc",
+          "gzip_sha256": "25c9b0c3469e2c7d3584f6b2be1e8424216d9209f32fa3e01fcaeaa6977233b5"
+        },
+        {
+          "completedAt": "2026-10-11T14:03:25Z",
+          "conclusion": "failure",
+          "databaseId": 114488156357,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T14:03:03Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145601605/job/114488156357",
+          "checkout_sha": "ca674a56e15b13d75b66fd5fd7bb4fdf1912d711",
+          "log": "i41-development-114488156357.log.gz",
+          "raw_sha256": "d3c10c17c53e75d2477bc138756d6a61c7d831f5492145ec5d1bba78646135e8",
+          "gzip_sha256": "b73e3b7c86d855f929160470d63bd8378fea8961992dd3971a493445763bc712"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38145601605"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 38145623478,
+      "headSha": "bc03cce5aef19d24c7d1d4cf2219ba7d7cec2da1",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T14:07:47Z",
+          "conclusion": "success",
+          "databaseId": 114488221685,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T14:03:17Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145623478/job/114488221685",
+          "checkout_sha": "bc03cce5aef19d24c7d1d4cf2219ba7d7cec2da1",
+          "log": "i41-development-114488221685.log.gz",
+          "raw_sha256": "822582a1efe94a0e868552ba57dcc9fc2726c75925d6124e0b43b0c37c7d428a",
+          "gzip_sha256": "5c7f13274be3c8339fce3ecb7b5d806df6dcd75565218faed3d2d3f116b1fa61"
+        },
+        {
+          "completedAt": "2026-10-11T14:07:06Z",
+          "conclusion": "success",
+          "databaseId": 114488221702,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T14:03:17Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145623478/job/114488221702",
+          "checkout_sha": "bc03cce5aef19d24c7d1d4cf2219ba7d7cec2da1",
+          "log": "i41-development-114488221702.log.gz",
+          "raw_sha256": "4e8aab5f131c7b3d25ae4b756c7131dde556e3c30f1f4ed2a1bea10cb0b77f1b",
+          "gzip_sha256": "ea27e44066a2a1c61bb60079937ccae4e11a43db5b4b98d5bb8d76c0fd42b06d"
+        },
+        {
+          "completedAt": "2026-10-11T14:09:57Z",
+          "conclusion": "success",
+          "databaseId": 114488221788,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T14:03:22Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145623478/job/114488221788",
+          "checkout_sha": "bc03cce5aef19d24c7d1d4cf2219ba7d7cec2da1",
+          "log": "i41-development-114488221788.log.gz",
+          "raw_sha256": "f228a6e1a21485f34ace4a01e3cf72e75b1517d12b48f0749f8579bc4741f53c",
+          "gzip_sha256": "2d9a1994b0f54156bc6425e6962c1472a05df96760f418fa162eedd89c807ec1"
+        },
+        {
+          "completedAt": "2026-10-11T14:14:34Z",
+          "conclusion": "success",
+          "databaseId": 114488221855,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T14:03:17Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145623478/job/114488221855",
+          "checkout_sha": "bc03cce5aef19d24c7d1d4cf2219ba7d7cec2da1",
+          "log": "i41-development-114488221855.log.gz",
+          "raw_sha256": "13282f68efc94097083b8ea6d96af741cbe11f41cbf9d0666d66ba1c9f479218",
+          "gzip_sha256": "50e3bebc7711a64303862fb372257f497854a85dd872650718d71c8c7082490f"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38145623478"
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 38145861185,
+      "headSha": "39f6b57208fc2f66007b8601a4b2e9db26502faf",
+      "jobs": [
+        {
+          "completedAt": "2026-10-11T14:09:50Z",
+          "conclusion": "success",
+          "databaseId": 114488940265,
+          "name": "I-1/I-2 database and authentication (Linux)",
+          "startedAt": "2026-10-11T14:06:49Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Pull pinned PostgreSQL and pgvector test image",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Rebuild and verify real database isolation and failure paths",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Authentication server and fixture Clippy",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Account trust, cancellation and protected store contracts",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145861185/job/114488940265",
+          "checkout_sha": "39f6b57208fc2f66007b8601a4b2e9db26502faf",
+          "log": "i41-development-114488940265.log.gz",
+          "raw_sha256": "3812b66871703318df3d601dcab248c9ffd1205e89177835515f4d43e4480aac",
+          "gzip_sha256": "3c06948511097a23e09f30968614b5cead0fc6b312916e1cb5204b81d8c59671"
+        },
+        {
+          "completedAt": "2026-10-11T14:13:11Z",
+          "conclusion": "failure",
+          "databaseId": 114488940430,
+          "name": "Runtime (windows-2022)",
+          "startedAt": "2026-10-11T14:06:49Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145861185/job/114488940430",
+          "checkout_sha": "39f6b57208fc2f66007b8601a4b2e9db26502faf",
+          "log": "i41-development-114488940430.log.gz",
+          "raw_sha256": "2cc2b3912de73c51d704e788e092f9de88862e84ed38915de482fcbc006a118c",
+          "gzip_sha256": "341e2ca5c592c483736aa4bfa6c5180a141049b3bff48a184d88abe1641fca7c"
+        },
+        {
+          "completedAt": "2026-10-11T14:13:00Z",
+          "conclusion": "success",
+          "databaseId": 114488940469,
+          "name": "Runtime (macos-15)",
+          "startedAt": "2026-10-11T14:06:53Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145861185/job/114488940469",
+          "checkout_sha": "39f6b57208fc2f66007b8601a4b2e9db26502faf",
+          "log": "i41-development-114488940469.log.gz",
+          "raw_sha256": "4f8d71df49df96e65ce514076647342fed4688f877ea8922fbecf8d0640afebb",
+          "gzip_sha256": "72a5f074fe4119be4af6ab88dcc8abb7ae8872af6afca607a409f8a356e8fded"
+        },
+        {
+          "completedAt": "2026-10-11T14:10:43Z",
+          "conclusion": "success",
+          "databaseId": 114488940473,
+          "name": "Runtime (ubuntu-24.04)",
+          "startedAt": "2026-10-11T14:06:49Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check account authorization JavaScript",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host owner-only storage boundary",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned Rust toolchain",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Windows Host storage through the Rust process boundary",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Check formatting",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Clippy",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Protocol tests",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Linux native credential test service",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Linux native credential store in an isolated session",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install pinned upstream CLI",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate native Codex executable",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify pinned stable and experimental schemas",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify real app-server without a model turn",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-1 independent Host and two-client recovery (no model turn)",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Runtime with local Responses fixtures",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 43,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 44,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 45,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/bboytang/CAIdex/actions/runs/38145861185/job/114488940473",
+          "checkout_sha": "39f6b57208fc2f66007b8601a4b2e9db26502faf",
+          "log": "i41-development-114488940473.log.gz",
+          "raw_sha256": "9df8563aaae3cbb7a4140d305c09be9577a9090e26713940e78fe64f1dacbbf5",
+          "gzip_sha256": "7704e6aa15a2bbf49e7bc0d6841df0b98456349c323b1a36893915f87a847ca0"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38145861185"
+    }
+  ],
+  "causes": {
+    "38143641399": "Clippy rejected a nested scope authorization conditional; corrected in 97f50d6.",
+    "38143844052": "Terminal job input was intentionally purged but read_job decoded empty input instead of returning AlreadySubmitted; fixed in c32c23b.",
+    "38144172373": "Successful intermediate source; superseded by cancellation, account credential guard and storage/queue boundary fixes. Not final acceptance.",
+    "38145573110": "Cancelled obsolete source after the queue capacity fixture was found to reuse one deduplicated source instead of filling the queue.",
+    "38145601605": "Cancelled obsolete source after formatting the distinct-source queue fixture; no final acceptance.",
+    "38145623478": "Successful intermediate source before newly recognized credential deletion correction and native adapter Memory guard tests. Not final acceptance.",
+    "38145861185": "Memory tests passed on all platforms; Windows failed unchanged Host two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark at service.rs:129 with Elapsed timeout (20/21 service tests passed). Exact source run 38145623478 passed this Host test; root cause not established, no timeout or assertion weakened. Final source still requires its own exact full CI."
+  },
+  "disk_full": false,
+  "limits": [
+    "Historical failed/cancelled/intermediate results do not establish final I-4.1 acceptance.",
+    "No ENOSPC or No space left on device found in these original job logs."
+  ]
+}

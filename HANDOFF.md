@@ -2,13 +2,21 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前批准：I-4.1 本地 Memory Engine，实施收尾
+## 当前停止：I-4.1 已封存，等待独立审计
 
-用户已确认 I-3 独立审计通过并批准下一阶段 I-4，自动记忆首次默认关闭。范围/通过/停止见 [I-4 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。允许必要源码、迁移、测试、文档、commit/push main 与精确 CI；构建测试优先 GitHub，不使用 ponytail 技能。用户进一步明确拆为 I-4.1 本地核心 / I-4.2 Host 接入；当前只授权 I-4.1，独立审计后再批准 I-4.2，不改变 V3 I 阶段。I-4.2、I-5 及后续未授权。起点 main/origin/main/GitHub main 为 67edfe8b8031a1329f7af0a68737318b12284322，工作区干净，盘可用 3.7GiB。当前 I-4 源码与测试已提交 a868a8e；首轮 CI38143641399 因 Memory scope 校验的一处 Clippy 嵌套条件失败，无 ENOSPC。补充提交 97f50d6 加入九原生/Custom Provider 目标与保护、来源类型授权，CI38143844052 运行中；第二轮 Memory 6/7，通过前六组但终态不可重播错误分类测试失败。修复 c32c23b 已推送 CI38144172373（运行中），补全终态空输入、无 Embedding 配置等待、范围内全部精确向量检索/无向量不外发、恶意来源。第三轮四 job 已全部成功，含合成 HTTP 演示，但不能为后续源码授最终通过。当前未提交：ConfirmedSession 只读凭据 guard 接入 namespace；真实 Git 来源变更/满库纠错回滚/任务丢弃后 unknown/离线语义回退定向测试；I-4.1 / I-4.2 用户确认拆分与范围。尚无最终源码通过证据。
+用户确认 I-3 独立审计通过并批准 I-4，自动记忆首次默认关闭；随后明确拆为 I-4.1 本地核心 / I-4.2 Host 接入：先封存、独立审计 I-4.1，再另行批准 I-4.2，不改变 V3 正式 I 阶段。范围/通过/停止/试用见 [I-4.1 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。当前 I-4.1 开发通过条件已满足，停止新增功能。**独立审计未由本实施会话授予；I-4.2/I-5 及后续未授权**。不使用 ponytail 技能，不读真实用户 Key/调用商业 API/邮件/生产部署。
 
-最新收尾：确认会话凭据 guard 自动随 Namespace 接入；任务 Future 丢弃封存 unknown，离线语义检索回退基础检索；新增真实 Git 来源变更、SQLite 满库纠错事务回滚及自动队列满不影响已完成 Chat 的测试。许可目标核对真实已配置 Provider 端点/native model；导出覆盖与创建相同的 4096 条范围上限，许可写入上限与读取一致。本地 fmt、Python compile、git diff --check 已通过，未运行本地完整构建；尚需最终提交四 job 精确 CI，不以 c32c23b 中间成功代授。
+不可变功能源码 [`c17c5bde51b79c2ec7e1ca5df9c5c3b584847b17`](https://github.com/bboytang/CAIdex/commit/c17c5bde51b79c2ec7e1ca5df9c5c3b584847b17)，[精确 CI38146076798](https://github.com/bboytang/CAIdex/actions/runs/38146076798) 四 job 全部成功，各原始 checkout 完整 SHA 已核对。实际 main 流程，起点67edfe8；封存提交只文档/证据，实际封存 HEAD 以 git rev-parse HEAD 为准，不当功能 CI SHA。封存内容：本 HANDOFF/AGENTS、I-4.1 设计验收与默认关闭对应 Account/UI 三行，以及 docs/evidence/i41-*；源码已在上述功能提交。恢复先核实 Git 状态，不假定以后工作区仍干净。
 
-准确下一步：提交上述 I-4.1 收尾并 push main，核验最终源码的四 job 实际 CI，保存原始日志/复现/限制并封存后停止等待独立审计。I-4.2 的 Host 记忆 RPC/Memory 授权不在本次范围内。
+实现：chat/core/src/memory 共享本地核心，schema2 原子迁移保留 I-3 Chat；个人/项目、来源/不可变 revision、CAS 冲突与人工批准、删除清正文/向量/匹配作业与来源墓碑防复活、导出；独立 Chat/整合/Embedding、实际端点/native model/用途/范围/类型/隐私许可、精确空间/旧版本隔离、无模型/离线基础搜索；默认关闭/等待/撤权/取消/重启 unknown 不重播。ConfirmedSession/Broker 只读凭据 guard、新识别敏感载荷可授权删除；低可信有界临时 Chat 注入，自动队列满不影响已完成 Chat。模型绑定仅当前会话，重启应用需重新配置并明确 run waiting 作业，没有正式 UI/CLI/常驻消费者。
+
+最终实际结果：Linux114489598304 workspace711/0/83、原Chat7/Host42、固定Runtime81；macOS114489598375 workspace710/0/81、Chat7/Host42、Runtime80；Windows114489598108 workspace704/0/81、Chat6/Host41、Runtime80。每端 Memory12（11集成+1容量单元）及3项新 Provider HTTP/Embedding测试已计入workspace；Host也计入，ignored不计通过。Linux原生凭据附加1/Windows额外Host lib4另记。fmt/Clippy/JS/schema/doctor、Chat/Memory/H-1/2/3演示全成功。数据库114489598283真实PG17.10/vector0.8.2，I-1 118/0、I-2 110具名组/0、共享认证5/0。Memory每端5次真实合成HTTP（整合1/Embedding2/Chat2）、上传0，不授商业 Live/正式平台验收。
+
+证据：[最终四 job/36个源码指纹/原日志](docs/evidence/i41-ci.json)、[同提交认证回归](docs/evidence/i41-auth-regression.json)、[七轮开发/28份原日志](docs/evidence/i41-development.json)。开发 Clippy/终态空输入失败已修，两次过时源码主动取消；成功中间结果不替最终提交。39f6b57 Windows Memory全通过，未改动Host service.rs:129等待超时（20/21），根因未定且未放宽断言；最终完整Host/Runtime已成功，历史失败保留。32份日志均校验压缩/原文SHA256，无ENOSPC；原190份证据/Cargo.lock/PostgreSQL/I-3 schema1/固定Runtime/Host/upstream字节不变。
+
+限制：本地 SQLite 明文/OS owner可读；本地 project grant不是云ACL，可信 EvidenceResolver必须新鲜核对实际来源权限，Execution本轮是合成摘要而非真实Host记忆RPC。MEM-10离线/恢复、Host独立Memory权限/自有Broker/Key必须I-4.2；Request当前无记忆RPC，Scope只有Observe/Execute/Approve，不得复用Execute授记忆工具权。云Chat/Memory同步、B删除/epoch数据协议归I-5/I-6。物理VPS满盘/容量、GUI/正式CLI/iOS、商业Live未验；SQLite容量注入只证明事务回滚。盘约3.6GiB可用/91%，本地仅格式/脚本/差异/链接/指纹检查，构建测试均GitHub，未清理用户/全局缓存。
+
+准确下一步：独立新会话/其他模型只读审计上述不可变功能源码、完整调用路径、实际证据和限制；当前范围阻断则最小修复/精确复验。等待用户确认 I-4.1 审计通过并明确批准 I-4.2，才能启动后者。整个 I-4 尚未完成，不自行授审计或跨阶段开发。
 
 ## 已关闭 I-3（用户确认独立审计通过）
 
