@@ -7,12 +7,16 @@ use serde_json::json;
 struct Directory(PathBuf);
 impl Directory {
     fn new() -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let ordinal = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let unique = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("caidex-h1-journal-{}-{unique}", std::process::id()));
+        let path = std::env::temp_dir().join(format!(
+            "caidex-h1-journal-{}-{unique}-{ordinal}",
+            std::process::id()
+        ));
         private_directory(&path).unwrap();
         Self(path)
     }

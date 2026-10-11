@@ -8,12 +8,9 @@
 
 目标/有限计划/非目标/依赖/通过与停止条件见[H-2设计与验收](docs/CAIdex-H2-Host-设计与验收-V1.md)。仅H-2持久任务/operation幂等/查询取消/原生执行审批转交/实际策略/未知恢复/轮次边界与持久关联；复用Codex0.160.1与既有Facade，不读真实Key/不调用商业API。main直接提交推送及最终功能SHA三平台精确CI，封存后停止等待独立审计；H-3/I未授权。
 
-已实现schema v2事务升级及任务/operation投影、幂等/hash与受理/终态分离、原生执行/审批/取消、300秒任务上限、同live stream已确认边界的模型轮次及独立profile新线程父子关联。H-1命名空间隔离/环境/凭据边界保持；rateLimits仅无载荷收据。真实双端+独立提交者退出/丢回应、原生实际标记写入、取消、已执行但终态未确认强杀重启演示通过，HTTP测量7次请求/重启增量0，5任务、2实际标记写入。全部本地检查通过，最终功能源码[5282ac49cc3f1802d578de9123baa8d772f5244c](https://github.com/bboytang/CAIdex/commit/5282ac49cc3f1802d578de9123baa8d772f5244c)已commit/push main，[新精确CI38101361081](https://github.com/bboytang/CAIdex/actions/runs/38101361081)三平台运行中，该轮已结束：Linux/macOS成功；Windows实际H-2断言/报告通过，但自动删除私有Runtime plugins-clone pack文件WinError5令步骤退出1。仅改演示为保留自身证据目录/报告路径，不强删或忽略失败，随后重新提交新最终SHA及完整三平台CI。演示保留修正功能a7f5d107a95b5efc191c52aa18a29ec71e7f58c8/CI38101999997正在验证。封存复核另以新增断言证明配置拒绝时已知Thread ID/实际策略未持久化（修复前0/1）；仅重排原有持久化到严格检查之前，仍零Turn调用。[前证据](docs/evidence/h2-policy-binding-regression.json)保存；等待该必要修正的新源码提交及完整CI，不新增功能。新最终本地workspace673/0/83、Host33/0/0（新增13项）、固定Runtime81/0/0、Linux原生凭据另1项通过；[本地证据](docs/evidence/h2-local.json)及完整日志/源码指纹已归档。尚不认领新CI或H-2独立审计通过。
+H-2生产实现与本地验证已完成；功能69d8c50be1e29c37587128e2947d9824d769a90b的CI38102364547中macOS journal并行测试出现时间戳私有目录冲突（锁占用/目录丢失），实际2失败，后续Runtime/演示未执行，不认领最终成功。最小修正只给journal测试目录增加进程内原子序号，复用service测试既有模式，生产源码/锁/故障断言不变；本地完整fmt/clippy/workspace复验已通过（673/0/83），即将提交新SHA并完整重跑三平台。失败原始日志与摘要见[失败CI](docs/evidence/h2-failed-ci.json)。不新增功能，不启动H-3/I，未宣称H-2独立审计通过。
 
-初轮功能f674f4b/CI38100999321：Windows job114356728434失败于新增替身默认CRLF与严格LF断言；明确LF写入修复，生产执行/审批和断言未降低。初轮Linux/macOS全部成功仍不代新最终源码。[失败CI原始证据](docs/evidence/h2-failed-ci.json)、[本地开发失败/环境修正](docs/evidence/h2-local-failed.json)、[初轮本地证据](docs/evidence/h2-initial-local.json)保留历史。最终还补了明确Thread/Turn ID边界及缺失/异ID回归，不准无ID通知推进未关联任务。
-
-
-本地Git外新建私有/var/tmp测试目录，未删除/tmp/.git或弱化凭据保护；原生凭据测试依赖缺失已按既有CI安装测试服务并复验通过。磁盘约2.5GiB可用，未清理用户文件/全局Codex/有效缓存。待提交文件均属本轮Host/必要Facade serde/测试/脚本/workflow及授权与验收文档，无其他用户修改；最终以Git核实。
+本地Git外/var/tmp私有测试目录保留；原生凭据测试依赖按既有CI安装并复验，未删除/tmp/.git或弱化保护。磁盘约2.4GiB可用，未清理用户文件/全局Codex/有效缓存。待提交仅本轮最小测试修正、交接及H-2证据；最终以Git核实。
 
 ## 2026-10-11 用户授权磁盘清理（已完成）
 

@@ -97,3 +97,6 @@ PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python
 
 
 最终封存边界复核：配置拒绝路径已收到真实Thread ID/配置但检查失败时未落盘。增强现有故障回归先在a7f5d10生产源码上明确失败（0/1，14 filtered），[修复前证据](evidence/h2-policy-binding-regression.json)保存。最小修复仅把原有绑定/实际配置持久化移到同样严格的检查之前；错误策略仍拒绝启动Turn，未知状态可查已知ID与真实policy，权限/执行/审批策略不变。该修正属于H-2故障恢复/持久关联原范围，不新增里程碑功能；须使用新的最终源码完整三平台CI。
+
+
+后续功能69d8c50b/CI38102364547的macOS job114360748998在workspace journal测试出现私有目录冲突：failed_commit_does_not_advance_event_or_snapshot锁占用，failed_v1_migration_rolls_back_snapshot_and_version目录被删除后无法打开。原helper只有PID+SystemTime，时钟分辨率不足以保证并行唯一。最小修正追加进程内原子序号（与现有service测试一致），不改生产目录/锁或放宽断言。journal实际9通过/2失败，后续原生Runtime/演示未运行；[失败原始证据](evidence/h2-failed-ci.json)归档，不用此轮认领最终成功。新源码须重新完整三平台验证。
