@@ -1,0 +1,1523 @@
+{
+  "root": "/root/projects/CAIdex-v1.0/target/debug",
+  "old": [
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/media-5eb4766c7b6a649f",
+      "mtime_ns": 1791661817491539703,
+      "bytes": 62676944,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/media-0b1109354e86a758",
+      "mtime_ns": 1791429673754642224,
+      "bytes": 75587480,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_cloud_core-4c0be3c18e633303",
+      "mtime_ns": 1791690247225881466,
+      "bytes": 10162688,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_cloud_core-e63941096cce1c83",
+      "mtime_ns": 1791689958829258187,
+      "bytes": 10535744,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/responses-3299b9919b24fefe",
+      "mtime_ns": 1791427734836706256,
+      "bytes": 27259256,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_openrouter-5437ce1e3f2821bd",
+      "mtime_ns": 1791638806579930530,
+      "bytes": 7205216,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-536b1aeaccb8f7b0",
+      "mtime_ns": 1791688220025850415,
+      "bytes": 44539640,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-bd5ffd9a9fee0982",
+      "mtime_ns": 1791678230160212803,
+      "bytes": 35343216,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-1204ecd6bdafc7cd",
+      "mtime_ns": 1791678219380291880,
+      "bytes": 33126768,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_google-90a8257ab121280f",
+      "mtime_ns": 1791661813891232648,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_google-04ccea0826466a69",
+      "mtime_ns": 1791429674189679244,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/service-96467a5088bc7277",
+      "mtime_ns": 1791684932248266030,
+      "bytes": 47833104,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/service-54b31446961261ba",
+      "mtime_ns": 1791678232043373680,
+      "bytes": 41632960,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/service-a444272c4dcc6fdb",
+      "mtime_ns": 1791678221279454125,
+      "bytes": 39359560,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-f08fc81fbd987d18",
+      "mtime_ns": 1791661814810311033,
+      "bytes": 62928888,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-aa9a11d228486e9e",
+      "mtime_ns": 1791429670427359085,
+      "bytes": 75841272,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_ollama-327f8b2338f423aa",
+      "mtime_ns": 1791476297384259032,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_ollama-f5ebeddd2d8d8779",
+      "mtime_ns": 1791435201913290876,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_ollama-d105e8192db1b90e",
+      "mtime_ns": 1791433510698429538,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_ollama-52f0cd2aa9ce940b",
+      "mtime_ns": 1791427679134956038,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/projection-54fcc42aa9cd345e",
+      "mtime_ns": 1791429680333202039,
+      "bytes": 76078800,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-40a7edccbcb90abe",
+      "mtime_ns": 1791661814561289795,
+      "bytes": 62705448,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-198a7e746ee2a6ca",
+      "mtime_ns": 1791429672157506314,
+      "bytes": 75617904,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-d2f551d09ab23e33",
+      "mtime_ns": 1791479815422337448,
+      "bytes": 158297000,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-0ecd43e15d3f14e6",
+      "mtime_ns": 1791435206207655705,
+      "bytes": 105453296,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-051a3032bcef251f",
+      "mtime_ns": 1791435129300123517,
+      "bytes": 91163064,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-531155da0f375a94",
+      "mtime_ns": 1791434996488851767,
+      "bytes": 90888032,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-cd7994f77db21455",
+      "mtime_ns": 1791433511871529160,
+      "bytes": 104814600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-aa7e1d01101b9e79",
+      "mtime_ns": 1791431660561986622,
+      "bytes": 89996592,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-70240333c4e50435",
+      "mtime_ns": 1791429665841968889,
+      "bytes": 103005176,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-45d74366132aa4b0",
+      "mtime_ns": 1791427735442757939,
+      "bytes": 35533712,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/core-df506e0188f428ab",
+      "mtime_ns": 1791427735727782246,
+      "bytes": 26257600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-e1de480f00ac5add",
+      "mtime_ns": 1791688355760437123,
+      "bytes": 45977856,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-a6a62152ed33a30a",
+      "mtime_ns": 1791678230851271840,
+      "bytes": 38292360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-783cf6e495e10aa7",
+      "mtime_ns": 1791678220117354847,
+      "bytes": 36009304,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/discovery-614fe04c25cad908",
+      "mtime_ns": 1791429680871247825,
+      "bytes": 75657264,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_custom-403aa49a23988c54",
+      "mtime_ns": 1791668746064636918,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_custom-c08a3482340ede6d",
+      "mtime_ns": 1791429569671786064,
+      "bytes": 7205112,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-13820b2c136e38e4",
+      "mtime_ns": 1791669709933007583,
+      "bytes": 80396336,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-32d5eb901657ef97",
+      "mtime_ns": 1791668749678945797,
+      "bytes": 80618240,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-1f16f78ac521c9c7",
+      "mtime_ns": 1791507097397380855,
+      "bytes": 93165024,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-bec6ccbf806d1583",
+      "mtime_ns": 1791661816671469763,
+      "bytes": 62239184,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-edd8683e5d578613",
+      "mtime_ns": 1791429675667805027,
+      "bytes": 75145056,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-de9dcc7f148f4b99",
+      "mtime_ns": 1791574944205057345,
+      "bytes": 95168712,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/content-06c9326f334fbf16",
+      "mtime_ns": 1791661816010413384,
+      "bytes": 60892480,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/content-bfb875b845c9fdfd",
+      "mtime_ns": 1791429673027580354,
+      "bytes": 73791544,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/files-6484ad80f3e24480",
+      "mtime_ns": 1791427736030808087,
+      "bytes": 24698760,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-13387398b94dbc51",
+      "mtime_ns": 1791429677800986554,
+      "bytes": 76072840,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-7c8f2923119844c8",
+      "mtime_ns": 1791661818607634891,
+      "bytes": 61315112,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-2ce66b5783446270",
+      "mtime_ns": 1791429673055582737,
+      "bytes": 74216408,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-21cf08f53b79651c",
+      "mtime_ns": 1791427693431175225,
+      "bytes": 38690624,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-9d5f7a36fdad59b6",
+      "mtime_ns": 1791429679575137530,
+      "bytes": 103946912,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_openai-ffc6f9dcec02b26e",
+      "mtime_ns": 1791429681135270293,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-a554bf3be2679a34",
+      "mtime_ns": 1791668749334916396,
+      "bytes": 81780176,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-7500eecec3b670e6",
+      "mtime_ns": 1791667891652631048,
+      "bytes": 81999208,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-7c2347341eabc4d4",
+      "mtime_ns": 1791429675919826474,
+      "bytes": 94195336,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-0899ffb216bdc5ec",
+      "mtime_ns": 1791429669355267855,
+      "bytes": 102152304,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-02cd9286eaaf28a9",
+      "mtime_ns": 1791661895576199391,
+      "bytes": 105541712,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-c43b0d3c5b1e7afb",
+      "mtime_ns": 1791429671437445039,
+      "bytes": 118463288,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/account-01cb463949eecaf6",
+      "mtime_ns": 1791692639841961875,
+      "bytes": 29538888,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-b46c98b490fd9790",
+      "mtime_ns": 1791684931569206703,
+      "bytes": 34794776,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-4598d62c9c75e950",
+      "mtime_ns": 1791678231263307040,
+      "bytes": 31273336,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-8ba19805de3c745a",
+      "mtime_ns": 1791678220617397565,
+      "bytes": 29285688,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-5518573cdc98704c",
+      "mtime_ns": 1791661676473513441,
+      "bytes": 62302440,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-c5780c9947a00260",
+      "mtime_ns": 1791429668398186412,
+      "bytes": 75098152,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/credentials-d3fea15425dacf4a",
+      "mtime_ns": 1791427697389512792,
+      "bytes": 9944104,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-f5edd433c2a848a5",
+      "mtime_ns": 1791661677306584483,
+      "bytes": 62618560,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-aef29d6fae0c5d40",
+      "mtime_ns": 1791429671407442486,
+      "bytes": 75526088,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/journal-451ab6163aedbc74",
+      "mtime_ns": 1791684932551292503,
+      "bytes": 36554704,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/journal-85ff41f0b4ff8120",
+      "mtime_ns": 1791678230704259281,
+      "bytes": 32157920,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/journal-c797c82fccce8bee",
+      "mtime_ns": 1791678219907336905,
+      "bytes": 29956624,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-eb73b099dd85f40f",
+      "mtime_ns": 1791427734268657814,
+      "bytes": 26699680,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-c0200446bba13b81",
+      "mtime_ns": 1791638809474177194,
+      "bytes": 100926200,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-2dd5f550503f8584",
+      "mtime_ns": 1791429677763983406,
+      "bytes": 74924544,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/router-9c489ed8d798c506",
+      "mtime_ns": 1791641217032501508,
+      "bytes": 16496792,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/real_runtime-c6660cf1014f4cbb",
+      "mtime_ns": 1791680662109651404,
+      "bytes": 213576360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/history-76cb7c34d76d4450",
+      "mtime_ns": 1791661675560435576,
+      "bytes": 62319864,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/history-c2d14e2cd8d0c72f",
+      "mtime_ns": 1791429672313519590,
+      "bytes": 75203424,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/catalog-884f489582900b5a",
+      "mtime_ns": 1791661814086249280,
+      "bytes": 61217512,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/catalog-dae6171bf3937751",
+      "mtime_ns": 1791429669190253813,
+      "bytes": 74123072,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth-63fec5cac4898ca6",
+      "mtime_ns": 1791691894389353028,
+      "bytes": 2770360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_chat_completions-c6274d6f5a8b83eb",
+      "mtime_ns": 1791668746833702643,
+      "bytes": 7205360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-ae3472f77ff412c8",
+      "mtime_ns": 1791680657731283230,
+      "bytes": 46774816,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-c007e94c24904c4d",
+      "mtime_ns": 1791427696881469467,
+      "bytes": 47071592,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-b12510b421a6e10f",
+      "mtime_ns": 1791661815457366217,
+      "bytes": 62865688,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-0301c3bddb55e472",
+      "mtime_ns": 1791429674876737710,
+      "bytes": 75776160,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-3ec90dd5477d2b63",
+      "mtime_ns": 1791641283975212494,
+      "bytes": 93015536,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-d6cceb2bb1f995d2",
+      "mtime_ns": 1791523476651329269,
+      "bytes": 101083424,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-d36233fbb9bff623",
+      "mtime_ns": 1791429683402463226,
+      "bytes": 101011032,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-43ebfcd390866ef3",
+      "mtime_ns": 1791429676803901706,
+      "bytes": 75581864,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-60a7cbe63d68c31b",
+      "mtime_ns": 1791429678454042128,
+      "bytes": 75779888,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_gateway-f09430ff79e4f346",
+      "mtime_ns": 1791523477156372230,
+      "bytes": 74517656,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_gateway-9a3e67e67f0d9659",
+      "mtime_ns": 1791429682955425184,
+      "bytes": 74451192,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_deepseek-1b318579e8fc2bf5",
+      "mtime_ns": 1791506762588646049,
+      "bytes": 7205168,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-49a8cdf67cccfc91",
+      "mtime_ns": 1791429676801901535,
+      "bytes": 74486456,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_credentials-bd9453f4713e4718",
+      "mtime_ns": 1791427736723867190,
+      "bytes": 23423064,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/injected-ebfc81ed81b6973c",
+      "mtime_ns": 1791523475642243431,
+      "bytes": 94703704,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/injected-aacfb9e52b5094bc",
+      "mtime_ns": 1791429682018345440,
+      "bytes": 94637112,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth_local-5ba7adaa7e65832f",
+      "mtime_ns": 1791691893944315063,
+      "bytes": 1074944,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/native-32a7d0fd5c269638",
+      "mtime_ns": 1791458668161151172,
+      "bytes": 28647088,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/native-8b59f98ef009528b",
+      "mtime_ns": 1791427736221824377,
+      "bytes": 28565728,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_core-f299a0bfc0999dd2",
+      "mtime_ns": 1791427736545852009,
+      "bytes": 7204928,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-d2cf5d301e2e2c2b",
+      "mtime_ns": 1791429679263110977,
+      "bytes": 75053512,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_qwen-2fdc7115d138bc70",
+      "mtime_ns": 1791523260378944702,
+      "bytes": 7205048,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-e880cbee14e2e2ff",
+      "mtime_ns": 1791429680104182550,
+      "bytes": 75722688,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_anthropic-55f257005f0257d7",
+      "mtime_ns": 1791429683511472502,
+      "bytes": 7205176,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth_local-bcaae7ea544a5020",
+      "mtime_ns": 1791692638732867223,
+      "bytes": 17106904,
+      "links": 1
+    }
+  ],
+  "keep": [
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-94b304daa293ca21",
+      "mtime_ns": 1791717024373792319,
+      "bytes": 75023032,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/media-884d8fd247805751",
+      "mtime_ns": 1791668848243369088,
+      "bytes": 76551528,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_cloud_core-f97c07376ec9d703",
+      "mtime_ns": 1791735236412465526,
+      "bytes": 10457768,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/responses-26e422c4bc8ab388",
+      "mtime_ns": 1791641359141625092,
+      "bytes": 37083720,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_openrouter-1089ee9e31425151",
+      "mtime_ns": 1791668850175534210,
+      "bytes": 7205200,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-1ba251efcfdbfed0",
+      "mtime_ns": 1791688355719433622,
+      "bytes": 46886648,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_google-98234103446d7a1d",
+      "mtime_ns": 1791668849610485921,
+      "bytes": 7205080,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-a57be734f5fb516f",
+      "mtime_ns": 1791717035811769900,
+      "bytes": 75173640,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/service-15096cb254f1ba1a",
+      "mtime_ns": 1791688357719604375,
+      "bytes": 50282176,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-d9de53a996ff3705",
+      "mtime_ns": 1791717028649157728,
+      "bytes": 75254880,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-6f174ea0f2ffd885",
+      "mtime_ns": 1791668849199450795,
+      "bytes": 76803616,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_ollama-6a822437a0c7d8ed",
+      "mtime_ns": 1791668850387552329,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/projection-075594a880bb9a15",
+      "mtime_ns": 1791668839977662705,
+      "bytes": 77030608,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-e6d968d0af4341d7",
+      "mtime_ns": 1791668846407212171,
+      "bytes": 76580320,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-1ca7b94aedecd671",
+      "mtime_ns": 1791717036879861187,
+      "bytes": 74522840,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-4356b53b1b55a451",
+      "mtime_ns": 1791668830908887692,
+      "bytes": 172171176,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-6760e3d5225f7181",
+      "mtime_ns": 1791641360305724404,
+      "bytes": 37595048,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/core-4281e5015b9157f7",
+      "mtime_ns": 1791458670033311116,
+      "bytes": 26336032,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-825a11d0319112f3",
+      "mtime_ns": 1791688463394626159,
+      "bytes": 43603832,
+      "links": 2
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/discovery-f6906bb647e4c525",
+      "mtime_ns": 1791668840694723985,
+      "bytes": 76607344,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_custom-74a6b32e8ff6c004",
+      "mtime_ns": 1791668824328325320,
+      "bytes": 7205096,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/native-1a424755c3b06805",
+      "mtime_ns": 1791717044802538312,
+      "bytes": 28421160,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-228264ac92f9d15e",
+      "mtime_ns": 1791669803538006832,
+      "bytes": 94487472,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-ea5eef8085b4742d",
+      "mtime_ns": 1791668834015153152,
+      "bytes": 108106664,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-88ff6c9919553b30",
+      "mtime_ns": 1791668847558310544,
+      "bytes": 76108768,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-f749590eb2af5387",
+      "mtime_ns": 1791668828352669238,
+      "bytes": 110068784,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_credentials-def52df4f7b0301f",
+      "mtime_ns": 1791717045004555578,
+      "bytes": 23458000,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/content-32153c6bc7f0faa6",
+      "mtime_ns": 1791668847299288408,
+      "bytes": 74754784,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/files-c1070ec82021d36b",
+      "mtime_ns": 1791458667758116739,
+      "bytes": 24779024,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-3f1d319d9f2f038c",
+      "mtime_ns": 1791668842312862270,
+      "bytes": 77024848,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-7a10f0f4e05969e6",
+      "mtime_ns": 1791668845644146960,
+      "bytes": 75182600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-b82d222b23b623d8",
+      "mtime_ns": 1791680656419172904,
+      "bytes": 38395184,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-f01d66223b34cf33",
+      "mtime_ns": 1791717041907290866,
+      "bytes": 36147288,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_custom-ae2fdb773c82c316",
+      "mtime_ns": 1791717041254235051,
+      "bytes": 7203600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-23d64ca53f107482",
+      "mtime_ns": 1791668843995006025,
+      "bytes": 104843464,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_openai-7f33dad44f4c5343",
+      "mtime_ns": 1791668850383551987,
+      "bytes": 7205112,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-b30b6ff1b1148a17",
+      "mtime_ns": 1791668852251711639,
+      "bytes": 95928008,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-ebba1d18e9620f14",
+      "mtime_ns": 1791668832166995209,
+      "bytes": 102819920,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-050f9a666af14e27",
+      "mtime_ns": 1791668845047095936,
+      "bytes": 119369104,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/history-0239d1e0cea2ad31",
+      "mtime_ns": 1791717034678673057,
+      "bytes": 74591936,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/account-afd93fae68b02eb2",
+      "mtime_ns": 1791742529292726922,
+      "bytes": 33645104,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-fc6f142356ea0a3b",
+      "mtime_ns": 1791688356310484080,
+      "bytes": 36868440,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-900c2cff41ee112a",
+      "mtime_ns": 1791668848326376182,
+      "bytes": 76169016,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/credentials-f94dc46368b76a6c",
+      "mtime_ns": 1791680663364756952,
+      "bytes": 10030792,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-d9fb5b2632bcea9d",
+      "mtime_ns": 1791668844860079954,
+      "bytes": 76489632,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-a3209bcae213115e",
+      "mtime_ns": 1791717033434566726,
+      "bytes": 73652240,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/journal-699941c79dc28198",
+      "mtime_ns": 1791688356400491763,
+      "bytes": 38820072,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-f56cbda216a2d3a8",
+      "mtime_ns": 1791717022474630000,
+      "bytes": 75165240,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-d1e88e964b61b0b3",
+      "mtime_ns": 1791717025678903865,
+      "bytes": 74288528,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/injected-17efcf23bca64b21",
+      "mtime_ns": 1791717014746969521,
+      "bytes": 91474712,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stdio-46dbf54b1c6d8770",
+      "mtime_ns": 1791716989416804517,
+      "bytes": 23899248,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-de55f2b0d1f74f09",
+      "mtime_ns": 1791717021450542472,
+      "bytes": 109325848,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-563b090343c6c756",
+      "mtime_ns": 1791641357682500611,
+      "bytes": 36524792,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-dff60a9931964594",
+      "mtime_ns": 1791717008468432894,
+      "bytes": 91550640,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-b4a68fd81f4c199c",
+      "mtime_ns": 1791717025440883521,
+      "bytes": 75479592,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-d4ebdb96c3d6f3bc",
+      "mtime_ns": 1791668836028325196,
+      "bytes": 115826512,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/protocol-ec34e20589e0f250",
+      "mtime_ns": 1791668843024923123,
+      "bytes": 75884080,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime-190be62fcef09dfb",
+      "mtime_ns": 1791680657091229412,
+      "bytes": 29583440,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/chat-c73d7593898f3307",
+      "mtime_ns": 1791742534533178458,
+      "bytes": 9236256,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-b6600e4e95b6ebe1",
+      "mtime_ns": 1791717035677758446,
+      "bytes": 75016072,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/account-e4bd8e6fc95a5892",
+      "mtime_ns": 1791716987252619538,
+      "bytes": 7203240,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/chat-c28d7394d6b2171d",
+      "mtime_ns": 1791735232935168576,
+      "bytes": 71967808,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime-e8c3767d60816621",
+      "mtime_ns": 1791716992696084807,
+      "bytes": 27327312,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/projection-50faf3a260f9804c",
+      "mtime_ns": 1791717023568723510,
+      "bytes": 75455880,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/router-174a57c9dbdaa3d4",
+      "mtime_ns": 1791641360910776023,
+      "bytes": 36732152,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_chat-66647ecd67ced7e3",
+      "mtime_ns": 1791735236143442552,
+      "bytes": 66524592,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/real_runtime-c020c8c9a9689959",
+      "mtime_ns": 1791680820148965143,
+      "bytes": 200867248,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/history-45315c7c8c311e44",
+      "mtime_ns": 1791668845824162344,
+      "bytes": 76188744,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/catalog-d3180879fae27275",
+      "mtime_ns": 1791668849176448829,
+      "bytes": 75085120,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth-1a9c2d80ffe7d2ff",
+      "mtime_ns": 1791692256099214402,
+      "bytes": 2770360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_chat_completions-d207b57e9cdd4295",
+      "mtime_ns": 1791669799740682322,
+      "bytes": 7205360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-f5f8c3e0717b5da6",
+      "mtime_ns": 1791680812893352969,
+      "bytes": 43496248,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-febe2bf72eab068c",
+      "mtime_ns": 1791668846681235589,
+      "bytes": 76740248,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-c5db95a312fa14ed",
+      "mtime_ns": 1791668838359524420,
+      "bytes": 107413008,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-e0bc5b969956d20c",
+      "mtime_ns": 1791716990802922993,
+      "bytes": 33112064,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/runtime_parameters-a3cf82541f46d1de",
+      "mtime_ns": 1791668842312862270,
+      "bytes": 76533632,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/content-526e60ce30b57bfb",
+      "mtime_ns": 1791717036521830587,
+      "bytes": 73246536,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/journal-d504c911e9795774",
+      "mtime_ns": 1791716990208872218,
+      "bytes": 35447368,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-313614543c567d50",
+      "mtime_ns": 1791668838956575444,
+      "bytes": 76731728,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/files-4e69779b24e06eba",
+      "mtime_ns": 1791717044461509166,
+      "bytes": 24526496,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-5ac978a689c84ac0",
+      "mtime_ns": 1791717044006470275,
+      "bytes": 36980056,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/service-2f75fcd4c3e05490",
+      "mtime_ns": 1791716992298050786,
+      "bytes": 45486360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-58f7c46005ed81a9",
+      "mtime_ns": 1791717005868210651,
+      "bytes": 98239488,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_cloud_core-403f00bdde9cf82d",
+      "mtime_ns": 1791717045263577716,
+      "bytes": 10348864,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_gateway-53ee4f01e0c6dea0",
+      "mtime_ns": 1791668838046497669,
+      "bytes": 75357008,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/discovery-34223128e305b32a",
+      "mtime_ns": 1791717023464714621,
+      "bytes": 75089880,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_deepseek-f2afc109a5a29da0",
+      "mtime_ns": 1791668849560481648,
+      "bytes": 7205152,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-e2e97f27182dca36",
+      "mtime_ns": 1791668840782731506,
+      "bytes": 75448000,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-dd65fe46a7cb229f",
+      "mtime_ns": 1791717013180835664,
+      "bytes": 165465496,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_runtime-e0733b039576dbfd",
+      "mtime_ns": 1791680655627106307,
+      "bytes": 9462608,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_credentials-ffeb75a534789201",
+      "mtime_ns": 1791458670648363662,
+      "bytes": 23505368,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-f84c97e7898fb1dc",
+      "mtime_ns": 1791717031560406546,
+      "bytes": 99950848,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/structured-3a5db91d616071fb",
+      "mtime_ns": 1791717021400538198,
+      "bytes": 75193768,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/injected-c55fe144ad04bd40",
+      "mtime_ns": 1791668837058413227,
+      "bytes": 95521672,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_deepseek-951fd78ddccc9080",
+      "mtime_ns": 1791717040568176416,
+      "bytes": 7203656,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth_local-252b552d90ab4afc",
+      "mtime_ns": 1791692256284230189,
+      "bytes": 1074944,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_runtime-13db19e0e0455583",
+      "mtime_ns": 1791716991212958040,
+      "bytes": 9440320,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth-05ebc9b59082c052",
+      "mtime_ns": 1791716988467723397,
+      "bytes": 36594368,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-b8930a757173867b",
+      "mtime_ns": 1791717034757679809,
+      "bytes": 113083432,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/native-9ac246255dd2a2d3",
+      "mtime_ns": 1791681002337360586,
+      "bytes": 28425848,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/memory-173ae12367ab33ff",
+      "mtime_ns": 1791735235241365518,
+      "bytes": 77958688,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/responses-ef41f83a354acd46",
+      "mtime_ns": 1791717043483425572,
+      "bytes": 36555528,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_core-9a8bdab4bba5ad31",
+      "mtime_ns": 1791641301962747043,
+      "bytes": 7204944,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-63d62bd13f2193b5",
+      "mtime_ns": 1791716998357568706,
+      "bytes": 102619328,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-bde13b5724143735",
+      "mtime_ns": 1791717026732993956,
+      "bytes": 74590976,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_openrouter-a83f465d99558710",
+      "mtime_ns": 1791717040624181202,
+      "bytes": 7203704,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-d1008b837efee745",
+      "mtime_ns": 1791668839164593221,
+      "bytes": 76014744,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_chat-c56327257c832c07",
+      "mtime_ns": 1791735971006200615,
+      "bytes": 140928592,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_qwen-d2b73653900216bf",
+      "mtime_ns": 1791717038335985637,
+      "bytes": 7203560,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_anthropic-b3ce4c8aaa861798",
+      "mtime_ns": 1791717040041131371,
+      "bytes": 7203680,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stream-5b8ecd467bb8c07d",
+      "mtime_ns": 1791717042730361211,
+      "bytes": 36035336,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/http-ffe6da96e31780d4",
+      "mtime_ns": 1791717014323933364,
+      "bytes": 101846416,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-531f32f5ca044157",
+      "mtime_ns": 1791717019718394427,
+      "bytes": 43238240,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_core-635037eaeb4f6dcd",
+      "mtime_ns": 1791717044579519252,
+      "bytes": 7203456,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_openai-5f71dd1706ad88fc",
+      "mtime_ns": 1791717040855200947,
+      "bytes": 7203600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/memory-d3413d27f07bc601",
+      "mtime_ns": 1791742868422885083,
+      "bytes": 11490608,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_qwen-311c3d0e2ed7558a",
+      "mtime_ns": 1791668849849506348,
+      "bytes": 7205048,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/reasoning-379f95a827c9a0de",
+      "mtime_ns": 1791668839828649971,
+      "bytes": 76672832,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/core-0bd249bff6318524",
+      "mtime_ns": 1791717044081476686,
+      "bytes": 25906872,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_anthropic-2a6015e2b3e6be91",
+      "mtime_ns": 1791668850742582670,
+      "bytes": 7205192,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_chat-bc6a3f42f6c90988",
+      "mtime_ns": 1791742091540885691,
+      "bytes": 35638584,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex-9cd3dac9eb70a7c0",
+      "mtime_ns": 1791717042540344971,
+      "bytes": 43887280,
+      "links": 2
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth_local-e00fb694ce507a56",
+      "mtime_ns": 1791742522567147366,
+      "bytes": 19441136,
+      "links": 2
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_ollama-76cde3397cce90f5",
+      "mtime_ns": 1791717020412453747,
+      "bytes": 7203600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-7e46dc93b7747186",
+      "mtime_ns": 1791717005410171502,
+      "bytes": 104372168,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/router-bce5e105cb09b99c",
+      "mtime_ns": 1791717043153397366,
+      "bytes": 36180704,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/real_runtime-ec6fb365f030171f",
+      "mtime_ns": 1791717002691939171,
+      "bytes": 202222376,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_google-cd872b974cb15277",
+      "mtime_ns": 1791717039073048632,
+      "bytes": 7203600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/stdio-d615a8d9fb364295",
+      "mtime_ns": 1791680665893969655,
+      "bytes": 26104464,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/response_stream-7b37b60ed70fc165",
+      "mtime_ns": 1791717022545636068,
+      "bytes": 74419832,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_host-208efc5ca2b6264b",
+      "mtime_ns": 1791716989793836744,
+      "bytes": 40985416,
+      "links": 2
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/tools-efc3bb47aebfddc6",
+      "mtime_ns": 1791717024511804114,
+      "bytes": 73876352,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_model_gateway-661080b22faebbeb",
+      "mtime_ns": 1791717010756628467,
+      "bytes": 73054104,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/provider-e5642447a7172966",
+      "mtime_ns": 1791717040043131542,
+      "bytes": 92554240,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/catalog-22ad05bd360aba0e",
+      "mtime_ns": 1791717027577066098,
+      "bytes": 73544360,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/credentials-b546f59bc0f26a41",
+      "mtime_ns": 1791717042221317704,
+      "bytes": 9895600,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/media-eebfeb3d42cb33fa",
+      "mtime_ns": 1791717037716932729,
+      "bytes": 75005048,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_auth_local-ba969e81fb9b5300",
+      "mtime_ns": 1791736056457584772,
+      "bytes": 112086336,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/account-cd9d50e622779f19",
+      "mtime_ns": 1791736068834653275,
+      "bytes": 143155752,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/request-d7187f3fd21002a0",
+      "mtime_ns": 1791717032472484499,
+      "bytes": 74971248,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_provider_chat_completions-fe2019f5affb4245",
+      "mtime_ns": 1791717040960209922,
+      "bytes": 7203848,
+      "links": 1
+    },
+    {
+      "path": "/root/projects/CAIdex-v1.0/target/debug/deps/caidex_google_ref_review_repro-751083f1291369b6",
+      "mtime_ns": 1791408763032866753,
+      "bytes": 57509424,
+      "links": 2
+    }
+  ],
+  "unknown": [],
+  "authorization": "2026-10-11 user explicitly requested disk cleanup; I-6 audit pause remains, no I-7 start",
+  "head_before": "9fb8cdf22e148bab7276faf5168d6a86948f92a0",
+  "deleted_count": 107,
+  "retained_count": 142,
+  "deleted_allocated_bytes": 6027395072,
+  "free_bytes_before": 570773504,
+  "free_bytes_after": 6598168576,
+  "free_bytes_delta": 6027395072,
+  "tracked_files_verified_unchanged": 658,
+  "preserved": [
+    "latest binary for each package/target/profile/features/compiler group",
+    "Rust rlib/rmeta/proc-macro/build/incremental caches",
+    "Cargo registry and Rust toolchain",
+    "fixed Runtime binaries in .tools",
+    "source, Git history, user data, historical evidence and temporary logs"
+  ],
+  "limits": [
+    "only older duplicate target/debug/deps ELF files removed",
+    "older artifact requests may require relinking; source/dependency caches retained",
+    "no rebuild performed after cleanup"
+  ]
+}

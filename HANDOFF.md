@@ -18,7 +18,9 @@ A保留云数据；B需新鲜会话绑定proof（不落盘），先独立提交d
 
 开发失败已修并复验：私有fixture根/granted_by及SQL infinity显式类型；新增跨epoch旧收据负例揭示误确认（正文未复活）后加epoch检查；首轮旧未来schema5/auth不能控制Memory开关断言过时，改schema6及最小受信任权限断言，保留正文/用户ID拒绝；第二轮DB成功、平台旧迁移schema4断言失败，改5后本机12项及最终精确CI通过。早期清理注入因42804不能当触发器验证，最终P0001故障回滚/恢复、分批进度实际通过。额外非缓存feature编译主动中断不授通过，改缓存组合。
 
-限制/环境：一个Rust进程内四份隔离Cache、真实HTTP/PG，关闭竞争两独立Service worker；不是正式GUI/CLI/iOS/物理多设备安装。SQLite明文/HTTPS云信任边界，来源引用不授额外ACL/Runtime权；事件/收据/墓碑永久留存，无GC/生产吞吐/备份净化承诺。真实模型及F/G-Live待用户最终验。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前余约0.5GiB/99%；本机可行定向验证优先，完整workspace/跨平台由GitHub，未清理有效缓存。Git外私有TMPDIR保留目录安全规则；cloud状态工具/策略文件缺失不宣称就绪，GitHub/Docker经沙箱提升实际访问，无商业API/真实Key/邮件/部署。
+限制/环境：一个Rust进程内四份隔离Cache、真实HTTP/PG，关闭竞争两独立Service worker；不是正式GUI/CLI/iOS/物理多设备安装。SQLite明文/HTTPS云信任边界，来源引用不授额外ACL/Runtime权；事件/收据/墓碑永久留存，无GC/生产吞吐/备份净化承诺。真实模型及F/G-Live待用户最终验。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，I-6封存时余约0.5GiB/99%；本机可行定向验证优先，完整workspace/跨平台由GitHub，未清理有效缓存。Git外私有TMPDIR保留目录安全规则；cloud状态工具/策略文件缺失不宣称就绪，GitHub/Docker经沙箱提升实际访问，无商业API/真实Key/邮件/部署。
+
+2026-10-11 用户明确授权清理磁盘：只删除target/debug/deps内按包/目标/profile/features/compiler分组的107个较早重复ELF构建产物，保留每组最新142个；实际释放6,027,395,072字节（约5.61GiB），可用空间约6.15GiB/使用率85%。清理前无构建/测试进程；658份Git跟踪文件逐份SHA256未变。依赖/增量缓存、工具链/.tools固定Runtime、源码/历史/用户数据/全部审计证据及临时日志保留。记录见 [磁盘清理证据](docs/evidence/disk-cleanup-20261011.json)。未重跑构建；后续若请求较早产物可能需重新链接。此维护不授I-6独立审计、不启动I-7。
 
 准确下一步：停止I-6新增功能及跨里程碑开发，等待独立新会话/其他模型只读审计最终04d源码及原始证据；若有本范围阻断再最小修复复验。须用户确认I-6独立审计通过并明确批准，才启动I-7。
 
