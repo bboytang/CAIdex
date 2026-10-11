@@ -49,6 +49,7 @@ fn permit(engine: &MemoryEngine<'_>, target: ProviderTarget, purpose: Purpose) -
             purpose,
             scope: Scope::Personal,
             kinds: vec![Kind::AiInference, Kind::Preference],
+            source_types: vec![SourceType::User, SourceType::Chat, SourceType::File],
             allow_local_only: true,
         })
         .unwrap()

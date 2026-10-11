@@ -163,6 +163,9 @@ pub trait ModelProvider: Send + Sync {
     fn memory_target(&self, _model: &str, _embedding: bool) -> ProviderResult<ProviderTarget> {
         Err(ProviderError::new(501, "memory_target_unavailable"))
     }
+    fn memory_stream_target(&self, model: &str) -> ProviderResult<ProviderTarget> {
+        self.memory_target(model, false)
+    }
     fn memory_guard(&self, _model: &str) -> Option<std::sync::Arc<caidex_credentials::Redactor>> {
         None
     }

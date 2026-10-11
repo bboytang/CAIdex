@@ -576,7 +576,7 @@ pub(crate) fn injection(
     if !automatic(s)? {
         return Ok(None);
     }
-    let Ok(target) = provider.memory_target(model, false) else {
+    let Ok(target) = provider.memory_stream_target(model) else {
         return Ok(None);
     };
     let mut scopes = vec![Scope::Personal];

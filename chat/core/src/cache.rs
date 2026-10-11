@@ -121,7 +121,7 @@ impl Cache {
             return Err(Error::UnsafeStorage);
         }
         db.execute_batch(
-            "PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL; PRAGMA journal_mode=DELETE;",
+            "PRAGMA foreign_keys=ON; PRAGMA secure_delete=ON; PRAGMA synchronous=FULL; PRAGMA journal_mode=DELETE;",
         )?;
         db.pragma_update(None, "max_page_count", 65536)?;
         if db.pragma_query_value::<i64, _>(None, "user_version", |r| r.get(0))? == 1 {

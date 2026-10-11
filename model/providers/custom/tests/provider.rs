@@ -763,3 +763,92 @@ async fn native_sse_unpolled_cancel_closes_socket_before_queue_drain() {
     drop(response);
     fixture.request().await;
 }
+
+#[tokio::test]
+async fn embedding_uses_explicit_endpoint_validates_indices_and_blocks_memory_credentials() {
+    use caidex_model_core::EmbeddingRequest;
+    for (wire, valid) in [
+        (
+            json!({"data":[{"index":0,"embedding":[1.0,0.0]},{"index":1,"embedding":[0.0,1.0]}]}),
+            true,
+        ),
+        (
+            json!({"data":[{"index":0,"embedding":[1.0,0.0]},{"index":0,"embedding":[0.0,1.0]}]}),
+            false,
+        ),
+        (
+            json!({"data":[{"index":0,"embedding":[1.0]},{"index":1,"embedding":[0.0,1.0]}]}),
+            false,
+        ),
+        (
+            json!({"data":[{"index":2,"embedding":[1.0,0.0]},{"index":1,"embedding":[0.0,1.0]}]}),
+            false,
+        ),
+    ] {
+        let mut reply = json_reply();
+        reply.body = wire.to_string().into_bytes();
+        let mut fixture = Fixture::start(reply, None).await;
+        let calls = Arc::new(AtomicUsize::new(0));
+        let broker = Arc::new(Broker::new(reference().owner.clone(), Store(calls)));
+        let config = ConfiguredModel::new(
+            "embedding".into(),
+            "native-embedding".into(),
+            vec![ResponsesDialect::Classic],
+            CustomResponses::new(&fixture.endpoint, Some(reference())).unwrap(),
+        )
+        .unwrap()
+        .with_embedding_endpoint(
+            CustomResponses::new(
+                &fixture.endpoint.replace("responses", "embeddings"),
+                Some(reference()),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let provider =
+            CustomResponsesProvider::new(vec![config], broker, Limits::default()).unwrap();
+        assert!(
+            provider
+                .memory_target("embedding", true)
+                .unwrap()
+                .endpoint
+                .ends_with("embeddings")
+        );
+        let result = provider
+            .embed(
+                EmbeddingRequest {
+                    model: "embedding".into(),
+                    input: vec!["one".into(), "two".into()],
+                    dimensions: 2,
+                },
+                RequestContext {
+                    memory_request: true,
+                    ..Default::default()
+                },
+            )
+            .await;
+        assert_eq!(result.is_ok(), valid);
+        let sent = fixture.request().await;
+        assert!(sent.headers.starts_with("POST /v1/embeddings "));
+        assert_eq!(sent.body["model"], "native-embedding");
+        assert_eq!(sent.body["encoding_format"], "float");
+        let prior = fixture.accepted.load(Ordering::SeqCst);
+        let error = provider
+            .embed(
+                EmbeddingRequest {
+                    model: "embedding".into(),
+                    input: vec![KEY.into()],
+                    dimensions: 2,
+                },
+                RequestContext {
+                    memory_request: true,
+                    ..Default::default()
+                },
+            )
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "credential_in_memory_payload");
+        assert_eq!(fixture.accepted.load(Ordering::SeqCst), prior);
+    }
+}

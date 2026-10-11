@@ -51,6 +51,28 @@ pub enum Origin {
     Execution { reference: String },
     External { reference: String },
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceType {
+    User,
+    Chat,
+    File,
+    Git,
+    Execution,
+    External,
+}
+impl Origin {
+    pub fn source_type(&self) -> SourceType {
+        match self {
+            Self::User => SourceType::User,
+            Self::Chat { .. } => SourceType::Chat,
+            Self::File { .. } => SourceType::File,
+            Self::Git { .. } => SourceType::Git,
+            Self::Execution { .. } => SourceType::Execution,
+            Self::External { .. } => SourceType::External,
+        }
+    }
+}
 /// Expected digest covers the complete authorized source, not only the excerpt.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -107,6 +129,7 @@ pub struct Revision {
     pub parent: Option<Uuid>,
     pub created_millis: i64,
     pub conflict: bool,
+    pub source_current: bool,
     pub draft: Draft,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -131,6 +154,7 @@ pub struct Permission {
     pub purpose: Purpose,
     pub scope: Scope,
     pub kinds: Vec<Kind>,
+    pub source_types: Vec<SourceType>,
     pub allow_local_only: bool,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -91,6 +91,54 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
     pub(crate) fn limits(&self) -> &Limits {
         &self.limits
     }
+    pub(crate) fn memory_target(
+        &self,
+        model: &str,
+        streaming: bool,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        let url = self
+            .config
+            .base
+            .join(&format!(
+                "{model}:{}",
+                if streaming {
+                    "streamGenerateContent"
+                } else {
+                    "generateContent"
+                }
+            ))
+            .map_err(|_| ProviderError::new(400, "invalid_memory_target"))?;
+        Ok(caidex_model_core::ProviderTarget {
+            endpoint: url.to_string(),
+            native_model: model.into(),
+        })
+    }
+    pub(crate) fn memory_guard(&self) -> Option<Arc<caidex_credentials::Redactor>> {
+        self.broker.resolve(&self.config.credential).ok()??;
+        Some(self.broker.shared_redactor())
+    }
+    fn check_memory_body(
+        &self,
+        request: &reqwest::RequestBuilder,
+        context: &RequestContext,
+    ) -> ProviderResult<()> {
+        if context.memory_request {
+            let copy = request
+                .try_clone()
+                .ok_or_else(|| ProviderError::new(400, "invalid_memory_payload"))?
+                .build()
+                .map_err(transport)?;
+            let body = copy
+                .body()
+                .and_then(|b| b.as_bytes())
+                .and_then(|b| std::str::from_utf8(b).ok())
+                .ok_or_else(|| ProviderError::new(400, "invalid_memory_payload"))?;
+            if self.broker.redactor().contains_secret(body) {
+                return Err(ProviderError::new(400, "credential_in_memory_payload"));
+            }
+        }
+        Ok(())
+    }
     pub(crate) fn credential(&self) -> &CredentialRef {
         &self.config.credential
     }
@@ -305,6 +353,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         .map_err(|_| ProviderError::new(503, "credential_unavailable"))?
         .map_err(|_| ProviderError::new(503, "credential_unavailable"))?
         .ok_or_else(|| ProviderError::new(503, "credential_missing"))?;
+        self.check_memory_body(&request, context)?;
         let mut key = HeaderValue::from_str(secret.expose())
             .map_err(|_| ProviderError::new(503, "credential_invalid_header"))?;
         key.set_sensitive(true);

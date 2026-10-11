@@ -56,6 +56,10 @@ impl ModelProvider for ModelRouter {
         self.metadata(model)?;
         self.provider(model)?.memory_target(model, embedding)
     }
+    fn memory_stream_target(&self, model: &str) -> ProviderResult<crate::ProviderTarget> {
+        self.metadata(model)?;
+        self.provider(model)?.memory_stream_target(model)
+    }
     fn memory_guard(&self, model: &str) -> Option<Arc<caidex_credentials::Redactor>> {
         self.provider(model).ok()?.memory_guard(model)
     }

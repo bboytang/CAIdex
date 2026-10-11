@@ -3,9 +3,8 @@ use crate::client::State;
 use rusqlite::{OptionalExtension, params};
 
 pub(crate) fn authorize(s: &State, scope: &Scope) -> Result<()> {
-    if let Scope::Project { project_id } = scope {
-        if !s
-            .cache
+    if let Scope::Project { project_id } = scope
+        && s.cache
             .db
             .query_row(
                 "SELECT 1 FROM memory_projects WHERE project=?1",
@@ -13,10 +12,9 @@ pub(crate) fn authorize(s: &State, scope: &Scope) -> Result<()> {
                 |r| r.get::<_, i32>(0),
             )
             .optional()?
-            .is_some()
-        {
-            return Err(Error::NotFound);
-        }
+            .is_none()
+    {
+        return Err(Error::NotFound);
     }
     Ok(())
 }
@@ -167,6 +165,7 @@ pub(crate) fn load(s: &State, id: Uuid) -> Result<Memory> {
             parent: parent.map(|p| parse(&p)).transpose()?,
             created_millis,
             conflict,
+            source_current: validate(s, &draft).is_ok(),
             draft,
         });
     }
@@ -339,6 +338,10 @@ pub(crate) fn permitted(
             && p.purpose == purpose
             && p.scope == draft.scope
             && p.kinds.contains(&draft.kind)
+            && draft
+                .sources
+                .iter()
+                .all(|src| p.source_types.contains(&src.origin.source_type()))
             && (draft.privacy == Privacy::Shareable || p.allow_local_only)
         {
             return Ok(true);
@@ -396,6 +399,8 @@ impl MemoryEngine<'_> {
             || permission.target.native_model.len() > 256
             || permission.kinds.is_empty()
             || permission.kinds.len() > 5
+            || permission.source_types.is_empty()
+            || permission.source_types.len() > 6
             || !s.memory.safe(&encode(&permission)?)
         {
             return Err(Error::Invalid);

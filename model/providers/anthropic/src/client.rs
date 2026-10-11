@@ -97,6 +97,47 @@ pub struct AnthropicClient<S: SecretStore> {
     permits: Arc<Semaphore>,
 }
 impl<S: SecretStore + 'static> AnthropicClient<S> {
+    pub(crate) fn memory_target(
+        &self,
+        _model: &str,
+        _streaming: bool,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        let url = self
+            .config
+            .base
+            .join("messages")
+            .map_err(|_| ProviderError::new(400, "invalid_memory_target"))?;
+        Ok(caidex_model_core::ProviderTarget {
+            endpoint: url.to_string(),
+            native_model: _model.into(),
+        })
+    }
+    pub(crate) fn memory_guard(&self) -> Option<Arc<caidex_credentials::Redactor>> {
+        self.broker.resolve(&self.config.credential).ok()??;
+        Some(self.broker.shared_redactor())
+    }
+    fn check_memory_body(
+        &self,
+        request: &reqwest::RequestBuilder,
+        context: &RequestContext,
+    ) -> ProviderResult<()> {
+        if context.memory_request {
+            let copy = request
+                .try_clone()
+                .ok_or_else(|| ProviderError::new(400, "invalid_memory_payload"))?
+                .build()
+                .map_err(transport)?;
+            let body = copy
+                .body()
+                .and_then(|b| b.as_bytes())
+                .and_then(|b| std::str::from_utf8(b).ok())
+                .ok_or_else(|| ProviderError::new(400, "invalid_memory_payload"))?;
+            if self.broker.redactor().contains_secret(body) {
+                return Err(ProviderError::new(400, "credential_in_memory_payload"));
+            }
+        }
+        Ok(())
+    }
     pub(crate) fn credential(&self) -> &CredentialRef {
         &self.config.credential
     }
@@ -359,6 +400,7 @@ impl<S: SecretStore + 'static> AnthropicClient<S> {
         self.deadline(context)?;
         let header_deadline = deadline.min(Instant::now() + self.limits.header_timeout);
         let key = self.authentication_key(context, header_deadline).await?;
+        self.check_memory_body(&outgoing, context)?;
         if self.config.expected_organization.is_some() {
             // Resolve once: a key replacement between GET and POST must not
             // authenticate one organization and send history to another.

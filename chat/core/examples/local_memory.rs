@@ -72,6 +72,7 @@ fn allow(
         purpose,
         scope: Scope::Personal,
         kinds: vec![Kind::Preference, Kind::AiInference],
+        source_types: vec![SourceType::User, SourceType::Chat],
         allow_local_only: true,
     })
 }

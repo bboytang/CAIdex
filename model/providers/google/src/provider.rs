@@ -173,6 +173,28 @@ impl<S: SecretStore + 'static> ModelProvider for GeminiProvider<S> {
     fn capabilities(&self, model: &str) -> ProviderResult<ModelCapabilities> {
         Ok(self.model(model)?.metadata.capabilities.clone())
     }
+    fn memory_target(
+        &self,
+        model: &str,
+        embedding: bool,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        if embedding {
+            return Err(ProviderError::new(501, "embedding_unavailable"));
+        }
+        self.client
+            .memory_target(&self.model(model)?.metadata.native_model, false)
+    }
+    fn memory_stream_target(
+        &self,
+        model: &str,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        self.client
+            .memory_target(&self.model(model)?.metadata.native_model, true)
+    }
+    fn memory_guard(&self, model: &str) -> Option<std::sync::Arc<caidex_credentials::Redactor>> {
+        self.model(model).ok()?;
+        self.client.memory_guard()
+    }
     fn credential_requirements(&self, model: &str) -> ProviderResult<CredentialRequirement> {
         self.model(model)?;
         Ok(CredentialRequirement::ApiKey {
