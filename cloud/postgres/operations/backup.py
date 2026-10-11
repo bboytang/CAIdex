@@ -253,9 +253,10 @@ def restore(db, manifest, target, checkpoint_file=None):
     if roles != 't':
         raise ValueError('dedicated non-login non-owner runtime roles required')
     # No --clean, no drop/overwrite, no connection to the source data after creation.
-    db.sql(f'CREATE DATABASE {target} TEMPLATE template0;')
-    # Defaults grant CONNECT to PUBLIC. Revoke before any data is restored; no app can attach.
+    db.sql(f'CREATE DATABASE {target} TEMPLATE template0 ALLOW_CONNECTIONS false;')
+    # Block connections at creation: revocation alone would leave a preexisting connection alive.
     db.sql(f'REVOKE ALL ON DATABASE {target} FROM PUBLIC, caidex_app, caidex_auth;')
+    db.sql(f'ALTER DATABASE {target} ALLOW_CONNECTIONS true;')
     isolated = Database(db.socket, target, db.prefix)
     started = time.monotonic()
     try:

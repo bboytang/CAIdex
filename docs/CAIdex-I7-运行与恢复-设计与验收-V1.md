@@ -30,7 +30,7 @@ Brevo首选、Resend手动备用；生产端点/Key只能服务端安全配置�
 
 ## 当前证据状态
 
-有限实现已完成，本机最终隔离演练62项/0失败、账户116/Chat同步50/Memory同步58真实PG+HTTP、本地26 Rust测试通过；提交/精确CI仍待核验，不授完整I-7或独立审计通过。原I-6最终源码04d770a、精确CI38163486201及所有历史证据保持。恢复本轮看 [HANDOFF](../HANDOFF.md)。
+有限实现已完成，本机最终隔离演练63项/0失败、账户116/Chat同步50/Memory同步58真实PG+HTTP、本地26 Rust测试通过；提交/精确CI仍待核验，不授完整I-7或独立审计通过。原I-6最终源码04d770a、精确CI38163486201及所有历史证据保持。恢复本轮看 [HANDOFF](../HANDOFF.md)。
 
 实现与试用详见 [运行与恢复操作说明](../cloud/postgres/operations/README.md)：三项服务秘密复用Broker/ProtectedFileStore；普通auth/app连接分离；前向schema5保留本地schema5/protocol1。备份硬预算5,000,000,000字节；最新检查点仅证明其时点，恢复均关闭同步、递增世代、撤旧认证并撤CONNECT隔离，无自动解隔离/发布入口。邮件HTTP前提交unknown计额，无自动重发/供应商切换、持久明文验证码队列或unknown自动对账。导出含未发送附件和进行中草稿，无同步队列/凭据/重放入口。
 
@@ -43,3 +43,5 @@ Brevo首选、Resend手动备用；生产端点/Key只能服务端安全配置�
 隔离Pinned PG17/pgvector0.8.2容器内同时运行PG与合成Rust服务/测试，整个容器限制2CPU、2GiB、禁止swap、network=none；编译在容器外，不计运行性能；认证性能使用完整release优化构建，密码哈希仍为Argon2id 64MiB/t=3/p=1，不能降低安全参数换取性能。Chat物理磁盘失败使用既有debug构建。shared_buffers32MiB/work_mem2MiB/max_connections12；服务固定2个DB连接+邮件1个连接、请求/哈希worker1，拒绝多余请求不排无限队列。3个基础账户、1000条3维精确向量（不外推1536维生产检索）、3份合成Chat附件、一个新注册/登录账户，登录顺序8次、竞争并发4，查询20次。执行前目标：成功顺序登录p95≤2秒、授权精确向量p95≤100ms、容器运行峰值内存<1GiB、OOM事件0；记录p50/p95/p99、成功/429/错误、连接数、实际cgroup与CPU/内存曲线。超标如实报告并最小定位，不事后改阈值。
 
 物理磁盘测试只填满隔离16MiB tmpfs，证明实际ENOSPC与SQLite已提交Chat/outbox不损坏、服务磁盘预留拒绝写入；另外隔离PG数据卷中断/恢复和失败事务保持旧提交。它不是生产50GB盘长周期增长、任意硬盘断电、全VPS灾难恢复或固定用户容量验收。
+
+收尾隔离修复：仅事后REVOKE不能驱逐创建窗口内已连接客户端；新恢复库现在CREATE时ALLOW_CONNECTIONS=false，先撤CONNECT再允许管理员恢复。真实普通角色在撤权前连接被拒的负例已加入；初始dcd2967源码/CI不作为最终交付。

@@ -152,7 +152,16 @@ def main():
             db.sql(f"UPDATE caidex.users SET memory_delete_pending=false WHERE user_id='{A}'; UPDATE caidex.project_members SET revoked_at=now(),authorization_version=authorization_version+1 WHERE project_id='{PA}'; UPDATE caidex.auth_credentials SET revoked_at=now() WHERE user_id='{A}'; UPDATE caidex.auth_sessions SET revoked_at=now() WHERE user_id='{A}';")
             point = Path(work) / 'latest-checkpoint.json'
             cp = ops.checkpoint(db, point)
+            original_sql=db.sql
+            def protected_creation(query):
+                result=original_sql(query)
+                if query.startswith('CREATE DATABASE caidex_restore_current '):
+                    attempt=subprocess.run(docker+['exec',name,'psql','-h','/var/run/postgresql','-U','caidex_test','-d','caidex_restore_current','-c','SELECT 1'],capture_output=True,env=env)
+                    check('restore_creation_blocks_connections_before_privilege_revocation',original_sql("SELECT NOT datallowconn FROM pg_database WHERE datname='caidex_restore_current'")=='t' and attempt.returncode!=0)
+                return result
+            db.sql=protected_creation
             restored = ops.restore(db, manifest, 'caidex_restore_current', point)
+            db.sql=original_sql
             legacy_result=ops.restore(db,legacy_manifest,'caidex_restore_legacy',point)
             legacy_db=ops.Database(db.socket,'caidex_restore_legacy',db.prefix)
             check('schema4_backup_forward_migrates_to5_and_preserves_B_barrier',legacy_result['schema']==5 and legacy_db.sql(f"SELECT max(version)=5 AND NOT EXISTS(SELECT FROM caidex.memories WHERE user_id='{A}') FROM caidex.schema_migrations")=='t')

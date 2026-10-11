@@ -81,7 +81,7 @@ python3 cloud/postgres/operations/backup.py --socket /var/run/postgresql --datab
 python3 cloud/postgres/operations/backup.py --socket /var/run/postgresql --database caidex restore /absolute/private/backups/snapshot-EPOCH-UUID.json --target caidex_restore_review --checkpoint /absolute/private/recovery/checkpoint.json
 ```
 
-只新建 `caidex_restore_*`，不覆盖或删除在线库，校验失败不释放目标。schema4备份向前迁移到5。检查点必须来自同一源集群/数据库、时间晚于备份完成；只能证明其标明时点，之后操作保持未知。匹配最新记录时重建已证明ACL、撤销不明或变更身份/凭据、合并永久墓碑并清除旧B正文/来源/向量；不误删其他所有者记忆或独立Chat。所有恢复均作废旧session/refresh/challenge/CLI授权、旧队列、开启许可与世代。
+只新建 `caidex_restore_*`，创建时禁止全部连接、撤CONNECT后才允许管理员恢复；不覆盖或删除在线库，校验失败不释放目标。schema4备份向前迁移到5。检查点必须来自同一源集群/数据库、时间晚于备份完成；只能证明其标明时点，之后操作保持未知。匹配最新记录时重建已证明ACL、撤销不明或变更身份/凭据、合并永久墓碑并清除旧B正文/来源/向量；不误删其他所有者记忆或独立Chat。所有恢复均作废旧session/refresh/challenge/CLI授权、旧队列、开启许可与世代。
 
 没有最新检查点时省略 `--checkpoint`：全部账户暂停、旧身份/凭据撤销、所有同步关闭，旧正文仅供管理员隔离核对。**两种恢复都撤销PUBLIC/app/auth CONNECT，绝不自动发布。** 本工具没有自动解隔离命令；在部署授权、身份与当前控制/ACL/删除记录审查、重新认证/显式开启/范围授权前，不得接回客户端或重用旧令牌。检查点不得从客户端自报数据替代。
 
