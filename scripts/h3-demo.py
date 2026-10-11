@@ -87,14 +87,17 @@ def demo(binary, root):
         winning = next(r for r in completed["pending"].values() if r.get("operation_id") == winner)
         assert winning["client_id"] == winning_client
         assert marker.read_text(encoding="utf-8").strip() == "CAIDEX_H3_PATCH"
-        # Native Diff can arrive after turn/completed; require it within a bound.
+        # Runtime may omit aggregate Diff after an inexact sandbox attempt.
         deadline = time.monotonic() + 30
-        while "diff" not in completed["artifacts"]:
-            assert time.monotonic() < deadline, ("native Diff missing after completion", completed)
+        def file_changes(task):
+            return [v["params"]["item"] for v in task["artifacts"].values() if v.get("params", {}).get("item", {}).get("type") == "fileChange"]
+        while not file_changes(completed):
+            assert time.monotonic() < deadline, ("native file Diff missing after completion", completed)
             time.sleep(0.02)
             completed = owner.call("task/status", operation_id="h3-patch")["task"]
-        assert "CAIDEX_H3_PATCH" in completed["artifacts"]["diff"]["params"]["diff"]
-        assert any(v.get("params", {}).get("item", {}).get("type") == "fileChange" for v in completed["artifacts"].values())
+        assert any(item["status"] == "completed" and any(Path(change["path"]).resolve() == marker.resolve() and "CAIDEX_H3_PATCH" in change["diff"] for change in item["changes"]) for item in file_changes(completed))
+        if "diff" in completed["artifacts"]:
+            assert "CAIDEX_H3_PATCH" in completed["artifacts"]["diff"]["params"]["diff"]
         retry_client, retry_fields = (a, fields_a) if winner == "race-a" else (b, fields_b)
         retry = retry_client.call("task/approval", **retry_fields)
         assert retry["operation"]["operation_id"] == winner
@@ -154,12 +157,15 @@ def demo(binary, root):
         assert db.execute("SELECT COUNT(*) FROM events WHERE method='item/agentMessage/delta'").fetchone()[0] > 0
         claimed = sum(1 for (data,) in db.execute("SELECT data FROM events WHERE method='host/task'") if (json.loads(data).get("operation") or {}).get("operation_id") == winner and json.loads(data)["operation"]["outcome"] == "sending")
         assert claimed == 1
+        aggregate_diff_events = db.execute("SELECT COUNT(*) FROM events WHERE method='turn/diff/updated' AND json_extract(data,'$.params.turnId')=?", (completed["turn_id"],)).fetchone()[0]
+        if aggregate_diff_events:
+            assert "CAIDEX_H3_PATCH" in snapshot["tasks"][completed["task_id"]]["artifacts"]["diff"]["params"]["diff"]
         for secret in grants.values():
             assert db.execute("SELECT COUNT(*) FROM events WHERE instr(data,?)>0", (secret,)).fetchone()[0] == 0
         db.close()
         owner.call("shutdown")
         assert process.wait(timeout=15) == 0, process.stderr.read()
-        print(json.dumps({"status": "ok", "codex_version": "0.160.1", "clients": 2, "evidence_directory": str(root), "approval_claims": claimed, "winning_operation": winner, "native_patch_contents": marker.read_text(encoding="utf-8").strip(), "native_diff_restored": True, "native_review_restored": True, "revoked_client_rejected": True, "revoked_request_not_executed": True, "snapshot_gap_recovered": True, "unanswered_task": unknown["status"], "restart_model_requests": trace["requests"] - before, "model_requests": trace["requests"], "native_patch_offers": len(trace["h3Patches"]), "authorization_header_seen": trace["authorizationSeen"], "evidence_basis": {"counts": "measured SQLite claim count and local HTTP trace", "native_flow": "real independent Host/Runtime, file contents and wire assertions", "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"}}))
+        print(json.dumps({"status": "ok", "codex_version": "0.160.1", "clients": 2, "evidence_directory": str(root), "approval_claims": claimed, "winning_operation": winner, "native_patch_contents": marker.read_text(encoding="utf-8").strip(), "native_diff_restored": True, "native_diff_source": "item/fileChange.changes[].diff", "aggregate_diff_events": aggregate_diff_events, "native_review_restored": True, "revoked_client_rejected": True, "revoked_request_not_executed": True, "snapshot_gap_recovered": True, "unanswered_task": unknown["status"], "restart_model_requests": trace["requests"] - before, "model_requests": trace["requests"], "native_patch_offers": len(trace["h3Patches"]), "authorization_header_seen": trace["authorizationSeen"], "evidence_basis": {"counts": "measured SQLite claim/aggregate Diff count and local HTTP trace", "native_flow": "real independent Host/Runtime, file contents and original per-file Diff/recovery assertions; aggregate only when emitted", "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"}}))
     finally:
         failed = sys.exc_info()[0] is not None
         if failed:
