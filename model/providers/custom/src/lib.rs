@@ -224,6 +224,80 @@ impl<S: SecretStore + 'static> CustomResponsesProvider<S> {
 }
 
 impl<S: SecretStore + 'static> ModelProvider for CustomResponsesProvider<S> {
+    fn memory_target(
+        &self,
+        model: &str,
+        embedding: bool,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        let route = self
+            .state
+            .models
+            .get(model)
+            .ok_or_else(|| ProviderError::new(404, "unknown_model"))?;
+        let adapter = if embedding {
+            route
+                .embedding
+                .as_ref()
+                .ok_or_else(|| ProviderError::new(501, "embedding_unavailable"))?
+        } else {
+            &route.adapter
+        };
+        Ok(caidex_model_core::ProviderTarget {
+            endpoint: adapter.endpoint.to_string(),
+            native_model: route.metadata.native_model.clone(),
+        })
+    }
+    fn memory_guard(&self, model: &str) -> Option<Arc<caidex_credentials::Redactor>> {
+        let route = self.state.models.get(model)?;
+        if let Some(reference) = &route.adapter.credential {
+            self.state.broker.resolve(reference).ok()??;
+        }
+        Some(self.state.broker.shared_redactor())
+    }
+    fn embed(
+        &self,
+        request: caidex_model_core::EmbeddingRequest,
+        context: RequestContext,
+    ) -> ProviderFuture<'_, caidex_model_core::EmbeddingResponse> {
+        Box::pin(async move {
+            request.validate()?;
+            let route = self
+                .state
+                .models
+                .get(&request.model)
+                .ok_or_else(|| ProviderError::new(404, "unknown_model"))?;
+            let adapter = route
+                .embedding
+                .as_ref()
+                .ok_or_else(|| ProviderError::new(501, "embedding_unavailable"))?;
+            let count = request.input.len();
+            let body = serde_json::json!({"model":route.metadata.native_model,"input":request.input,"dimensions":request.dimensions,"encoding_format":"float"});
+            let value = self.post_json(adapter, body, context).await?;
+            let data = value["data"]
+                .as_array()
+                .ok_or_else(|| ProviderError::new(502, "invalid_embedding_response"))?;
+            if data.len() != count {
+                return Err(ProviderError::new(502, "invalid_embedding_response"));
+            }
+            let mut vectors = vec![Vec::new(); count];
+            for item in data {
+                let i = item["index"]
+                    .as_u64()
+                    .and_then(|i| usize::try_from(i).ok())
+                    .filter(|i| *i < count)
+                    .ok_or_else(|| ProviderError::new(502, "invalid_embedding_response"))?;
+                if !vectors[i].is_empty() {
+                    return Err(ProviderError::new(502, "invalid_embedding_response"));
+                }
+                vectors[i] = serde_json::from_value(item["embedding"].clone())
+                    .map_err(|_| ProviderError::new(502, "invalid_embedding_response"))?;
+            }
+            let result = caidex_model_core::EmbeddingResponse { vectors };
+            result.validate(count, request.dimensions)?;
+            Ok(result)
+        })
+    }
+
     fn list_models(&self) -> ProviderFuture<'_, Vec<ModelMetadata>> {
         Box::pin(async { Ok(self.state.registry.models().cloned().collect()) })
     }
@@ -433,8 +507,19 @@ async fn execute<S: SecretStore + 'static>(
         value.set_sensitive(true);
         outgoing = outgoing.header(header::AUTHORIZATION, value);
     }
+    let outgoing = outgoing.build().map_err(transport)?;
+    if context.memory_request {
+        let body = outgoing
+            .body()
+            .and_then(|b| b.as_bytes())
+            .and_then(|b| std::str::from_utf8(b).ok())
+            .ok_or_else(|| ProviderError::new(400, "invalid_memory_payload"))?;
+        if state.broker.redactor().contains_secret(body) {
+            return Err(ProviderError::new(400, "credential_in_memory_payload"));
+        }
+    }
     let upstream = transfer::guard(
-        outgoing.send(),
+        state.client.execute(outgoing),
         &context.cancellation,
         deadline.min(Instant::now() + state.limits.header_timeout),
     )

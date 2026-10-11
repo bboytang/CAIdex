@@ -174,7 +174,7 @@ pub struct Broker<S: SecretStore> {
     owner: Id,
     store: S,
     operations: Mutex<()>,
-    redactor: Redactor,
+    redactor: std::sync::Arc<Redactor>,
 }
 
 impl<S: SecretStore> Broker<S> {
@@ -183,8 +183,11 @@ impl<S: SecretStore> Broker<S> {
             owner,
             store,
             operations: Mutex::new(()),
-            redactor: Redactor::default(),
+            redactor: std::sync::Arc::new(Redactor::default()),
         }
+    }
+    pub fn shared_redactor(&self) -> std::sync::Arc<Redactor> {
+        self.redactor.clone()
     }
     pub fn redactor(&self) -> &Redactor {
         &self.redactor

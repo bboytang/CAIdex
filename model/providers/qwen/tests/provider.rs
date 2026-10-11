@@ -2138,6 +2138,7 @@ async fn incremental_summary_display_remains_cancellable_and_droppable_before_te
             deadline: (action == "deadline")
                 .then(|| std::time::Instant::now() + Duration::from_millis(300)),
             headers: ContextHeaders::default(),
+            memory_request: false,
         };
         let mut response = provider
             .stream_response(request(basic(true)), context)
@@ -3172,6 +3173,7 @@ async fn partial_tool_stream_cancel_drop_and_deadline_never_publish_calls_or_car
             deadline: (action == "deadline")
                 .then(|| std::time::Instant::now() + Duration::from_millis(300)),
             headers: ContextHeaders::default(),
+            memory_request: false,
         };
         let mut response = provider
             .stream_response(request(tool_source(true)), context)
@@ -3609,6 +3611,7 @@ async fn custom_partial_stream_cancel_drop_and_deadline_release_socket_without_d
             deadline: (action == "deadline")
                 .then(|| std::time::Instant::now() + Duration::from_millis(300)),
             headers: ContextHeaders::default(),
+            memory_request: false,
         };
         let mut response = provider
             .stream_response(request(custom_source(true)), context)
@@ -4975,6 +4978,7 @@ async fn runtime_history_controls_stream_cancel_drop_and_deadline_never_publish_
                 deadline: (action == "deadline")
                     .then(|| std::time::Instant::now() + Duration::from_millis(300)),
                 headers: ContextHeaders::default(),
+                memory_request: false,
             };
             let mut stream = provider
                 .stream_response(request(source.clone()), context)

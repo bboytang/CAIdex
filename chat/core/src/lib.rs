@@ -1,6 +1,7 @@
 //! Ordinary Chat: local account cache and inference only. No Runtime/Host capability.
 mod cache;
 mod client;
+pub mod memory;
 
 pub use cache::{Attachment, Cache, Conversation, Message, OutboxEntry};
 use caidex_auth::{ConfirmedSession, Trust};
@@ -48,10 +49,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Local partition identity is not a cloud authorization token.
 #[derive(Clone, PartialEq, Eq)]
-pub struct Namespace(String);
+pub struct Namespace(String, Option<Id>);
 impl Namespace {
     pub fn guest() -> Self {
-        Self("guest".into())
+        Self("guest".into(), None)
     }
     pub fn account(session: &ConfirmedSession) -> Self {
         Self::key(session.issuer(), session.user_id(), session.is_test())
@@ -61,10 +62,13 @@ impl Namespace {
         Self::key(trust.issuer(), &String::from(user.clone()), trust.is_test())
     }
     fn key(issuer: &str, user: &str, test: bool) -> Self {
-        Self(format!(
-            "{:x}",
-            Sha256::digest(format!("{test}\0{issuer}\0{user}"))
-        ))
+        Self(
+            format!("{:x}", Sha256::digest(format!("{test}\0{issuer}\0{user}"))),
+            Id::try_from(user.to_owned()).ok(),
+        )
+    }
+    pub fn owner_user_id(&self) -> Option<&Id> {
+        self.1.as_ref()
     }
     pub fn credential_owner(&self) -> CredentialOwner {
         CredentialOwner::new(format!("chat-{}", &self.0[..self.0.len().min(59)])).unwrap()

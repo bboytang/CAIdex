@@ -285,6 +285,7 @@ async fn handle(
         headers: context_headers,
         cancellation: state.cancellation.child_token(),
         deadline: Some(deadline.into_std()),
+        memory_request: false,
     };
     if request.is_streaming() {
         let result = transfer::guard(

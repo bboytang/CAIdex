@@ -42,6 +42,33 @@ impl Redactor {
         }
         Ok(())
     }
+    /// Reject credential material at Memory boundaries; never rewrites source truth.
+    pub fn contains_secret(&self, text: &str) -> bool {
+        let Ok(values) = self.values.lock() else {
+            return true;
+        };
+        if values.iter().any(|value| text.contains(value.expose())) {
+            return true;
+        }
+        drop(values);
+        if let Ok(value @ (Value::Object(_) | Value::Array(_))) = serde_json::from_str(text) {
+            return self.secret_json(&value);
+        }
+        text.lines().any(|line| {
+            line.find([':', '='])
+                .is_some_and(|i| sensitive(line[..i].trim()))
+        })
+    }
+    fn secret_json(&self, value: &Value) -> bool {
+        match value {
+            Value::Object(fields) => fields
+                .iter()
+                .any(|(key, value)| sensitive(key) || self.secret_json(value)),
+            Value::Array(values) => values.iter().any(|value| self.secret_json(value)),
+            Value::String(text) => self.contains_secret(text),
+            _ => false,
+        }
+    }
     pub fn text(&self, text: &str) -> String {
         if let Ok(value @ (Value::Object(_) | Value::Array(_))) = serde_json::from_str(text) {
             return self.json(&value).to_string();

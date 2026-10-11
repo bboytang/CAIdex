@@ -456,6 +456,16 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
     fn capabilities(&self, model: &str) -> ProviderResult<ModelCapabilities> {
         self.responses.capabilities(model)
     }
+    fn memory_target(
+        &self,
+        model: &str,
+        embedding: bool,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        self.responses.memory_target(model, embedding)
+    }
+    fn memory_guard(&self, model: &str) -> Option<Arc<caidex_credentials::Redactor>> {
+        self.responses.memory_guard(model)
+    }
     fn credential_requirements(&self, model: &str) -> ProviderResult<CredentialRequirement> {
         self.responses.credential_requirements(model)
     }
@@ -512,6 +522,7 @@ impl<S: SecretStore + 'static> ModelProvider for OpenRouterProvider<S> {
                 headers: ContextHeaders::default(),
                 cancellation: context.cancellation.clone(),
                 deadline: context.deadline,
+                memory_request: context.memory_request,
             };
             let mut response = self
                 .responses

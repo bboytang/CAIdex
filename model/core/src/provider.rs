@@ -86,6 +86,8 @@ pub struct RequestContext {
     pub cancellation: CancellationToken,
     /// A caller's overall deadline also covers the adapter's request/stream.
     pub deadline: Option<Instant>,
+    /// Memory payload guard; ordinary Runtime wire remains lossless.
+    pub memory_request: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -110,9 +112,67 @@ pub enum ProviderStreamEvent {
     Heartbeat,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProviderTarget {
+    pub endpoint: String,
+    pub native_model: String,
+}
+
+pub struct EmbeddingRequest {
+    pub model: String,
+    pub input: Vec<String>,
+    pub dimensions: usize,
+}
+impl EmbeddingRequest {
+    pub fn validate(&self) -> ProviderResult<()> {
+        if self.model.is_empty()
+            || self.model.len() > 256
+            || self.input.is_empty()
+            || self.input.len() > 32
+            || !(1..=16000).contains(&self.dimensions)
+            || self.input.iter().any(|s| s.is_empty() || s.len() > 16384)
+            || self.input.iter().map(String::len).sum::<usize>() > 65536
+        {
+            return Err(ProviderError::new(400, "invalid_embedding_request"));
+        }
+        Ok(())
+    }
+}
+pub struct EmbeddingResponse {
+    pub vectors: Vec<Vec<f32>>,
+}
+impl EmbeddingResponse {
+    pub fn validate(&self, count: usize, dimensions: usize) -> ProviderResult<()> {
+        if self.vectors.len() != count
+            || self
+                .vectors
+                .iter()
+                .any(|v| v.len() != dimensions || v.iter().any(|x| !x.is_finite()))
+        {
+            return Err(ProviderError::new(502, "invalid_embedding_response"));
+        }
+        Ok(())
+    }
+}
+
 /// Shared by Codex Gateway and ordinary Chat. Implementations only perform
 /// inference; tools remain data. Drop response futures/streams to cancel I/O.
 pub trait ModelProvider: Send + Sync {
+    /// Unsupported adapters fail closed for Memory egress; configured endpoints never come from prompts.
+    fn memory_target(&self, _model: &str, _embedding: bool) -> ProviderResult<ProviderTarget> {
+        Err(ProviderError::new(501, "memory_target_unavailable"))
+    }
+    fn memory_guard(&self, _model: &str) -> Option<std::sync::Arc<caidex_credentials::Redactor>> {
+        None
+    }
+    fn embed(
+        &self,
+        _request: EmbeddingRequest,
+        _context: RequestContext,
+    ) -> ProviderFuture<'_, EmbeddingResponse> {
+        Box::pin(async { Err(ProviderError::new(501, "embedding_unavailable")) })
+    }
     fn list_models(&self) -> ProviderFuture<'_, Vec<ModelMetadata>>;
     fn create_response(
         &self,

@@ -17,6 +17,7 @@ use std::{
 use uuid::Uuid;
 
 /// The adapter is configured locally with this partition's Broker, never via Host RPC.
+#[derive(Clone)]
 pub struct LocalModel {
     pub provider: Arc<dyn ModelProvider>,
     pub model: String,
@@ -27,10 +28,11 @@ pub struct Send {
     pub parent: Option<Uuid>,
     pub content: Content,
 }
-struct State {
-    cache: Cache,
+pub(crate) struct State {
+    pub(crate) cache: Cache,
     model: Option<LocalModel>,
-    generation: u64,
+    pub(crate) generation: u64,
+    pub(crate) memory: crate::memory::Session,
     pending: BTreeMap<Uuid, CancellationToken>,
 }
 /// Shared client state makes cancellation/account changes invalidate late replies.
@@ -47,10 +49,11 @@ impl Chat {
                 model: None,
                 generation: 0,
                 pending: BTreeMap::new(),
+                memory: crate::memory::Session::default(),
             }),
         })
     }
-    fn state(&self) -> Result<std::sync::MutexGuard<'_, State>> {
+    pub(crate) fn state(&self) -> Result<std::sync::MutexGuard<'_, State>> {
         self.state.lock().map_err(|_| Error::Storage)
     }
     pub fn configure(&self, model: LocalModel) -> Result<()> {
@@ -58,6 +61,9 @@ impl Chat {
         validate_model(&model, state.cache.namespace())?;
         if !state.pending.is_empty() {
             return Err(Error::Invalid);
+        }
+        if let Some(guard) = model.provider.memory_guard(&model.model) {
+            state.memory.guards.push(guard);
         }
         state.model = Some(model);
         Ok(())
@@ -73,6 +79,8 @@ impl Chat {
             token.cancel();
         }
         state.cache.interrupt_pending(End::Cancelled)?;
+        state.memory.cancel_all();
+        state.memory = crate::memory::Session::default();
         state.pending.clear();
         state.model = None;
         state.generation += 1;
@@ -120,7 +128,7 @@ impl Chat {
     }
     /// Callers choose a parent explicitly; concurrent sends produce sibling branches.
     pub async fn send(&self, send: Send) -> Result<Message> {
-        let (provider, request, cancel, generation) = {
+        let (provider, request, cancel, generation, has_memory) = {
             let mut state = self.state()?;
             if state.pending.len() >= 16 {
                 return Err(Error::Invalid);
@@ -129,17 +137,41 @@ impl Chat {
             validate_model(model, state.cache.namespace())?;
             let provider = model.provider.clone();
             let model = model.model.clone();
-            let input =
+            if let Some(guard) = provider.memory_guard(&model) {
+                state.memory.guards.push(guard);
+            }
+            let project: Option<String> = state.cache.db.query_row(
+                "SELECT project_id FROM conversations WHERE id=?1",
+                [send.conversation.to_string()],
+                |r| r.get(0),
+            )?;
+            let project = project
+                .map(Id::try_from)
+                .transpose()
+                .map_err(|_| Error::UnsafeStorage)?;
+            let injection = crate::memory::injection(&state, project, &provider, &model)?;
+            let has_memory = injection.is_some();
+            let mut input =
                 state
                     .cache
                     .begin(send.conversation, send.parent, send.content, send.operation)?;
+            if let Some(memory) = injection {
+                input
+                    .as_array_mut()
+                    .ok_or(Error::Invalid)?
+                    .insert(0, memory);
+            }
             let request=CanonicalRequest::new(json!({"model":model,"input":input,"stream":true,"store":false,"tools":[],"tool_choice":"none"}),ResponsesDialect::Classic).map_err(|_|Error::Invalid)?;
             let cancel = CancellationToken::new();
             state.pending.insert(send.operation, cancel.clone());
-            (provider, request, cancel, state.generation)
+            if has_memory {
+                state.memory.pending.insert(send.operation, cancel.clone());
+            }
+            (provider, request, cancel, state.generation, has_memory)
         };
         let context = RequestContext {
             cancellation: cancel.clone(),
+            memory_request: has_memory,
             deadline: Some(Instant::now() + Duration::from_secs(120)),
             ..RequestContext::default()
         };
@@ -157,6 +189,10 @@ impl Chat {
         }
         let message = state.cache.finish(send.operation, end)?;
         state.pending.remove(&send.operation);
+        state.memory.pending.remove(&send.operation);
+        if end == End::Complete {
+            crate::memory::automatic_chat_sources(&mut state, &message)?;
+        }
         Ok(message)
     }
     async fn receive(
@@ -234,6 +270,7 @@ impl Chat {
 impl Drop for Chat {
     fn drop(&mut self) {
         if let Ok(state) = self.state.get_mut() {
+            state.memory.cancel_all();
             for token in state.pending.values() {
                 token.cancel();
             }
@@ -242,7 +279,7 @@ impl Drop for Chat {
         }
     }
 }
-fn validate_model(model: &LocalModel, namespace: &Namespace) -> Result<()> {
+pub(crate) fn validate_model(model: &LocalModel, namespace: &Namespace) -> Result<()> {
     if model.model.is_empty() || model.model.len() > 256 {
         return Err(Error::Invalid);
     }
@@ -268,7 +305,7 @@ fn validate_model(model: &LocalModel, namespace: &Namespace) -> Result<()> {
     }
     Ok(())
 }
-fn visible_text(response: &CanonicalResponse) -> Result<String> {
+pub(crate) fn visible_text(response: &CanonicalResponse) -> Result<String> {
     for item in response.output() {
         match item["type"].as_str() {
             Some("reasoning") => (),

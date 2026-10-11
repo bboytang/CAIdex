@@ -10,9 +10,10 @@ mod sse;
 mod stream;
 
 pub use provider::{
-    CancellationToken, ContextHeaders, CredentialRequirement, ModelProvider, ProviderError,
-    ProviderFuture, ProviderResponse, ProviderResult, ProviderStream, ProviderStreamEvent,
-    REQUEST_HEADERS, RESPONSE_HEADERS, RequestContext, StreamingResponse,
+    CancellationToken, ContextHeaders, CredentialRequirement, EmbeddingRequest, EmbeddingResponse,
+    ModelProvider, ProviderError, ProviderFuture, ProviderResponse, ProviderResult, ProviderStream,
+    ProviderStreamEvent, ProviderTarget, REQUEST_HEADERS, RESPONSE_HEADERS, RequestContext,
+    StreamingResponse,
 };
 pub use registry::{
     CapabilitySupport, CompatibilityLevel, CompatibilityReport, EvidenceSource, ModelCapabilities,

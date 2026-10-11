@@ -68,6 +68,7 @@ impl fmt::Debug for CustomResponses {
 pub struct ConfiguredModel {
     pub(crate) metadata: ModelMetadata,
     pub(crate) adapter: CustomResponses,
+    pub(crate) embedding: Option<CustomResponses>,
 }
 impl ConfiguredModel {
     pub fn new(
@@ -78,7 +79,19 @@ impl ConfiguredModel {
     ) -> Result<Self> {
         let metadata = ModelMetadata::configured(model, upstream_model, dialects);
         metadata.validate().map_err(|_| Error::InvalidRoute)?;
-        Ok(Self { metadata, adapter })
+        Ok(Self {
+            metadata,
+            adapter,
+            embedding: None,
+        })
+    }
+    /// Explicit OpenAI-compatible Embedding endpoint, using the same local credential owner/profile.
+    pub fn with_embedding_endpoint(mut self, endpoint: CustomResponses) -> Result<Self> {
+        if endpoint.credential != self.adapter.credential {
+            return Err(Error::InvalidRoute);
+        }
+        self.embedding = Some(endpoint);
+        Ok(self)
     }
     pub fn with_metadata(mut self, metadata: ModelMetadata) -> Result<Self> {
         metadata.validate().map_err(|_| Error::InvalidRoute)?;

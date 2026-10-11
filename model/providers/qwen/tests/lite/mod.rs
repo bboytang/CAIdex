@@ -554,6 +554,7 @@ async fn partial_stream_cancel_drop_and_deadline_release_native_socket_and_slot(
             deadline: (action == "deadline")
                 .then(|| std::time::Instant::now() + Duration::from_millis(300)),
             headers: ContextHeaders::default(),
+            memory_request: false,
         };
         let mut stream = enabled
             .stream_response(lite(source(true)), context)

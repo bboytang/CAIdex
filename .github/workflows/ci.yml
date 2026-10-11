@@ -112,6 +112,8 @@ jobs:
         run: cargo test --workspace --locked
       - name: I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)
         run: ${{ matrix.python }} scripts/i3-chat.py --output i3-chat.json
+      - name: I-4 Memory revisions, permissions, embedding and Chat (synthetic HTTP)
+        run: ${{ matrix.python }} scripts/i4-memory.py --output i4-memory.json
       - name: Install Linux native credential test service
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gnome-keyring dbus-x11 libglib2.0-bin

@@ -149,6 +149,16 @@ impl<S: SecretStore + 'static> ModelProvider for ChatCompletionsProvider<S> {
     fn capabilities(&self, model: &str) -> ProviderResult<ModelCapabilities> {
         self.transport.capabilities(model)
     }
+    fn memory_target(
+        &self,
+        model: &str,
+        embedding: bool,
+    ) -> ProviderResult<caidex_model_core::ProviderTarget> {
+        self.transport.memory_target(model, embedding)
+    }
+    fn memory_guard(&self, model: &str) -> Option<Arc<caidex_credentials::Redactor>> {
+        self.transport.memory_guard(model)
+    }
     fn credential_requirements(&self, model: &str) -> ProviderResult<CredentialRequirement> {
         self.transport.credential_requirements(model)
     }

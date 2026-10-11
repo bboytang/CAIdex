@@ -52,6 +52,24 @@ impl ModelRouter {
 }
 
 impl ModelProvider for ModelRouter {
+    fn memory_target(&self, model: &str, embedding: bool) -> ProviderResult<crate::ProviderTarget> {
+        self.metadata(model)?;
+        self.provider(model)?.memory_target(model, embedding)
+    }
+    fn memory_guard(&self, model: &str) -> Option<Arc<caidex_credentials::Redactor>> {
+        self.provider(model).ok()?.memory_guard(model)
+    }
+    fn embed(
+        &self,
+        request: crate::EmbeddingRequest,
+        context: RequestContext,
+    ) -> ProviderFuture<'_, crate::EmbeddingResponse> {
+        Box::pin(async move {
+            self.metadata(&request.model)?;
+            self.provider(&request.model)?.embed(request, context).await
+        })
+    }
+
     fn list_models(&self) -> ProviderFuture<'_, Vec<ModelMetadata>> {
         Box::pin(async move {
             let mut visited = Vec::new();
