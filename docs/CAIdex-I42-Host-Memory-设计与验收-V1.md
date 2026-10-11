@@ -26,7 +26,7 @@
 
 RPC：`memory/models` 仅返回该配对身份获准的模型描述；`memory/submit` 接收有界 `InferenceRequest`（固定 profile、完整目标、Draft、可选精确 Space）；`memory/status` 返回原状态/请求 SHA256/有界结果；`memory/cancel` 停止模型工作并清暂存结果；`memory/release` 释放已完成的结果，不重发/删除操作身份。`memory/evidence` 只读取被授权的完成任务摘要；`memory/evidence-grant` 是 owner-only 的精确白名单入口，不给 Memory 授 Runtime 工具权限。无云端 Agent 或模型后台代执行。
 
-共享 `chat/core/memory/inference.rs` 从原本地实现抽出有界、无工具的整合/Embedding 调用，客户端和 Host 共用严格候选/向量校验；工具/reasoning 不能伪装正文。Host 模型输出不会执行指令/提升审批权限。Key 和已知配对令牌的 guard 在请求、输出、描述和证据边界生效。只防已知值/认证结构，不声称能识别所有未知秘密。
+共享 `chat/core/memory/inference.rs` 从原本地实现抽出有界、无工具的整合/Embedding 调用，客户端和 Host 共用严格候选/向量校验；工具/reasoning 不能伪装正文。Host 模型输出不会执行指令/提升审批权限。Key 和已知配对令牌的 guard 在请求、输出、描述和证据边界生效。每次成功认证重新登记当前配对令牌，重启后仅持有摘要的旧授权也不能把其令牌发给模型；共享 guard 去重，不按每次连接无限新增对象。只防已知值/认证结构，不声称能识别所有未知秘密。
 
 `MemoryEngine::configure_host_integration/configure_host_embedding/configure_host_resolver` 为显式应用接口；绑定 Namespace、Host ID、作用域、完整真实 Provider 端点/native model/Host profile 组合身份和空间。Host 身份作为目标 endpoint 的前缀，真实 Provider 端点仍完整可核对；别名/Host/端点/native model/空间改变不能继承旧许可。角色绑定只在当前会话，重启客户端必须重新配置；Host 模型完全替换对应本地角色，没有客户端 Key 回退路径。普通 Chat 仍只使用自己的本地角色。
 

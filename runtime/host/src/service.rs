@@ -350,6 +350,7 @@ enum Reply {
 type ReplySender = oneshot::Sender<std::result::Result<Reply, &'static str>>;
 
 enum Message {
+    Authenticated(caidex_credentials::Secret),
     Client(ClientCommand, String, ReplySender),
     ProbeResult(
         String,
@@ -497,6 +498,7 @@ async fn serve_inner(
                         continue;
                     }
                     match message {
+                        Message::Authenticated(secret) => { if let Some(memory)=&mut memory { memory.protect(secret.expose())?; } },
                         Message::Client(ClientCommand::Grant { client_id, scopes }, _, reply) => {
                             if journal.snapshot().clients.len() >= 64 || journal.snapshot().clients.contains_key(&client_id) {
                                 let _ = reply.send(Err("Host client capacity reached or ID already issued"));
@@ -667,6 +669,13 @@ async fn connection(
         return Ok(());
     }
     let client_id = client_id.expect("authenticated principal");
+    // Existing grants retain only digests on disk; protect the live token again after restart.
+    send.send(Message::Authenticated(
+        caidex_credentials::Secret::new(auth.token)
+            .map_err(|_| Error::Refused("invalid Host secret"))?,
+    ))
+    .await
+    .map_err(|_| Error::Refused("Host stopped"))?;
     write(&mut writer, json!({"authorized": true, "protocol": 1})).await?;
     let mut subscriber: Option<broadcast::Receiver<Event>> = None;
     let mut last_seq = 0;

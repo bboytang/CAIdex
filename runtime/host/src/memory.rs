@@ -77,6 +77,7 @@ pub struct MemoryService {
     profiles: BTreeMap<String, MemoryProfile>,
     grants: BTreeMap<String, MemoryGrant>,
     guards: Vec<Arc<Redactor>>,
+    transport_guard: Arc<Redactor>,
     running: BTreeMap<(String, String), Running>,
     pub(crate) jobs: JoinSet<()>,
     pub(crate) receive: mpsc::Receiver<Completion>,
@@ -152,7 +153,8 @@ impl MemoryService {
             return Err(Error::Refused("Memory policy capacity exceeded"));
         }
         let mut registered = BTreeMap::new();
-        let mut guards = vec![];
+        let transport_guard = Arc::new(Redactor::default());
+        let mut guards = vec![transport_guard.clone()];
         for profile in profiles {
             if profile.id.is_empty()
                 || profile.id.len() > 64
@@ -205,6 +207,7 @@ impl MemoryService {
             profiles: registered,
             grants: bindings,
             guards,
+            transport_guard,
             running: BTreeMap::new(),
             jobs: JoinSet::new(),
             send,
@@ -217,13 +220,11 @@ impl MemoryService {
         }
     }
     pub(crate) fn protect(&mut self, secret: &str) -> Result<()> {
-        let guard = Arc::new(Redactor::default());
-        guard
+        self.transport_guard
             .register(
                 &Secret::new(secret.into()).map_err(|_| Error::Refused("invalid Host secret"))?,
             )
             .map_err(|_| Error::Refused("invalid Host secret"))?;
-        self.guards.push(guard);
         Ok(())
     }
     fn safe(&self, value: &Value) -> bool {

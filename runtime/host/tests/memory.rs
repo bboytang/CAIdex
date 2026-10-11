@@ -675,6 +675,7 @@ async fn host_restart_marks_submitted_unknown_and_never_replays_model() {
     h.stop().await;
     let h = Harness::at(root.0.clone(), p.clone(), Some(address)).await;
     let mut a = Client::connect(h.address, &token).await;
+    assert!(a.call(json!({"method":"memory/submit","host_id":h.host,"operation_id":"55555555-5555-5555-5555-555555555555","request":request(&token)})).await.get("error").is_some());
     assert_eq!(
         finished(&mut a, &h.host, id).await["result"]["state"],
         "unknown"
