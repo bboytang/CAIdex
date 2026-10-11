@@ -489,10 +489,32 @@ fn diff_review_and_tool_artifacts_preserve_wire_ids_unknown_fields_and_restart()
         "resolved"
     );
     assert_eq!(journal.snapshot().tasks["task"].status, "running");
+    let mut late = journal.snapshot().tasks["task"].clone();
+    late.task_id = "late".into();
+    late.operation_id = "late-submit".into();
+    late.thread_id = Some("late-thread".into());
+    late.turn_id = Some("late-turn".into());
+    let mut late_operation = journal.snapshot().operations["submit"].clone();
+    late_operation.operation_id = late.operation_id.clone();
+    late_operation.task_id = late.task_id.clone();
+    journal
+        .append("host/task", json!({"task":late,"operation":late_operation}))
+        .unwrap();
+    journal.append_runtime("turn/completed", json!({"params":{"threadId":"late-thread","turn":{"id":"late-turn","status":"completed"}}})).unwrap();
+    let late_diff = json!({"method":"turn/diff/updated","params":{"threadId":"late-thread","turnId":"late-turn","diff":"native Diff after terminal event","future":true}});
+    journal
+        .append_runtime("turn/diff/updated", late_diff.clone())
+        .unwrap();
+    assert_eq!(journal.snapshot().tasks["late"].status, "completed");
+    assert_eq!(
+        journal.snapshot().tasks["late"].artifacts["diff"],
+        late_diff
+    );
     let before = journal.snapshot();
     drop(journal);
     let offline = Journal::inspect(&directory.0).unwrap();
     assert_eq!(offline.tasks["task"].status, "unknown");
+    assert_eq!(offline.tasks["late"].artifacts["diff"], late_diff);
     assert_eq!(
         offline.tasks["task"].artifacts,
         before.tasks["task"].artifacts

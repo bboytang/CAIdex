@@ -24,9 +24,11 @@
 
 ## 验证与证据
 
-本地开发验证完成，最终功能SHA及新三平台CI尚待提交后核验。fmt、Clippy workspace/all-targets/locked/-D warnings通过；workspace实际682通过/0失败/83忽略，含Host42/0/0；固定Runtime离线81/0/0；Linux原生凭据附加1/0/0；stable/experimental schema及doctor（0.160.1、d27764b82f7118f674371e6d6e76271d9d606edb、无模型Turn）通过。H-1/2演示复验通过。H-3真实独立Host/固定Runtime演示实测claim1、本机HTTP9、原生patch offer3、重启HTTP增量0，实际文件内容CAIDEX_H3_PATCH与原生Diff一致，原生Review入口/退出、双端竞争/重查/迟到、请求撤销、授权撤销/重连、超过128事件的snapshot恢复、未答请求强杀重启unknown均通过。
+首轮功能源码[`dc322e007bbfdb9380880bbf6bea4113f28b973a`](https://github.com/bboytang/CAIdex/commit/dc322e007bbfdb9380880bbf6bea4113f28b973a)已直接提交并push main，[精确CI38105001809](https://github.com/bboytang/CAIdex/actions/runs/38105001809)首轮Linux在演示立即读取尚未到达的Diff时KeyError，macOS成功、Windows仍运行；未认领三平台交付成功或H-3独立审计通过。最小修正为30秒有界等待原生Diff，内容断言不变，强化终态后Diff持久恢复测试；已完整重跑本地全部检查与H-1/2/3演示并通过，待提交修正SHA后重新完整核验三平台。本地fmt、Clippy workspace/all-targets/locked/-D warnings通过；workspace实际682通过/0失败/83忽略，含Host42/0/0；固定Runtime离线81/0/0；Linux原生凭据附加1/0/0；stable/experimental schema及doctor（0.160.1、d27764b82f7118f674371e6d6e76271d9d606edb、无模型Turn）通过。H-1/2演示复验通过。H-3真实独立Host/固定Runtime演示实测claim1、本机HTTP9、原生patch offer3、重启HTTP增量0，实际文件内容CAIDEX_H3_PATCH与原生Diff一致，原生Review入口/退出、双端竞争/重查/迟到、请求撤销、授权撤销/重连、超过128事件的snapshot恢复、未答请求强杀重启unknown均通过。
 
-新增6项service测试覆盖双端首次竞争/不重复写、scope与已有连接撤销及外部host/access伪造、显式请求撤销/迟到、审批SQLite提交失败不写Runtime且重启unknown、授权提交失败不返回令牌、原生resolved/线程关闭屏障。新增3项journal测试覆盖原始Diff/Review/工具事件及未知字段/ID/旧stream隔离、64项及合计1MiB上限失败无部分提交、v2只读inspect与失败迁移回滚。原超时测试增强UTC/单调请求期限及整任务期限，包含UTC回拨、不产生approval/reply的原生interrupt证据。已有H-1/2隔离、认证、seq/原子性/提交后广播/未知不重发测试继续通过。
+[本地逐检查日志与源码指纹](evidence/h3-local.json)、[Host42实际测试名及结果](evidence/h3-host-tests.log)、[HTTP trace](evidence/h3-local-http-trace.json.gz)、[关闭后schema v3快照](evidence/h3-local-snapshot.json.gz)、[开发失败原日志及修正原因](evidence/h3-local-failed.json)均保留完整原文及SHA256。该证据于功能提交后生成，逐文件核对提交内容与验证时源码一致，后续封存不改功能源码。原始before回归在旧H-2源码上证明新授权入口缺失；新实现回归曾捕获撤销reason被Cancel覆盖，已最小修复；测试/演示假设错误与编译/Clippy错误单独记录，未降低门槛或把零测试当通过。
+
+新增6项service测试覆盖双端首次竞争/不重复写、scope与已有连接撤销及外部host/access伪造、显式请求撤销/迟到、审批SQLite提交失败不写Runtime且重启unknown、授权提交失败不返回令牌、原生resolved/线程关闭屏障。新增3项journal测试覆盖原始Diff/Review/工具事件及未知字段/ID/旧stream隔离、64项及合计1MiB上限失败无部分提交、v2只读inspect与失败迁移回滚。Diff回归另覆盖合法同Thread/Turn的终态后到达及持久恢复。原超时测试增强UTC/单调请求期限及整任务期限，包含UTC回拨、不产生approval/reply的原生interrupt证据。已有H-1/2隔离、认证、seq/原子性/提交后广播/未知不重发测试继续通过。
 
 ## 独立复现
 

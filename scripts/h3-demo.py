@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from importlib import import_module
@@ -86,6 +87,12 @@ def demo(binary, root):
         winning = next(r for r in completed["pending"].values() if r.get("operation_id") == winner)
         assert winning["client_id"] == winning_client
         assert marker.read_text(encoding="utf-8").strip() == "CAIDEX_H3_PATCH"
+        # Native Diff can arrive after turn/completed; require it within a bound.
+        deadline = time.monotonic() + 30
+        while "diff" not in completed["artifacts"]:
+            assert time.monotonic() < deadline, ("native Diff missing after completion", completed)
+            time.sleep(0.02)
+            completed = owner.call("task/status", operation_id="h3-patch")["task"]
         assert "CAIDEX_H3_PATCH" in completed["artifacts"]["diff"]["params"]["diff"]
         assert any(v.get("params", {}).get("item", {}).get("type") == "fileChange" for v in completed["artifacts"].values())
         retry_client, retry_fields = (a, fields_a) if winner == "race-a" else (b, fields_b)

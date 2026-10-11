@@ -2,7 +2,7 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
-## 当前批准工作：H-3 多端审批、Diff与纵向集成（本地开发验证完成，待精确CI）
+## 当前批准工作：H-3 多端审批、Diff与纵向集成（首轮CI演示修正已完整本地通过，待新SHA精确CI）
 
 2026-10-11用户确认H-2独立审计通过，并明确批准H-3。开始时main/HEAD/origin/main/GitHub main均为0151b488127f7357df3523176e5e2c24be63bdd8，工作区干净；磁盘2.4GiB可用。已读AGENTS/V3/CLI Host审批契约及H-1/2源码/测试，复用固定Codex0.160.1和原Facade，不读真实Key/不调商业模型。
 
@@ -10,7 +10,7 @@
 
 已实现schema v3及v1/v2事务升级、独立Host委托授权/撤销、审批持久首次claim/120秒有效期/单调时间上限/显式撤销、原生Diff/Review与工具artifact恢复；保持固定Runtime和旧operation hash边界。新增9项Host回归，另加强单调超时、迁移失败回滚及artifact字节上限测试。全仓fmt/Clippy/workspace实际682通过/0失败/83忽略（含Host42/0/0）、固定Runtime81/0/0、Linux原生凭据附加1/0/0、schema/doctor、H-1/2/3真实进程演示全部通过。H-3实测首次审批claim1、本机HTTP请求9、原生patch offer3、重启请求增量0，实际文件/Diff/Review/撤销/快照缺口恢复断言通过。固定离线声明不是独立全局遥测。
 
-当前HEAD仍为起点0151b48，main/origin/main未变；未提交为本轮H-3源码、测试、fixture、演示、CI步骤及授权/验收文档，无用户未提交修改被覆盖。最终差异已检查，git diff --check通过，磁盘约2.1GiB可用。下一步提交/push main，核验最终功能SHA的Linux/Windows/macOS实际checkout、步骤和计数，再封存证据。当前尚未认领新三平台CI或H-3独立审计通过；会话中断时先核实Git和GitHub实际状态。
+首轮功能源码[`dc322e007bbfdb9380880bbf6bea4113f28b973a`](https://github.com/bboytang/CAIdex/commit/dc322e007bbfdb9380880bbf6bea4113f28b973a)已直接提交/push main；[精确CI38105001809](https://github.com/bboytang/CAIdex/actions/runs/38105001809)首轮Linux在H-3演示立即读取尚未到达的Diff时KeyError；macOS成功，Windows仍运行，未认领交付CI成功。源码投影本已支持同Thread/Turn的终态后Diff，演示增加30秒有界等待且保持内容断言，并加强终态后Diff持久恢复回归；已完整重跑本地fmt/Clippy/workspace682/0/83、Host42/0/0、固定Runtime81/0/0、凭据/schema/doctor/构建及H-1/2/3演示全部通过；待提交修正后的最终功能SHA并重新完整核验三平台。本地最终日志/源码指纹、Host42实际测试名、合成HTTP与已停止Host snapshot、开发失败原因已在docs/evidence/h3-*生成，等待CI证据后一起封存。当前未提交仅上述演示/测试最小修正及本轮证据/交接更新；无用户修改被覆盖，磁盘约2.1GiB。下一步核验三平台实际checkout、各步骤及计数并封存，完成后停止待H-3独立审计；会话中断时先核实Git和GitHub实际状态。
 
 ## H-2 历史交付（用户已确认独立审计通过）
 
