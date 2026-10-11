@@ -619,3 +619,31 @@ fn v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes() {
     assert_eq!(upgraded.operations, saved.operations);
     assert!(upgraded.clients.is_empty() && upgraded.tasks["task"].artifacts.is_empty());
 }
+
+#[test]
+fn v3_memory_upgrade_keeps_existing_clients_artifacts_and_events() {
+    let directory = Directory::new();
+    let journal = h3_journal(&directory);
+    let saved = journal.snapshot();
+    assert!(!saved.clients.is_empty());
+    drop(journal);
+    let connection = Connection::open(directory.0.join("journal.sqlite3")).unwrap();
+    let mut wire = serde_json::to_value(&saved).unwrap();
+    wire["version"] = json!(3);
+    connection
+        .execute("UPDATE snapshot SET data=?1", [wire.to_string()])
+        .unwrap();
+    connection.pragma_update(None, "user_version", 3).unwrap();
+    connection.execute_batch("CREATE TRIGGER fail_v3 BEFORE UPDATE ON snapshot BEGIN SELECT RAISE(ABORT,'injected migration failure'); END;").unwrap();
+    assert!(Journal::open(&directory.0).is_err());
+    assert_eq!(Journal::inspect(&directory.0).unwrap().version, 3);
+    connection.execute_batch("DROP TRIGGER fail_v3").unwrap();
+    drop(connection);
+    let upgraded = Journal::open(&directory.0).unwrap().snapshot();
+    assert_eq!(upgraded.version, 4);
+    assert_eq!(upgraded.clients, saved.clients);
+    assert_eq!(upgraded.tasks, saved.tasks);
+    assert_eq!(upgraded.operations, saved.operations);
+    assert_eq!(upgraded.seq, saved.seq);
+    assert_eq!(upgraded.host_id, saved.host_id);
+}

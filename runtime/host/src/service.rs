@@ -436,8 +436,7 @@ async fn serve_inner(
         println!("{}", json!({"protocol": 1, "address": listener.local_addr()?, "host_id": journal.snapshot().host_id, "pid": std::process::id()}));
         loop {
             tokio::select! {
-                _ = async { memory.as_mut().expect("configured Memory").jobs.join_next().await }, if memory.as_ref().is_some_and(|m| !m.jobs.is_empty()) => (),
-                completion = async { memory.as_mut().expect("configured Memory").receive.recv().await }, if memory.is_some() => {
+                completion = async { memory.as_mut().expect("configured Memory").next().await }, if memory.is_some() => {
                     if let Some(completion) = completion { memory.as_mut().expect("configured Memory").complete(&journal.snapshot(), completion)?; }
                 }
                 _ = expiry.tick() => tasks.expire(&mut journal, &events, task::now()?)?,

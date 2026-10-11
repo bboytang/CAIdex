@@ -100,7 +100,7 @@ impl MemoryEngine<'_> {
         if reference.len() > 65536 {
             return Err(Error::Invalid);
         }
-        let existing:Option<String>=s.cache.db.query_row("SELECT id FROM memory_jobs WHERE kind='integration' AND reference=?1 AND state NOT IN('cancelled','failed') LIMIT 1",[&reference],|r|r.get(0)).optional()?;
+        let existing:Option<String>=s.cache.db.query_row("SELECT id FROM memory_jobs WHERE kind='integration' AND json_remove(reference,'$.target')=json_remove(?1,'$.target') AND state NOT IN('cancelled','failed') LIMIT 1",[&reference],|r|r.get(0)).optional()?;
         if let Some(id) = existing {
             return Uuid::parse_str(&id).map_err(|_| Error::UnsafeStorage);
         }

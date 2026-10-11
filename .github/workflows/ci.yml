@@ -128,6 +128,8 @@ jobs:
         run: node scripts/verify-codex-schema.mjs
       - name: Verify real app-server without a model turn
         run: cargo run -p caidex-cli --locked -- doctor
+      - name: I-4.2 Host Memory Broker, offline recovery and real Runtime sources (synthetic HTTP)
+        run: ${{ matrix.python }} scripts/i42-host-memory.py --output i42-host-memory.json
       - name: H-1 independent Host and two-client recovery (no model turn)
         run: |
           cargo build -p caidex-host --locked

@@ -210,6 +210,11 @@ impl MemoryService {
             receive,
         })
     }
+    pub(crate) async fn next(&mut self) -> Option<Completion> {
+        loop {
+            tokio::select! { value = self.receive.recv()=>return value, _=self.jobs.join_next(), if !self.jobs.is_empty()=>() }
+        }
+    }
     pub(crate) fn protect(&mut self, secret: &str) -> Result<()> {
         let guard = Arc::new(Redactor::default());
         guard
