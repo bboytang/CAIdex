@@ -13,39 +13,44 @@ use tokio::sync::Mutex;
 use tokio_postgres::{Client, NoTls};
 use uuid::Uuid;
 
+pub mod smtp;
+use smtp::AliyunSmtpEmail;
+
 #[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Provider {
     Brevo,
     Resend,
+    #[serde(rename = "aliyun_directmail")]
+    AliyunDirectMail,
 }
 impl Provider {
     fn name(self) -> &'static str {
         match self {
             Self::Brevo => "brevo",
             Self::Resend => "resend",
+            Self::AliyunDirectMail => "aliyun_directmail",
         }
     }
-    fn endpoint(self) -> &'static str {
+    fn endpoint(self) -> Option<&'static str> {
         match self {
-            Self::Brevo => "https://api.brevo.com/v3/smtp/email",
-            Self::Resend => "https://api.resend.com/emails",
+            Self::Brevo => Some("https://api.brevo.com/v3/smtp/email"),
+            Self::Resend => Some("https://api.resend.com/emails"),
+            Self::AliyunDirectMail => None,
         }
     }
 }
 
 pub struct ProviderEmail {
-    db: Mutex<Client>,
+    ledger: MailLedger,
     http: reqwest::Client,
     provider: Provider,
     endpoint: String,
     from: String,
     api_key: Secret,
     callback_key: Secret,
-    daily_budget: i64,
-    monthly_budget: i64,
 }
-impl super::EmailSender for Option<ProviderEmail> {
+impl<S: EmailSender> EmailSender for Option<S> {
     fn enabled(&self) -> bool {
         self.is_some()
     }
@@ -72,33 +77,12 @@ impl ProviderEmail {
         daily_budget: i64,
         monthly_budget: i64,
     ) -> Result<Self> {
-        if !(1..=10000).contains(&daily_budget)
-            || !(1..=100000).contains(&monthly_budget)
-            || daily_budget > monthly_budget
-            || api_key.expose().len() < 20
-            || callback_key.expose().len() < 32
-        {
+        let endpoint = provider.endpoint().ok_or(Error::Invalid)?;
+        if api_key.expose().len() < 20 || callback_key.expose().len() < 32 {
             return Err(Error::Invalid);
         }
         super::email(&json!({"email":from}))?;
-        let config: tokio_postgres::Config = dsn.parse().map_err(|_| Error::Invalid)?;
-        if config.get_hosts().is_empty()
-            || config
-                .get_hosts()
-                .iter()
-                .any(|host| !matches!(host, tokio_postgres::config::Host::Unix(_)))
-        {
-            return Err(Error::Invalid);
-        }
-        let (db, connection) = tokio_postgres::connect(dsn, NoTls).await?;
-        tokio::spawn(async move {
-            let _ = connection.await;
-        });
-        let denied: bool = db.query_one("SELECT rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR has_schema_privilege(current_user,'caidex','CREATE') OR has_table_privilege(current_user,'caidex.messages','SELECT') FROM pg_roles WHERE rolname=current_user", &[]).await?.get(0);
-        if denied {
-            return Err(Error::Denied);
-        }
-        db.batch_execute("SET statement_timeout='3s'; SET lock_timeout='2s'; SET idle_in_transaction_session_timeout='3s'").await?;
+        let ledger = MailLedger::connect(dsn, provider, daily_budget, monthly_budget).await?;
         let http = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(1))
@@ -106,15 +90,13 @@ impl ProviderEmail {
             .build()
             .map_err(|_| Error::Unavailable)?;
         Ok(Self {
-            db: Mutex::new(db),
+            ledger,
             http,
             provider,
-            endpoint: provider.endpoint().into(),
+            endpoint: endpoint.into(),
             from,
             api_key,
             callback_key,
-            daily_budget,
-            monthly_budget,
         })
     }
     /// Only synthetic test-auth builds can redirect mail to a loopback HTTP fixture.
@@ -137,57 +119,6 @@ impl ProviderEmail {
             .map_err(|_| Error::Unavailable)?;
         Ok(())
     }
-    async fn reserve(&self, mail: &Mail, hash: &[u8]) -> Result<bool> {
-        let mut db = self.db.lock().await;
-        let tx = db.transaction().await?;
-        // All service instances/providers share one budget; reservations count even after a timeout.
-        tx.execute("SELECT pg_advisory_xact_lock(714007)", &[])
-            .await?;
-        if let Some(row) = tx
-            .query_opt(
-                "SELECT payload_hash,status,provider FROM caidex.mail_tasks WHERE task_id=$1",
-                &[&mail.id],
-            )
-            .await?
-        {
-            if row.get::<_, Vec<u8>>(0) != hash || row.get::<_, String>(2) != self.provider.name() {
-                return Err(Error::Conflict);
-            }
-            let accepted = matches!(row.get::<_, String>(1).as_str(), "accepted" | "delivered");
-            tx.commit().await?;
-            return if accepted {
-                Ok(false)
-            } else {
-                Err(Error::Unavailable)
-            };
-        }
-        let recipient = digest(&mail.recipient);
-        if tx
-            .query_opt(
-                "SELECT 1 FROM caidex.mail_suppressions WHERE recipient_hash=$1",
-                &[&recipient],
-            )
-            .await?
-            .is_some()
-        {
-            return Err(Error::Denied);
-        }
-        let counts = tx.query_one("SELECT count(*) FILTER(WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'),count(*) FROM caidex.mail_tasks WHERE created_at>=date_trunc('month',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'", &[]).await?;
-        let daily: i64 = counts.get(0);
-        let monthly: i64 = counts.get(1);
-        let essential = matches!(mail.purpose.as_str(), "register" | "recover" | "email");
-        if daily >= self.daily_budget
-            || monthly >= self.monthly_budget
-            || (!essential
-                && (daily * 10 >= self.daily_budget * 9 || monthly * 10 >= self.monthly_budget * 9))
-        {
-            eprintln!("Account mail budget exhausted; no fallback or paid send");
-            return Err(Error::Limited);
-        }
-        tx.execute("INSERT INTO caidex.mail_tasks(task_id,recipient_hash,payload_hash,purpose,provider,expires_at) VALUES($1,$2,$3,$4,$5,now()+($6::int*interval '1 second'))", &[&mail.id,&recipient,&hash,&mail.purpose,&self.provider.name(),&(mail.expires_in.max(60) as i32)]).await?;
-        tx.commit().await?;
-        Ok(true)
-    }
     async fn deliver(&self, mail: &Mail, subject: &str, text: &str) -> Result<String> {
         let id = mail.id.to_string();
         let (body, request) = match self.provider {
@@ -197,6 +128,7 @@ impl ProviderEmail {
                     .post(&self.endpoint)
                     .header("api-key", self.api_key.expose()),
             ),
+            Provider::AliyunDirectMail => return Err(Error::Invalid),
             Provider::Resend => (
                 json!({"from":self.from,"to":[mail.recipient],"subject":subject,"text":text,"tags":[{"name":"caidex_task","value":id}]}),
                 self.http
@@ -249,6 +181,7 @@ impl ProviderEmail {
                 .ok_or(Error::Denied)
         };
         match self.provider {
+            Provider::AliyunDirectMail => Err(Error::Denied),
             Provider::Brevo => {
                 let token = header("authorization")?
                     .strip_prefix("Bearer ")
@@ -307,24 +240,19 @@ impl ProviderEmail {
 impl EmailSender for ProviderEmail {
     async fn send(&self, mail: Mail) -> Result<()> {
         let (subject, text) = template(&mail)?;
-        let hash = digest(&json!({"recipient":mail.recipient,"purpose":mail.purpose,"language":mail.language,"expires_in":mail.expires_in,"token":mail.verification_token}).to_string());
-        if !self.reserve(&mail, &hash).await? {
+        if !self.ledger.reserve(&mail).await? {
             return Ok(());
         }
         // Durable unknown is committed before HTTP; cancellation/crash can never justify another send.
-        let result = self.deliver(&mail, &subject, &text).await;
-        let (status, provider_id) = match &result {
-            Ok(id) => ("accepted", Some(id.clone())),
-            Err(Error::Invalid) => ("rejected", None),
-            _ => ("unknown", None),
-        };
-        self.db.lock().await.execute("UPDATE caidex.mail_tasks SET status=$2,provider_id=$3,updated_at=now() WHERE task_id=$1 AND status='unknown'", &[&mail.id,&status,&provider_id]).await?;
+        let result = self.deliver(&mail, &subject, &text).await.map(Some);
+        self.ledger.complete(&mail.id, &result).await?;
         result.map(|_| ())
     }
     async fn callback(&self, headers: &HeaderMap, body: &[u8]) -> Result<()> {
         self.verify_callback(headers, body)?;
         let value: Value = serde_json::from_slice(body).map_err(|_| Error::Invalid)?;
         let (event, id) = match self.provider {
+            Provider::AliyunDirectMail => return Err(Error::Denied),
             Provider::Brevo => (value["event"].as_str(), value["message-id"].as_str()),
             Provider::Resend => (value["type"].as_str(), value["data"]["email_id"].as_str()),
         };
@@ -337,7 +265,7 @@ impl EmailSender for ProviderEmail {
         let id = id
             .filter(|s| !s.is_empty() && s.len() <= 512)
             .ok_or(Error::Invalid)?;
-        let mut db = self.db.lock().await;
+        let mut db = self.ledger.db.lock().await;
         let tx = db.transaction().await?;
         if let Some(row) = tx.query_opt("SELECT task_id,recipient_hash FROM caidex.mail_tasks WHERE provider=$1 AND provider_id=$2 FOR UPDATE", &[&self.provider.name(),&id]).await? {
             let task: Uuid = row.get(0);
@@ -350,6 +278,134 @@ impl EmailSender for ProviderEmail {
         Ok(())
     }
 }
+
+/// One durable budget/idempotency policy for the two HTTP providers and SMTP.
+struct MailLedger {
+    db: Mutex<Client>,
+    provider: Provider,
+    daily_budget: i64,
+    monthly_budget: i64,
+}
+impl MailLedger {
+    async fn connect(
+        dsn: &str,
+        provider: Provider,
+        daily_budget: i64,
+        monthly_budget: i64,
+    ) -> Result<Self> {
+        if !(1..=10000).contains(&daily_budget)
+            || !(1..=100000).contains(&monthly_budget)
+            || daily_budget > monthly_budget
+        {
+            return Err(Error::Invalid);
+        }
+        let config: tokio_postgres::Config = dsn.parse().map_err(|_| Error::Invalid)?;
+        if config.get_hosts().is_empty()
+            || config
+                .get_hosts()
+                .iter()
+                .any(|host| !matches!(host, tokio_postgres::config::Host::Unix(_)))
+        {
+            return Err(Error::Invalid);
+        }
+        let (db, connection) = tokio_postgres::connect(dsn, NoTls).await?;
+        tokio::spawn(async move {
+            let _ = connection.await;
+        });
+        let denied: bool = db.query_one("SELECT rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR has_schema_privilege(current_user,'caidex','CREATE') OR has_table_privilege(current_user,'caidex.messages','SELECT') FROM pg_roles WHERE rolname=current_user", &[]).await?.get(0);
+        if denied {
+            return Err(Error::Denied);
+        }
+        db.batch_execute("SET statement_timeout='3s'; SET lock_timeout='2s'; SET idle_in_transaction_session_timeout='3s'").await?;
+        Ok(Self {
+            db: Mutex::new(db),
+            provider,
+            daily_budget,
+            monthly_budget,
+        })
+    }
+    async fn reserve(&self, mail: &Mail) -> Result<bool> {
+        let hash = digest(&json!({"recipient":mail.recipient,"purpose":mail.purpose,"language":mail.language,"expires_in":mail.expires_in,"token":mail.verification_token}).to_string());
+        let mut db = self.db.lock().await;
+        let tx = db.transaction().await?;
+        // All service instances/providers share one budget; reservations count even after a timeout.
+        tx.execute("SELECT pg_advisory_xact_lock(714007)", &[])
+            .await?;
+        if let Some(row) = tx
+            .query_opt(
+                "SELECT payload_hash,status,provider FROM caidex.mail_tasks WHERE task_id=$1",
+                &[&mail.id],
+            )
+            .await?
+        {
+            if row.get::<_, Vec<u8>>(0) != hash || row.get::<_, String>(2) != self.provider.name() {
+                return Err(Error::Conflict);
+            }
+            let accepted = matches!(row.get::<_, String>(1).as_str(), "accepted" | "delivered");
+            tx.commit().await?;
+            return if accepted {
+                Ok(false)
+            } else {
+                Err(Error::Unavailable)
+            };
+        }
+        let recipient = digest(&mail.recipient);
+        if tx
+            .query_opt(
+                "SELECT 1 FROM caidex.mail_suppressions WHERE recipient_hash=$1",
+                &[&recipient],
+            )
+            .await?
+            .is_some()
+        {
+            return Err(Error::Denied);
+        }
+        let counts = tx.query_one("SELECT count(*) FILTER(WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'),count(*) FROM caidex.mail_tasks WHERE created_at>=date_trunc('month',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'", &[]).await?;
+        let daily: i64 = counts.get(0);
+        let monthly: i64 = counts.get(1);
+        let essential = matches!(mail.purpose.as_str(), "register" | "recover" | "email");
+        if daily >= self.daily_budget
+            || monthly >= self.monthly_budget
+            || (!essential
+                && (daily * 10 >= self.daily_budget * 9 || monthly * 10 >= self.monthly_budget * 9))
+        {
+            eprintln!("Account mail budget exhausted; no fallback or paid send");
+            return Err(Error::Limited);
+        }
+        tx.execute("INSERT INTO caidex.mail_tasks(task_id,recipient_hash,payload_hash,purpose,provider,expires_at) VALUES($1,$2,$3,$4,$5,now()+($6::int*interval '1 second'))", &[&mail.id,&recipient,&hash,&mail.purpose,&self.provider.name(),&(mail.expires_in.max(60) as i32)]).await?;
+        tx.commit().await?;
+        Ok(true)
+    }
+    async fn complete(&self, task: &Uuid, result: &Result<Option<String>>) -> Result<()> {
+        let (status, provider_id) = match result {
+            Ok(id) => ("accepted", id.clone()),
+            Err(Error::Invalid) => ("rejected", None),
+            _ => ("unknown", None),
+        };
+        self.db.lock().await.execute("UPDATE caidex.mail_tasks SET status=$2,provider_id=$3,updated_at=now() WHERE task_id=$1 AND status='unknown'", &[task,&status,&provider_id]).await?;
+        Ok(())
+    }
+}
+
+pub enum Sender {
+    Http(ProviderEmail),
+    Aliyun(AliyunSmtpEmail),
+}
+impl EmailSender for Sender {
+    async fn send(&self, mail: Mail) -> Result<()> {
+        match self {
+            Self::Http(sender) => sender.send(mail).await,
+            Self::Aliyun(sender) => sender.send(mail).await,
+        }
+    }
+    async fn callback(&self, headers: &HeaderMap, body: &[u8]) -> Result<()> {
+        match self {
+            Self::Http(sender) => sender.callback(headers, body).await,
+            Self::Aliyun(_) => Err(Error::Denied),
+        }
+    }
+}
+
 fn template(mail: &Mail) -> Result<(String, String)> {
     super::email(&json!({"email":mail.recipient}))?;
     if !matches!(mail.language, "zh-CN" | "en")

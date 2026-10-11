@@ -40,23 +40,28 @@ cargo build --release -p caidex-auth --features server --locked
 }
 ```
 
-额度仅示例，不是供应商免费额度承诺；上线前从官方核对并配置实际预算。服务仅绑定127.0.0.1，issuer/RP必须是同一HTTPS域名。两个数据库登录角色分别只继承既有 `caidex_auth` / `caidex_app`，无owner/SUPERUSER/BYPASSRLS/建库建角色/schema CREATE，使用本机Unix socket；配置拒绝数据库密码。应由数据库管理员预先安装bootstrap与0001～0005事务迁移，配置本机peer/受限认证。不得把postgres管理员给HTTP服务。
+额度仅示例，不是供应商免费额度承诺；上线前从官方核对并配置实际预算。服务仅绑定127.0.0.1，issuer/RP必须是同一HTTPS域名。两个数据库登录角色分别只继承既有 `caidex_auth` / `caidex_app`，无owner/SUPERUSER/BYPASSRLS/建库建角色/schema CREATE，使用本机Unix socket；配置拒绝数据库密码。应由数据库管理员预先安装bootstrap与0001～0006事务迁移，配置本机peer/受限认证。不得把postgres管理员给HTTP服务。
 
 未配置邮件时，必须显式设置 `"mail_disabled": true`；此时仅需 device-code-pepper，from可为空，邮件API/回调秘密不读取、不模拟发送或保存验证码沙箱。注册、找回、邮箱变更在身份查询前返回503（既有输入/额度限制仍适用），回调拒绝；不生成账户/验证挑战或绕过邮箱验证。安全通知依赖邮件的操作也可能暂不可用。默认false与旧配置一致：缺少有效邮件凭据则启动失败，不能因秘密缺失静默降级。后续只有实际配置并验证供应商、发信邮箱/域名、预算和回调后才关闭此开关。
 
-用既有 `caidex credentials set --owner caidex-service --provider account-service --profile PROFILE --store file --directory /absolute/private/service-secrets --kind KIND --stdin` 从标准输入提供以下三项，不能把秘密放命令参数、JSON、日志、源码或聊天：
+用既有 `caidex credentials set --owner caidex-service --provider account-service --profile PROFILE --store file --directory /absolute/private/service-secrets --kind KIND --stdin` 从安全标准输入提供所选供应商需要的秘密，不能把秘密放命令参数、JSON、日志、源码或聊天：
 
 | PROFILE | KIND | 内容 |
 |---|---|---|
 | device-code-pepper | client-secret | 随机32字节base64url无padding，重启保持不变 |
-| mail-api | api-key | 当前明确选定供应商Key |
+| mail-api | api-key | Brevo/Resend所选供应商Key |
 | mail-webhook | client-secret | Brevo独立bearer，或Resend `whsec_`签名Key |
+| aliyun-smtp | client-secret | Aliyun DirectMail SMTP密码；不读取HTTP供应商的两项秘密 |
+
+Aliyun配置只改非秘密字段 `provider="aliyun_directmail"`、`from="no-reply@caidex.cn"`；device-code-pepper保持原值。固定smtpdm.aliyun.com:465隐式TLS、验证系统信任链/主机名、TLS1.2以上，认证用户名和信封/正文发件人均为该官方地址；没有明文、任意端点或跳过验证配置。密码仅由Broker解析到内存，不输出原始SMTP错误或帧。生产切换、写真实凭据和真实发信须另行确认，步骤与schema6后的回滚约束见 [DirectMail方案](../../../docs/CAIdex-Aliyun-DirectMail-SMTP-接入方案-V1.md)。
 
 入口启动验证磁盘预留128MiB，低于预留拒绝数据写请求；释放空间后恢复。读取最少控制、停止/删除清理按既有控制面继续，数据库自身ENOSPC仍可能使清理暂不可用。生产服务3个PG连接、单worker和有限请求/超时。反向代理/TLS/域名、公开流量IP限流、进程监管/告警、供应商轮换与真实部署另验；当前按实际TCP peer计IP，不接受任意转发头。
 
 `POST /v1/mail/events` 最多64KiB/5秒，读取body前单worker准入；Brevo验证独立bearer，Resend验证原始body的Svix HMAC/id/timestamp（±300秒）。供应商需配置对应签名/认证，不能公开无认证hook。只更新已匹配的供应商消息ID；硬退信/投诉跨供应商持久抑制，不能被迟到delivered撤销。
 
-邮件记录只存任务/目的/收件hash/payload hash/供应商ID/状态/时间；尝试在HTTP前持久计费预算，全局UTC日/月累计，90%停止非必要通知，100%拒绝。超时/不明结果保留unknown，拒绝同任务重发或自动换供应商；没有持久明文验证码队列，进程崩溃可能丢失一次未完成发送。没有自动unknown对账；已失去消息ID的回调不能猜测关联。用户显式重试依赖既有新挑战和限流。预算/抑制表当前不GC，长期增长需监控，不承诺50GB生产容量。
+Aliyun当前没有可信退信回调，事件入口始终401；SMTP250仅记录accepted，provider_id为NULL，不伪造delivered，也不把本地Message-ID当供应商ID。现有抑制仍有效，新退信自动抑制尚未提供。发送有连接/命令与整体3秒期限，超时/断线/取消/结果落库失败保留unknown；明确SMTP4xx/5xx记录rejected，均不自动重发。
+
+邮件记录只存任务/目的/收件hash/payload hash/供应商ID/状态/时间；尝试在HTTP/SMTP前持久计费预算，全局UTC日/月累计，90%停止非必要通知，100%拒绝。超时/不明结果保留unknown，拒绝同任务重发或自动换供应商；没有持久明文验证码队列，进程崩溃可能丢失一次未完成发送。没有自动unknown对账；已失去消息ID的回调不能猜测关联。用户显式重试依赖既有新挑战和限流。预算/抑制表当前不GC，长期增长需监控，不承诺50GB生产容量。
 
 ## 每日备份与淘汰
 
@@ -83,7 +88,7 @@ python3 cloud/postgres/operations/backup.py --socket /var/run/postgresql --datab
 python3 cloud/postgres/operations/backup.py --socket /var/run/postgresql --database caidex restore /absolute/private/backups/snapshot-EPOCH-UUID.json --target caidex_restore_review --checkpoint /absolute/private/recovery/checkpoint.json
 ```
 
-只新建 `caidex_restore_*`，创建时禁止全部连接、撤CONNECT后才允许管理员恢复；不覆盖或删除在线库，校验失败不释放目标。schema4备份向前迁移到5。检查点必须来自同一源集群/数据库、时间晚于备份完成；只能证明其标明时点，之后操作保持未知。匹配最新记录时重建已证明ACL、撤销不明或变更身份/凭据、合并永久墓碑并清除旧B正文/来源/向量；不误删其他所有者记忆或独立Chat。所有恢复均作废旧session/refresh/challenge/CLI授权、旧队列、开启许可与世代。
+只新建 `caidex_restore_*`，创建时禁止全部连接、撤CONNECT后才允许管理员恢复；不覆盖或删除在线库，校验失败不释放目标。支持schema4/5/6备份，旧4先迁移5再到6、旧5迁移6；最新检查点必须为schema6且来自同一源集群/数据库、时间晚于备份完成；只能证明其标明时点，之后操作保持未知。匹配最新记录时重建已证明ACL、撤销不明或变更身份/凭据、合并永久墓碑并清除旧B正文/来源/向量；不误删其他所有者记忆或独立Chat。所有恢复均作废旧session/refresh/challenge/CLI授权、旧队列、开启许可与世代。
 
 没有最新检查点时省略 `--checkpoint`：全部账户暂停、旧身份/凭据撤销、所有同步关闭，旧正文仅供管理员隔离核对。**两种恢复都撤销PUBLIC/app/auth CONNECT，绝不自动发布。** 本工具没有自动解隔离命令；在部署授权、身份与当前控制/ACL/删除记录审查、重新认证/显式开启/范围授权前，不得接回客户端或重用旧令牌。检查点不得从客户端自报数据替代。
 

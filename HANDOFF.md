@@ -1,10 +1,12 @@
-# 当前交接：Aliyun DirectMail SMTP 接入方案待确认，生产保持邮件关闭
+# 当前交接：Aliyun DirectMail SMTP 开发验证已批准，生产保持不变
+
+2026-10-11用户明确“确认方案”，批准本方案有限源码/迁移/备份兼容、模拟SMTP/隔离PG/Rust测试、main提交/push与精确CI；基线main 25334961bb770f19b10c90583faca1b3eb0d08c9，本地/origin/GitHub一致、工作区干净。先实现共用安全账本与独立TLS SMTP，再验证迁移/恢复、SMTP和账户流程，最后精确CI/证据封存并停止。生产迁移/改凭据/启邮件/额外真实发信仍未授权，不连接生产、不读取真实SMTP密码，不改审计状态、不启动J。本机盘余2.6GB/94%、RAM约1.9GiB+4GiB swap，可行定向优先本机，不清有效缓存。
 
 2026-10-11用户报告官方发信地址no-reply@caidex.cn及DirectMail SMTP密码已设置、实际发信成功，要求基于GitHub最新main先提交独立SMTP接入方案、文件清单、测试与生产切换步骤，等待确认；禁止本轮修改生产或发送额外真实邮件。只读核实GitHub/main与本地HEAD均955085db636f9509da16f941d2d65bbfea1e7ff5，起点工作区干净；现有生产记录运行源码仍c522a57/schema5/mail_disabled=true。用户的供应商测试不冒充本会话账户流程验收，不读取真实密码。
 
 具体提案见 [DirectMail SMTP接入方案](docs/CAIdex-Aliyun-DirectMail-SMTP-接入方案-V1.md)：独立EmailSender SMTP适配+共用既有预算/幂等账本，固定smtpdm.aliyun.com:465隐式TLS，Broker独立aliyun-smtp/client-secret，保留Brevo/Resend，无可信回调则拒绝、仅SMTP受理不标delivered。当前provider CHECK只有两值，计划新增0006邮件约束迁移及云schema6/备份4-5-6前向兼容，不改权限/同步/Host；旧c522只接受schema5，迁移后回滚邮件须使用新兼容构建关闭邮件，不直接回旧二进制或覆盖在线库。
 
-本轮只方案/HANDOFF文档，无源码/迁移/生产/凭据/真实发信动作；文档链接与差异检查完成后提交方案。准确下一步：等待用户确认方案，之后仅有限编码、合成SMTP/隔离PG/Rust验证、提交/push与精确CI；生产迁移/配置/启邮件和指定邮箱真实注册-验证-登录及找回流程仍另待生产切换确认。I-7与部署独立审计状态不变，不自行授通过、不启动J。历史部署记录与全部证据保持。
+前次方案交付只改方案/HANDOFF文档；当前新确认已批准有限编码、合成SMTP/隔离PG/Rust验证、提交/push与精确CI。已实现独立TLS SMTP/Broker引用、共用原预算幂等账本与0006/schema6/旧4-5备份前向兼容；本机最终I-7增量116项/0失败（含原HTTP/恢复回归、SMTP/API与Broker拒绝检查），源码指纹均匹配当前工作区，报告HEAD仍是基线2533496，不能冒充精确提交CI。账户回归118项全通过、auth lib5/0、cloud lib2/0、fmt/Clippy/Python语法/链接/diff通过；完整/跨平台由GitHub核验后再封存。盘余已降约963MB，不清有效缓存、不再启动本机完整构建。生产迁移/配置/启邮件和指定邮箱真实注册-验证-登录及找回流程仍另待生产切换确认。I-7与部署独立审计状态不变，不自行授通过、不启动J。历史部署记录与全部证据保持。
 
 ---
 

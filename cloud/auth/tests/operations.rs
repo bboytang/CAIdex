@@ -661,7 +661,12 @@ async fn production_entry(dsn: &str) {
     };
     let http = reqwest::Client::builder().no_proxy().build().unwrap();
     let admin = connection(&std::env::var("CAIDEX_I7_ADMIN_DB").unwrap()).await;
-    for mail_disabled in [false, false, true] {
+    for (provider, mail_disabled) in [
+        ("brevo", false),
+        ("brevo", false),
+        ("brevo", true),
+        ("aliyun_directmail", false),
+    ] {
         if mail_disabled {
             for (profile, kind) in [
                 ("mail-api", SecretKind::ApiKey),
@@ -679,6 +684,43 @@ async fn production_entry(dsn: &str) {
             let mut disabled = config.clone();
             disabled["mail_disabled"] = json!(true);
             std::fs::write(&path, disabled.to_string()).unwrap();
+        }
+        if provider == "aliyun_directmail" {
+            let mut directmail = config.clone();
+            directmail["provider"] = json!(provider);
+            directmail["from"] = json!("no-reply@caidex.cn");
+            std::fs::write(&path, directmail.to_string()).unwrap();
+            let reference = CredentialRef {
+                owner: owner.clone(),
+                provider: Id::new("account-service").unwrap(),
+                profile: Id::new("aliyun-smtp").unwrap(),
+                kind: SecretKind::ClientSecret,
+            };
+            check(
+                "smtp_entry_missing_broker_secret_fails_closed",
+                !command().status().unwrap().success(),
+            );
+            let wrong_kind = CredentialRef {
+                kind: SecretKind::ApiKey,
+                ..reference.clone()
+            };
+            broker
+                .set(
+                    &wrong_kind,
+                    Secret::new("synthetic wrong-kind SMTP secret".into()).unwrap(),
+                )
+                .unwrap();
+            check(
+                "smtp_entry_wrong_broker_kind_fails_closed",
+                !command().status().unwrap().success(),
+            );
+            broker.remove(&wrong_kind).unwrap();
+            broker
+                .set(
+                    &reference,
+                    Secret::new("synthetic entry SMTP password never real".into()).unwrap(),
+                )
+                .unwrap();
         }
         let mut child = command().spawn().unwrap();
         let mut ready = false;
@@ -742,6 +784,19 @@ async fn production_entry(dsn: &str) {
                 (0..3).all(|i| before.get::<_, i64>(i) == after.get::<_, i64>(i)),
             );
             admin.execute("DELETE FROM caidex.user_identities WHERE subject='service-existing@example.test'", &[]).await.unwrap();
+        }
+        if ready && provider == "aliyun_directmail" {
+            let callback = http
+                .post(format!("http://127.0.0.1:{port}/v1/mail/events"))
+                .headers(brevo_headers())
+                .body("{}")
+                .send()
+                .await
+                .unwrap();
+            check(
+                "smtp_entry_private_broker_without_http_secrets_no_send_or_webhook",
+                callback.status() == 401,
+            );
         }
         if child.try_wait().unwrap().is_none() {
             child.kill().unwrap();

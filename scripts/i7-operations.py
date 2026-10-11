@@ -46,7 +46,7 @@ def main():
             raise AssertionError(label)
         checks.append({'name': label, 'passed': True})
         print('I7_CHECK ' + json.dumps(checks[-1]), flush=True)
-    sources = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.rs')) + [ROOT / 'chat/core/tests/chat.rs', ROOT / 'chat/core/Cargo.toml'] + [ROOT / 'cloud/auth/tests/operations.rs', ROOT / 'cloud/auth/Cargo.toml', ROOT / 'cloud/core/src/lib.rs', ROOT / 'Cargo.lock', ROOT / 'cloud/postgres/operations/backup.py', ROOT / 'cloud/postgres/operations/quarantine.sql', Path(__file__).resolve(), ROOT / '.github/workflows/ci.yml'] + sorted(ROOT.glob('cloud/postgres/migrations/*.sql'))
+    sources = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.rs')) + [ROOT / 'chat/core/tests/chat.rs', ROOT / 'chat/core/Cargo.toml'] + [ROOT / 'cloud/auth/tests/operations.rs', ROOT / 'cloud/auth/tests/directmail.rs', ROOT / 'cloud/auth/Cargo.toml', ROOT / 'cloud/core/src/lib.rs', ROOT / 'Cargo.lock', ROOT / 'cloud/postgres/operations/backup.py', ROOT / 'cloud/postgres/operations/quarantine.sql', Path(__file__).resolve(), ROOT / '.github/workflows/ci.yml'] + sorted(ROOT.glob('cloud/postgres/migrations/*.sql'))
     fingerprints = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     with tempfile.TemporaryDirectory(prefix='caidex-i7-', dir='/var/tmp') as work:
         directory = Path(work) / 'backups'
@@ -75,6 +75,9 @@ def main():
             legacy_directory=Path(work)/'legacy'
             legacy_manifest=ops.backup(db,legacy_directory)
             db.sql((ROOT/'cloud/postgres/migrations/0005_operations.sql').read_text())
+            schema5_directory=Path(work)/'schema5'
+            schema5_manifest=ops.backup(db,schema5_directory)
+            db.sql((ROOT/'cloud/postgres/migrations/0006_aliyun_directmail.sql').read_text())
             db.sql('ANALYZE;')
             def parity(actor):
                 letter='a' if actor==A else 'b'
@@ -107,6 +110,7 @@ def main():
                 return '/artifacts/' + str(Path(artifact).relative_to(ROOT / 'target'))
             mail_binary=build('caidex-auth','operations')
             chat_binary=build('caidex-chat','chat')
+            smtp_binary=build('caidex-auth','directmail')
             def cgroup():
                 result=run(['exec',name,'sh','-c','cat /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.events /sys/fs/cgroup/cpu.stat']).splitlines()
                 cpu=result[0].split()
@@ -129,11 +133,14 @@ def main():
                 print(out,end='',flush=True);print(err,end='',flush=True)
                 for line in out.splitlines():
                     if line.startswith('I7_CHECK '):checks.append(json.loads(line.removeprefix('I7_CHECK ')))
+                    if line.startswith('DIRECTMAIL_CHECK '):checks.append(json.loads(line.removeprefix('DIRECTMAIL_CHECK ')))
                 if child.returncode:
                     raise RuntimeError('constrained I-7 test failed')
                 return out
             rust_output=execute_test(mail_binary,['--ignored','--nocapture'],{'CAIDEX_I7_ADMIN_DB':'host=/var/run/postgresql user=postgres dbname=postgres','CAIDEX_I7_AUTH_DB':'host=/var/run/postgresql user=caidex_auth_test dbname=postgres','CAIDEX_I7_DATA_DB':'host=/var/run/postgresql user=caidex_test dbname=postgres'})
             check('real_mail_and_resource_integration_completed','test result: ok. 1 passed' in rust_output)
+            smtp_output=execute_test(smtp_binary,['--ignored','--nocapture'],{'CAIDEX_I7_ADMIN_DB':'host=/var/run/postgresql user=postgres dbname=postgres','CAIDEX_I7_AUTH_DB':'host=/var/run/postgresql user=caidex_auth_test dbname=postgres','CAIDEX_I7_DATA_DB':'host=/var/run/postgresql user=caidex_test dbname=postgres'})
+            check('isolated_directmail_tls_and_account_flow_completed','test result: ok. 1 passed' in smtp_output)
             disk_output=execute_test(chat_binary,['physical_enospc_preserves_committed_cache_and_queue','--ignored','--nocapture'],{'CAIDEX_I7_DISK_ROOT':'/fault'})
             check('physical_sqlite_enospc_integration_completed','test result: ok. 1 passed' in disk_output)
             metrics=[json.loads(line.removeprefix('I7_MEASUREMENT ')) for line in rust_output.splitlines() if line.startswith('I7_MEASUREMENT ')]
@@ -164,8 +171,11 @@ def main():
             db.sql=original_sql
             legacy_result=ops.restore(db,legacy_manifest,'caidex_restore_legacy',point)
             legacy_db=ops.Database(db.socket,'caidex_restore_legacy',db.prefix)
-            check('schema4_backup_forward_migrates_to5_and_preserves_B_barrier',legacy_result['schema']==5 and legacy_db.sql(f"SELECT max(version)=5 AND NOT EXISTS(SELECT FROM caidex.memories WHERE user_id='{A}') FROM caidex.schema_migrations")=='t')
+            check('schema4_backup_forward_migrates_to6_and_preserves_B_barrier',legacy_result['schema']==6 and legacy_db.sql(f"SELECT max(version)=6 AND NOT EXISTS(SELECT FROM caidex.memories WHERE user_id='{A}') FROM caidex.schema_migrations")=='t')
             target = ops.Database(db.socket, 'caidex_restore_current', db.prefix)
+            schema5_result=ops.restore(db,schema5_manifest,'caidex_restore_schema5',point)
+            schema5_db=ops.Database('/var/run/postgresql','caidex_restore_schema5',docker+['exec','-i',name])
+            check('schema5_backup_forward_migrates_to6_preserves_B_and_mail_constraint',schema5_result['schema']==6 and schema5_db.sql(f"SELECT NOT EXISTS(SELECT FROM caidex.memories WHERE user_id='{A}') AND (SELECT pg_get_constraintdef(oid) LIKE '%aliyun_directmail%' FROM pg_constraint WHERE conrelid='caidex.mail_tasks'::regclass AND conname='mail_tasks_provider_check')")=='t')
             check('old_snapshot_latest_B_erases_only_owner_memory_sources_vectors_jobs', target.sql(f"SELECT NOT EXISTS(SELECT FROM caidex.memories WHERE user_id='{A}') AND EXISTS(SELECT FROM caidex.memories WHERE user_id='{B}') AND NOT EXISTS(SELECT FROM caidex.memory_revisions WHERE user_id='{A}') AND NOT EXISTS(SELECT FROM caidex.memory_sources WHERE user_id='{A}') AND NOT EXISTS(SELECT FROM caidex.memory_embeddings WHERE user_id='{A}') AND NOT EXISTS(SELECT FROM caidex.memory_jobs)") == 't')
             check('B_does_not_erase_chat_or_other_owner_attachment', target.sql(f"SELECT count(*)=3 AND bool_and(body<>'') FROM caidex.messages") == 't' and target.sql("SELECT count(*)=3 AND bool_and(bytes=convert_to('fixture','UTF8')) FROM caidex.attachments") == 't')
             check('latest_acl_revocation_and_source_tombstones_survive', target.sql(f"SELECT EXISTS(SELECT FROM caidex.project_members WHERE project_id='{PA}' AND revoked_at IS NOT NULL) AND EXISTS(SELECT FROM caidex.deletion_tombstones WHERE user_id='{A}' AND entity_kind='source' AND source_hash IS NOT NULL)") == 't')

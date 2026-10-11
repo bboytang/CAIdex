@@ -6,7 +6,7 @@ rust-version.workspace = true
 
 [features]
 default = []
-server = ["dep:serde_urlencoded", "dep:hmac", "dep:argon2", "dep:axum", "dep:tokio", "dep:tokio-postgres", "dep:webauthn-rs"]
+server = ["dep:serde_urlencoded", "dep:hmac", "dep:argon2", "dep:axum", "dep:tokio", "dep:tokio-postgres", "dep:webauthn-rs", "dep:lettre"]
 test-auth = ["server", "dep:webauthn-authenticator-rs"]
 
 [dependencies]
@@ -33,6 +33,12 @@ webauthn-rs = { optional = true, version = "=0.5.5", features = ["danger-allow-s
 
 webauthn-authenticator-rs = { optional = true, version = "=0.5.5", default-features = false, features = ["softpasskey"] }
 reqwest = { version = "=0.13.5", default-features = false, features = ["rustls"] }
+lettre = { version = "=0.11.23", optional = true, default-features = false, features = ["builder", "smtp-transport", "tokio1-rustls", "aws-lc-rs", "rustls-platform-verifier"] }
+
+[dev-dependencies]
+tokio-rustls = "=0.26.6"
+openssl = "=0.10.81"
+quoted_printable = "=0.5.2"
 
 [[bin]]
 name = "caidex-auth-local"

@@ -14,7 +14,7 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[3]
-SCHEMA = 5  # Updated with the supported forward migrations, never guessed from an archive.
+SCHEMA = 6  # Updated with the supported forward migrations, never guessed from an archive.
 MAX_BYTES = 5_000_000_000
 MAX_COUNT = 7
 MAX_AGE = 7 * 86400
@@ -106,7 +106,7 @@ def verify(manifest):
     if regular(manifest).st_size > 16384:
         raise ValueError('backup manifest too large')
     value = json.loads(Path(manifest).read_text())
-    if value.get('format') != 'caidex-local-backup-v1' or value.get('schema') not in (4, SCHEMA):
+    if value.get('format') != 'caidex-local-backup-v1' or value.get('schema') not in (4, 5, SCHEMA):
         raise ValueError('unsupported backup manifest/schema')
     name = value.get('archive', '')
     if not re.fullmatch(r'snapshot-[0-9]+-[0-9a-f]{32}\.dump', name):
@@ -161,7 +161,7 @@ def backup(db, directory, max_bytes=MAX_BYTES, reserve_bytes=RESERVE_BYTES):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         prune(directory)
         meta = db.metadata()
-        if meta['schema'] not in (4, SCHEMA):
+        if meta['schema'] not in (4, 5, SCHEMA):
             raise ValueError('source schema unsupported')
         retained(directory, time.time())
         used = sum(regular(p).st_size for p in directory.iterdir())
@@ -268,6 +268,8 @@ def restore(db, manifest, target, checkpoint_file=None):
             raise RuntimeError('archive restore failed; target remains quarantined')
         if meta['schema']==4:
             isolated.sql((ROOT / 'cloud/postgres/migrations/0005_operations.sql').read_text())
+        if meta['schema'] in (4, 5):
+            isolated.sql((ROOT / 'cloud/postgres/migrations/0006_aliyun_directmail.sql').read_text())
         sql = (ROOT / 'cloud/postgres/operations/quarantine.sql').read_text()
         payload = json.dumps(latest or {}, ensure_ascii=True).replace("'", "''")
         isolated.sql("BEGIN; CREATE TEMP TABLE safety(value jsonb); INSERT INTO safety VALUES ('" + payload + "');\n" + sql + '\nCOMMIT;')

@@ -4,7 +4,7 @@ use caidex_auth::{
     Trust,
     server::{
         Error, Service,
-        email::{Provider, ProviderEmail},
+        email::{Provider, ProviderEmail, Sender, smtp::AliyunSmtpEmail},
         router,
     },
 };
@@ -107,18 +107,30 @@ async fn run() -> Result<(), Error> {
         eprintln!("Account mail is disabled; email verification and callbacks are unavailable");
         None
     } else {
-        Some(
-            ProviderEmail::connect(
-                &config.auth_db,
-                config.provider,
-                config.from,
-                get("mail-api", SecretKind::ApiKey)?,
-                get("mail-webhook", SecretKind::ClientSecret)?,
-                config.daily_budget,
-                config.monthly_budget,
-            )
-            .await?,
-        )
+        Some(match config.provider {
+            Provider::AliyunDirectMail => Sender::Aliyun(
+                AliyunSmtpEmail::connect(
+                    &config.auth_db,
+                    &config.from,
+                    get("aliyun-smtp", SecretKind::ClientSecret)?,
+                    config.daily_budget,
+                    config.monthly_budget,
+                )
+                .await?,
+            ),
+            provider => Sender::Http(
+                ProviderEmail::connect(
+                    &config.auth_db,
+                    provider,
+                    config.from,
+                    get("mail-api", SecretKind::ApiKey)?,
+                    get("mail-webhook", SecretKind::ClientSecret)?,
+                    config.daily_budget,
+                    config.monthly_budget,
+                )
+                .await?,
+            ),
+        })
     };
     let service = Service::connect(
         &config.auth_db,

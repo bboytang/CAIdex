@@ -175,6 +175,14 @@ def main():
                 "SELECT max(version)=4 AND to_regclass('caidex.mail_tasks') IS NULL AND to_regclass('caidex.mail_suppressions') IS NULL AND to_regprocedure('caidex.read_memory_scopes()') IS NULL FROM caidex.schema_migrations") == 't')
             sql(operations_migration)
             check('v5_operations_migration_applied', sql('SELECT max(version) FROM caidex.schema_migrations') == '5')
+            directmail_migration = (ROOT / 'cloud/postgres/migrations/0006_aliyun_directmail.sql').read_text()
+            failed_directmail = subprocess.run(docker + ['exec', '-i', name, 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'],
+                                               input=directmail_migration.replace('INSERT INTO caidex.schema_migrations(version) VALUES(6);', 'SELECT 1/0;'),
+                                               text=True, capture_output=True, env=env)
+            check('v6_failed_mail_migration_keeps_v5_and_provider_constraint', failed_directmail.returncode != 0 and sql(
+                "SELECT max(version)=5 AND (SELECT pg_get_constraintdef(oid) NOT LIKE '%aliyun_directmail%' FROM pg_constraint WHERE conrelid='caidex.mail_tasks'::regclass AND conname='mail_tasks_provider_check') FROM caidex.schema_migrations") == 't')
+            sql(directmail_migration)
+            check('v6_mail_provider_only_migration_applied', sql("SELECT max(version)=6 AND (SELECT pg_get_constraintdef(oid) LIKE '%aliyun_directmail%' FROM pg_constraint WHERE conrelid='caidex.mail_tasks'::regclass AND conname='mail_tasks_provider_check') FROM caidex.schema_migrations") == 't')
             check('all_27_private_tables_force_rls', sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='caidex' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity") == '27')
             sql('CREATE ROLE caidex_auth_test LOGIN INHERIT; GRANT caidex_auth TO caidex_auth_test; CREATE ROLE caidex_data_test LOGIN INHERIT; GRANT caidex_app TO caidex_data_test;')
             env.update({'CAIDEX_I2_AUTH_DB': f'host={socket} user=caidex_auth_test dbname=postgres',
@@ -186,7 +194,7 @@ def main():
             source_paths = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + [ROOT / p for p in
                 ['cloud/auth/Cargo.toml', 'cloud/auth/src/account.js', 'cloud/core/src/lib.rs',
                  'cloud/postgres/bootstrap.sql', 'cloud/postgres/migrations/0001_account_scope.sql',
-                 'cloud/postgres/migrations/0002_authentication.sql', 'cloud/postgres/migrations/0003_chat_sync.sql', 'cloud/postgres/migrations/0004_memory_sync.sql', 'cloud/postgres/migrations/0005_operations.sql', 'cloud/core/src/memory.rs', 'cloud/core/Cargo.toml', 'cloud/auth/tests/account.rs',
+                 'cloud/postgres/migrations/0002_authentication.sql', 'cloud/postgres/migrations/0003_chat_sync.sql', 'cloud/postgres/migrations/0004_memory_sync.sql', 'cloud/postgres/migrations/0005_operations.sql', 'cloud/postgres/migrations/0006_aliyun_directmail.sql', 'cloud/core/src/memory.rs', 'cloud/core/Cargo.toml', 'cloud/auth/tests/account.rs',
                  'scripts/i2-auth.py', 'Cargo.toml', 'Cargo.lock', '.github/workflows/ci.yml']]
             if sync:
                 source_paths += sorted(ROOT.glob('chat/core/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.sql')) + [ROOT / 'cloud/core/src/chat.rs', ROOT / 'chat/core/Cargo.toml', ROOT / 'scripts/i5-chat-sync.py', ROOT / 'scripts/i6-memory-sync.py']
