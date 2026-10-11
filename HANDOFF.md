@@ -16,6 +16,8 @@
 
 验证本机条件满足优先，否则GitHub。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前余约0.6GiB/99%；完整workspace及跨平台转GitHub，不清理有效缓存。Git外私有TMPDIR保留/tmp/.git安全保护；cloud状态工具/策略文件缺失不宣称就绪，GitHub/Docker经沙箱提升实际访问。未读真实Key/调用商业API/邮件/部署。
 
+第二轮精确源码 `6526d0ae18199a05fafcc2a863e833b8cae6b114` / CI38163213716 Linux暴露既有Memory迁移最终schema断言仍为4，实际应5，最小更新后本机全部Memory12/0通过；运行源码未变，44份PG/HTTP指纹有效复用。此轮不授完整CI通过，随后新提交精确复验。
+
 准确下一步：核验精确功能CI四job实际完成/原始checkoutSHA/源码指纹与必要回归计数，归档原始日志与限制，更新本节并仅文档/证据封存commit/push main。完成后停止等待I-6独立审计及用户确认，不启动I-7。
 
 ## 已关闭 I-5（用户确认独立审计通过）
