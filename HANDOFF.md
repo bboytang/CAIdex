@@ -6,6 +6,8 @@
 
 用户确认 I-3 独立审计通过并批准 I-4，自动记忆首次默认关闭；随后明确拆为 I-4.1 本地核心 / I-4.2 Host 接入：先封存、独立审计 I-4.1，再另行批准 I-4.2，不改变 V3 正式 I 阶段。范围/通过/停止/试用见 [I-4.1 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。当前 I-4.1 开发通过条件已满足，停止新增功能。**独立审计未由本实施会话授予；I-4.2/I-5 及后续未授权**。不使用 ponytail 技能，不读真实用户 Key/调用商业 API/邮件/生产部署。
 
+用户最新指令再次确认先封存 I-4.1 后等待独立审计，不构成审计通过或 I-4.2 授权。本轮恢复时 main/origin/main/GitHub main 为5d0bb2a且工作区干净；只补充本交接与验收报告。GitHub API 复核 c17c5bd/38146076798 四 job completed/success，36个当前功能文件指纹及32份原始日志双SHA256一致，无ENOSPC；源码未变，复用既有完整CI。两个 Memory 模型配置入口对 Host owner 均通过共享校验明确返回 WrongCredentialOwner，本地没有 Host 任务调度入口，不回退客户端 Key、不借 Execute；共享边界测试与 Memory 入口源码检查有据，不冒充 Host Memory RPC 专项验证。
+
 不可变功能源码 [`c17c5bde51b79c2ec7e1ca5df9c5c3b584847b17`](https://github.com/bboytang/CAIdex/commit/c17c5bde51b79c2ec7e1ca5df9c5c3b584847b17)，[精确 CI38146076798](https://github.com/bboytang/CAIdex/actions/runs/38146076798) 四 job 全部成功，各原始 checkout 完整 SHA 已核对。实际 main 流程，起点67edfe8；封存提交只文档/证据，实际封存 HEAD 以 git rev-parse HEAD 为准，不当功能 CI SHA。封存内容：本 HANDOFF/AGENTS、I-4.1 设计验收与默认关闭对应 Account/UI 三行，以及 docs/evidence/i41-*；源码已在上述功能提交。恢复先核实 Git 状态，不假定以后工作区仍干净。
 
 实现：chat/core/src/memory 共享本地核心，schema2 原子迁移保留 I-3 Chat；个人/项目、来源/不可变 revision、CAS 冲突与人工批准、删除清正文/向量/匹配作业与来源墓碑防复活、导出；独立 Chat/整合/Embedding、实际端点/native model/用途/范围/类型/隐私许可、精确空间/旧版本隔离、无模型/离线基础搜索；默认关闭/等待/撤权/取消/重启 unknown 不重播。ConfirmedSession/Broker 只读凭据 guard、新识别敏感载荷可授权删除；低可信有界临时 Chat 注入，自动队列满不影响已完成 Chat。模型绑定仅当前会话，重启应用需重新配置并明确 run waiting 作业，没有正式 UI/CLI/常驻消费者。

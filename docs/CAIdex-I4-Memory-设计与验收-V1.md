@@ -22,6 +22,10 @@
 
 `runtime/host/src/service.rs:33` 的 Request 只包含观察/Runtime task/审批/客户端授权；`access.rs:13` 只有 Observe/Execute/Approve。普通记忆推理不应获得 Runtime 工具执行权限。用户已选择 I-4.1 / I-4.2 分别审计与批准；本轮不复用 Execute 偷授 Memory，不新增 Agent，不读/复制 Host Key。I-4.2 需提供独立 Memory 授权、Host 自有 Broker/Key、在线/离线/恢复/撤权、真实 Host RPC 与精确 CI。此次拆分保留 V3 I-4 的完整功能范围，I-4.1 完成不等于整个 I-4 完成。
 
+当前远程 Host 自有 Key 任务的处理边界：本地核心没有 Host 执行目标或调度入口，不能提交这种任务。若将 Host 的 Bearer/ApiKey 引用绑定到本地整合或 Embedding，`configure_integration` / `configure_embedding` 调用共享 `client::validate_model`，返回 `Error::WrongCredentialOwner`，在保存角色或模型 POST 前拒绝；不会改用已配置的客户端模型/Key。未配置本地角色的作业保留 waiting；调用方不得把该状态解释为已经接受远程任务，也不得隐式改绑客户端角色来执行原本要求 Host 的任务。共享凭据归属校验的 Host/其他账户拒绝测试在同提交 CI 中通过；两个 Memory 配置入口复用该校验由源码检查确认，本轮没有独立的 Host Memory RPC 测试。
+
+I-4.2 仅为待批准里程碑：批准后单独设计最小 Memory 专用权限与推理 RPC、Host 凭据归属和拒绝客户端回退、离线/取消/恢复/撤权及安全测试，再实施和精确验证。本报告不提前定义或实现其协议，不授 MEM-10 通过。
+
 ## 本地实现与接口
 
 `chat/core/src/memory` 为共享 Rust Memory Engine，借用现有 Chat 的账户分库、锁和 SQLite，Memory 表/作业/outbox 与 Chat 逻辑独立，与 Host journal 分开。`MemoryEngine` 从 `Chat::memory()` 获取；游客、可信 issuer/user_id/测试域隔离，归属由当前 Namespace 派生，模型不能指定另一账户。本地项目必须显式 `grant_project`；`revoke_project` 在读取/提交前生效，清对应外发许可、取消任务。此接口是应用本地权限边界，不提供云成员身份或服务端 ACL。
@@ -95,6 +99,8 @@ SQLite 仍为 OS 权限保护的明文，不能防同 OS 用户/管理员。云�
 本地仅 fmt/Python compile/diff/链接/原始证据与源码指纹检查，未本地完整构建，未清理用户/全局 Codex/有效缓存。盘39GiB/已用35GiB/可用约3.6GiB（91%）；SQLite max_page_count 定向故障不代物理 VPS ENOSPC 验收。
 
 当前 I-4.1 开发通过条件已满足，停止新增功能，等待独立新会话/其他模型只读审计不可变源码与实际证据；实施会话不授独立审计。用户确认 I-4.1 审计通过且明确批准后，才可开始 I-4.2；不自动进入 I-5。
+
+2026-10-11 用户再次明确选择先封存 I-4.1、远程 Host 自有 Key 必须等待或拒绝，本轮据此只读复核：GitHub API 返回上述功能 SHA 的四 job 均 completed/success，当前36个功能文件与归档指纹一致，32份原始日志的压缩/原文 SHA256 全部一致且无 ENOSPC，固定 Runtime/Host/upstream 相对 I-3 封存基线未变。本次仅补充验收报告与交接，不重写源码、原证据或重复完整构建；精确功能 CI 仍为 c17c5bd/38146076798。保留既有 Memory、来源/revision、权限检索、整合/Embedding、取消/恢复；此次用户指令不构成独立审计通过或 I-4.2 授权。
 
 ## 封存后的只读复验
 
