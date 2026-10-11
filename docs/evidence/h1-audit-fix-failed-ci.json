@@ -1,0 +1,458 @@
+{
+  "evidence_version": 1,
+  "failures": [
+    {
+      "source_sha": "c4741682117f31a7fe5897338bf283564686e10c",
+      "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38097119061",
+      "job_id": 114345201544,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38097119061/job/114345201544",
+      "conclusion": "failure",
+      "failure_reason": "macOS fixture rejected a CoreFoundation-generated environment name",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "archive": "h1-audit-fix-failed-114345201544.log.gz",
+      "raw_log_sha256": "75b85fa7aebeaa4fc4ea7f1ad343e737b22a162210df231a4c6bbc3dfb61f9ae",
+      "archive_sha256": "0a8fb6757934f380949810ef10f2f84ea5af00a4191438390708d498d3ea249f"
+    },
+    {
+      "source_sha": "a2e2d5a9c32cc29475189c45ca7580fd988c32ad",
+      "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38097401140",
+      "job_id": 114346047216,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38097401140/job/114346047216",
+      "conclusion": "failure",
+      "failure_reason": "Diagnostic identified __CF_USER_TEXT_ENCODING; no production allowlist expansion",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "archive": "h1-audit-fix-failed-114346047216.log.gz",
+      "raw_log_sha256": "c0a34bae5ef4c04c80ed301690a5fdf9b64c2a648a5555c5a674d3c7d00c471c",
+      "archive_sha256": "bb5f9e944ccf19d5896c57847939fad3ec4c7b98439ff9914aa2fe88794eee0a"
+    },
+    {
+      "source_sha": "a2e2d5a9c32cc29475189c45ca7580fd988c32ad",
+      "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38097401140",
+      "job_id": 114346047378,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38097401140/job/114346047378",
+      "conclusion": "failure",
+      "failure_reason": "WindowsAcl(16) at test directory creation; atomic test-name counter eliminates timestamp collision possibility",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "archive": "h1-audit-fix-failed-114346047378.log.gz",
+      "raw_log_sha256": "85b1af646d13c372ce7898ca017ee5e0710c093dd703185ebedf07f71c09d8e6",
+      "archive_sha256": "30eee367658a40057daac03d17bfb04cb258e2b464bd67ca4bc4ead9b64b7b5c"
+    },
+    {
+      "source_sha": "ebb21349f6575d3f6c55ea5f2adf3463fbdad10b",
+      "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38097953967",
+      "job_id": 114347703742,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38097953967/job/114347703742",
+      "conclusion": "failure",
+      "failure_reason": "Environment tests passed; new service recovery test could not reopen closed journal lock. Duplicate-handle reproducer confirmed close-only release is insufficient. Explicit StorageLock unlock added after SQLite closes. Exact holder in this CI was not observed.",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "archive": "h1-audit-fix-failed-114347703742.log.gz",
+      "raw_log_sha256": "cafbf7299a4b02226abd687f9c820d246660fb37462deb7bd935e3f7b477a44d",
+      "archive_sha256": "5db9f121512c1c5f4ad238dbf6311a10c76f22547d28da6ed2d3e1b7cf268cba"
+    }
+  ],
+  "not_success_evidence": true
+}

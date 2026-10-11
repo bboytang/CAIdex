@@ -1,0 +1,123 @@
+{
+  "evidence_version": 1,
+  "audit_baseline_sha": "b516dbae41b252d365d8fad8848c197f2f6ccd51",
+  "source_sha": "9df99f71eb04381260d66a0ab0db95fa6344a438",
+  "platform": "Linux",
+  "results": {
+    "focused": {
+      "passed": 20,
+      "failed": 0,
+      "ignored": 0
+    },
+    "workspace": {
+      "passed": 660,
+      "failed": 0,
+      "ignored": 83
+    },
+    "runtime": {
+      "passed": 81,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "host_test_names": [
+    "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+    "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+    "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+    "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+    "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+    "failed_commit_does_not_advance_event_or_snapshot",
+    "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+    "offline_inspection_never_migrates_or_creates_a_database",
+    "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+    "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+    "second_owner_is_rejected_and_lock_releases_after_close",
+    "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+    "oversized_event_is_rejected_without_advancing_watermark",
+    "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+    "partial_client_frame_survives_interleaved_event_broadcast",
+    "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+    "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+    "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+    "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+    "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+  ],
+  "demo": {
+    "status": "ok",
+    "codex_version": "0.160.1",
+    "host_id": "5b61bfb32f49288f5eb15974012f63c9",
+    "before_restart_seq": 5,
+    "after_restart_seq": 7,
+    "clients": 2,
+    "observer_process_exit_detaches": true,
+    "replay_identical": true,
+    "snapshot_restored": true,
+    "old_runtime_state": "unknown",
+    "restart_resubmissions": 0,
+    "model_turns": 0,
+    "commercial_calls": 0,
+    "user_keys_read": false,
+    "evidence_basis": {
+      "restart_resubmissions": "measured SQLite probeStarted count difference",
+      "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+      "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+    }
+  },
+  "schema": [
+    "stable schema matches Codex 0.160.1",
+    "experimental schema matches Codex 0.160.1"
+  ],
+  "doctor": {
+    "checks": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "thread/loaded/list",
+      "thread/started",
+      "thread/read"
+    ],
+    "codexVersion": "0.160.1",
+    "isolatedRuntimeData": true,
+    "modelTurnStarted": false,
+    "platformFamily": "unix",
+    "platformOs": "linux",
+    "status": "ok",
+    "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+  },
+  "fmt": "passed",
+  "clippy_workspace": "passed",
+  "checked_file_sha256": {
+    ".github/workflows/ci.yml": "bc0695b58c31db06c972a44fdb242887699bcd97368f7e28907bbf6ccc5d9d41",
+    "Cargo.lock": "2cedd30ba87dcc92604bc3e7561be1ae537f69d733517624123f9ee317080fca",
+    "Cargo.toml": "31c86553a617a9ee0ea09ced2854842ee40faa4fb043b2ac915cdf35df4a6306",
+    "runtime/host/Cargo.toml": "bb8657fb733031d24ae8fff11ef1433200e3d5c71aea77d7959b857f7088f052",
+    "runtime/host/src/journal.rs": "9a7d8ba12d5540b43b04da2aa702c8b5f2aee9e9c9941353f8a9a8af9cb90678",
+    "runtime/host/src/lib.rs": "72e41bd12711711d9317f42b3d621c1f81a8f9d7e27d6fdcec22d064490a4a22",
+    "runtime/host/src/main.rs": "1311821208a8f589d1812096c617c34160bbe5300c6c5e51f3fd6bfb7935b83f",
+    "runtime/host/src/security.rs": "74e3669c9982e796270bdea86989e2bc4f5f2e240d6111b562d3a4b798e21490",
+    "runtime/host/src/service.rs": "79a3ee9721434710a3c4524bb04e455802d2cf64c0755dff38ec691d1cc40a2c",
+    "runtime/host/tests/fixtures/peer.py": "1f6287f28717c771104c2d268375d03ee6882ec998061f75b917c3961621fa6d",
+    "runtime/host/tests/journal.rs": "dc5822677246b074de3341ccabf5b2fb0ace79c8dac054a22bd95bb68376e7ae",
+    "runtime/host/tests/service.rs": "3d1b248cf6761caae553a37d572e77050634578c4c220fb952505490f9df324a",
+    "scripts/h1-demo.py": "7fb2b025dee484f7f071a45cc3ded0e0562586a03b618f97f11927ca0ecb34ed",
+    "runtime/host/tests/fixtures/environment.py": "d3724a8baf112a5c0b813d7acc81fff8307d283a9789fca14d45d1278c185a41"
+  },
+  "verification": "development validation, not independent H-1 audit acceptance",
+  "aud003_limit": "model_turns/commercial_calls/user_keys_read are fixed scenario declarations, not independent telemetry",
+  "historical_journal_limit": "previous unlabelled reserved-method collisions cannot be retrospectively authenticated or auto-repaired",
+  "raw_local_logs": {
+    "workspace": {
+      "path": "h1-audit-fix-local-workspace.log.gz",
+      "raw_log_sha256": "5600ffc0df15b63fa2b11ea449716a43df6fdc2d9381ddcf485739b181967791",
+      "archive_sha256": "a9686323f5f05c14c8c0e356515325d43eeb8c088ee0cd2fc64fc0e553a5d508"
+    },
+    "runtime": {
+      "path": "h1-audit-fix-local-runtime.log.gz",
+      "raw_log_sha256": "21973d4355a50e6fba023d59d60fb8dc2022394035226d5d09c1e57a35cd5f4a",
+      "archive_sha256": "a65f82198aec6a06716882bd11950761ab6bd3b5ab35deb8dd65dc0f1b5e2856"
+    }
+  },
+  "temporary_environment_failure": "Initial final-candidate workspace was refused by credentials protection because visualization temp root had a .git marker; full rerun passed with a newly created private Git-free /var/tmp directory. No protection or pre-existing file was changed.",
+  "platform_fixture_correction": "CoreFoundation may generate numeric __CF_USER_TEXT_ENCODING after launch on macOS. Synthetic inherited value and explicit configured command allowlist are checked; production inheritance allowlist stays six OS names. Service harness directory names include an atomic counter to eliminate parallel timestamp collisions; Windows ACL checks unchanged.",
+  "lock_regression": "Duplicated lock file handle reproduces close-only ownership retention. StorageLock explicitly unlocks after SQLite closes; test proves active-owner rejection, immediate reopen with duplicate alive, and old duplicate closure cannot unlock new owner. Actual holder in failed macOS CI was not captured."
+}

@@ -1,0 +1,28 @@
+   Compiling caidex-host v0.1.0 (/root/projects/CAIdex-v1.0/runtime/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.80s
+     Running unittests src/lib.rs (target/debug/deps/caidex_host-1204ecd6bdafc7cd)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/caidex_host-8ba19805de3c745a)
+
+running 1 test
+test tests::version_probe_environment_is_private_and_version_rejection_remains_strict ... FAILED
+
+failures:
+
+---- tests::version_probe_environment_is_private_and_version_rejection_remains_strict stdout ----
+
+thread 'tests::version_probe_environment_is_private_and_version_rejection_remains_strict' (2297486) panicked at runtime/host/src/main.rs:154:59:
+called `Result::unwrap()` on an `Err` value: "expected pinned Codex 0.160.1; no automatic upgrade"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::version_probe_environment_is_private_and_version_rejection_remains_strict
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+error: test failed, to rerun pass `-p caidex-host --bin caidex-host`

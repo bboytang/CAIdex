@@ -4,7 +4,7 @@
 
 ## 当前工作：AUD-001/AUD-002 阻断修复（2026-10-11）
 
-用户仅授权本轮H-1审计阻断最小修复，不扩大里程碑。审计基线`b516dbae41b252d365d8fad8848c197f2f6ccd51`、旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。本轮开发验证进行中，尚未重新独立审计；下文原交付SHA/CI均为历史，不代本轮修复验证。
+用户仅授权本轮H-1审计阻断最小修复，不扩大里程碑。审计基线`b516dbae41b252d365d8fad8848c197f2f6ccd51`、旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。本轮开发验证已完成并停止，尚未重新独立审计；下文原交付SHA/CI均为历史，不代本轮修复验证。
 
 - **AUD-001根因/修复**：原版本Command直接继承Host环境，正式Runtime则已env_clear。入口现在共用`isolate_environment`，只保留原PATH/HOME/SystemRoot/USERPROFILE/TEMP/TMP；版本探测不继承CODEX_HOME或任何Host/API/Account变量，Runtime额外赋本次私有CODEX_HOME。严格0.160.1、15秒timeout、kill_on_drop及非零退出拒绝保持。新增[入口单元测试](../runtime/host/src/main.rs)和[合成环境替身](../runtime/host/tests/fixtures/environment.py)实际启动子进程，断言只有白名单（Python自身可增加LC_CTYPE，macOS CoreFoundation可生成经过UID/数值格式验证的编码元数据），覆盖合成敏感变量、错误版本和正确输出但非零退出；不读取真实凭据。
 - **AUD-002根因/设计**：外部Notification曾经走可信append，方法名即可驱动Host状态。现由`Journal::append_runtime`隔离完整host/命名空间：事件顶层method=`runtime/notification`，data保留完整原始JSON（原method及未知字段），不能从载荷source/trusted字段获得控制权。其他Runtime方法保持原method，包括合法thread/started及future/event；Host内部常量方法仍使用可信append。SQLite V1 schema/事件结构不变，事务提交/广播/replay/snapshot逻辑保持。新增[journal](../runtime/host/tests/journal.rs)及[service](../runtime/host/tests/service.rs)回归覆盖started/stopped/stopping/runtimeUnavailable/probeStarted/probeResult/未知host事件、转义名称、未知intent、广播和回放原文、合法线程缓存与重启unknown/不重发。
@@ -14,11 +14,44 @@
 
 ### 本轮验证与停止
 
-新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。修复后最终候选Linux H-1定向19/0/0、workspace659/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor和真实双端强杀重启演示全部通过；最终候选功能源码`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`已提交push main，[精确CI38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)排队/运行中，尚不能认领三平台通过。完整归档证据待最终核验后封存，不沿用旧SHA成功。
+新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。最终功能源码[`9df99f71eb04381260d66a0ab0db95fa6344a438`](https://github.com/bboytang/CAIdex/commit/9df99f71eb04381260d66a0ab0db95fa6344a438)，已提交push main；[精确CI38098407943](https://github.com/bboytang/CAIdex/actions/runs/38098407943)三平台完整成功。每个job的实际checkout SHA均已从日志核对为该完整SHA，未沿用旧成功。最终本地Linux H-1定向20/0/0、workspace660/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor及真实双端强杀重启演示全部通过。
 
-CI失败处理：首轮[38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)macOS环境替身失败；诊断提交`a2e2d5a9c32cc29475189c45ca7580fd988c32ad`/[38097401140](https://github.com/bboytang/CAIdex/actions/runs/38097401140)仅输出意外变量名称，定位__CF_USER_TEXT_ENCODING。[Apple CoreFoundation初始化](https://github.com/apple-oss-distributions/CF/blob/main/CFRuntime.c)调用用户编码初始化，[编码实现](https://github.com/apple-oss-distributions/CF/blob/main/CFStringEncodings.c)会在启动后setenv。测试改为核验OS生成UID/编码/区域数值，并在父Command预置同名合成变量、检查启动配置仍只有六项OS白名单；生产继承范围完全不扩展。诊断轮Windows另在New-Item创建测试目录步骤失败（WindowsAcl(16)），原时间戳命名不保证并行唯一，测试夹具增加原子计数排除碰撞；此为可能原因的最小排除修正，不把未捕获的PowerShell错误详情当作已证实，不重试或降低ACL断言。须由最终源码完整三平台CI复验。
+| 最终runner / job | workspace 通过/失败/忽略 | H-1（包含于workspace） | 固定Runtime 通过/失败/忽略 | 真实Host双端恢复 |
+| --- | --- | --- | --- | --- |
+| [Linux ubuntu-24.04](https://github.com/bboytang/CAIdex/actions/runs/38098407943/job/114349055503) | 660/0/83 | 20/0/0 | 81/0/0 | 成功，seq6→9 |
+| [Windows windows-2022](https://github.com/bboytang/CAIdex/actions/runs/38098407943/job/114349055486) | 654/0/81 | 19/0/0 | 80/0/0 | 成功，seq5→7 |
+| [macOS macos-15](https://github.com/bboytang/CAIdex/actions/runs/38098407943/job/114349055314) | 659/0/81 | 20/0/0 | 80/0/0 | 成功，seq5→7 |
 
-随后`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`/[38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)macOS环境测试通过，但服务重启仍遭旧journal锁拒绝。生产代码已有显式drop(journal)，并未因任务完成漏drop；[Apple flock语义](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/flock.2.html)与[Rust锁实现](https://github.com/rust-lang/rust/blob/1.99.0/library/std/src/sys/fs/unix.rs)表明fork/dup引用共享锁。未捕获当时的具体持有进程，不能把fork来源当作直接观测；新增复制句柄故障测试在Linux稳定复现同样的关闭后无法重开。最小H-1兼容修复为StorageLock守卫显式unlock，Journal字段顺序保证SQLite先关闭，再释放锁；inspect/失败路径也复用该守卫，不修改schema/事务/重试策略。新增测试还验证活动所有者排他、旧复制句柄关闭不释放新所有者锁、再次正常重开。当前候选定向20/0/0、workspace660/0/83、固定Runtime81/0/0、Clippy/fmt和真实演示均通过；新SHA精确三平台CI待完成。
+ignored不计通过；固定Runtime被ignored的本地夹具用例在后续真实执行步骤单独运行。Windows排除Unix专属权限/硬链接用例，原生产ACL脚本、Rust子进程检查仍成功；Linux另外原生凭据service1/0/0。各平台fmt、全仓Clippy、schema/doctor、H-1真实进程及固定Runtime步骤逐项成功。5项新增回归在每个workspace阶段均运行成功；日志保留测试名，Windows单独lib检查中的重复执行不重复计入workspace。
+
+[最终精确CI摘要](evidence/h1-audit-fix-ci.json)包含实际checkout、完整step状态、测试名/计数、doctor及演示JSON、原始与压缩日志SHA256；完整原始日志：[Linux](evidence/h1-audit-fix-ci-linux.log.gz)、[Windows](evidence/h1-audit-fix-ci-windows.log.gz)、[macOS](evidence/h1-audit-fix-ci-macos.log.gz)。[最终本地摘要/14文件指纹](evidence/h1-audit-fix-local.json)、[20项H-1日志](evidence/h1-audit-fix-host-tests.log)、[完整workspace日志](evidence/h1-audit-fix-local-workspace.log.gz)、[完整Runtime日志](evidence/h1-audit-fix-local-runtime.log.gz)对应最终功能源码；[三轮失败CI及完整日志索引](evidence/h1-audit-fix-failed-ci.json)明确标为失败，不代成功证据。修复前复现：[AUD-001](evidence/h1-audit-fix-aud001-before.log)、[AUD-002](evidence/h1-audit-fix-aud002-before.log)、[复制锁句柄](evidence/h1-audit-fix-lock-before.log)。
+
+当前明确阻断AUD-001/AUD-002的修复及开发验证完成，未发现仍需当前修复的明确阻断；独立审计与用户验收仍待重新发起，不授H-1独立审计通过。本次封存只改文档/证据，源码/依赖/workflow与上述已验SHA一致。开始/最后构建前约3.1/2.9GB可用，保留所有有效缓存及用户/全局Codex数据；未读取真实Key或调用收费模型。原本地临时根存在.git标记，凭据保护正确拒绝，完整workspace改用新建Git外私有/var/tmp目录，未删除.git或改变保护。
+
+独立复核先核对不可变源码与失败/最终证据，再按“独立复现”和完整检查命令复跑。可直接核验源码/归档：
+
+```python
+from pathlib import Path
+import gzip, hashlib, json, re, subprocess
+root = Path("docs/evidence")
+local = json.loads((root / "h1-audit-fix-local.json").read_text())
+ci = json.loads((root / "h1-audit-fix-ci.json").read_text())
+assert ci["source_sha"] == local["source_sha"]
+for path, digest in local["checked_file_sha256"].items():
+    data = subprocess.check_output(["git", "show", ci["source_sha"] + ":" + path])
+    assert hashlib.sha256(data).hexdigest() == digest
+for job in ci["jobs"]:
+    packed = (root / job["archive"]).read_bytes()
+    raw = gzip.decompress(packed)
+    assert hashlib.sha256(packed).hexdigest() == job["archive_sha256"]
+    assert hashlib.sha256(raw).hexdigest() == job["raw_log_sha256"]
+    checkout = re.findall(r"log -1 --format=%H\r?\n[^\n]*? ([0-9a-f]{40})\r?\n", raw.decode())
+    assert checkout == [ci["source_sha"]] == [job["actual_checkout_sha"]]
+```
+
+CI失败处理：首轮[38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)macOS环境替身失败；诊断提交`a2e2d5a9c32cc29475189c45ca7580fd988c32ad`/[38097401140](https://github.com/bboytang/CAIdex/actions/runs/38097401140)仅输出意外变量名称，定位__CF_USER_TEXT_ENCODING。[Apple CoreFoundation初始化](https://github.com/apple-oss-distributions/CF/blob/main/CFRuntime.c)调用用户编码初始化，[编码实现](https://github.com/apple-oss-distributions/CF/blob/main/CFStringEncodings.c)会在启动后setenv。测试改为核验OS生成UID/编码/区域数值，并在父Command预置同名合成变量、检查启动配置仍只有六项OS白名单；生产继承范围完全不扩展。诊断轮Windows另在New-Item创建测试目录步骤失败（WindowsAcl(16)），原时间戳命名不保证并行唯一，测试夹具增加原子计数排除碰撞；此为可能原因的最小排除修正，不把未捕获的PowerShell错误详情当作已证实，不重试或降低ACL断言。上述平台测试修正均已由最终源码完整三平台CI复验。
+
+随后`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`/[38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)macOS环境测试通过，但服务重启仍遭旧journal锁拒绝。生产代码已有显式drop(journal)，并未因任务完成漏drop；[Apple flock语义](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/flock.2.html)与[Rust锁实现](https://github.com/rust-lang/rust/blob/1.99.0/library/std/src/sys/fs/unix.rs)表明fork/dup引用共享锁。未捕获当时的具体持有进程，不能把fork来源当作直接观测；新增复制句柄故障测试在Linux稳定复现同样的关闭后无法重开。最小H-1兼容修复为StorageLock守卫显式unlock，Journal字段顺序保证SQLite先关闭，再释放锁；inspect/失败路径也复用该守卫，不修改schema/事务/重试策略。新增测试还验证活动所有者排他、旧复制句柄关闭不释放新所有者锁、再次正常重开。此修正已由最终源码的20项定向、完整本地检查和三平台精确CI复验。
 
 两个阻断的开发验证和最终源码三平台CI全部完成、证据封存后立即停止；用户重新发起独立审计前不声明H-1独立审计通过，不启动H-2/H-3/I。
 
@@ -132,4 +165,4 @@ Windows PSModulePath跨版本继承问题见[微软官方说明](https://learn.m
 
 重点核对：所有Host动作是否先提交intent；event/snapshot是否原子推进；提交后广播/回复；attach水位/部分帧/慢客户端缺口；旧Runtime状态失效与未知结果不重发；独占锁与文件/授权/凭据边界；范围是否止于H-1。
 
-尚未执行独立新会话/其他模型审计，不将实施自查或CI成功冒充独立验收。F/G-Live、生产多用户/Remote ACL、持久任务/执行/审批、高负载/日志裁剪/备份恢复及Windows11桌面/iOS Simulator/Archive/真机/安装包仍未验或属于后续授权范围。
+用户已提供首次独立审计发现，本轮修复尚未重新接受独立新会话/其他模型审计，不将实施自查或CI成功冒充独立验收。F/G-Live、生产多用户/Remote ACL、持久任务/执行/审批、高负载/日志裁剪/备份恢复及Windows11桌面/iOS Simulator/Archive/真机/安装包仍未验或属于后续授权范围。

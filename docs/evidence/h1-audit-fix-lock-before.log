@@ -1,0 +1,22 @@
+   Compiling caidex-host v0.1.0 (/root/projects/CAIdex-v1.0/runtime/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.43s
+     Running unittests src/lib.rs (target/debug/deps/caidex_host-1204ecd6bdafc7cd)
+
+running 1 test
+test journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives ... FAILED
+
+failures:
+
+---- journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives stdout ----
+
+thread 'journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives' (2348525) panicked at runtime/host/src/journal.rs:381:53:
+called `Result::unwrap()` on an `Err` value: Refused("Host directory is already in use")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p caidex-host --lib`

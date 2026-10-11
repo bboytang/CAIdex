@@ -4,43 +4,23 @@
 
 ## 当前批准工作：H-1 独立审计阻断修复
 
-用户本轮仅授权修复AUD-001版本子进程环境继承、AUD-002Runtime通知污染Host命名空间；AUD-003仅最小证据标注。审计基线/main/HEAD/origin/main/GitHub main均已核实为`b516dbae41b252d365d8fad8848c197f2f6ccd51`，初始工作区干净；旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。构建前约3.1GB空闲，保留有效缓存及全部用户/全局Codex文件。
+用户本轮仅授权修复AUD-001版本子进程环境继承、AUD-002Runtime通知污染Host命名空间；AUD-003仅最小证据标注。开始时审计基线/main/HEAD/origin/main/GitHub main均已核实为`b516dbae41b252d365d8fad8848c197f2f6ccd51`，初始工作区干净；旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。构建前约3.1GB空闲，保留有效缓存及全部用户/全局Codex文件。
 
 有限计划：①复现两阻断并明确共享边界；②版本与Runtime共用原OS白名单，外部host/*安全记录；③合成凭据/伪造事件回归、合法恢复/完整workspace/固定Runtime/schema/doctor/真实双端演示；④最小diff/提交push main/最终源码精确三平台CI/证据封存。非目标：H-2/H-3/I、商业调用/真实Key、全量journal重构或协议改版。通过条件：原路径不再泄漏敏感环境、不接受外部Host控制事件，原契约无回归，新增回归及最终源码三平台全部通过。停止条件：封存证据后停止，等待用户重新发起H-1独立审计；开发验证不授独立审计通过。
 
-当前进度：候选源码`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`/[CI38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)未通过：macOS环境测试已成功，新增服务测试在重启时拒绝旧锁；Linux/Windows成功。复制句柄故障注入在Linux稳定复现journal关闭后锁仍存活，现做H-1必要最小兼容修复：锁守卫在SQLite先关闭后显式unlock，原独占/文件保护不变，并验证旧复制句柄关闭不影响新所有者。新候选H-1定向20/0/0已通过；完整workspace660/0/83、固定Runtime81/0/0、Clippy/fmt和真实演示复验已通过。工作区仅本轮journal必要修正及证据/文档，尚需提交新SHA并重新完整三平台CI，不能沿用ebb或更早成功平台。无新功能/阶段。
+当前进度：AUD-001/AUD-002修复与开发验证完成并停止；最终功能源码[`9df99f71eb04381260d66a0ab0db95fa6344a438`](https://github.com/bboytang/CAIdex/commit/9df99f71eb04381260d66a0ab0db95fa6344a438)已提交push main，[精确CI38098407943](https://github.com/bboytang/CAIdex/actions/runs/38098407943)三平台完整成功。每个job实际checkout均为该完整SHA；Linux job114349055503 workspace660/0/83、H-1含20/0/0、固定Runtime81/0/0（另原生凭据1项）；Windows job114349055486 workspace654/0/81、H-1含19/0/0、Runtime80/0/0；macOS job114349055314 workspace659/0/81、H-1含20/0/0、Runtime80/0/0。ignored不计通过。fmt/全仓Clippy/schema/doctor/真实独立Host双端强杀重启与恢复步骤全部成功；SQLite计数测量0重发。新增5项安全/恢复回归各平台通过。
+
+本地最终定向20/0/0、完整workspace660/0/83、固定Runtime81/0/0及其余检查全通过。三轮失败CI、平台替身/目录唯一性修正和复制句柄保持锁的确定复现/最小显式unlock修复见[验收文档](docs/CAIdex-H1-Host-设计与验收-V1.md)。旧复制句柄关闭不释放新所有者锁由新增回归验证。当前无仍需修复的明确阻断；尚未重新独立审计/用户验收，准确下一步为用户重新发起H-1独立审计，不能开始H-2/H-3/I。
+
+封存入口：[最终CI摘要/完整原始日志与哈希](docs/evidence/h1-audit-fix-ci.json)、[最终本地日志/文件指纹](docs/evidence/h1-audit-fix-local.json)、[失败CI归档](docs/evidence/h1-audit-fix-failed-ci.json)、验收文档复现/失败/限制/归档核验命令。证据不依赖/tmp。当前branch为main；本次封存前仅本轮文档/证据未提交，源码/依赖/workflow与功能SHA无差异；文档封存HEAD与最终工作区/远端状态须按Git核实，不能将文档HEAD误作功能CI SHA。磁盘约2.9GB可用，无用户/全局Codex/有效缓存清理；workspace改用新建Git外私有/var/tmp目录，没有删除原.git或修改凭据保护。
 
 开发验证使用fix-finding只读边界调查/候选审查，不冒充H-1独立验收；用户已提供独立发现，尚未重新审计修复结果。AUD-003：model_turns/commercial_calls/user_keys_read为固定场景声明，非独立遥测；新演示以evidence_basis区分声明、代码断言和SQLite计数测量。旧归档保留历史，不作为这些指标的独立测量证明。
 
-## H-1 初次交付历史（以下证据不代本轮修复验证）
+## H-1 初次交付历史（不代本轮修复验证）
 
-2026-10-10 用户确认 F/G-Offline 验收通过并正式关闭；F/G-Live 保持待验，不认领商业兼容性或生产Host。用户明确批准 H-1，实现/测试/演示/commit/push main/三平台精确CI，完成后停止；H-2/H-3/I 尚未授权。
+2026-10-10批准H-1并完成初次交付；原功能源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`/[CI38095166217](https://github.com/bboytang/CAIdex/actions/runs/38095166217)成功，文档封存至本轮审计基线`b516dbae41b252d365d8fad8848c197f2f6ccd51`。用户随后提供AUD-001/AUD-002阻断，本轮已修复，独立审计需重新发起，不能继续沿用旧交付的通过结论。
 
-实施前核对：main/HEAD/远端 main 均为 `b8dfec41bf06b2237b6c7ca2d7f91c91b7ec4322`，初始工作区干净；V3第4节H-1及CLI第10节为验收依据。磁盘约4GB空闲，target约17GB；复用缓存、限制并行，不删除用户/全局Codex资料。
-
-有限计划：①核对Facade/生命周期边界并记录设计；②新增独立本地Host及V1 SQLite journal、Host/stream sequence、提交后广播、attach/detach、snapshot恢复；③双内部客户端/真实固定Runtime无模型初始化与线程探针、故障测试；④最终diff/提交/push/精确三平台CI/审计证据。非目标：H-2任务/幂等提交/执行链、H-3审批竞争/Diff、正式GUI/CLI、SSH/Relay、账户/Memory、商业调用/用户Key和生产部署。
-
-通过条件：客户端退出不终止Host；两个测试客户端断线重连恢复提交事件或一致快照；重启journal保持Host身份/seq且旧Runtime状态未知，不重发未确认动作；SQLite版本/损坏/提交失败安全拒绝；实际演示、测试、Linux/Windows/macOS精确CI及可独立审计证据。停止条件：达到上述条件即停止新增功能，等待用户验收及下一授权；真实阻断须修复复验，资源不足不得擅自清理。
-
-依赖：固定Codex0.160.1、现有Runtime Facade、Tokio/serde与新增必要SQLite绑定；隔离运行数据，不接收Key/Account Token，不改现有凭据边界。当前进度：H-1实现与验证完成，精确三平台CI全部成功，交付后停止；用户验收及独立审计未执行。
-
-## H-1 当前进度与证据
-
-已实现 `runtime/host` 独立本地Host、固定Runtime Facade复用、V1 SQLite journal/event+snapshot事务、Host/stream双seq、提交后广播、严格内部JSONL请求、双端attach/detach/连续replay或一致snapshot。线程探针先记录未知intent再发请求；重启保留未知intent、旧Runtime缓存失效，不重发。显式shutdown先记录stopping；Runtime断连/交互/存储失败安全停止；inspect只读、不建库/迁移。Windows owner-only ACL、Unix0700/owner/链接检查，独立Host token不进入Runtime/journal/日志。
-
-最终功能源码提交：`dec3a374228a75b9a6600715b0d56bf5047b12b0`，已push；[精确CI38095166217](https://github.com/bboytang/CAIdex/actions/runs/38095166217)三平台完整成功，完整日志逐项核对最终源码SHA、测试名/计数、schema/doctor及真实双端演示。
-
-- Linux job114339472553：workspace655/0/83，H-1含于其中15/0/0，固定Runtime81/0/0，另原生凭据service1/0/0。
-- Windows job114339472633：workspace649/0/81，H-1含于其中14/0/0，固定Runtime80/0/0；生产ACL脚本及真实Rust子进程边界两项成功。Unix专属权限/硬链接测试不在Windows执行。
-- macOS job114339472658：workspace654/0/81，H-1含于其中15/0/0，固定Runtime80/0/0。三平台fmt/全仓Clippy/schema/doctor均成功，ignored不计通过。
-
-三平台实际独立Host进程演示通过：两客户端断线重连replay一致，第三观察客户端进程退出不终止Host；真实强杀重启同Host/journal，旧线程unknown，0探针重发/模型轮次/商业调用/用户Key读取。Linux CI seq6→9，Windows/macOS seq5→7，实际Runtime通知可推进seq，不固定事件数。最终Linux本地15项/Host Clippy/fmt/真实演示也通过。磁盘约3.1GB空闲，无用户/全局Codex清理。
-
-[H-1设计/运行/失败与限制](docs/CAIdex-H1-Host-设计与验收-V1.md)记录3次失败CI与最小修复：Windows子进程PSModulePath/路径/LF边界、macOS参数journal锁析构晚于任务completion、危险交互先于夹具注入确认；均由最后精确CI复验。严格请求拒绝额外cwd/apiKey无副作用，提交失败无动作/广播，未知intent不重发。初始/tmp为Git工作树造成凭据测试拒绝，换新建Git外私有TMPDIR，不改变保护。
-
-审计证据：[最终CI摘要及完整步骤/测试名/演示JSON/日志SHA256](docs/evidence/h1-ci.json)，同目录三平台完整原始日志gzip归档；[最终本地测试/文件指纹](docs/evidence/h1-final-local.json)、[最终本地日志](docs/evidence/h1-final-host-tests.log)。初版h1-local.json/h1-host-tests.log仅对应db8bf47及早期本地检查，不冒充最终源码。所有证据可从仓库/GitHub复核，不依赖实施会话/tmp日志。
-
-功能源码停止新增；本次封存仅HANDOFF/验收文档/docs/evidence，源码/依赖/workflow与上述已验SHA一致。main沿用既有提交/push流程；恢复时读取Git核实最新文档封存HEAD/远端及实际未提交文件，不将文档HEAD误作Rust CI源码SHA。准确下一步为用户安排独立新会话只读审计及H-1验收；实施自查/CI不等于独立审计。H-2/H-3/I仍未授权，未经用户确认不得启动。
+初次功能、逐平台计数、故障CI修正、复现步骤和限制保留在[H-1验收文档历史](docs/CAIdex-H1-Host-设计与验收-V1.md#初次交付历史与独立审计不代本轮修复验证)、[原CI证据](docs/evidence/h1-ci.json)、[原本地证据](docs/evidence/h1-final-local.json)及Git历史；只作历史依据，不代最终修复SHA验证。Facade/Provider/凭据源码、本次必要变更以Git diff为准；当前恢复只依据上节最终源码/CI/证据入口。
 
 ## F/G 封存状态
 

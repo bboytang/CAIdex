@@ -1,0 +1,25 @@
+   Compiling caidex-host v0.1.0 (/root/projects/CAIdex-v1.0/runtime/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.73s
+     Running tests/service.rs (target/debug/deps/service-a444272c4dcc6fdb)
+
+running 1 test
+test runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery ... FAILED
+
+failures:
+
+---- runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery stdout ----
+{"address":"127.0.0.1:33135","host_id":"aefc039739dc159f9463303ef821748d","pid":2298530,"protocol":1}
+
+thread 'runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery' (2298531) panicked at runtime/host/tests/service.rs:382:5:
+assertion `left == right` failed
+  left: String("unavailable")
+ right: "running"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.24s
+
+error: test failed, to rerun pass `-p caidex-host --test service`

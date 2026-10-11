@@ -1,0 +1,810 @@
+{
+  "evidence_version": 1,
+  "source_sha": "9df99f71eb04381260d66a0ab0db95fa6344a438",
+  "run_id": "38098407943",
+  "url": "https://github.com/bboytang/CAIdex/actions/runs/38098407943",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "platform": "macos",
+      "job_id": 114349055314,
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38098407943/job/114349055314",
+      "workspace": {
+        "passed": 659,
+        "failed": 0,
+        "ignored": 81
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "fixed_runtime_passed_test_names": [
+        "chat_completions::classic_and_lite_text_survive_real_runtime_restart",
+        "chat_completions::cancel_and_interrupt_pending_native_approval_prevent_execution",
+        "deepseek::approval_cancel_prevents_execution",
+        "chat_completions::classic_and_lite_tools_use_native_approval_and_do_not_reexecute_after_resume",
+        "deepseek::classic_executes_tool_and_replays_after_restart",
+        "deepseek::interrupt_closes_native_sockets",
+        "deepseek::interrupt_waiting_approval_prevents_execution",
+        "deepseek::lite_rejects_multiple_calls_before_execution",
+        "deepseek::lite_executes_tool_and_replays_after_restart",
+        "openrouter::approval_cancel_prevents_execution",
+        "openrouter::classic_executes_tool_and_replays_after_restart",
+        "deepseek::rejects_defaults_and_partial_policies_before_authentication",
+        "openrouter::interrupt_closes_native_sockets",
+        "openrouter::lite_rejects_multiple_calls_before_execution",
+        "openrouter::interrupt_waiting_approval_prevents_execution",
+        "openrouter::lite_executes_tool_and_replays_after_restart",
+        "qwen::approval_cancel_prevents_execution",
+        "qwen::classic_executes_tool_and_replays_after_restart",
+        "openrouter::rejects_defaults_and_partial_policies_before_authentication",
+        "qwen::interrupt_closes_native_sockets",
+        "qwen::lite_rejects_multiple_calls_before_execution",
+        "qwen::interrupt_waiting_approval_prevents_execution",
+        "qwen::lite_executes_tool_and_replays_after_restart",
+        "real_classic_model_wire_matches_core_and_replays_opaque_reasoning",
+        "qwen::rejects_defaults_and_partial_policies_before_authentication",
+        "real_classic_native_anthropic_rejects_cached_web_search_before_authentication",
+        "real_classic_native_anthropic_discovers_and_executes_mcp_tools",
+        "real_classic_native_google_executes_static_mcp_and_replays_result",
+        "real_classic_native_ollama_discovers_executes_mcp_and_replays_after_restart",
+        "real_auto_compaction_threshold_preserves_checkpoint_after_disk_resume",
+        "real_classic_runtime_preserves_native_anthropic_signed_history_carrier",
+        "real_classic_runtime_via_gateway_with_executor_credential",
+        "real_classic_runtime_via_native_openai_adapter",
+        "real_command_approval_cancel_prevents_execution_and_preserves_native_queue",
+        "real_classic_runtime_via_native_google_preserves_signed_history",
+        "real_goal_pause_resume_budget_and_clear_are_runtime_owned",
+        "real_goal_empty_continuations_block_without_client_retry",
+        "real_idle_queue_add_starts_a_turn_and_preserves_client_identity",
+        "real_lite_manual_compaction_emits_lifecycle_and_carries_summary_forward",
+        "real_lite_model_wire_matches_core_and_keeps_stable_prefix",
+        "real_google_runtime_rejects_unsupported_defaults_before_authentication",
+        "real_google_comments_do_not_prevent_runtime_idle_and_explicit_recovery",
+        "real_lite_native_anthropic_interrupt_closes_provider_socket",
+        "real_lite_native_anthropic_code_mode_executes_tool_and_replays_result",
+        "real_lite_native_google_rejects_multiple_calls_before_execution",
+        "real_lite_native_ollama_interrupt_closes_provider_socket",
+        "real_lite_native_google_code_mode_executes_tool_and_replays_result",
+        "real_lite_native_ollama_code_mode_executes_tool_and_replays_after_restart",
+        "real_lite_native_ollama_rejects_multiple_calls_before_execution",
+        "real_lite_native_ollama_interrupt_waiting_approval_prevents_execution",
+        "real_lite_runtime_preserves_native_anthropic_signed_history_carrier",
+        "real_lite_runtime_via_gateway_with_executor_credential",
+        "real_lite_runtime_via_native_anthropic_adapter",
+        "real_lite_runtime_via_native_openai_adapter",
+        "real_long_running_process_rejects_duplicate_handle_and_stops_on_explicit_kill",
+        "real_lite_runtime_via_native_google_preserves_signed_history",
+        "real_manual_compaction_emits_lifecycle_and_carries_summary_forward",
+        "real_mcp_discovery_resource_tool_and_form_elicitation",
+        "real_patch_accept_writes_only_approved_temp_target_and_emits_changes",
+        "real_patch_cancel_leaves_target_unchanged",
+        "real_ollama_runtime_defaults_and_partial_context_refuse_tools_before_authentication",
+        "real_plan_mode_user_input_returns_answer_to_runtime_tool_loop",
+        "real_local_compaction_failure_and_cancel_keep_history_after_disk_resume",
+        "real_pty_stream_stdin_resize_and_exit_preserve_utf8_bytes",
+        "real_queue_reorder_busy_start_and_interrupt_preserve_native_identity",
+        "real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume",
+        "real_runtime_interrupt_via_gateway_closes_provider_socket",
+        "real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_slots",
+        "real_runtime_interrupt_via_native_google_closes_socket",
+        "real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume",
+        "real_steer_precondition_and_interrupt_revoke_waiting_approval",
+        "real_runtime_interrupt_via_native_openai_closes_provider_socket",
+        "real_turn_events_history_resume_and_fork",
+        "switching::cross_provider::foreign_provider_disk_reasoning_is_rejected_before_target_key_or_inference",
+        "switching::lite::lite_unknown_model_rejects_before_credentials_and_explicit_recovery_keeps_lite",
+        "switching::lite::lite_model_switch_disk_resume_and_fork_keep_dialect_and_parent_history",
+        "switching::cross_provider::fresh_provider_thread_receives_visible_text_without_source_opaque_history",
+        "switching::same_provider_fork_model_override_links_branch_without_mutating_parent",
+        "switching::unknown_model_override_fails_before_key_and_explicit_recovery_keeps_thread",
+        "switching::same_provider_model_override_persists_across_turns_and_disk_resume"
+      ],
+      "doctor": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "unix",
+        "platformOs": "macos",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      },
+      "host_tests_passed_once": [
+        "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+        "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+      ],
+      "demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "fcbc54a6e27af6fe601772077e315577",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      },
+      "actual_checkout_sha": "9df99f71eb04381260d66a0ab0db95fa6344a438",
+      "raw_log_lines": 2138,
+      "raw_log_sha256": "1a9499fd3ab8460b54d34e4fc10957e1e5a4f8ad0d1138cac96ab65a812fa60a",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "archive": "h1-audit-fix-ci-macos.log.gz",
+      "archive_sha256": "44d86ab60cb0c7435ec3f47f392fe636a212992fbf0ed0ad8ac08562d0dd18ce",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "platform": "windows",
+      "job_id": 114349055486,
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38098407943/job/114349055486",
+      "workspace": {
+        "passed": 654,
+        "failed": 0,
+        "ignored": 81
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "fixed_runtime_passed_test_names": [
+        "deepseek::approval_cancel_prevents_execution",
+        "chat_completions::classic_and_lite_text_survive_real_runtime_restart",
+        "chat_completions::classic_and_lite_tools_use_native_approval_and_do_not_reexecute_after_resume",
+        "chat_completions::cancel_and_interrupt_pending_native_approval_prevent_execution",
+        "deepseek::classic_executes_tool_and_replays_after_restart",
+        "deepseek::interrupt_closes_native_sockets",
+        "deepseek::lite_rejects_multiple_calls_before_execution",
+        "deepseek::interrupt_waiting_approval_prevents_execution",
+        "deepseek::lite_executes_tool_and_replays_after_restart",
+        "openrouter::classic_executes_tool_and_replays_after_restart",
+        "openrouter::approval_cancel_prevents_execution",
+        "openrouter::interrupt_closes_native_sockets",
+        "deepseek::rejects_defaults_and_partial_policies_before_authentication",
+        "openrouter::interrupt_waiting_approval_prevents_execution",
+        "openrouter::lite_executes_tool_and_replays_after_restart",
+        "openrouter::lite_rejects_multiple_calls_before_execution",
+        "qwen::approval_cancel_prevents_execution",
+        "qwen::classic_executes_tool_and_replays_after_restart",
+        "qwen::interrupt_closes_native_sockets",
+        "qwen::lite_rejects_multiple_calls_before_execution",
+        "qwen::interrupt_waiting_approval_prevents_execution",
+        "qwen::lite_executes_tool_and_replays_after_restart",
+        "openrouter::rejects_defaults_and_partial_policies_before_authentication",
+        "real_classic_model_wire_matches_core_and_replays_opaque_reasoning",
+        "real_classic_native_anthropic_discovers_and_executes_mcp_tools",
+        "real_classic_native_anthropic_rejects_cached_web_search_before_authentication",
+        "real_classic_native_google_executes_static_mcp_and_replays_result",
+        "qwen::rejects_defaults_and_partial_policies_before_authentication",
+        "real_classic_runtime_preserves_native_anthropic_signed_history_carrier",
+        "real_classic_native_ollama_discovers_executes_mcp_and_replays_after_restart",
+        "real_auto_compaction_threshold_preserves_checkpoint_after_disk_resume",
+        "real_classic_runtime_via_gateway_with_executor_credential",
+        "real_classic_runtime_via_native_openai_adapter",
+        "real_classic_runtime_via_native_google_preserves_signed_history",
+        "real_command_approval_cancel_prevents_execution_and_preserves_native_queue",
+        "real_goal_empty_continuations_block_without_client_retry",
+        "real_goal_pause_resume_budget_and_clear_are_runtime_owned",
+        "real_idle_queue_add_starts_a_turn_and_preserves_client_identity",
+        "real_lite_manual_compaction_emits_lifecycle_and_carries_summary_forward",
+        "real_lite_model_wire_matches_core_and_keeps_stable_prefix",
+        "real_google_comments_do_not_prevent_runtime_idle_and_explicit_recovery",
+        "real_lite_native_anthropic_code_mode_executes_tool_and_replays_result",
+        "real_lite_native_anthropic_interrupt_closes_provider_socket",
+        "real_lite_native_google_rejects_multiple_calls_before_execution",
+        "real_google_runtime_rejects_unsupported_defaults_before_authentication",
+        "real_lite_native_ollama_interrupt_closes_provider_socket",
+        "real_lite_native_google_code_mode_executes_tool_and_replays_result",
+        "real_lite_native_ollama_interrupt_waiting_approval_prevents_execution",
+        "real_lite_native_ollama_code_mode_executes_tool_and_replays_after_restart",
+        "real_lite_native_ollama_rejects_multiple_calls_before_execution",
+        "real_lite_runtime_preserves_native_anthropic_signed_history_carrier",
+        "real_lite_runtime_via_gateway_with_executor_credential",
+        "real_lite_runtime_via_native_anthropic_adapter",
+        "real_lite_runtime_via_native_openai_adapter",
+        "real_lite_runtime_via_native_google_preserves_signed_history",
+        "real_long_running_process_rejects_duplicate_handle_and_stops_on_explicit_kill",
+        "real_manual_compaction_emits_lifecycle_and_carries_summary_forward",
+        "real_mcp_discovery_resource_tool_and_form_elicitation",
+        "real_patch_cancel_leaves_target_unchanged",
+        "real_patch_accept_writes_only_approved_temp_target_and_emits_changes",
+        "real_plan_mode_user_input_returns_answer_to_runtime_tool_loop",
+        "real_queue_reorder_busy_start_and_interrupt_preserve_native_identity",
+        "real_local_compaction_failure_and_cancel_keep_history_after_disk_resume",
+        "real_ollama_runtime_defaults_and_partial_context_refuse_tools_before_authentication",
+        "real_pty_stream_stdin_resize_and_exit_preserve_utf8_bytes",
+        "real_runtime_interrupt_via_gateway_closes_provider_socket",
+        "real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume",
+        "real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_slots",
+        "real_runtime_interrupt_via_native_google_closes_socket",
+        "real_steer_precondition_and_interrupt_revoke_waiting_approval",
+        "real_runtime_interrupt_via_native_openai_closes_provider_socket",
+        "real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume",
+        "real_turn_events_history_resume_and_fork",
+        "switching::lite::lite_model_switch_disk_resume_and_fork_keep_dialect_and_parent_history",
+        "switching::cross_provider::foreign_provider_disk_reasoning_is_rejected_before_target_key_or_inference",
+        "switching::lite::lite_unknown_model_rejects_before_credentials_and_explicit_recovery_keeps_lite",
+        "switching::same_provider_fork_model_override_links_branch_without_mutating_parent",
+        "switching::unknown_model_override_fails_before_key_and_explicit_recovery_keeps_thread",
+        "switching::same_provider_model_override_persists_across_turns_and_disk_resume",
+        "switching::cross_provider::fresh_provider_thread_receives_visible_text_without_source_opaque_history"
+      ],
+      "doctor": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "windows",
+        "platformOs": "windows",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      },
+      "host_tests_passed_once": [
+        "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+        "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+      ],
+      "demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "b2542b6444fb2d20c8b20058e9189bcd",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      },
+      "actual_checkout_sha": "9df99f71eb04381260d66a0ab0db95fa6344a438",
+      "raw_log_lines": 2175,
+      "raw_log_sha256": "78e822838e897989d1aff6587213970b0b195c72bd54705b6b5e575405b9021e",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "archive": "h1-audit-fix-ci-windows.log.gz",
+      "archive_sha256": "138e6bfb2c57e425e554cf4601cc3924e56a21082480507c62cdea685979d90f",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "platform": "linux",
+      "job_id": 114349055503,
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38098407943/job/114349055503",
+      "workspace": {
+        "passed": 660,
+        "failed": 0,
+        "ignored": 83
+      },
+      "fixed_runtime": {
+        "passed": 81,
+        "failed": 0,
+        "ignored": 0
+      },
+      "fixed_runtime_passed_test_names": [
+        "deepseek::approval_cancel_prevents_execution",
+        "chat_completions::classic_and_lite_text_survive_real_runtime_restart",
+        "chat_completions::classic_and_lite_tools_use_native_approval_and_do_not_reexecute_after_resume",
+        "chat_completions::cancel_and_interrupt_pending_native_approval_prevent_execution",
+        "deepseek::classic_executes_tool_and_replays_after_restart",
+        "deepseek::interrupt_closes_native_sockets",
+        "deepseek::interrupt_waiting_approval_prevents_execution",
+        "deepseek::lite_rejects_multiple_calls_before_execution",
+        "deepseek::lite_executes_tool_and_replays_after_restart",
+        "openrouter::classic_executes_tool_and_replays_after_restart",
+        "openrouter::approval_cancel_prevents_execution",
+        "openrouter::interrupt_closes_native_sockets",
+        "deepseek::rejects_defaults_and_partial_policies_before_authentication",
+        "openrouter::lite_rejects_multiple_calls_before_execution",
+        "openrouter::lite_executes_tool_and_replays_after_restart",
+        "openrouter::interrupt_waiting_approval_prevents_execution",
+        "qwen::interrupt_closes_native_sockets",
+        "qwen::classic_executes_tool_and_replays_after_restart",
+        "qwen::approval_cancel_prevents_execution",
+        "openrouter::rejects_defaults_and_partial_policies_before_authentication",
+        "qwen::lite_rejects_multiple_calls_before_execution",
+        "qwen::lite_executes_tool_and_replays_after_restart",
+        "qwen::interrupt_waiting_approval_prevents_execution",
+        "real_classic_model_wire_matches_core_and_replays_opaque_reasoning",
+        "real_classic_native_anthropic_rejects_cached_web_search_before_authentication",
+        "real_classic_native_anthropic_discovers_and_executes_mcp_tools",
+        "qwen::rejects_defaults_and_partial_policies_before_authentication",
+        "real_classic_runtime_preserves_native_anthropic_signed_history_carrier",
+        "real_classic_native_google_executes_static_mcp_and_replays_result",
+        "real_classic_native_ollama_discovers_executes_mcp_and_replays_after_restart",
+        "real_classic_runtime_via_gateway_with_executor_credential",
+        "real_command_approval_accept_executes_only_the_temp_project_marker",
+        "real_classic_runtime_via_native_openai_adapter",
+        "real_auto_compaction_threshold_preserves_checkpoint_after_disk_resume",
+        "real_classic_runtime_via_native_google_preserves_signed_history",
+        "real_command_approval_cancel_prevents_execution_and_preserves_native_queue",
+        "real_goal_empty_continuations_block_without_client_retry",
+        "real_goal_pause_resume_budget_and_clear_are_runtime_owned",
+        "real_idle_queue_add_starts_a_turn_and_preserves_client_identity",
+        "real_lite_manual_compaction_emits_lifecycle_and_carries_summary_forward",
+        "real_lite_model_wire_matches_core_and_keeps_stable_prefix",
+        "real_lite_native_anthropic_interrupt_closes_provider_socket",
+        "real_lite_native_anthropic_code_mode_executes_tool_and_replays_result",
+        "real_google_runtime_rejects_unsupported_defaults_before_authentication",
+        "real_google_comments_do_not_prevent_runtime_idle_and_explicit_recovery",
+        "real_lite_native_google_rejects_multiple_calls_before_execution",
+        "real_lite_native_ollama_interrupt_closes_provider_socket",
+        "real_lite_native_google_code_mode_executes_tool_and_replays_result",
+        "real_lite_native_ollama_interrupt_waiting_approval_prevents_execution",
+        "real_lite_native_ollama_rejects_multiple_calls_before_execution",
+        "real_lite_native_ollama_code_mode_executes_tool_and_replays_after_restart",
+        "real_lite_runtime_via_gateway_with_executor_credential",
+        "real_lite_runtime_preserves_native_anthropic_signed_history_carrier",
+        "real_lite_runtime_via_native_anthropic_adapter",
+        "real_lite_runtime_via_native_openai_adapter",
+        "real_long_running_process_rejects_duplicate_handle_and_stops_on_explicit_kill",
+        "real_lite_runtime_via_native_google_preserves_signed_history",
+        "real_mcp_discovery_resource_tool_and_form_elicitation",
+        "real_manual_compaction_emits_lifecycle_and_carries_summary_forward",
+        "real_patch_accept_writes_only_approved_temp_target_and_emits_changes",
+        "real_patch_cancel_leaves_target_unchanged",
+        "real_pty_stream_stdin_resize_and_exit_preserve_utf8_bytes",
+        "real_plan_mode_user_input_returns_answer_to_runtime_tool_loop",
+        "real_queue_reorder_busy_start_and_interrupt_preserve_native_identity",
+        "real_ollama_runtime_defaults_and_partial_context_refuse_tools_before_authentication",
+        "real_local_compaction_failure_and_cancel_keep_history_after_disk_resume",
+        "real_remote_compaction_keeps_opaque_history_after_classic_and_lite_disk_resume",
+        "real_runtime_interrupt_via_gateway_closes_provider_socket",
+        "real_runtime_idle_timeout_closes_upstream_without_retry_and_releases_slots",
+        "real_runtime_interrupt_via_native_google_closes_socket",
+        "real_remote_compaction_failure_and_cancel_keep_history_after_disk_resume",
+        "real_steer_precondition_and_interrupt_revoke_waiting_approval",
+        "real_runtime_interrupt_via_native_openai_closes_provider_socket",
+        "real_turn_events_history_resume_and_fork",
+        "switching::cross_provider::foreign_provider_disk_reasoning_is_rejected_before_target_key_or_inference",
+        "switching::lite::lite_unknown_model_rejects_before_credentials_and_explicit_recovery_keeps_lite",
+        "switching::lite::lite_model_switch_disk_resume_and_fork_keep_dialect_and_parent_history",
+        "switching::same_provider_fork_model_override_links_branch_without_mutating_parent",
+        "switching::same_provider_model_override_persists_across_turns_and_disk_resume",
+        "switching::cross_provider::fresh_provider_thread_receives_visible_text_without_source_opaque_history",
+        "switching::unknown_model_override_fails_before_key_and_explicit_recovery_keeps_thread"
+      ],
+      "doctor": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "unix",
+        "platformOs": "linux",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      },
+      "host_tests_passed_once": [
+        "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+        "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+      ],
+      "demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "5354097c4f5ba41a9fe98872f12a7222",
+        "before_restart_seq": 6,
+        "after_restart_seq": 9,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      },
+      "actual_checkout_sha": "9df99f71eb04381260d66a0ab0db95fa6344a438",
+      "raw_log_lines": 2439,
+      "raw_log_sha256": "cd9cc2d5fab6e37d2d9ef74ac95ddc62cabb63e7f332207cbd963bebc0510e57",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "separate_native_credentials_passed": 1,
+      "archive": "h1-audit-fix-ci-linux.log.gz",
+      "archive_sha256": "f5cd2152926ea55f1e3cd45861cf770e5e48731e12476d3a3d690e9ba65a22ce",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "verification": "development validation, not independent H-1 audit acceptance"
+}
