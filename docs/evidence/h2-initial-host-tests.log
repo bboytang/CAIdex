@@ -1,0 +1,55 @@
+     Running unittests src/lib.rs (target/debug/deps/caidex_host-1ba251efcfdbfed0)
+
+running 4 tests
+test journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives ... ok
+test journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot ... ok
+test service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot ... ok
+test task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running unittests src/main.rs (target/debug/deps/caidex_host-fc6f142356ea0a3b)
+
+running 3 tests
+test tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config ... ok
+test tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home ... ok
+test tests::version_probe_environment_is_private_and_version_rejection_remains_strict ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/journal.rs (target/debug/deps/journal-699941c79dc28198)
+
+running 10 tests
+test failed_commit_does_not_advance_event_or_snapshot ... ok
+test failed_v1_migration_rolls_back_snapshot_and_version ... ok
+test journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent ... ok
+test offline_inspection_never_migrates_or_creates_a_database ... ok
+test newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved ... ok
+test runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection ... ok
+test second_owner_is_rejected_and_lock_releases_after_close ... ok
+test unsafe_directory_and_storage_links_are_rejected_without_touching_targets ... ok
+test oversized_event_is_rejected_without_advancing_watermark ... ok
+test validated_v1_migration_preserves_identity_events_and_read_only_inspection ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/service.rs (target/debug/deps/service-15096cb254f1ba1a)
+
+running 15 tests
+test abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it ... ok
+test cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary ... ok
+test durable_submit_lost_client_response_idempotency_and_native_approval ... ok
+test external_host_task_cannot_forge_terminal_state_or_operation ... ok
+test cancel_during_thread_creation_never_starts_a_turn ... ok
+test failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event ... ok
+test failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed ... ok
+test partial_client_frame_survives_interleaved_event_broadcast ... ok
+test rate_limit_receipt_omits_payload_but_account_auth_still_stops_host ... ok
+test lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval ... ok
+test runtime_loss_marks_unavailable_and_does_not_claim_probe_failed ... ok
+test runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery ... ok
+test runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation ... ok
+test unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected ... ok
+test two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.90s

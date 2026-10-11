@@ -22,7 +22,19 @@
 
 ## 验证与证据
 
-本地开发验证已通过：fmt、全仓Clippy、完整workspace、固定Runtime81项离线测试、schema、doctor、H-1/H-2真实独立进程演示、Linux原生合成凭据附加测试。最终功能SHA及精确三平台CI将在提交/验证后封存；当前尚不认领CI成功或独立审计通过。
+最终功能源码[`a6c22072b622a6dc2a77e06951c5b72c0554ca20`](https://github.com/bboytang/CAIdex/commit/a6c22072b622a6dc2a77e06951c5b72c0554ca20)已推送main；[精确CI38102729830](https://github.com/bboytang/CAIdex/actions/runs/38102729830)三平台全部成功，原始日志实际checkout均为上述完整SHA。开发验证完成并停止，H-2独立审计未执行；不授生产Host或F/G-Live通过。
+
+[本地摘要/源码指纹/原日志哈希](evidence/h2-local.json)：workspace673通过/0失败/83忽略，Host33/0/0（较H-1新增13项）、固定Runtime81/0/0（1 filtered），Linux原生合成凭据另1/0/0。fmt、全仓Clippy、schema、doctor、构建、H-1/H-2真实独立进程演示通过。[Host实际测试名](evidence/h2-host-tests.log)、[合成HTTP请求证据](evidence/h2-local-http-trace.json.gz)保留。最后测试目录修正后完整workspace/Host及fmt/clippy已重跑；原生Runtime回归早于Host内部修正、两演示在最后生产修正之后，相关Facade/Runtime/fixture未改变；最终精确CI已全部完整复验。
+
+| 平台 / job | workspace通过/失败/忽略 | Host通过/失败/忽略（含于workspace） | 固定Runtime通过/失败/忽略 |
+| --- | --- | --- | --- |
+| [linux job114361833844](https://github.com/bboytang/CAIdex/actions/runs/38102729830/job/114361833844) | 673/0/83 | 33/0/0 | 81/0/0 |
+| [windows job114361833807](https://github.com/bboytang/CAIdex/actions/runs/38102729830/job/114361833807) | 667/0/81 | 32/0/0 | 80/0/0 |
+| [macos job114361833653](https://github.com/bboytang/CAIdex/actions/runs/38102729830/job/114361833653) | 672/0/81 | 33/0/0 | 80/0/0 |
+
+[最终CI摘要/逐步骤状态/完整原始与步骤日志及哈希](evidence/h2-ci.json)。ignored不计通过，Host列是workspace子集；Linux另有原生合成凭据1/0/0，Windows额外Rust进程边界4/0/0为重复执行，均不混加workspace。三平台fmt/Clippy/schema/doctor/H-1/H-2真实演示/固定Runtime全部通过；平台条件不适用步骤按skipped记录，不冒称执行。macOS Rust不代iOS验收。
+
+三平台真实H-2报告均测量5任务、2标记写入、7次本机模型HTTP请求、3次原生工具提供、重启请求增量0；已执行而终态未知任务恢复Unknown，原operation重试无再执行。客户端退出不终止Host，丢回应和双端断线恢复、原生批准后执行、取消、模型轮次边界/独立profile新线程关联断言全部通过。商业调用/用户Key字段只作离线场景声明，非独立全局遥测。
 
 ## 已实现契约
 
@@ -71,32 +83,54 @@ PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python
 剩余限制：仅本地同OS用户/Host Token授权；没有生产Provider配置/真实商业调用、H-3跨设备身份与审批竞争/请求级expiry/Diff、完整客户端、生产吞吐/裁剪/备份或外部exactly-once承诺。工具副作用无法回滚；未知结果只能安全显示/查询/外部核实，不自动重放。Runtime关掉后的子工具终止效果未对任意工具承诺。新版本拒绝降级；v2迁移不修复旧v1未标来源的历史命名冲突。journal全snapshot随任务累计扩大，达到有限容量拒绝新操作；生产调度/保留策略尚未实现。
 
 
-## 初轮源码与验证历史（不代最终源码）
+## 修复及历史证据（不代最终源码）
 
-功能源码[f674f4b22e0653a6a2b85a8d0001f810f05c207f](https://github.com/bboytang/CAIdex/commit/f674f4b22e0653a6a2b85a8d0001f810f05c207f)已提交推送main；[CI38100999321](https://github.com/bboytang/CAIdex/actions/runs/38100999321)已结束：Linux/macOS成功，Windows替身CRLF断言失败；不认领为最终成功。
+- 初轮f674f4b/CI38100999321：Windows job114356728434的替身默认CRLF不符严格LF断言。仅把新增标记写入指定newline="\n"，保留单次调用断言；Linux/macOS当轮成功不能代最终CI。[初轮本地证据](evidence/h2-initial-local.json)单独保留。
+- 5282ac49/CI38101361081：Windows workspace667/0/81、Host32/0/0及H-1通过，H-2报告status=ok后自动删除私有Runtime plugins-clone pack文件发生WinError5，后续固定Runtime未执行。具体占用者/属性未测量，不编造锁来源；演示改为保留自己的私有证据目录并报告路径，不强删/更改ACL/忽略错误或降低断言。
+- 同轮边界复核要求明确Thread/Turn ID，缺失/异ID原始通知保留但不能推进任务；新增回归实证匹配真实终态才能完成。
+- 配置拒绝时已知Thread ID/实际配置未持久化：增强原故障断言在a7f5d10上0通过/1失败，最小重排已有持久化至严格检查之前，错误策略仍零Turn调用。[修复前日志/方法](evidence/h2-policy-binding-regression.json)。a7f5d10/CI38101999997三平台成功仅为历史，不代后续修复源码。
+- 69d8c50b/CI38102364547：macOS job114360748998的并行journal测试私有目录冲突，journal9通过/2失败，后续Runtime/演示未执行。PID+SystemTime不能保证时钟分辨率内并行唯一；仅追加进程内原子序号，沿用service测试既有模式，生产目录/锁与故障断言不变。
 
-[初轮本地摘要/源码指纹/完整日志哈希](evidence/h2-initial-local.json)：workspace672通过/0失败/83忽略，Host32/0/0（新增12项）、固定Runtime81/0/0（1 filtered），Linux原生凭据另1/0/0。fmt、全仓Clippy、构建、schema、doctor、两阶段真实进程演示全部通过；[初轮Host测试名](evidence/h2-initial-host-tests.log)、[初轮HTTP合成证据](evidence/h2-initial-local-http-trace.json.gz)、[开发失败/环境修正](evidence/h2-local-failed.json)。Runtime完整回归早于最后Host内部Request ID收敛修正；Facade/Runtime/fixture源码未再改变，后续完整workspace及Host真实演示已重跑，最终CI仍完整复验。
+[失败CI原始日志/哈希及原因](evidence/h2-failed-ci.json)、[开发失败/环境修正日志](evidence/h2-local-failed.json)封存；每次必要修正均重新完整三平台CI，不借旧SHA的成功冒充最终验证。
 
-封存前会独立核对三job实际checkout SHA、各步骤、workspace/Host/Runtime实测计数及两阶段演示；源码无新改动时仅追加文档/证据提交，不把文档HEAD冒充功能CI源码。当前状态：本地开发验证完成，精确CI待完成，H-2独立审计未执行。
+## 独立审计证据核验
 
+已封存逐job实际checkout、步骤、workspace/Host/固定Runtime计数、doctor、H-1/H-2报告与完整原始日志。证据使用仓库相对路径，保留原日志SHA256与gzip SHA256，不依赖本会话/tmp。最终文档封存提交与功能SHA区分；封存提交不得改变功能源码、依赖、脚本或workflow。
 
-首次精确CI38100999321的Windows job114356728434失败：deadline定向测试替身写出turn/interrupt\r\n，而断言应为turn/interrupt\n。根因是新增Python标记写入缺少显式newline，H-1原标记已有LF约定。最小修复仅给新增替身所有标记写入指定newline="\n"，保留严格单次调用断言，不改生产Runtime或测试门槛。原日志将归档；新功能SHA必须重新完整三平台CI。
+```bash
+python3 - <<'PYCODE'
+import gzip, hashlib, json, re, subprocess
+from pathlib import Path
+root = Path('docs/evidence')
+local = json.loads((root / 'h2-local.json').read_text())
+ci = json.loads((root / 'h2-ci.json').read_text())
+source = 'a6c22072b622a6dc2a77e06951c5b72c0554ca20'
+assert local['source_sha'] == ci['source_sha'] == source
+assert ci['run_id'] == 38102729830 and ci['conclusion'] == 'success'
+for name, expected in local['source_file_sha256'].items():
+    data = subprocess.check_output(['git', 'show', source + ':' + name])
+    assert hashlib.sha256(data).hexdigest() == expected, name
+for record in list(local['verification'].values()) + [item for job in ci['jobs'] for item in job['logs'].values()]:
+    packed = (root / record['artifact']).read_bytes()
+    assert hashlib.sha256(packed).hexdigest() == record['gzip_sha256']
+    assert hashlib.sha256(gzip.decompress(packed)).hexdigest() == record['raw_sha256']
+assert hashlib.sha256((root / local['host_tests']['artifact']).read_bytes()).hexdigest() == local['host_tests']['sha256']
+assert hashlib.sha256(gzip.decompress((root / local['http_trace']['artifact']).read_bytes())).hexdigest() == local['http_trace']['raw_sha256']
+for job in ci['jobs']:
+    assert job['checkout_sha'] == source and job['conclusion'] == 'success'
+    assert job['workspace']['failed'] == job['host_tests']['failed'] == job['fixed_runtime']['failed'] == 0
+    raw = gzip.decompress((root / job['logs']['raw']['artifact']).read_bytes()).decode()
+    assert re.search(r'log -1 --format=%H\r?\n[^\n]*' + source, raw)
+    stage = gzip.decompress((root / job['logs']['steps']['artifact']).read_bytes()).decode()
+    for label, step in [('workspace', 'Protocol tests'), ('fixed_runtime', 'Real Runtime with local Responses fixtures')]:
+        lines = [line.split('\t', 2)[2] for line in stage.splitlines() if len(line.split('\t', 2)) == 3 and line.split('\t', 2)[1] == step]
+        counts = [tuple(map(int, match)) for match in re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored', '\n'.join(lines))]
+        assert dict(zip(['passed', 'failed', 'ignored'], map(sum, zip(*counts)))) == job[label]
+    assert job['h1_demo']['restart_resubmissions'] == job['h2_demo']['restart_model_requests'] == 0
+    assert job['h2_demo']['native_marker_writes'] == 2
+    print(job['platform'], job['workspace'], job['host_tests']['passed'], job['fixed_runtime'])
+print('source, actual checkout, log hashes and measured reports verified')
+PYCODE
+```
 
-
-同轮最小边界复核补充：未关联线程任务的thread_id/turn_id为None；缺失ID的原始turn通知不得以None相等推进状态。投影要求两个显式ID，审批交互也要求明确ID；缺失/异线程/异Turn通知仍保留原文而不改变任务，新定向回归验证匹配真实终态才能完成。修正后本地完整workspace673/0/83、Host33/0/0（H-2新增13项），fmt/全仓Clippy及H-1/H-2真实进程演示通过。第一轮Linux/macOS成功保留历史，不能代新最终SHA的三平台精确CI。
-
-
-## 最终功能源码（新精确CI运行中）
-
-[5282ac49cc3f1802d578de9123baa8d772f5244c](https://github.com/bboytang/CAIdex/commit/5282ac49cc3f1802d578de9123baa8d772f5244c)已推送main；[新CI38101361081](https://github.com/bboytang/CAIdex/actions/runs/38101361081)正在该SHA重新完整三平台运行。当前只有本地开发验证完成，没有H-2独立审计结论。
-
-[最终本地摘要/源码指纹/原日志哈希](evidence/h2-local.json)：workspace673/0/83、Host33/0/0（新增13项）、固定Runtime81/0/0（1 filtered）、Linux原生凭据另1/0/0；fmt/全仓Clippy/schema/doctor/两阶段真实进程演示通过。[最终Host实际测试名](evidence/h2-host-tests.log)、[最终HTTP合成请求证据](evidence/h2-local-http-trace.json.gz)、[初轮失败CI及最小修复](evidence/h2-failed-ci.json)可独立复核。等待新CI所有job后追加逐平台checkout/计数/步骤与演示结果，封存后停止。
-
-
-第二轮功能5282ac49/CI38101361081：Linux/macOS全部成功，Windows workspace667/0/81、Host32/0/0及H-1通过；H-2报告status=ok后，Python TemporaryDirectory自动删除私有Runtime的plugins-clone Git pack文件时WinError5，步骤退出1，未运行后续固定Runtime完整回归，不能认领该job成功。原日志不确定具体占用者或文件属性，故不编造锁来源。最小修复只让演示保留自己创建的私有证据目录并报告路径，不强行清理/改变ACL/忽略异常或降低断言；新SHA需重新完整三平台CI。生产Host/Runtime逻辑未因该清理问题改变。
-
-
-最终封存边界复核：配置拒绝路径已收到真实Thread ID/配置但检查失败时未落盘。增强现有故障回归先在a7f5d10生产源码上明确失败（0/1，14 filtered），[修复前证据](evidence/h2-policy-binding-regression.json)保存。最小修复仅把原有绑定/实际配置持久化移到同样严格的检查之前；错误策略仍拒绝启动Turn，未知状态可查已知ID与真实policy，权限/执行/审批策略不变。该修正属于H-2故障恢复/持久关联原范围，不新增里程碑功能；须使用新的最终源码完整三平台CI。
-
-
-后续功能69d8c50b/CI38102364547的macOS job114360748998在workspace journal测试出现私有目录冲突：failed_commit_does_not_advance_event_or_snapshot锁占用，failed_v1_migration_rolls_back_snapshot_and_version目录被删除后无法打开。原helper只有PID+SystemTime，时钟分辨率不足以保证并行唯一。最小修正追加进程内原子序号（与现有service测试一致），不改生产目录/锁或放宽断言。journal实际9通过/2失败，后续原生Runtime/演示未运行；[失败原始证据](evidence/h2-failed-ci.json)归档，不用此轮认领最终成功。新源码须重新完整三平台验证。
+最终源码三平台开发验证和证据封存完成，当前无仍需修复的明确阻断，已停止；独立新会话只读审计本功能SHA及以上实际证据。未经用户确认H-2通过并授权，不启动H-3或I。

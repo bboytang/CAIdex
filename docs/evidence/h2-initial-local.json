@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "milestone": "H-2",
+  "source_sha": "f674f4b22e0653a6a2b85a8d0001f810f05c207f",
+  "base_sha": "34ba5a636a5773ff6b7114c87fcc9fea935e5146",
+  "generated_at": "2026-10-11T01:12:26.941374+00:00",
+  "platform": "local Linux x86_64",
+  "verification": {
+    "workspace": {
+      "artifact": "h2-initial-local-workspace.log.gz",
+      "raw_sha256": "0729c335bb3490e4d1221fd20860f15c6e1650377ec335be6b6c32c57c558917",
+      "gzip_sha256": "e488a73b2f7040a62757f33b800430eb4529b380adbbbf5b68c81aa6e3cad3fa",
+      "exit_code": 0,
+      "counts": {
+        "passed": 672,
+        "failed": 0,
+        "ignored": 83
+      }
+    },
+    "runtime": {
+      "artifact": "h2-initial-local-runtime.log.gz",
+      "raw_sha256": "4abfd4e5fc371a8240dbaf07a36fd74ff867d9bb791034f511139df3005b44ab",
+      "gzip_sha256": "635c4fbd3afd4de6f9724a4a540fe618f877a1f365ee79ed66aa55c98f9a7d52",
+      "exit_code": 0,
+      "counts": {
+        "passed": 81,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "native_credentials": {
+      "artifact": "h2-initial-local-native_credentials.log.gz",
+      "raw_sha256": "c9cea1c900f7ae823ebdc25176b9af5419b20a81ee2289f64441d72a3201e8af",
+      "gzip_sha256": "f8b55205126b716821bfdde1a54687ddda8ae2119ad15d30798350b32b81c2d7",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "fmt": {
+      "artifact": "h2-initial-local-fmt.log.gz",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "exit_code": 0
+    },
+    "clippy": {
+      "artifact": "h2-initial-local-clippy.log.gz",
+      "raw_sha256": "47486cab6e96836bb7da37273007928d4e18763c671eaae1cdc01b53b993a09f",
+      "gzip_sha256": "5c35f9d3d6e34d6180fbddafee4b05e668ee45b4c17e1eabca0b398eb72df980",
+      "exit_code": 0
+    },
+    "build": {
+      "artifact": "h2-initial-local-build.log.gz",
+      "raw_sha256": "36d4b8eef8a19717e5c4f5a00267ac188101d67a9ce7ece28ca4901e93cabf8a",
+      "gzip_sha256": "fc9bc0bba4b63dd986b95b1d313613e79f52ddc118c59eab9d673fc180a6f361",
+      "exit_code": 0
+    },
+    "schema": {
+      "artifact": "h2-initial-local-schema.log.gz",
+      "raw_sha256": "6e3d49bb0ee1c9dce2388853d63e27f7d94303adc67dc853e9d0c9bf2758017c",
+      "gzip_sha256": "fd7f70fc2b73a72132525e572a9ea5ef018e928bbddb407c53be51d2fabc9cff",
+      "exit_code": 0
+    },
+    "doctor": {
+      "artifact": "h2-initial-local-doctor.log.gz",
+      "raw_sha256": "118cebc3057cc36eb185cffd8613d096d8eaa050296dbe2d43fa10f156643d5d",
+      "gzip_sha256": "8bc2c0bde0ca961f8f4e586889e220d2bfd583e2d5357999e448fd73a3cf72a9",
+      "exit_code": 0,
+      "report": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "unix",
+        "platformOs": "linux",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      }
+    },
+    "h1_demo": {
+      "artifact": "h2-initial-local-h1_demo.log.gz",
+      "raw_sha256": "29f07dce9674eac74acda382be21c63e4c3092013e9aabc3eabcd75b23c36c80",
+      "gzip_sha256": "34300643e87b887564aa418290c375ba0ab7e72507a6a31f749175f4d147c43a",
+      "exit_code": 0,
+      "report": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "873dde39df95da514075ce528db69db6",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      }
+    },
+    "h2_demo": {
+      "artifact": "h2-initial-local-h2_demo.log.gz",
+      "raw_sha256": "0c1dfe1935141ff75d12f9487a026b8e9a1f5295dda8316788ae7771c0a6aa7c",
+      "gzip_sha256": "ad8fd770ede0d2816bb063e813b2cf607127237c4ff954329b7e49b6716d9fb4",
+      "exit_code": 0,
+      "report": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "clients": 2,
+        "submitted_tasks": 5,
+        "native_marker_writes": 2,
+        "restart_model_requests": 0,
+        "model_requests": 7,
+        "native_tool_offers": 3,
+        "lost_response_same_operation": true,
+        "native_approval_execution": true,
+        "native_cancelled": true,
+        "same_provider_model_boundary": true,
+        "cross_profile_fresh_thread_association": true,
+        "replay_or_snapshot_identical": true,
+        "executed_unconfirmed_task": "unknown",
+        "authorization_header_seen": false,
+        "evidence_basis": {
+          "counts": "measured local HTTP trace, marker lines and snapshot",
+          "process_and_contract": "assertions against real independent Host and pinned Runtime",
+          "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+        }
+      }
+    }
+  },
+  "host_tests": {
+    "passed": 32,
+    "failed": 0,
+    "ignored": 0,
+    "artifact": "h2-initial-host-tests.log",
+    "sha256": "92210b226ffca4c8fa90c8c3f13f13bd1643ebeff20c375975ae8b58a8883478"
+  },
+  "source_file_sha256": {
+    ".github/workflows/ci.yml": "00614d953dd115bb220006a1dbe4ecbf357cad77f0ebc29d9ca1efeafb7d592d",
+    "Cargo.lock": "f771247b67607dea57273f5f060a75e99277486f57222938ec790eb1cad15182",
+    "runtime/bridge/src/runtime.rs": "2b894c4d283bf5f2e23d1fe05a5a87f311cc79a85929eb295c4b8e0119802b1c",
+    "runtime/bridge/tests/fixtures/responses_server.py": "2eb35f75025d57bc95fd62c305b09b99ccdcf169de59281ff97896ea65cc637b",
+    "runtime/host/Cargo.toml": "a8f8b9eb1996c0e1c087c6685d6071d243368e16db88e05d7462c1a2688adc29",
+    "runtime/host/src/journal.rs": "6f3251c083057fc16ac209646bd356bbc86bb4e81122a5aabb37f5a90b6b302d",
+    "runtime/host/src/lib.rs": "102c23aec07b94e421df35791c1ef730f6da737042dd84be8f7406300d2f5cee",
+    "runtime/host/src/main.rs": "deae6921b7feacdff8ff4a4c52a908d7521d0d39a01cc79a61ccace7b0422655",
+    "runtime/host/src/service.rs": "aaba3d44375d73c7dacc6e89706847776ce69108541c529d9466dadb2ff2b310",
+    "runtime/host/src/task.rs": "9bf833c280e38713edd94692fea3e2b48a2f8625b091904a82bef99f6fed33ab",
+    "runtime/host/tests/fixtures/peer.py": "a0d2d61e9a42bcf330a5508951d461287dcc51538909ec4ad537fbe8262ea5e8",
+    "runtime/host/tests/journal.rs": "84f89b4efb6d1b62acbabaa65861b4090da8b8865ef254fe6ebc0171ba0bd6ea",
+    "runtime/host/tests/service.rs": "99c7aa127be5da6fa17c15f8665a74b4879c95675df82ace7fd6ec9f011a04f6",
+    "scripts/h1-demo.py": "7fd6e87eccca100204d596fd39657274c6fbdbcb5c90461d9abbdf534f0c345a",
+    "scripts/h2-demo.py": "a7c6bfbb06f3c329a15418c099dce8f563fbe1451785fd0a8806df5680159caa",
+    "Cargo.toml": "31c86553a617a9ee0ea09ced2854842ee40faa4fb043b2ac915cdf35df4a6306",
+    "rust-toolchain.toml": "2ad6f15416572b4836585087f1d4abc53b8fa2dbd616f8dacfaa587ed6714228"
+  },
+  "http_trace": {
+    "artifact": "h2-initial-local-http-trace.json.gz",
+    "raw_sha256": "d1614be7dfcf0e7fcfc3db790ac9f7fc0308c9e881b35d73ec7002184312067f"
+  },
+  "limitations": [
+    "development verification, not independent audit",
+    "offline loopback Custom Responses profiles, not commercial compatibility",
+    "some report fields are scenario declarations, not independent global telemetry",
+    "full Runtime run preceded final Host-only corrections; Runtime/fixture/Facade code unchanged; final Host/workspace/demos rerun"
+  ],
+  "status": "historical local verification for initial source; not final CI proof"
+}

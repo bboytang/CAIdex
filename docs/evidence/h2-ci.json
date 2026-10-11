@@ -1,0 +1,818 @@
+{
+  "schema_version": 1,
+  "milestone": "H-2",
+  "source_sha": "a6c22072b622a6dc2a77e06951c5b72c0554ca20",
+  "run_id": 38102729830,
+  "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38102729830",
+  "conclusion": "success",
+  "generated_at": "2026-10-11T01:52:51.011169+00:00",
+  "jobs": [
+    {
+      "checkout_sha": "a6c22072b622a6dc2a77e06951c5b72c0554ca20",
+      "workspace": {
+        "passed": 672,
+        "failed": 0,
+        "ignored": 81
+      },
+      "host_tests": {
+        "passed": 33,
+        "failed": 0,
+        "ignored": 0,
+        "names": [
+          "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+          "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+          "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+          "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+          "tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config",
+          "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+          "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+          "failed_commit_does_not_advance_event_or_snapshot",
+          "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+          "failed_v1_migration_rolls_back_snapshot_and_version",
+          "offline_inspection_never_migrates_or_creates_a_database",
+          "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+          "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+          "second_owner_is_rejected_and_lock_releases_after_close",
+          "runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids",
+          "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+          "validated_v1_migration_preserves_identity_events_and_read_only_inspection",
+          "oversized_event_is_rejected_without_advancing_watermark",
+          "cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary",
+          "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+          "durable_submit_lost_client_response_idempotency_and_native_approval",
+          "external_host_task_cannot_forge_terminal_state_or_operation",
+          "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+          "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+          "partial_client_frame_survives_interleaved_event_broadcast",
+          "rate_limit_receipt_omits_payload_but_account_auth_still_stops_host",
+          "cancel_during_thread_creation_never_starts_a_turn",
+          "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+          "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+          "runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation",
+          "lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval",
+          "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+          "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+        ],
+        "excluded_names": []
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "doctor": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "unix",
+        "platformOs": "macos",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      },
+      "h1_demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "815a71afc424de18f51fc1af2ce36661",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      },
+      "h2_demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "clients": 2,
+        "evidence_directory": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/caidex-h2-demo-v_byg4ed",
+        "submitted_tasks": 5,
+        "native_marker_writes": 2,
+        "restart_model_requests": 0,
+        "model_requests": 7,
+        "native_tool_offers": 3,
+        "lost_response_same_operation": true,
+        "native_approval_execution": true,
+        "native_cancelled": true,
+        "same_provider_model_boundary": true,
+        "cross_profile_fresh_thread_association": true,
+        "replay_or_snapshot_identical": true,
+        "executed_unconfirmed_task": "unknown",
+        "authorization_header_seen": false,
+        "evidence_basis": {
+          "counts": "measured local HTTP trace, marker lines and snapshot",
+          "process_and_contract": "assertions against real independent Host and pinned Runtime",
+          "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+        }
+      },
+      "schema_output": [
+        "2026-10-11T01:46:12.9862170Z stable schema matches Codex 0.160.1",
+        "2026-10-11T01:46:13.0776760Z experimental schema matches Codex 0.160.1"
+      ],
+      "linux_native_credentials": null,
+      "windows_extra_host_lib": null,
+      "platform": "macos",
+      "job_id": 114361833653,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38102729830/job/114361833653",
+      "conclusion": "success",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Install Linux native credential test service",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Linux native credential store in an isolated session",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 35,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 36,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 37,
+          "status": "completed"
+        }
+      ],
+      "logs": {
+        "raw": {
+          "artifact": "h2-ci-macos.log.gz",
+          "raw_sha256": "48a57c0f852788ba20edd931e842bd238dca0e12291abfe9f4f30b1e3cf0b17f",
+          "gzip_sha256": "714fc54b65481d71d3bc02d6a9942357480c16ad675ff5b60c7d316d6fd7ab07"
+        },
+        "steps": {
+          "artifact": "h2-ci-macos-steps.log.gz",
+          "raw_sha256": "ca7011ee3b68b0ef5b301e20349002d2c126c20920fca04910c72d2520ab5577",
+          "gzip_sha256": "9ff2a7e435d132ec3dd16fbfa3699c2f02f6b97aa4e1875fa12d99fdfec21944"
+        }
+      }
+    },
+    {
+      "checkout_sha": "a6c22072b622a6dc2a77e06951c5b72c0554ca20",
+      "workspace": {
+        "passed": 667,
+        "failed": 0,
+        "ignored": 81
+      },
+      "host_tests": {
+        "passed": 32,
+        "failed": 0,
+        "ignored": 0,
+        "names": [
+          "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+          "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+          "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+          "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+          "tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config",
+          "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+          "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+          "failed_commit_does_not_advance_event_or_snapshot",
+          "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+          "failed_v1_migration_rolls_back_snapshot_and_version",
+          "oversized_event_is_rejected_without_advancing_watermark",
+          "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+          "offline_inspection_never_migrates_or_creates_a_database",
+          "runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids",
+          "second_owner_is_rejected_and_lock_releases_after_close",
+          "validated_v1_migration_preserves_identity_events_and_read_only_inspection",
+          "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+          "durable_submit_lost_client_response_idempotency_and_native_approval",
+          "cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary",
+          "cancel_during_thread_creation_never_starts_a_turn",
+          "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+          "external_host_task_cannot_forge_terminal_state_or_operation",
+          "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+          "partial_client_frame_survives_interleaved_event_broadcast",
+          "rate_limit_receipt_omits_payload_but_account_auth_still_stops_host",
+          "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+          "runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation",
+          "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+          "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+          "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+          "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark",
+          "lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval"
+        ],
+        "excluded_names": [
+          "unsafe_directory_and_storage_links_are_rejected_without_touching_targets"
+        ]
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "doctor": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "windows",
+        "platformOs": "windows",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      },
+      "h1_demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "8f08b8fd5a00f242211c62011abedc7a",
+        "before_restart_seq": 5,
+        "after_restart_seq": 7,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      },
+      "h2_demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "clients": 2,
+        "evidence_directory": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\caidex-h2-demo-eg7_ff3i",
+        "submitted_tasks": 5,
+        "native_marker_writes": 2,
+        "restart_model_requests": 0,
+        "model_requests": 7,
+        "native_tool_offers": 3,
+        "lost_response_same_operation": true,
+        "native_approval_execution": true,
+        "native_cancelled": true,
+        "same_provider_model_boundary": true,
+        "cross_profile_fresh_thread_association": true,
+        "replay_or_snapshot_identical": true,
+        "executed_unconfirmed_task": "unknown",
+        "authorization_header_seen": false,
+        "evidence_basis": {
+          "counts": "measured local HTTP trace, marker lines and snapshot",
+          "process_and_contract": "assertions against real independent Host and pinned Runtime",
+          "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+        }
+      },
+      "schema_output": [
+        "2026-10-11T01:49:58.9306845Z stable schema matches Codex 0.160.1",
+        "2026-10-11T01:49:59.2214182Z experimental schema matches Codex 0.160.1"
+      ],
+      "linux_native_credentials": null,
+      "windows_extra_host_lib": {
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0
+      },
+      "platform": "windows",
+      "job_id": 114361833807,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38102729830/job/114361833807",
+      "conclusion": "success",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Install Linux native credential test service",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Linux native credential store in an isolated session",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 35,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 36,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 37,
+          "status": "completed"
+        }
+      ],
+      "logs": {
+        "raw": {
+          "artifact": "h2-ci-windows.log.gz",
+          "raw_sha256": "3279312b51415423286ea6e981ac8b8d72b4ca623cf50180e851d8094715e6c6",
+          "gzip_sha256": "0630ce837bfe62ea81030367a6952383795673dafa6cb52257614e37193c5107"
+        },
+        "steps": {
+          "artifact": "h2-ci-windows-steps.log.gz",
+          "raw_sha256": "22d979fdd4aadea2fec72fb785241f40bc5c8fd5ea05553c30976d209af7fd05",
+          "gzip_sha256": "5212a5710755a792e15f3640f8b504ffd94dddb4b8fe45c0647f82678b093854"
+        }
+      }
+    },
+    {
+      "checkout_sha": "a6c22072b622a6dc2a77e06951c5b72c0554ca20",
+      "workspace": {
+        "passed": 673,
+        "failed": 0,
+        "ignored": 83
+      },
+      "host_tests": {
+        "passed": 33,
+        "failed": 0,
+        "ignored": 0,
+        "names": [
+          "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+          "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+          "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+          "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+          "tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config",
+          "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+          "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+          "failed_commit_does_not_advance_event_or_snapshot",
+          "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+          "failed_v1_migration_rolls_back_snapshot_and_version",
+          "offline_inspection_never_migrates_or_creates_a_database",
+          "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+          "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+          "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+          "second_owner_is_rejected_and_lock_releases_after_close",
+          "runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids",
+          "validated_v1_migration_preserves_identity_events_and_read_only_inspection",
+          "oversized_event_is_rejected_without_advancing_watermark",
+          "durable_submit_lost_client_response_idempotency_and_native_approval",
+          "cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary",
+          "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+          "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+          "external_host_task_cannot_forge_terminal_state_or_operation",
+          "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+          "partial_client_frame_survives_interleaved_event_broadcast",
+          "rate_limit_receipt_omits_payload_but_account_auth_still_stops_host",
+          "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+          "cancel_during_thread_creation_never_starts_a_turn",
+          "runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation",
+          "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+          "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+          "lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval",
+          "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark"
+        ],
+        "excluded_names": []
+      },
+      "fixed_runtime": {
+        "passed": 81,
+        "failed": 0,
+        "ignored": 0
+      },
+      "doctor": {
+        "checks": [
+          "initialize",
+          "initialized",
+          "thread/start",
+          "thread/loaded/list",
+          "thread/started",
+          "thread/read"
+        ],
+        "codexVersion": "0.160.1",
+        "isolatedRuntimeData": true,
+        "modelTurnStarted": false,
+        "platformFamily": "unix",
+        "platformOs": "linux",
+        "status": "ok",
+        "upstreamCommit": "d27764b82f7118f674371e6d6e76271d9d606edb"
+      },
+      "h1_demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "host_id": "cdd4face539eb8b5fc2e1288944cdc97",
+        "before_restart_seq": 6,
+        "after_restart_seq": 9,
+        "clients": 2,
+        "observer_process_exit_detaches": true,
+        "replay_identical": true,
+        "snapshot_restored": true,
+        "old_runtime_state": "unknown",
+        "restart_resubmissions": 0,
+        "model_turns": 0,
+        "commercial_calls": 0,
+        "user_keys_read": false,
+        "evidence_basis": {
+          "restart_resubmissions": "measured SQLite probeStarted count difference",
+          "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+          "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+        }
+      },
+      "h2_demo": {
+        "status": "ok",
+        "codex_version": "0.160.1",
+        "clients": 2,
+        "evidence_directory": "/tmp/caidex-h2-demo-bxdpq_pi",
+        "submitted_tasks": 5,
+        "native_marker_writes": 2,
+        "restart_model_requests": 0,
+        "model_requests": 7,
+        "native_tool_offers": 3,
+        "lost_response_same_operation": true,
+        "native_approval_execution": true,
+        "native_cancelled": true,
+        "same_provider_model_boundary": true,
+        "cross_profile_fresh_thread_association": true,
+        "replay_or_snapshot_identical": true,
+        "executed_unconfirmed_task": "unknown",
+        "authorization_header_seen": false,
+        "evidence_basis": {
+          "counts": "measured local HTTP trace, marker lines and snapshot",
+          "process_and_contract": "assertions against real independent Host and pinned Runtime",
+          "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+        }
+      },
+      "schema_output": [
+        "2026-10-11T01:46:25.4477451Z stable schema matches Codex 0.160.1",
+        "2026-10-11T01:46:25.4960284Z experimental schema matches Codex 0.160.1"
+      ],
+      "linux_native_credentials": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "windows_extra_host_lib": null,
+      "platform": "linux",
+      "job_id": 114361833844,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38102729830/job/114361833844",
+      "conclusion": "success",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install Linux native credential test service",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Linux native credential store in an isolated session",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 35,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 36,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 37,
+          "status": "completed"
+        }
+      ],
+      "logs": {
+        "raw": {
+          "artifact": "h2-ci-linux.log.gz",
+          "raw_sha256": "49cfcd5801ee525315bb0375c99474e303d66ba0068b9d2c43c1d99a73223bdb",
+          "gzip_sha256": "255471454948074230eaa1eab3799c36caef3c6ea3b64c7776838becd61d9588"
+        },
+        "steps": {
+          "artifact": "h2-ci-linux-steps.log.gz",
+          "raw_sha256": "5689ffd8a46dba8e86c0eb76c43ca07b9b94a899faca33c2d07360e4a7e180aa",
+          "gzip_sha256": "bfecc028475b1e5105e0988d99059ccff8210ecbdec6bf16532b57f2ff4830df"
+        }
+      }
+    }
+  ]
+}

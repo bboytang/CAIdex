@@ -2,45 +2,29 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
-## 当前批准工作：H-2 持久任务与原生执行链（本地开发验证完成，待精确CI）
+## 当前批准工作：H-2 持久任务与原生执行链（开发验证完成，停止等待独立审计）
 
-2026-10-11用户明确确认H-1独立审计通过，并批准H-2；该通过是用户告知的独立审计结果，不是本实施会话自授。H-1功能9df99f71eb04381260d66a0ab0db95fa6344a438及原证据保留。H-2起点main/HEAD/origin/main/GitHub main为34ba5a636a5773ff6b7114c87fcc9fea935e5146，初始工作区干净，构建前3.6GiB可用。
+2026-10-11用户明确确认H-1独立审计通过并批准H-2；该审计通过是用户告知，不是本实施会话自授。H-2起点main/HEAD/origin/main/GitHub main为34ba5a636a5773ff6b7114c87fcc9fea935e5146，初始工作区干净，构建前3.6GiB可用。
 
-目标/有限计划/非目标/依赖/通过与停止条件见[H-2设计与验收](docs/CAIdex-H2-Host-设计与验收-V1.md)。仅H-2持久任务/operation幂等/查询取消/原生执行审批转交/实际策略/未知恢复/轮次边界与持久关联；复用Codex0.160.1与既有Facade，不读真实Key/不调用商业API。main直接提交推送及最终功能SHA三平台精确CI，封存后停止等待独立审计；H-3/I未授权。
+目标/有限计划/非目标/依赖/通过与停止条件见[H-2设计与验收](docs/CAIdex-H2-Host-设计与验收-V1.md)。只实施V3 H-2：schema v2任务/operation幂等/hash/查询取消、原生执行审批转交与实际策略、未知恢复、同Provider轮次边界及新profile独立线程父子关联；复用固定Codex0.160.1与Facade，不读真实Key或调用商业API。main直接提交推送及最终功能SHA三平台精确CI；封存后停止，等待独立审计，H-3/I未授权。
 
-H-2生产实现与本地验证已完成；功能69d8c50be1e29c37587128e2947d9824d769a90b的CI38102364547中macOS journal并行测试出现时间戳私有目录冲突（锁占用/目录丢失），实际2失败，后续Runtime/演示未执行，不认领最终成功。最小修正只给journal测试目录增加进程内原子序号，复用service测试既有模式，生产源码/锁/故障断言不变；本地完整fmt/clippy/workspace复验已通过（673/0/83），即将提交新SHA并完整重跑三平台。失败原始日志与摘要见[失败CI](docs/evidence/h2-failed-ci.json)。不新增功能，不启动H-3/I，未宣称H-2独立审计通过。
+最终功能源码[`a6c22072b622a6dc2a77e06951c5b72c0554ca20`](https://github.com/bboytang/CAIdex/commit/a6c22072b622a6dc2a77e06951c5b72c0554ca20)已push main，[精确CI38102729830](https://github.com/bboytang/CAIdex/actions/runs/38102729830)三平台全部成功；三个job原日志实际checkout均为该完整SHA。Linux job114361833844 workspace673/0/83、Host33/0/0、固定Runtime81/0/0；Windows job114361833807 workspace667/0/81、Host32/0/0、Runtime80/0/0；macOS job114361833653 workspace672/0/81、Host33/0/0、Runtime80/0/0。Host包含在workspace，ignored不计通过；附加Linux凭据1项/Windows Host lib4项另记。已完成本地fmt/Clippy/workspace673通过/0失败/83忽略、Host33/0/0、固定Runtime81/0/0、schema/doctor/构建、Linux原生凭据附加1项、H-1/H-2真实独立进程演示。演示包含独立提交者退出且丢回应、双端恢复、原生批准后实际工具写入、取消、工具已执行但终态未知强杀重启；实测5任务/2标记写入/7次本机HTTP请求/重启增量0。声明字段与独立计数/代码断言分开记录。
 
-本地Git外/var/tmp私有测试目录保留；原生凭据测试依赖按既有CI安装并复验，未删除/tmp/.git或弱化保护。磁盘约2.4GiB可用，未清理用户文件/全局Codex/有效缓存。待提交仅本轮最小测试修正、交接及H-2证据；最终以Git核实。
+[本地日志/源码指纹](docs/evidence/h2-local.json)、[Host实际测试名](docs/evidence/h2-host-tests.log)、[HTTP合成请求证据](docs/evidence/h2-local-http-trace.json.gz)、[失败CI原始日志及原因](docs/evidence/h2-failed-ci.json)、[开发失败/环境修正](docs/evidence/h2-local-failed.json)、[配置拒绝已知ID持久化修复前回归](docs/evidence/h2-policy-binding-regression.json)均随文档封存提交。Windows替身LF、演示保留自己的证据目录、macOS journal测试目录追加原子序号均最小修复并完整重跑；不降低测试门槛或用旧成功代新SHA。[最终CI逐job/步骤/实际计数/完整原日志与哈希](docs/evidence/h2-ci.json)已下载核验并封存；开发验证完成，无仍需修复的明确阻断，未授H-2独立审计通过。
 
-## 2026-10-11 用户授权磁盘清理（已完成）
+本地使用新建Git外/var/tmp私有测试目录，未删除/tmp/.git或修改凭据保护；原生凭据依赖按既有CI安装后复验。磁盘约2.4GiB可用，未清理用户文件/全局Codex/有效缓存。本次封存仅验收/交接文档与H-2证据，功能/测试/依赖/workflow与最终源码无差异；main流程推送后核实工作区及HEAD/main/origin/main/GitHub main一致，封存HEAD用git rev-parse HEAD查询，不将其当功能CI SHA。当前停止，下一步仅用户重新发起H-2独立审计；未经确认通过并授权，不启动H-3/I。
 
-在不影响后续开发的前提下，仅删除已退出且无打开文件引用的157处私有Runtime测试临时plugins-clone目录及2处未完成增量编译working目录，释放771772416字节（约736MiB），可用空间由约2.9GiB增至3.6GiB。保留成功构建/增量缓存、固定项目Codex0.160.1、所有Host journal与审计证据、用户文件及全局Codex；24个已封存证据文件逐项SHA256核对不变；`cargo build -p caidex-host --locked --offline`复用现有缓存，0.19秒通过。源码与H-1功能SHA/CI结论不变，当时独立审计仍待重新发起；该维护操作没有启动下一阶段。本次只记录维护，不重复全仓Runtime回归。
+## H-1 与磁盘维护（历史证据）
 
-## H-1 独立审计阻断修复历史（已由用户确认审计通过）
+H-1 AUD-001/AUD-002修复功能[`9df99f71eb04381260d66a0ab0db95fa6344a438`](https://github.com/bboytang/CAIdex/commit/9df99f71eb04381260d66a0ab0db95fa6344a438)/[CI38098407943](https://github.com/bboytang/CAIdex/actions/runs/38098407943)三平台成功，随后用户于2026-10-11明确确认独立审计通过。本次未重授审计结论。实际计数/失败修复/复现/限制详见[H-1验收](docs/CAIdex-H1-Host-设计与验收-V1.md)、[精确CI原始证据](docs/evidence/h1-audit-fix-ci.json)、[本地证据](docs/evidence/h1-audit-fix-local.json)、[失败CI](docs/evidence/h1-audit-fix-failed-ci.json)。初次交付dec3a374/CI38095166217只作历史，不代最终审计修复SHA。AUD-003固定场景字段不是独立遥测，已用evidence_basis区分。
 
-用户本轮仅授权修复AUD-001版本子进程环境继承、AUD-002Runtime通知污染Host命名空间；AUD-003仅最小证据标注。开始时审计基线/main/HEAD/origin/main/GitHub main均已核实为`b516dbae41b252d365d8fad8848c197f2f6ccd51`，初始工作区干净；旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。构建前约3.1GB空闲，保留有效缓存及全部用户/全局Codex文件。
-
-有限计划：①复现两阻断并明确共享边界；②版本与Runtime共用原OS白名单，外部host/*安全记录；③合成凭据/伪造事件回归、合法恢复/完整workspace/固定Runtime/schema/doctor/真实双端演示；④最小diff/提交push main/最终源码精确三平台CI/证据封存。非目标：H-2/H-3/I、商业调用/真实Key、全量journal重构或协议改版。通过条件：原路径不再泄漏敏感环境、不接受外部Host控制事件，原契约无回归，新增回归及最终源码三平台全部通过。停止条件：封存证据后停止，等待用户重新发起H-1独立审计；开发验证不授独立审计通过。
-
-当前进度：AUD-001/AUD-002修复与开发验证完成并停止；最终功能源码[`9df99f71eb04381260d66a0ab0db95fa6344a438`](https://github.com/bboytang/CAIdex/commit/9df99f71eb04381260d66a0ab0db95fa6344a438)已提交push main，[精确CI38098407943](https://github.com/bboytang/CAIdex/actions/runs/38098407943)三平台完整成功。每个job实际checkout均为该完整SHA；Linux job114349055503 workspace660/0/83、H-1含20/0/0、固定Runtime81/0/0（另原生凭据1项）；Windows job114349055486 workspace654/0/81、H-1含19/0/0、Runtime80/0/0；macOS job114349055314 workspace659/0/81、H-1含20/0/0、Runtime80/0/0。ignored不计通过。fmt/全仓Clippy/schema/doctor/真实独立Host双端强杀重启与恢复步骤全部成功；SQLite计数测量0重发。新增5项安全/恢复回归各平台通过。
-
-本地最终定向20/0/0、完整workspace660/0/83、固定Runtime81/0/0及其余检查全通过。三轮失败CI、平台替身/目录唯一性修正和复制句柄保持锁的确定复现/最小显式unlock修复见[验收文档](docs/CAIdex-H1-Host-设计与验收-V1.md)。旧复制句柄关闭不释放新所有者锁由新增回归验证。当前无仍需修复的明确阻断；该修复交付时尚未重新独立审计；2026-10-11用户已明确确认审计通过并授权H-2，当前续接以上H-2范围，H-3/I仍未授权。
-
-封存入口：[最终CI摘要/完整原始日志与哈希](docs/evidence/h1-audit-fix-ci.json)、[最终本地日志/文件指纹](docs/evidence/h1-audit-fix-local.json)、[失败CI归档](docs/evidence/h1-audit-fix-failed-ci.json)、验收文档复现/失败/限制/归档核验命令。证据不依赖/tmp。当前branch为main；本次封存前仅本轮文档/证据未提交，源码/依赖/workflow与功能SHA无差异；文档封存HEAD与最终工作区/远端状态须按Git核实，不能将文档HEAD误作功能CI SHA。磁盘约2.9GB可用，无用户/全局Codex/有效缓存清理；workspace改用新建Git外私有/var/tmp目录，没有删除原.git或修改凭据保护。
-
-历史开发验证使用fix-finding只读边界调查/候选审查，不冒充H-1独立验收；用户于2026-10-11另行明确告知H-1独立审计通过。AUD-003：model_turns/commercial_calls/user_keys_read为固定场景声明，非独立遥测；新演示以evidence_basis区分声明、代码断言和SQLite计数测量。旧归档保留历史，不作为这些指标的独立测量证明。
-
-## H-1 初次交付历史（不代本轮修复验证）
-
-2026-10-10批准H-1并完成初次交付；原功能源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`/[CI38095166217](https://github.com/bboytang/CAIdex/actions/runs/38095166217)成功，文档封存至本轮审计基线`b516dbae41b252d365d8fad8848c197f2f6ccd51`。用户随后提供AUD-001/AUD-002阻断，本轮已修复，独立审计需重新发起，不能继续沿用旧交付的通过结论。
-
-初次功能、逐平台计数、故障CI修正、复现步骤和限制保留在[H-1验收文档历史](docs/CAIdex-H1-Host-设计与验收-V1.md#初次交付历史与独立审计不代本轮修复验证)、[原CI证据](docs/evidence/h1-ci.json)、[原本地证据](docs/evidence/h1-final-local.json)及Git历史；只作历史依据，不代最终修复SHA验证。Facade/Provider/凭据源码、本次必要变更以Git diff为准；当前恢复只依据上节最终源码/CI/证据入口。
+用户授权的磁盘清理已在H-2开始前完成：只删无活动进程/打开句柄引用的157处私有Runtime临时plugins-clone及2处未完成增量working目录，释放771772416字节（约736MiB），2.9GiB增至3.6GiB；保留用户/全局Codex、有效构建缓存、固定Runtime、journal与证据。24个原证据逐项SHA256不变，cargo build -p caidex-host --locked --offline复用缓存0.19秒通过；记录提交34ba5a636a5773ff6b7114c87fcc9fea935e5146。H-2未追加清理，后续可用空间按df核实。
 
 ## F/G 封存状态
 
-F/G-Offline已由用户正式确认关闭。九Adapter/18条route/4条切换的原证据复用[退出核对](docs/CAIdex-FG-离线验收核对-V1.md)，固定源码586199f/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台全成功（workspace640/635/639，Runtime81/80/80）。本次未改Facade/Provider/凭据源码，最新功能变更仅H-1及必要workspace/依赖/workflow。
+F/G-Offline已由用户确认正式关闭。九Adapter/18条route/4条切换证据复用[退出核对](docs/CAIdex-FG-离线验收核对-V1.md)，功能586199f/[CI38090495112](https://github.com/bboytang/CAIdex/actions/runs/38090495112)三平台成功。H-2只给既有Facade ApprovalDecision补Deserialize，未改Provider/凭据执行逻辑。
 
-F/G-Live仍待真实模型版本/签名/费用、实际Ollama等用户最终实测；没有用户Key读取或商业调用，不授LiveRuntime/Full，不认领生产Host已通过。前次治理b8dfec4已结束，不是当前待办；独立审计未新增执行记录。
+F/G-Live仍待用户最终真实模型/费用/实际Ollama等实测；没有用户Key读取或商业调用，不授LiveRuntime/Full或生产Host通过。
 
 ## 已确定的架构边界（不得擅自改动）
 
@@ -59,7 +43,7 @@ F/G-Live仍待真实模型版本/签名/费用、实际Ollama等用户最终实�
 
 ## 未实现、未验证与风险
 
-- H-1已由用户确认审计通过；H-2有限任务/幂等/原生执行链/轮次约束与父子关联已实现并本地验证，待本轮精确CI/独立审计；H-3审批竞争/Diff及完整生产Host未实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
+- H-1已由用户确认审计通过；H-2有限任务/幂等/原生执行链/轮次约束与父子关联已实现并本地验证，精确三平台CI通过，等待独立审计；H-3审批竞争/Diff及完整生产Host未实现。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
 - I官方账户/PostgreSQL/Memory/同步/Email及J–O客户端、L SSH、P完整英文CLI、Q加密Relay、R实际平台/安装升级/权限/恢复仍待。当前CLI仅doctor、credentials status/set/remove、version/help；CLI-01～34不因底层协议存在而完成。
 - 各Provider限制以专属验收/profile为准；未知Runtime扩展不保证类型化持久化全量往返。native载体为JSON一致性门控而非密码学真实性，backend配置不是实际endpoint证明；终态缓冲受idle/预算限制，完整前缀可能二次增长。
 - compaction只验明确Classic/Lite本地/远端成功与失败/取消、Total采样前自动阈值/磁盘恢复；其他scope/轮末/TokenBudget/无限历史不认领。同步SecretStore开始后不能强停，保证取消后不POST；跨Gateway keepalive未承诺。

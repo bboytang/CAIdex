@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "runtime_source_sha": "a7f5d107a95b5efc191c52aa18a29ec71e7f58c8",
+  "new_assertion_before_fix": "Known task-thread and actual policy never must remain queryable after configuration refusal",
+  "test_name": "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+  "before_counts": {
+    "passed": 0,
+    "failed": 1,
+    "ignored": 0,
+    "filtered": 14
+  },
+  "artifact": "h2-policy-binding-before.log.gz",
+  "raw_sha256": "a2227c2f40754bd7630ecc24d7f224d7ff45a765a2deb4af036f23f83d4324fa",
+  "fix": "Move existing binding/config persistence ahead of the unchanged strict configuration check. Never launch turn for mismatched config.",
+  "note": "Runtime source was immutable a7f5d10; regression test assertion was added locally before applying production fix."
+}

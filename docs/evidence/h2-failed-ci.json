@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "run_id": 38100999321,
+  "source_sha": "f674f4b22e0653a6a2b85a8d0001f810f05c207f",
+  "job_id": 114356728434,
+  "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38100999321/job/114356728434",
+  "failed_step": "Windows Host storage through the Rust process boundary",
+  "host_lib_counts": {
+    "passed": 3,
+    "failed": 1,
+    "ignored": 0
+  },
+  "root_cause": "New Python task peer marker writes used platform default CRLF; strict one-call assertion expected LF.",
+  "fix": "Specify newline=\\n for task peer writes, same as existing H-1 peer. Production source and assertions unchanged.",
+  "artifact": "h2-failed-ci-windows-crlf.log.gz",
+  "raw_sha256": "60375486311bfb894f47ed4cb36c74cc774646506d3e8c63a4e7d2324b5780a4",
+  "use_as_final_success": false,
+  "additional_failed_run": {
+    "run_id": 38101361081,
+    "source_sha": "5282ac49cc3f1802d578de9123baa8d772f5244c",
+    "job_id": 114357774312,
+    "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38101361081/job/114357774312",
+    "workspace": {
+      "passed": 667,
+      "failed": 0,
+      "ignored": 81
+    },
+    "host_tests": {
+      "passed": 32,
+      "failed": 0,
+      "ignored": 0
+    },
+    "failed_step": "H-2 persistent tasks and real native execution (local synthetic model)",
+    "root_cause": "All H-2 contract assertions passed, report status ok, then TemporaryDirectory cleanup of Runtime private plugins-clone Git pack failed WinError5. Exact handle holder/read-only attributes not captured.",
+    "fix": "Retain own evidence directory and report path; no forced deletion, permission change or ignored failure. All assertions retained.",
+    "artifact": "h2-failed-ci-windows-cleanup.log.gz",
+    "raw_sha256": "ffbd30b2811290baea3a2daaf8dd59c35c79ad9f0ff3e69209d129bcdb29391b",
+    "fixed_runtime_complete_run": "not executed in this Windows job because preceding step failed",
+    "use_as_final_success": false
+  },
+  "macos_directory_failure": {
+    "source_sha": "69d8c50be1e29c37587128e2947d9824d769a90b",
+    "run_id": 38102364547,
+    "job_id": 114360748998,
+    "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38102364547/job/114360748998",
+    "checkout_sha_observed": "69d8c50be1e29c37587128e2947d9824d769a90b",
+    "failed_tests": [
+      "failed_commit_does_not_advance_event_or_snapshot",
+      "failed_v1_migration_rolls_back_snapshot_and_version"
+    ],
+    "journal_counts": {
+      "passed": 9,
+      "failed": 2,
+      "ignored": 0
+    },
+    "reason": "parallel journal tests used PID and SystemTime alone for their private directory; clock resolution allowed a shared path, causing owner lock collision and directory removal",
+    "minimal_fix": "append process-local atomic ordinal using the existing service harness pattern; preserve fault-injection assertions and production locking",
+    "artifact": "h2-failed-ci-macos-directories.log.gz",
+    "raw_sha256": "fc2f7f37758ebf0d1748ba5c0cdf96eb04fba4458561e48529294f7876d39a99",
+    "gzip_sha256": "08fa3b2a1b5f84fc9431943ed6b55417ab9a75878cff7cad53533f3fe7efcb90",
+    "subsequent_native_runtime_and_demos": "not run in this failed macOS job",
+    "run_conclusion": "failure",
+    "other_job_conclusions": {
+      "linux": "success",
+      "windows": "success"
+    }
+  }
+}

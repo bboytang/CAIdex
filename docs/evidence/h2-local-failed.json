@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "milestone": "H-2",
+  "final_source_sha": "f674f4b22e0653a6a2b85a8d0001f810f05c207f",
+  "note": "Local development attempts before final source; not final verification. No claimed immutable source for uncommitted attempts.",
+  "attempts": [
+    {
+      "label": "workspace-git-temp",
+      "cause_and_resolution": "/tmp/.git triggered existing credential storage protection; rerun full workspace in newly created Git-free private /var/tmp directory",
+      "artifact": "h2-local-failed-workspace-git-temp.log.gz",
+      "raw_sha256": "43dd830841217d181fa4b6628686a74a7e00dc62065048eb8c9da159d680af82",
+      "gzip_sha256": "76517f61ff2056b709d9cc39b9fa3024e427c3c59f3c0bcb1444017f5a3e1121"
+    },
+    {
+      "label": "native-test-service-missing",
+      "cause_and_resolution": "gnome-keyring-daemon missing; installed existing CI test dependencies; isolated synthetic native store test rerun passed",
+      "artifact": "h2-local-failed-native-test-service-missing.log.gz",
+      "raw_sha256": "111dee9e075486e9fec6e597a5a8387f01da2d22c828e4a440e9d61918fdb4b6",
+      "gzip_sha256": "972c8d0607610001bd2b322f655dd7a78b3d1a91a9ddec9cba651790e63629b4"
+    },
+    {
+      "label": "native-account-boundary",
+      "cause_and_resolution": "H-1 blanket account notification refusal blocked native rateLimits update; exact pinned account/rateLimits/updated gets payload-free receipt; auth payload remains refused",
+      "artifact": "h2-local-failed-native-account-boundary.log.gz",
+      "raw_sha256": "a35158b4307ad87603877bf08e2d9ab4f3418c5bfd927d37e897a27bacb9e806",
+      "gzip_sha256": "769e466250fcab80a94e401870bb8a0d1115f7c960fc0fc7f15f86e4cebe1678"
+    },
+    {
+      "label": "native-loaded-resume",
+      "cause_and_resolution": "loaded thread/resume returned old thread model configuration; continue live thread with native turn/start model override, distinguish thread config from measured turn model",
+      "artifact": "h2-local-failed-native-loaded-resume.log.gz",
+      "raw_sha256": "9b10797f284ed983b6591ce93efe3e3955537288ba824819a836db941641b705",
+      "gzip_sha256": "5d9d724588c3570accd5f2613e498d0650b069b1b444a5e8c7f84b18e3125c11"
+    }
+  ]
+}
