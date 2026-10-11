@@ -63,6 +63,7 @@ struct Running {
     cancel: CancellationToken,
     request: InferenceRequest,
     output: Option<InferenceOutput>,
+    finished: Option<std::time::Instant>,
 }
 pub(crate) struct Completion {
     client: String,
@@ -386,6 +387,7 @@ impl MemoryService {
                         cancel: cancel.clone(),
                         request: (*request).clone(),
                         output: None,
+                        finished: None,
                     },
                 );
                 let send = self.send.clone();
@@ -410,12 +412,6 @@ impl MemoryService {
                 Ok(json!({"operation_id":operation_id,"state":"running"}))
             }
             Command::Release { operation_id, .. } => {
-                if let Some(running) = self.running.remove(&(client.into(), operation_id)) {
-                    running.cancel.cancel();
-                }
-                Ok(json!({"released":true}))
-            }
-            Command::Status { operation_id, .. } => {
                 let state: Option<String> = self
                     .db
                     .query_row(
@@ -424,17 +420,34 @@ impl MemoryService {
                         |r| r.get(0),
                     )
                     .optional()?;
-                let state = state.ok_or(Error::Refused("Memory operation unknown"))?;
+                if state.as_deref() == Some("running") {
+                    return Err(Error::Refused("Memory operation still running"));
+                }
+                if let Some(running) = self.running.remove(&(client.into(), operation_id)) {
+                    running.cancel.cancel();
+                }
+                Ok(json!({"released":true}))
+            }
+            Command::Status { operation_id, .. } => {
+                let state: Option<(String, String)> = self
+                    .db
+                    .query_row(
+                        "SELECT state,hash FROM operations WHERE client=?1 AND id=?2",
+                        params![client, operation_id],
+                        |r| Ok((r.get(0)?, r.get(1)?)),
+                    )
+                    .optional()?;
+                let (state, hash) = state.ok_or(Error::Refused("Memory operation unknown"))?;
                 if let Some(running) = self.running.get(&(client.into(), operation_id.clone())) {
                     self.permitted(snapshot, client, &running.request)?;
                     if state == "done" {
                         return Ok(
-                            json!({"operation_id":operation_id,"state":state,"output":running.output}),
+                            json!({"operation_id":operation_id,"state":state,"payload_hash":hash,"output":running.output}),
                         );
                     }
                 }
                 Ok(
-                    json!({"operation_id":operation_id,"state":if state == "done" { "unknown" } else { &state }}),
+                    json!({"operation_id":operation_id,"payload_hash":hash,"state":if state == "done" { "unknown" } else { &state }}),
                 )
             }
             Command::Cancel { operation_id, .. } => {
@@ -499,12 +512,30 @@ impl MemoryService {
             params![state, completion.client, completion.id],
         )?;
         if state == "done" {
-            self.running
-                .get_mut(&key)
-                .expect("present completion")
-                .output = completion.result.ok();
+            let running = self.running.get_mut(&key).expect("present completion");
+            running.output = completion.result.ok();
+            running.finished = Some(std::time::Instant::now());
         } else if let Some(running) = self.running.remove(&key) {
             running.cancel.cancel();
+        }
+        Ok(())
+    }
+    pub(crate) fn expire(&mut self) -> Result<()> {
+        let expired: Vec<_> = self
+            .running
+            .iter()
+            .filter(|(_, r)| {
+                r.finished
+                    .is_some_and(|t| t.elapsed() >= Duration::from_secs(120))
+            })
+            .map(|(key, _)| key.clone())
+            .collect();
+        for (client, id) in expired {
+            self.db.execute(
+                "UPDATE operations SET state='unknown' WHERE client=?1 AND id=?2 AND state='done'",
+                params![client, id],
+            )?;
+            self.running.remove(&(client, id));
         }
         Ok(())
     }

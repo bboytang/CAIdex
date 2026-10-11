@@ -439,7 +439,7 @@ async fn serve_inner(
                 completion = async { memory.as_mut().expect("configured Memory").next().await }, if memory.is_some() => {
                     if let Some(completion) = completion { memory.as_mut().expect("configured Memory").complete(&journal.snapshot(), completion)?; }
                 }
-                _ = expiry.tick() => tasks.expire(&mut journal, &events, task::now()?)?,
+                _ = expiry.tick() => { tasks.expire(&mut journal, &events, task::now()?)?; if let Some(memory)=&mut memory { memory.expire()?; } },
                 accepted = listener.accept() => {
                     let (socket, _) = accepted?;
                     if connections.len() < MAX_CLIENTS {

@@ -224,7 +224,7 @@ impl Harness {
         )
         .await
         .unwrap();
-        let listener = TcpListener::bind(address.map_or("127.0.0.1:0".parse().unwrap(), |v| v))
+        let listener = TcpListener::bind(address.unwrap_or("127.0.0.1:0".parse().unwrap()))
             .await
             .unwrap();
         let address = listener.local_addr().unwrap();

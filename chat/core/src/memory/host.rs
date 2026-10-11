@@ -176,10 +176,11 @@ fn blocking_line(read: &mut std::io::BufReader<BlockingStream>) -> Option<Value>
     }
     serde_json::from_slice(&bytes).ok()
 }
-impl EvidenceResolver for HostConnection {
+struct HostResolver(HostConnection);
+impl EvidenceResolver for HostResolver {
     fn read(&self, scope: &Scope, origin: &Origin) -> Option<Vec<u8>> {
         if let Origin::Execution { reference } = origin {
-            self.evidence(scope, reference)
+            self.0.evidence(scope, reference)
         } else {
             None
         }
@@ -244,6 +245,11 @@ impl HostModel {
                     .connection
                     .rpc(json!({"method":"memory/status","operation_id":operation_id}))
                     .await?;
+                if result["payload_hash"]
+                    != digest(&serde_json::to_vec(&request).map_err(|_| Error::Invalid)?)
+                {
+                    return Err(Error::HostDenied);
+                }
                 match result["state"].as_str() {
                     Some("running") => tokio::time::sleep(Duration::from_millis(50)).await,
                     Some("done") => {
@@ -320,6 +326,17 @@ impl Executor {
     }
 }
 impl MemoryEngine<'_> {
+    pub fn configure_host_resolver(&self, connection: HostConnection) -> Result<()> {
+        let mut s = self.chat.state()?;
+        if &connection.namespace != s.cache.namespace() {
+            return Err(Error::WrongCredentialOwner);
+        }
+        s.memory.cancel_all();
+        s.memory.guards.push(connection.guard.clone());
+        s.memory.resolver = Some(Arc::new(HostResolver(connection)));
+        Ok(())
+    }
+
     pub fn configure_host_integration(&self, model: HostModel) -> Result<()> {
         let mut s = self.chat.state()?;
         model.validate(s.cache.namespace())?;

@@ -2,7 +2,7 @@
 use caidex_chat::{Chat, Namespace, memory::*};
 use caidex_credentials::Secret;
 use serde_json::{Value, json};
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, BufReader};
 fn reply(value: Value) {
     println!("{value}");
@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             allow_local_only: true,
         })?;
     }
-    e.set_resolver(Arc::new(connection.clone()))?;
+    e.configure_host_resolver(connection.clone())?;
     reply(json!({"ready":true,"automatic_default":false}));
     let mut lines = BufReader::new(tokio::io::stdin()).lines();
     let mut waiting = None;
