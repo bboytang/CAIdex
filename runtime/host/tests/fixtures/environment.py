@@ -11,7 +11,8 @@ if mode == "runtime":
     assert os.environ.get("CODEX_HOME") == "synthetic-owned-runtime-home"
 else:
     assert sys.argv[2:] == ["--version"]
-assert all(name.upper() in allowed for name in os.environ), "unexpected environment name"
+unexpected = sorted(name for name in os.environ if name.upper() not in allowed)
+assert not unexpected, "unexpected environment names: " + ", ".join(unexpected)
 assert "PATH" in os.environ
 if os.name == "nt":
     assert "SYSTEMROOT" in {name.upper() for name in os.environ}

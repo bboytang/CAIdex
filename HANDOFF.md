@@ -8,7 +8,7 @@
 
 有限计划：①复现两阻断并明确共享边界；②版本与Runtime共用原OS白名单，外部host/*安全记录；③合成凭据/伪造事件回归、合法恢复/完整workspace/固定Runtime/schema/doctor/真实双端演示；④最小diff/提交push main/最终源码精确三平台CI/证据封存。非目标：H-2/H-3/I、商业调用/真实Key、全量journal重构或协议改版。通过条件：原路径不再泄漏敏感环境、不接受外部Host控制事件，原契约无回归，新增回归及最终源码三平台全部通过。停止条件：封存证据后停止，等待用户重新发起H-1独立审计；开发验证不授独立审计通过。
 
-当前进度：原边界已由新增回归复现失败；最小修复后H-1共19项定向通过、fmt及全仓Clippy通过。Linux完整workspace659/0/83、固定Runtime81/0/0、stable/experimental schema、doctor及真实双端强杀重启演示全部通过；待提交本轮源码及最终精确三平台CI。使用fix-finding的只读边界调查作为开发验证，不冒充H-1独立验收；用户已提供审计发现，尚未重新审计修复结果。
+当前进度：原边界已由新增回归复现失败；最小修复后H-1共19项定向通过、fmt及全仓Clippy通过。Linux完整workspace659/0/83、固定Runtime81/0/0、stable/experimental schema、doctor及真实双端强杀重启演示全部通过；本轮源码`c4741682117f31a7fe5897338bf283564686e10c`已提交push main；[CI38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)整体尚未结束，但macOS环境替身出现未知变量名断言失败；日志未列名称，现仅增加安全的意外名称诊断（不输出值），不放宽生产白名单或测试门槛，待新CI核实。仅本轮证据/文档未提交，源码不新增功能。使用fix-finding的只读边界调查作为开发验证，不冒充H-1独立验收；用户已提供审计发现，尚未重新审计修复结果。 AUD-003：旧演示中的model_turns/commercial_calls/user_keys_read为固定场景声明，非独立遥测；新脚本以evidence_basis区分声明、代码断言和SQLite计数测量。旧归档保留历史，不作为这些指标的独立测量证明。
 
 ## H-1 初次交付历史（以下证据不代本轮修复验证）
 
