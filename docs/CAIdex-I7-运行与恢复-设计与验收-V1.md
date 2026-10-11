@@ -6,7 +6,7 @@
 
 依据 [V3](CAIdex-实施计划-V3.md) I-7 和 [账户补充设计](CAIdex-Account-Memory-Cloud-设计与验收-V1.md) 第10/11/13节。交付统一EmailSender的供应商适配与持久预算/状态/抑制，有限本机PG备份和隔离恢复工具，用户选定本地Chat导出，资源/磁盘/中断演练及操作说明。复用现有Rust服务、SQLite、PostgreSQL/pgvector、普通角色和RLS；不复制Runtime/Agent/Host权限、ModelProvider或凭据。
 
-依赖：I-1～I-6已获用户确认；云schema4、本地schema5/protocol1、固定Runtime不变，必要新增运营表须前向事务迁移并相关回归。
+依赖：I-1～I-6已获用户确认；起点云schema4（I-7前向迁移5）、本地schema5/protocol1、固定Runtime不变，必要新增运营表须前向事务迁移并相关回归。
 
 非目标：异地/对象存储备份、生产部署/购买、真实邮件/模型Key/商业模型、正式GUI/CLI/iOS、未知规模容量保证、GC、Kubernetes/Redis、新HTTP框架。用户已确认先隔离验证；真实中国大陆VPS到供应商API及国内外测试邮箱/SPF/DKIM/DMARC送达、公开服务运营义务仍待授权，保持未验。
 
@@ -30,7 +30,7 @@ Brevo首选、Resend手动备用；生产端点/Key只能服务端安全配置�
 
 ## 当前证据状态
 
-有限实现已完成，本机最终隔离演练63项/0失败、账户116/Chat同步50/Memory同步58真实PG+HTTP、本地26 Rust测试通过；提交/精确CI仍待核验，不授完整I-7或独立审计通过。原I-6最终源码04d770a、精确CI38163486201及所有历史证据保持。恢复本轮看 [HANDOFF](../HANDOFF.md)。
+有限实现已完成，本机最终隔离演练63项/0失败、账户116/Chat同步50/Memory同步58真实PG+HTTP、本地26 Rust测试通过；精确CI四job实际成功，开发验证与证据封存完成，独立审计待用户安排/确认。原I-6最终源码04d770a、精确CI38163486201及所有历史证据保持。恢复本轮看 [HANDOFF](../HANDOFF.md)。
 
 实现与试用详见 [运行与恢复操作说明](../cloud/postgres/operations/README.md)：三项服务秘密复用Broker/ProtectedFileStore；普通auth/app连接分离；前向schema5保留本地schema5/protocol1。备份硬预算5,000,000,000字节；最新检查点仅证明其时点，恢复均关闭同步、递增世代、撤旧认证并撤CONNECT隔离，无自动解隔离/发布入口。邮件HTTP前提交unknown计额，无自动重发/供应商切换、持久明文验证码队列或unknown自动对账。导出含未发送附件和进行中草稿，无同步队列/凭据/重放入口。
 
@@ -47,3 +47,27 @@ Brevo首选、Resend手动备用；生产端点/Key只能服务端安全配置�
 收尾隔离修复：仅事后REVOKE不能驱逐创建窗口内已连接客户端；新恢复库现在CREATE时ALLOW_CONNECTIONS=false，先撤CONNECT再允许管理员恢复。真实普通角色在撤权前连接被拒的负例已加入；初始dcd2967源码/CI不作为最终交付。
 
 初始CI实际功能62/0但测试目录清理失败（GitHub runner非root，容器PG改变私有绑定目录所有者），数据库job未通过。仅本轮测试绑定目录在容器停止后归还调用者uid/gid并恢复0700；不清源码、用户数据或有效缓存。最终新提交/CI须整体成功，报告提前打印不代进程/CI通过。
+
+## 精确交付证据（开发验证封存）
+
+最终不可变源码 [235e3e4d4c1917eafe55282426f41edaa0b6ec9d](https://github.com/bboytang/CAIdex/commit/235e3e4d4c1917eafe55282426f41edaa0b6ec9d)，[精确CI38174971743](https://github.com/bboytang/CAIdex/actions/runs/38174971743)。数据库/Windows/Linux/macOS四job均completed/success，原始checkout完整SHA及每份报告源码指纹核对；开发验证不代独立审计。证据 [CI及原日志](evidence/i7-ci.json)、[精确本机/开发过程](evidence/i7-local.json)、[初始CI失败](evidence/i7-ci-initial.json)、[第二轮CI失败](evidence/i7-ci-second.json)，保留完整checkout/源码指纹与原文/压缩SHA256。初始两轮三平台均成功，DB功能分别62/63项0失败，但目录清理失败，均不授整轮通过。
+
+最终数据库job：I-1原隔离118、账户116、Chat同步50、Memory同步58、I-7隔离63具名检查/0失败，auth lib5/0；每组实际Rust集成与重复迁移检查不重复累加。I-7两项ignored Rust入口由脚本实际执行，默认ignored不算通过。最终本机I-7精确235为63/0、39源码指纹全部匹配、整进程exit0；本地Chat/Memory26/0、auth lib5/0、cloud lib2/0。Chat/Memory真实回归报告旧HEAD但相关指纹与最终一致；本机账户116报告早于最后磁盘停止准入修正，差异单独记录，最终精确CI账户116复验。
+
+同一2CPU/2GiB配置与执行前SLO，记录最终本机和CI实际小库结果（编译在容器外）：
+
+| 测量 | 精确本机 | 精确CI数据库job |
+|---|---:|---:|
+| 登录p50/p95/p99（ms） | 186.42 / 201.46 / 201.46 | 83.33 / 86.13 / 86.13 |
+| 1000条3维授权精确向量p50/p95/p99（ms） | 4.15 / 4.91 / 17.81 | 2.85 / 3.04 / 7.57 |
+| 容器运行峰值内存（字节） | 151,642,112 | 159,543,296 |
+| OOM计数 | 0 | 0 |
+| 最新检查点隔离恢复（秒） | 2.021 | 1.269 |
+| PG真实进程重启（秒） | 0.997 | 1.436 |
+| DB / WAL / 备份dump（字节） | 12,416,691 / 50,331,648 / 265,561 | 12,474,035 / 50,331,648 / 265,578 |
+
+并发4次登录均为1成功/3次429，实际连接8/配置上限12；保留CPU使用/限流、内存曲线与p50/p95/p99原报告。备份一致快照窗口分别约0.397/0.258秒；数据与检查点各有独立标明时点，之后操作仍未知。每日备份只提供计划恢复周期，失败则更久；这里实测恢复耗时不是生产RTO/RPO承诺，不外推50GB、1536维/ANN、固定人数或全盘损失。
+
+操作说明与有限授权保持；达到精确CI全部成功、静态/差异/证据核验及封存后停止，等待用户确认独立审计与下一阶段授权。真实邮件/中国VPS/公开部署/正式GUI/CLI/iOS/模型仍未验，不自行发布服务。
+
+最终跨平台：Linux workspace725/0/84及固定Runtime81/0；macOS workspace724/0/81及Runtime80/0；Windows workspace718/0/81及Runtime80/0，ignored不计通过。Linux原生凭据1、Windows附加Host lib4另记；fmt/Clippy/JS/schema/doctor与I-3/I-4.1/I-4.2/H-1/2/3演示实际成功。62份本机/CI原始日志或报告的压缩/原文SHA256核验；旧证据和外部依赖版本/source/checksum保持。最终封存只文档与新证据，停止新增功能，等待独立审计及下一阶段授权，不自动启动J。

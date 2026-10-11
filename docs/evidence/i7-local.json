@@ -1,0 +1,1679 @@
+{
+  "milestone": "I-7",
+  "source_sha": "235e3e4d4c1917eafe55282426f41edaa0b6ec9d",
+  "basis": "Exact committed local I-7: 63 checks, all fingerprints match. Local auth116 preceded only stop-admission guard change; final exact CI must verify auth. Local Chat50/Memory58 report old HEAD but source fingerprints are compared here; whitespace-only final i7 driver trim does not affect those scripts. Chat Rust26/0, auth lib5/0, cloud lib2/0; ignored tests counted only in actual isolated entry. Earlier prototype failures/superseded passes are preserved, never final evidence. Full workspace/cross-platform on GitHub; no valid caches removed.",
+  "logs": [
+    {
+      "log": "i7-local-auth-clippy-final.log.gz",
+      "raw_sha256": "ccf131e383ead48fb6addfcf5151dd25762e60f77a6911c0c0a43e890734760e",
+      "gzip_sha256": "973abc8637e49628fb66f80c8e0dc1a4d3438b369ca790432ada1f28239eb098",
+      "raw_bytes": 144,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-auth-clippy-first.log.gz",
+      "raw_sha256": "8c860a9b523d83ca40e48c8cdc1b600a0541787cd2244c6020738883607aae66",
+      "gzip_sha256": "27298c99a39744807b597910771a77be6f6934efe100f439a48c5a056ffc7887",
+      "raw_bytes": 307,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-auth-clippy-fourth.log.gz",
+      "raw_sha256": "ca190e03e540a388cd63e0e6e42ec66cc76c3eff831f5087e5768b0a7cf14332",
+      "gzip_sha256": "255bffa3384961cbccc23c5fbe0367ea5022926946b06b133dec5de18c1db9d3",
+      "raw_bytes": 144,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-auth-clippy-seal.log.gz",
+      "raw_sha256": "78e8917fbd1453e1b3d71e0286ccf7ab7a732241c1015baf7fa60d30237b1529",
+      "gzip_sha256": "3129ad727fdf7cf37760c05c6a4bd8fdbd86388e02af1a1eb68137350df1ba6e",
+      "raw_bytes": 144,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-auth-clippy-second.log.gz",
+      "raw_sha256": "f69447f5a53f164e6b16ea14b7ccb0cc8ec2b0a0ca424607826c64029dc251ff",
+      "gzip_sha256": "9cda9c0a7e5eee2f2e1577817be4559840f884f7c8c04de047f618723bafb70c",
+      "raw_bytes": 1743,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-auth-clippy-third.log.gz",
+      "raw_sha256": "1951cdbc84693662a95fac56ec34ed2351b5956042c987ed1510d751974335c4",
+      "gzip_sha256": "7be7044f5194c689030094512f25a9700d3084f75e0477e516e559c147b2e65d",
+      "raw_bytes": 1064,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-auth-lib.log.gz",
+      "raw_sha256": "6a2db88aeb0b9ef5fbdbdc60e66ace237fccbcc9cfddc4abb6d3b01dc6bb806a",
+      "gzip_sha256": "c6a9f34b39063f5ebc3d678d397444cc44c1d722a5cd6bdd6114185e945a2526",
+      "raw_bytes": 773,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-auth-regression.log.gz",
+      "raw_sha256": "10bf9a009d2e8d55891506f93d9602f85241597e14321d659a63370b07c5ceb1",
+      "gzip_sha256": "9024c04fb6955fe2d0ac39945a408224528c1800bd45b46819967720e5f4a5c5",
+      "raw_bytes": 22871,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-backup-first.log.gz",
+      "raw_sha256": "6604e25b5e30b31186efdc99119278ca8802cba7c69a448d21fbc1be38997d58",
+      "gzip_sha256": "b0598e0267a7dc7e218527fc7e56f2ba8b38982cf87fe72284abf066deaf65f9",
+      "raw_bytes": 1164,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-backup-second.log.gz",
+      "raw_sha256": "7de7f7811abdf847f8553a34321be20d65754676172ae5c62ece640a30bb6ab2",
+      "gzip_sha256": "5c218fe19b1c66cacb6f464029502b0e6356f4eab015484944392a81bd24fcf3",
+      "raw_bytes": 472,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-backup-third.log.gz",
+      "raw_sha256": "35af2b9148bb4ef3c77ca7b951d7c12b972401b05cc3397811ab8177e261d70d",
+      "gzip_sha256": "c5bd6d0849adfa397538cf7e2967e27d4faa38f9d372834b8ebcce440a61ada0",
+      "raw_bytes": 800,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-chat-clippy-final.log.gz",
+      "raw_sha256": "b8c31400806527d23cb7e3ed8db4b7e0af360c958616e132b2b87a6efc03a504",
+      "gzip_sha256": "9c5e48a7071df3f3307cd0a6a17708ac191992b5be1bc1c18e61b265691401c6",
+      "raw_bytes": 293,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-chat-clippy-first.log.gz",
+      "raw_sha256": "4f6a62346027e1ebbb44aaf961969889a2a5a3bdbe36abb3c0c3a72564e164cb",
+      "gzip_sha256": "19f1ecc88ef617561954a4712925b198f39bd4ca37b3153a082f946bdde11de4",
+      "raw_bytes": 293,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-chat-clippy-seal.log.gz",
+      "raw_sha256": "f64c2026967b465e0b9962eb64ca48c7b357c2aaaca1f5e23b884141adb87e86",
+      "gzip_sha256": "0f3a39a4154a735db2542834a02fc21a9c94c343ffd7e51bdeabf5fea0befa82",
+      "raw_bytes": 215,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-chat-regression.log.gz",
+      "raw_sha256": "0ea9b12ec6223d26217742244c66a234e810a1f64ba10a15c1c6b9e3283ddbea",
+      "gzip_sha256": "b2226e89240c26ddc223a8bb710c750404a53ab50b4c240681081e1d0e1cc364",
+      "raw_bytes": 13098,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-chat-tests-final.log.gz",
+      "raw_sha256": "a5546975e92eb1b88ecc3ee215ad48157e80fd19da7904d98b7514624b9a7c0f",
+      "gzip_sha256": "9baded83ea1cc0b8a952293ff422b985fb79307d61f963855ed01330d3a2abbc",
+      "raw_bytes": 3400,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 7,
+          "failed": 0,
+          "ignored": 2
+        },
+        {
+          "passed": 7,
+          "failed": 0,
+          "ignored": 1
+        },
+        {
+          "passed": 12,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-cleanup-fix-local.log.gz",
+      "raw_sha256": "fd05502cf4baf05bf3d4b6831c8fc0382889fb38e7a79cae21b866e4dd8eb1ce",
+      "gzip_sha256": "abe6a52a61d2b99fc42eb8b0178e8762f67c3d4e403a29361106863db996c697",
+      "raw_bytes": 28451,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-cloud-lib.log.gz",
+      "raw_sha256": "6af6c6e1f7e27b78c1340580aed0de44663b0c766466aca405035ac9918b51a3",
+      "gzip_sha256": "17c10daf81dfe4a31bc392999fc2fbfb82f21c532d97deba7e06a11207ff9a11",
+      "raw_bytes": 577,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-exact-delivery.log.gz",
+      "raw_sha256": "466644fe34171f0620ce6ca99beddad000d5557b1e28687dedd116f1a47b8efb",
+      "gzip_sha256": "dd9f807449fad98c13e7a040f046ff01b6123b72ff42a7a68f39ba2c9ebf0abb",
+      "raw_bytes": 28392,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-exact-final.log.gz",
+      "raw_sha256": "c96f01f733de0901d366a80238f627f716a3b13910b5482a2b97a40a1b9a350c",
+      "gzip_sha256": "0ea743cc339271a6f4af8e770dc848321310f7452be880e8e270cd03a776f060",
+      "raw_bytes": 28434,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-exact-local.log.gz",
+      "raw_sha256": "7b8192fc4cc18135f1ace3046cecf4979dae5d6d4a35363d3883b893f46c8462",
+      "gzip_sha256": "2fa06d5709679c8c11ba6af93e545596b0194882ba7d9a76ad3de0da022fd3f7",
+      "raw_bytes": 28769,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-export-first.log.gz",
+      "raw_sha256": "af1915428f8ecc1964cf89ea1883dc80ac5c1ab9b624dc711628d601727ed8bc",
+      "gzip_sha256": "667faf5ca3e36b7c5d6c4b0b09e90f31d2b02babda94f60f78b1c5182ada0647",
+      "raw_bytes": 1084,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 0,
+          "failed": 1,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-export-second.log.gz",
+      "raw_sha256": "06a0791fca19e95a49b673bcaddc1403849bca9822a34d0f07dad555fa8df03e",
+      "gzip_sha256": "cf86ed3e60b5370f06816d37dbdc529d721bab4bb1dce40ac799b721c484a31d",
+      "raw_bytes": 1110,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 0,
+          "failed": 1,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-export-third.log.gz",
+      "raw_sha256": "8e21dc2fe5d858a6a716d5a220ffe3d8b0b7210be3faa4be88277a23e79c8fbd",
+      "gzip_sha256": "6b4b01de99ed0bb599a1b712703a28ff0d85a0763db7b39b9fb1efef66404773",
+      "raw_bytes": 408,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-mail-build-first.log.gz",
+      "raw_sha256": "87c37b3b684edd0b52144302fdea4340cacbb57cab5400741c9eef3ceb7a68d6",
+      "gzip_sha256": "c30f0657f1281460389ce10d18b4351bbb683ba649b8c513483dff637cbd9118",
+      "raw_bytes": 305,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-mail-check-first.log.gz",
+      "raw_sha256": "bb4041acc22d875f85dc128653638aa40fe6afa491b932288790d3665caa9cc6",
+      "gzip_sha256": "2dee001a18642102cf0b39cc590d9eb86c20f05c0a7623105da9fe697329f1b4",
+      "raw_bytes": 893,
+      "no_space_left_error": false,
+      "test_summaries": []
+    },
+    {
+      "log": "i7-local-memory-regression.log.gz",
+      "raw_sha256": "cdb1aba3da0d1f701a94d7e3f7752444a3ed0711f493007c95a57de832caff6e",
+      "gzip_sha256": "16fa020e6a2e57d41fc83db1e06415023305f75bd6d548674a0decc971a73eb3",
+      "raw_bytes": 14389,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-eighth.log.gz",
+      "raw_sha256": "8c399c8d25fea8b6b971a107053ba0c6328b4d3255a72f79151b818b6f355237",
+      "gzip_sha256": "17c8c859372aa3842bb02d8d81cb58374c57e5e2f1e191f62a9d5e9298c79280",
+      "raw_bytes": 4804,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-eleventh.log.gz",
+      "raw_sha256": "ce11f48c17492a16fc7b80945280e216d5f2a5ffe8cfb27d688ca386e29b4e3e",
+      "gzip_sha256": "2940d6ec5b3f696c6fdeb0a483e994fe4cba3f32c8d88c01c452f1d5059fed48",
+      "raw_bytes": 4784,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 0,
+          "failed": 1,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-fifth.log.gz",
+      "raw_sha256": "d7818c922b5d83cfcdcab1acd0ba4cfe49fe5fab0076b892957698616080062a",
+      "gzip_sha256": "6a1aff7a3d3d0eaa6a119ad11a279b5cf3138dc4b3081a6e5f3ea3e4063cd1e9",
+      "raw_bytes": 3021,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 0,
+          "failed": 1,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-final.log.gz",
+      "raw_sha256": "b7ecc02c4dfede8d345f715fc85b0577e79a165f01616b787842bff276b85c39",
+      "gzip_sha256": "6282f60fdffdf653a46f9b8fa650577c9309db58d45bc3945ec5e2cf925ddb5e",
+      "raw_bytes": 28383,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-fourth.log.gz",
+      "raw_sha256": "1caad00875014f35f0030cd3dda4b50b514d6dd55788bc5daa31132abc8c5d3a",
+      "gzip_sha256": "8605bdd2fc870e0ef1fc24b3d414083eb957fd32822115f9cae0f4fb83cfdb21",
+      "raw_bytes": 3315,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 0,
+          "failed": 1,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-ninth.log.gz",
+      "raw_sha256": "49b00390a681e79aad6a3e07e7ffa1e13d68c12b91bcdf08393078ad8b03277b",
+      "gzip_sha256": "3d33bd236e1d4d01f1770b03e640dd016946699d5ae8a36c195c1abe8d80b440",
+      "raw_bytes": 5147,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-seventh.log.gz",
+      "raw_sha256": "5b29297cf3838538237499476da217c796b8bf2836f39682734a5467864e918c",
+      "gzip_sha256": "96b63155f3d195e173041ed14fc6f5fa588e6d04119e4ce022b85c8eb469b4e2",
+      "raw_bytes": 12234,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-sixth.log.gz",
+      "raw_sha256": "21f4296abfa913b403348594d8a8f4f6b36fb38063c929bb18c28d8d71727f8e",
+      "gzip_sha256": "865a163c903371d315c2b90c68aca5bc66c1b04525f30723b37dcd343300e38f",
+      "raw_bytes": 3504,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 0,
+          "failed": 1,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-tenth.log.gz",
+      "raw_sha256": "a62691711a6afbc1f6da6b9c457e9d402b14e64c54ec3dccba4dfa4514403600",
+      "gzip_sha256": "7b0b4a52689470d0eb76278cd785fd53f8ca4ceb83a48c94d2c4459fc17a7fd7",
+      "raw_bytes": 5491,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-ops-twelfth.log.gz",
+      "raw_sha256": "af7c4cc490015113ff79c37c6d42bc2582c19ce16bf28e17bc99d3c851fe9731",
+      "gzip_sha256": "1baaaaee51bdaa23c791f968fbe09fb8f95b55ff35193ab52f9ef79fc4554f45",
+      "raw_bytes": 26933,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "log": "i7-local-quarantine-fix-local.log.gz",
+      "raw_sha256": "62f1135c0e25f889937018ec44dc1bb0c11b20a54e729f7ed0072ae00edc9acd",
+      "gzip_sha256": "c9ab556e7247753d92dceb6382dfb39dc8b15b7f8a2e4075d0da00720186ef61",
+      "raw_bytes": 28418,
+      "no_space_left_error": false,
+      "test_summaries": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "report": "i7-local-auth-regression.json.gz",
+      "raw_sha256": "311282576ddef51a062716564233f3713f8055185cacc7d17cfb21708a41d29b",
+      "gzip_sha256": "10f97dfcd47089160e602b10f28f3bcfda2751b029bb5a9240e1b294e005f862",
+      "raw_bytes": 15198,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 116,
+      "fingerprint_mismatches_to_source": [
+        "cloud/auth/src/server.rs"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-chat-regression.json.gz",
+      "raw_sha256": "5215101d6c95d3dc7ece9cf3e8bd0ab10f8d6f0680b8300aba7f467cd97e5526",
+      "gzip_sha256": "282c70c1b0355c4182ee2be062935017b6e2fad5d11943f531c4304ca3d6565c",
+      "raw_bytes": 10316,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 50,
+      "fingerprint_mismatches_to_source": [],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-cleanup-fix-local.json.gz",
+      "raw_sha256": "38aca38d2643eb1c166c129ca7e4f5fc9c5d77c7692cba3615d240ce5ffd2b50",
+      "gzip_sha256": "b1b15f481f8e968e597b75c6cbb7a2e25f4e4d7a9b5c524c8d877b79405b4b96",
+      "raw_bytes": 28036,
+      "recorded_head": "ef87af87575c64eb5e3c7202f03c89e1f9aea51e",
+      "checks": 63,
+      "fingerprint_mismatches_to_source": [],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-exact-delivery.json.gz",
+      "raw_sha256": "44e2c77bba2479bcd92cb9cd7c639a2d8a3ade1c2d4f931e3c9b2124a24b9ea2",
+      "gzip_sha256": "1b7fe0fa8a96e91bd4291d531a6afc5c2cd79c2f9f7d5cd21ef96a15a3924303",
+      "raw_bytes": 28017,
+      "recorded_head": "235e3e4d4c1917eafe55282426f41edaa0b6ec9d",
+      "checks": 63,
+      "fingerprint_mismatches_to_source": [],
+      "exact_final": true
+    },
+    {
+      "report": "i7-local-exact-final.json.gz",
+      "raw_sha256": "ebf6ffabb6e8f63c85786287dd0672f57d59b78d6a40f72bfbf286066b201b10",
+      "gzip_sha256": "9f696f8fbad38f4ff8e5a1c59ee9a74b67082d66a6b30fca1e471cac6d5073e7",
+      "raw_bytes": 28033,
+      "recorded_head": "ef87af87575c64eb5e3c7202f03c89e1f9aea51e",
+      "checks": 63,
+      "fingerprint_mismatches_to_source": [
+        "scripts/i7-operations.py"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-exact-local.json.gz",
+      "raw_sha256": "c7a8b6dab1a14a0dde122397e0c43ad66c984b1cf27bdfb19f93458506c81413",
+      "gzip_sha256": "fd82fe376a561d85d1164ff5889c53b92f1b2aaa488e35a4da8ec38a712f35d3",
+      "raw_bytes": 28563,
+      "recorded_head": "dcd2967145e94acb945a417e056345d37a327635",
+      "checks": 62,
+      "fingerprint_mismatches_to_source": [
+        "cloud/postgres/operations/backup.py",
+        "scripts/i7-operations.py"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-memory-regression.json.gz",
+      "raw_sha256": "59c64214645532c332d753043f40e2ff8104100aa54d0bb40485f4b443c5e79a",
+      "gzip_sha256": "cbdd09a8b7ad347bea1811a1eb0b13d14479f9dcfc958b5a6d74c714d3d11573",
+      "raw_bytes": 11064,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 58,
+      "fingerprint_mismatches_to_source": [],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-ops-final.json.gz",
+      "raw_sha256": "1ea2d1690f058b94c942f49d7f12cd384dbd56862ebd0065388400398bab99b6",
+      "gzip_sha256": "682ebc29601ea25e5901a86165c91f07fc497c42e7a2018d00c27482a284d369",
+      "raw_bytes": 27972,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 62,
+      "fingerprint_mismatches_to_source": [
+        "cloud/postgres/operations/backup.py",
+        "scripts/i7-operations.py"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-ops-ninth.json.gz",
+      "raw_sha256": "2bedfde72fc8cffe35298dc4edd0636911e978ebc4fa153681284d94b125ad96",
+      "gzip_sha256": "fe753bce5a89c77a6f696f735837fe6ef74737abd86d5c290f6c48c1f1b5f564",
+      "raw_bytes": 23653,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 42,
+      "fingerprint_mismatches_to_source": [
+        "cloud/auth/src/server.rs",
+        "chat/core/src/client.rs",
+        "chat/core/tests/chat.rs",
+        "cloud/auth/tests/operations.rs",
+        "cloud/postgres/operations/backup.py",
+        "scripts/i7-operations.py",
+        ".github/workflows/ci.yml"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-ops-tenth.json.gz",
+      "raw_sha256": "1a93be24db94ee1e94406e67c11a816ec44ea738ea7106826a919bb016a28aef",
+      "gzip_sha256": "ce09f2a1eb637b9d0963e75dd754532c41c0e3331a4332adcd095a0ec2d5a63e",
+      "raw_bytes": 24515,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 50,
+      "fingerprint_mismatches_to_source": [
+        "cloud/auth/src/server.rs",
+        "chat/core/src/client.rs",
+        "chat/core/tests/chat.rs",
+        "cloud/auth/tests/operations.rs",
+        "cloud/postgres/operations/backup.py",
+        "scripts/i7-operations.py",
+        ".github/workflows/ci.yml"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-ops-twelfth.json.gz",
+      "raw_sha256": "d26d4b50fde020b0b004f5be461ae878e37db45f35109a6d67947ee1ff608b0b",
+      "gzip_sha256": "3fa0e5dfce308313c6ad055aabbe98a91a1b5957f7e31f5f6cf5e6553a71959c",
+      "raw_bytes": 26989,
+      "recorded_head": "5af833a9a76dde005c92160b738c790a3c3473f2",
+      "checks": 56,
+      "fingerprint_mismatches_to_source": [
+        "cloud/auth/src/server.rs",
+        "chat/core/src/client.rs",
+        "chat/core/tests/chat.rs",
+        "cloud/auth/tests/operations.rs",
+        "cloud/postgres/operations/backup.py",
+        "scripts/i7-operations.py"
+      ],
+      "exact_final": false
+    },
+    {
+      "report": "i7-local-quarantine-fix-local.json.gz",
+      "raw_sha256": "7a32986a082f072ddb177d9742d19c2f2349d347e9c4afd9f3c12674be8947e4",
+      "gzip_sha256": "bac3a456a1c32dc1b7551d58de5105689889dfd80130cf3a625d6f98a6e8470d",
+      "raw_bytes": 28025,
+      "recorded_head": "dcd2967145e94acb945a417e056345d37a327635",
+      "checks": 63,
+      "fingerprint_mismatches_to_source": [
+        "scripts/i7-operations.py"
+      ],
+      "exact_final": false
+    }
+  ],
+  "exact_operations": {
+    "storage": {
+      "database_bytes": 12416691,
+      "wal_bytes": 50331648,
+      "snapshot_bytes": 265561,
+      "backup_max_bytes": 5000000000,
+      "backup_max_count": 7,
+      "backup_max_age_seconds": 604800,
+      "physical_fault_filesystem_bytes": 16777216,
+      "production_50GB_growth_verified": false
+    },
+    "source_head": "235e3e4d4c1917eafe55282426f41edaa0b6ec9d",
+    "source_fingerprints": {
+      "cloud/auth/src/client.rs": "761d765ca0c70ba48e913fc79a77a8afd239bde34c0989f853313e0902bf2621",
+      "cloud/auth/src/lib.rs": "3ffe788d76ebf456bd17383e8d3faf8300bfdf8b018cbf47b1a48f9fd10b287e",
+      "cloud/auth/src/main.rs": "0fc00d6f807c8d61b79f1e141bda3cccdcce0db9a43dc5432d9f7a9aa6eadd79",
+      "cloud/auth/src/server/chat.rs": "9ded2fc825ab807af85c6a4d5d7fd25321ce66a6eeff8bb32520347a2744916e",
+      "cloud/auth/src/server/disk.rs": "0cf37ebda6b8fc50c3e79a8ee19129ad6dbb142b8a950d904e19134845919163",
+      "cloud/auth/src/server/email.rs": "ba7618f8642c572d080b346850b3b5d964fa9682f581b495c1b48b0420ac38e8",
+      "cloud/auth/src/server/grants.rs": "f813ef3c849aeff0ae3e3d0d748531328c1d030642df1f0461ddb141966914cd",
+      "cloud/auth/src/server/memory.rs": "2860eaefd72086063b74a36509937f792991a06a616bf2ec99a5f0f0fbcbd19f",
+      "cloud/auth/src/server/passkeys.rs": "4deb75717c660467f753b6f18606af59aa34b1e8487b43d739f9270829de2ba8",
+      "cloud/auth/src/server.rs": "d79bcb0a41bef63ed9b7e798720465010f13c60866bdeb06f9f62b2f2f1adaad",
+      "cloud/auth/src/service.rs": "089494cf239b8f45de92afaf5ab4d4928b4ab29214bca43d4eeafc8f025b0b68",
+      "cloud/auth/src/store.rs": "2f24d710e3d94a157ef618b2bf332ffb637af213ac469b5d8eea9df89012866d",
+      "chat/core/src/cache.rs": "b0f519e791a686176ee6193080a3f32a7b874bd5008c3b4a07c63bbd024278ff",
+      "chat/core/src/client.rs": "1807b12b04d02f9ffd8d0802d5dfab188e4512a6c2040956d3521cd1bdce7c72",
+      "chat/core/src/lib.rs": "3e71d65395edbf34cb1889c7cb9db70bf7bd9a4954aac3ff7037d7be297fe6cf",
+      "chat/core/src/memory/host.rs": "1d8a8b2fb366f5d387473e18ec9646b42dadda727aefb3764df2641833cfa175",
+      "chat/core/src/memory/inference.rs": "942eb088d89575d7256253a45853f82afc07939095bd32a31f7b31f81909a011",
+      "chat/core/src/memory/jobs.rs": "71e3df88c1cf06986a5ea0347158e4143f8e192941fd9bcdb7b1221076c9784d",
+      "chat/core/src/memory/mod.rs": "ec50333505cb0945e487b006a0067c0896e670696b719cc4235405aa12cf3360",
+      "chat/core/src/memory/store.rs": "1f2500ae6b12e95431d2b0cbb819baff6a0567280538d1bc76ec755cdbf378f1",
+      "chat/core/src/memory/sync.rs": "bfa48b21ddbe6c3c75e58309b4a246f7d63f6673928462ca89900ad5eb3f55ac",
+      "chat/core/src/memory_http_tests.rs": "f8b9dc1ee79db2f516cd5b1e55d63b13af645c6d7929d03de6488b387c4ea0c4",
+      "chat/core/src/sync.rs": "1818c8e1d51a8562021ee4e676fb332f999b065901d5ba558ab1cda503e4bebb",
+      "chat/core/src/sync_http_tests.rs": "68f4cc9be1c8a35847918a8712a989c603befc7f418f9bed616ae9210a437217",
+      "chat/core/tests/chat.rs": "01764394b8bcd20067abf391e1713abd955767618abc99343b9ff09f27943254",
+      "chat/core/Cargo.toml": "3850abd6da9e5433e889fc8af66b654ef2d0276b45917e03d9a37371d44634a7",
+      "cloud/auth/tests/operations.rs": "8e8d8abdb104d01aac57601c8b6af3f24168c4d558c383a8a9b5fcd8c90c8f77",
+      "cloud/auth/Cargo.toml": "a3c172cb42692ee3be6aa6172ff30cf08ddec2dedae37e9bcb11c15149e67636",
+      "cloud/core/src/lib.rs": "effb8e0ae2b2e9fb9c4fbc707a4768b066e1cef6b6840626210f11b3b8bc29b0",
+      "Cargo.lock": "452df484cc876329a3923e00ec1854594a7fd1ddb336bdeb446f5b8c1ae4c635",
+      "cloud/postgres/operations/backup.py": "b5dfbe9c9c9b9b02a06741f801d6f026a044d7e7bfe527d62bd1b1c33f35572c",
+      "cloud/postgres/operations/quarantine.sql": "156affa3359358a0247d0ce4755564eb8309c61fa6ac2582dbd4a9c5c8f8cbe3",
+      "scripts/i7-operations.py": "17581364d9b26a29656e2cbe4677a54e363360409d39d56c9f83311126ef95af",
+      ".github/workflows/ci.yml": "a7cd5d811cf836022d12e846482efeea3438b37288c25b7aabef3656b35d988e",
+      "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+      "cloud/postgres/migrations/0002_authentication.sql": "7ef50facbc4feef52c5faec87a9232199e2521496a2e80ccdc7745fff8f84659",
+      "cloud/postgres/migrations/0003_chat_sync.sql": "8da171b75d379c325e4a3b35446c043a95cb47aef9f5ba103fae749b747299ce",
+      "cloud/postgres/migrations/0004_memory_sync.sql": "5575d255a02a22c3747c31116cbefcb7c4ec922964042d7e918fe3ec48e722f8",
+      "cloud/postgres/migrations/0005_operations.sql": "b5c8ecb20843bd60b5bd1361014822cf4cf97514abc0faf7a76658b3aaf676e2"
+    },
+    "checks": [
+      {
+        "name": "cached_read_scopes_match_original_owner_and_member_permissions",
+        "passed": true
+      },
+      {
+        "name": "cached_scope_owner_memory_enabled_denies_member",
+        "passed": true
+      },
+      {
+        "name": "cached_scope_owner_memory_delete_pending_denies_member",
+        "passed": true
+      },
+      {
+        "name": "cached_scope_owner_allowed_scopes_denies_member",
+        "passed": true
+      },
+      {
+        "name": "cached_scopes_no_session_default_denies",
+        "passed": true
+      },
+      {
+        "name": "cached_scopes_member_own_sync_off_denies_shared_and_personal",
+        "passed": true
+      },
+      {
+        "name": "cached_scope_reader_still_reads_but_original_writer_check_refuses",
+        "passed": true
+      },
+      {
+        "name": "cached_scope_revocation_rechecked_next_statement",
+        "passed": true
+      },
+      {
+        "name": "brevo_minimal_template_stable_idempotency_one_send",
+        "passed": true
+      },
+      {
+        "name": "mail_same_task_changed_payload_rejected",
+        "passed": true
+      },
+      {
+        "name": "unauthenticated_callback_cannot_suppress",
+        "passed": true
+      },
+      {
+        "name": "hard_bounce_durable_idempotent_and_late_delivery_cannot_unsuppress",
+        "passed": true
+      },
+      {
+        "name": "resend_explicit_provider_english_and_stable_header",
+        "passed": true
+      },
+      {
+        "name": "svix_signature_raw_body_and_expiry_required",
+        "passed": true
+      },
+      {
+        "name": "signed_complaint_suppresses_across_provider_switch",
+        "passed": true
+      },
+      {
+        "name": "provider_timeout_unknown",
+        "passed": true
+      },
+      {
+        "name": "process_reopen_never_retries_unknown_or_switches_provider",
+        "passed": true
+      },
+      {
+        "name": "supplier_429_rejected_no_raw_error_or_retry",
+        "passed": true
+      },
+      {
+        "name": "supplier_503_unknown_no_automatic_fallback",
+        "passed": true
+      },
+      {
+        "name": "supplier_redirect_not_followed",
+        "passed": true
+      },
+      {
+        "name": "durable_global_daily_monthly_budget_no_extra_http",
+        "passed": true
+      },
+      {
+        "name": "ninety_percent_budget_stops_nonessential_but_keeps_verification",
+        "passed": true
+      },
+      {
+        "name": "mail_records_contain_no_plain_recipient_token_password_or_api_key",
+        "passed": true
+      },
+      {
+        "name": "data_role_cannot_read_mail_metadata",
+        "passed": true
+      },
+      {
+        "name": "real_http_callback_authentication_and_durable_delivery",
+        "passed": true
+      },
+      {
+        "name": "callback_body_size_bound",
+        "passed": true
+      },
+      {
+        "name": "callback_worker_admission_before_slow_body",
+        "passed": true
+      },
+      {
+        "name": "single_hash_worker_concurrent_login_bounded_refusal",
+        "passed": true
+      },
+      {
+        "name": "registered_login_and_exact_rls_vector_latency_slo",
+        "passed": true
+      },
+      {
+        "name": "physical_low_disk_refuses_write_before_database_mutation",
+        "passed": true
+      },
+      {
+        "name": "low_disk_chat-push_rejected_before_payload_or_mutation",
+        "passed": true
+      },
+      {
+        "name": "low_disk_memory-push_rejected_before_payload_or_mutation",
+        "passed": true
+      },
+      {
+        "name": "low_disk_chat-control_stop_still_requires_auth",
+        "passed": true
+      },
+      {
+        "name": "low_disk_memory-control_keep_still_requires_auth",
+        "passed": true
+      },
+      {
+        "name": "low_disk_memory-control_delete_still_requires_auth",
+        "passed": true
+      },
+      {
+        "name": "disk_space_recovery_does_not_switch_account_or_database",
+        "passed": true
+      },
+      {
+        "name": "protected_service_entry_real_process_start_and_restart_no_email_send",
+        "passed": true
+      },
+      {
+        "name": "service_entry_rejects_public_configuration",
+        "passed": true
+      },
+      {
+        "name": "service_entry_rejects_password_in_configuration",
+        "passed": true
+      },
+      {
+        "name": "real_mail_and_resource_integration_completed",
+        "passed": true
+      },
+      {
+        "name": "physical_enospc_sqlite_committed_chat_and_outbox_reopen_unchanged",
+        "passed": true
+      },
+      {
+        "name": "physical_sqlite_enospc_integration_completed",
+        "passed": true
+      },
+      {
+        "name": "actual_combined_two_cpu_two_gib_no_swap_peak_slo_no_oom",
+        "passed": true
+      },
+      {
+        "name": "real_pg_consistent_archive_private_permissions_hash",
+        "passed": true
+      },
+      {
+        "name": "restore_creation_blocks_connections_before_privilege_revocation",
+        "passed": true
+      },
+      {
+        "name": "schema4_backup_forward_migrates_to5_and_preserves_B_barrier",
+        "passed": true
+      },
+      {
+        "name": "old_snapshot_latest_B_erases_only_owner_memory_sources_vectors_jobs",
+        "passed": true
+      },
+      {
+        "name": "B_does_not_erase_chat_or_other_owner_attachment",
+        "passed": true
+      },
+      {
+        "name": "latest_acl_revocation_and_source_tombstones_survive",
+        "passed": true
+      },
+      {
+        "name": "all_sessions_refresh_proofs_controls_and_epochs_invalidated",
+        "passed": true
+      },
+      {
+        "name": "old_revoked_credentials_cannot_return",
+        "passed": true
+      },
+      {
+        "name": "restored_roles_rls_and_no_public_connect",
+        "passed": true
+      },
+      {
+        "name": "missing_latest_checkpoint_keeps_data_quarantined_suspended",
+        "passed": true
+      },
+      {
+        "name": "missing_checkpoint_revokes_credentials_preserves_unverified_acl_in_quarantine",
+        "passed": true
+      },
+      {
+        "name": "restore_cannot_overwrite_online_database",
+        "passed": true
+      },
+      {
+        "name": "backup_budget_rejects_before_touching_old_archive",
+        "passed": true
+      },
+      {
+        "name": "corrupt_archive_rejected_before_restore",
+        "passed": true
+      },
+      {
+        "name": "terminated_db_worker_uncommitted_write_rolls_back",
+        "passed": true
+      },
+      {
+        "name": "persistent_pg_process_restart_keeps_committed_data_and_B_epoch",
+        "passed": true
+      },
+      {
+        "name": "max_seven_registered_backups_without_deleting_unrelated_files",
+        "passed": true
+      },
+      {
+        "name": "interrupted_backup_old_sensitive_partial_expires",
+        "passed": true
+      },
+      {
+        "name": "seven_day_deleted_body_backup_expires",
+        "passed": true
+      },
+      {
+        "name": "source_unchanged_during_verification",
+        "passed": true
+      }
+    ],
+    "failure_count": 0,
+    "elapsed_seconds": 31.085,
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "vector_version": "0.8.2",
+    "restore_with_latest": {
+      "database": "caidex_restore_current",
+      "quarantined": true,
+      "automatic_publication": false,
+      "backup_point": 1791752803.860445,
+      "backup_window": [
+        1791752803.860445,
+        1791752804.2577345
+      ],
+      "checkpoint_point": 1791752812.427478,
+      "later_operations_known": false,
+      "latest_checkpoint_applied": true,
+      "old_sessions_valid": false,
+      "sync_enabled": false,
+      "restore_seconds": 2.021,
+      "schema": 5
+    },
+    "restore_without_latest": {
+      "database": "caidex_restore_missing",
+      "quarantined": true,
+      "automatic_publication": false,
+      "backup_point": 1791752803.860445,
+      "backup_window": [
+        1791752803.860445,
+        1791752804.2577345
+      ],
+      "checkpoint_point": null,
+      "later_operations_known": false,
+      "latest_checkpoint_applied": false,
+      "old_sessions_valid": false,
+      "sync_enabled": false,
+      "restore_seconds": 0.783,
+      "schema": 5
+    },
+    "database_restart_seconds": 0.997,
+    "measurements": [
+      {
+        "actual_connections": 8,
+        "concurrency": 4,
+        "database_bytes": 12015283,
+        "dimensions": 3,
+        "exact_vector_query": {
+          "p50_ms": 4.147353000000001,
+          "p95_ms": 4.912426,
+          "p99_ms": 17.81218
+        },
+        "login": {
+          "p50_ms": 186.424184,
+          "p95_ms": 201.46099,
+          "p99_ms": 201.46099
+        },
+        "login_sequential": 8,
+        "max_connections": "12",
+        "query_count": 20,
+        "shared_buffers": "32MB",
+        "statuses": [
+          200,
+          429,
+          429,
+          429
+        ],
+        "vectors": 1000,
+        "work_mem": "2MB"
+      }
+    ],
+    "resource_curve": [
+      {
+        "time": 6.668,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 70246400,
+        "memory_peak": 79261696,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4307601",
+          "user_usec": "3220690",
+          "system_usec": "1086911",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "62",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 6.737,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 71057408,
+        "memory_peak": 79261696,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4353058",
+          "user_usec": "3256284",
+          "system_usec": "1096774",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "62",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 7.005,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77496320,
+        "memory_peak": 79261696,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4410580",
+          "user_usec": "3292680",
+          "system_usec": "1117900",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "65",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 7.273,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77488128,
+        "memory_peak": 79294464,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4432001",
+          "user_usec": "3309501",
+          "system_usec": "1122500",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "67",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 7.546,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77692928,
+        "memory_peak": 79294464,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4454199",
+          "user_usec": "3327646",
+          "system_usec": "1126552",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "70",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 7.814,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77553664,
+        "memory_peak": 79294464,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4475150",
+          "user_usec": "3344613",
+          "system_usec": "1130536",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "72",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 8.089,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77701120,
+        "memory_peak": 79294464,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4496724",
+          "user_usec": "3360295",
+          "system_usec": "1136429",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "74",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 8.361,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77590528,
+        "memory_peak": 79294464,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4517826",
+          "user_usec": "3374119",
+          "system_usec": "1143707",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "77",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 8.623,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 77561856,
+        "memory_peak": 79294464,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4538582",
+          "user_usec": "3389683",
+          "system_usec": "1148898",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "79",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 8.917,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 146841600,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4685881",
+          "user_usec": "3447646",
+          "system_usec": "1238234",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "82",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 9.187,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 144273408,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "4923564",
+          "user_usec": "3624413",
+          "system_usec": "1299150",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "85",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 9.46,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 144543744,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "5210252",
+          "user_usec": "3862954",
+          "system_usec": "1347298",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "88",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 9.733,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 117846016,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "5494936",
+          "user_usec": "4075446",
+          "system_usec": "1419489",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "90",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 10.003,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 144809984,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "5781456",
+          "user_usec": "4306314",
+          "system_usec": "1475141",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "93",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 10.274,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 88338432,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "6068471",
+          "user_usec": "4542580",
+          "system_usec": "1525890",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "96",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 10.548,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 144904192,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "6347596",
+          "user_usec": "4755925",
+          "system_usec": "1591671",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "98",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 10.831,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 144936960,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "6648299",
+          "user_usec": "5016176",
+          "system_usec": "1632122",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "101",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 11.116,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 144830464,
+        "memory_peak": 148094976,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "6959126",
+          "user_usec": "5244555",
+          "system_usec": "1714571",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "104",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 11.387,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 147755008,
+        "memory_peak": 149045248,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "7241486",
+          "user_usec": "5456566",
+          "system_usec": "1784920",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "107",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 11.659,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 150069248,
+        "memory_peak": 151642112,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "7523119",
+          "user_usec": "5683011",
+          "system_usec": "1840107",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "110",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 11.941,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 149151744,
+        "memory_peak": 151642112,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "7823241",
+          "user_usec": "5919612",
+          "system_usec": "1903629",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "112",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 12.215,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 69541888,
+        "memory_peak": 151642112,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "7912902",
+          "user_usec": "5977118",
+          "system_usec": "1935783",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "115",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      },
+      {
+        "time": 12.492,
+        "cpu_quota": 200000,
+        "cpu_period": 100000,
+        "memory_max": 2147483648,
+        "memory_current": 69328896,
+        "memory_peak": 151642112,
+        "counters": {
+          "low": "0",
+          "high": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_kill": "0",
+          "oom_group_kill": "0",
+          "usage_usec": "7954774",
+          "user_usec": "6000278",
+          "system_usec": "1954495",
+          "core_sched.force_idle_usec": "0",
+          "nr_periods": "117",
+          "nr_throttled": "0",
+          "throttled_usec": "0",
+          "nr_bursts": "0",
+          "burst_usec": "0"
+        }
+      }
+    ],
+    "cgroup": {
+      "time": 12.492,
+      "cpu_quota": 200000,
+      "cpu_period": 100000,
+      "memory_max": 2147483648,
+      "memory_current": 69328896,
+      "memory_peak": 151642112,
+      "counters": {
+        "low": "0",
+        "high": "0",
+        "max": "0",
+        "oom": "0",
+        "oom_kill": "0",
+        "oom_group_kill": "0",
+        "usage_usec": "7954774",
+        "user_usec": "6000278",
+        "system_usec": "1954495",
+        "core_sched.force_idle_usec": "0",
+        "nr_periods": "117",
+        "nr_throttled": "0",
+        "throttled_usec": "0",
+        "nr_bursts": "0",
+        "burst_usec": "0"
+      }
+    },
+    "checkpoint_contains_body": false,
+    "production_deployment": false,
+    "real_email_delivery": false
+  },
+  "exact_local_process_exit_code": 0,
+  "unverified": [
+    "real email API from China VPS and mailbox delivery/SPF/DKIM/DMARC",
+    "formal public deployment and operational obligations",
+    "production 50GB long-term growth or fixed user capacity",
+    "forced OOM-kill or whole-VPS/disk-loss recovery",
+    "formal GUI/CLI/iOS installations",
+    "real models/F-G Live"
+  ],
+  "development_failures": [
+    "private TMPDIR write outside sandbox (UnsafeStorage), resolved with existing private test directory/escalation",
+    "fixture wrong session GUC and startup/schema races corrected",
+    "debug password hashing and per-row RLS exceeded registered SLO: release with unchanged Argon2 and statement-local authorized scopes fixed; ordinary FK indexes fix large B cleanup",
+    "missing-checkpoint expected count adjusted to registered 1001 seeded memories",
+    "reqwest fixture JSON helper unavailable: reuse body/text, no dependency feature expansion",
+    "Clippy collapsed condition and service fixture discovery route corrected",
+    "Git staged diff caught one new script trailing blank, removed before commit; exact local rerun binds committed code",
+    "Post-commit self-check found recovery CREATE/REVOKE connection window: creation now ALLOW_CONNECTIONS=false, real pre-revoke ordinary-role connection refused; final exact63 verifies fix",
+    "First/second CI run complete all I-7 assertions but non-root fixture cleanup fails; only private test bind mounts ownership returned after container removal, final exact process exits0"
+  ]
+}

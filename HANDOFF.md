@@ -1,14 +1,22 @@
-# 当前交接：I-7 运行与恢复（已授权，实施中）
+# 当前交接：I-7 开发验证与证据封存完成，停止等待独立审计
 
-2026-10-11 用户确认 I-6 独立审计通过并明确批准 I-7。这是用户确认；I-6 不可变源码/CI/历史证据保持。I-7 起点 main `5af833a9a76dde005c92160b738c790a3c3473f2`，本地/origin/GitHub main 一致，工作区干净。有限任务、依赖、通过/停止见 [I-7设计与验收](docs/CAIdex-I7-运行与恢复-设计与验收-V1.md)。
+2026-10-11 用户确认 I-6 独立审计通过并明确批准 I-7；本会话只开发验证，不自行授独立审计。备份规则已确认每日、7天/7份/5,000,000,000字节；先完成合成邮件与隔离运行/恢复。真实中国大陆VPS/邮箱送达及正式部署待另行授权，不用真实模型Key/商业模型，不启动J或其他阶段，不使用ponytail技能。
 
-已确认备份策略：每日、最多7天/7份/5GB；预算不足拒绝新备份并告警，B 删除说明旧本机备份的淘汰窗口。用户确认先做供应商适配、合成邮件、隔离运行/恢复验证；中国大陆VPS/真实邮箱送达和正式部署仍待另行授权。不开付费、不用用户模型Key/商业模型、不启动J及后续。
+起点main 5af833a9a76dde005c92160b738c790a3c3473f2，最初工作区干净且本地/origin/GitHub一致；最终不可变功能源码 [235e3e4d4c1917eafe55282426f41edaa0b6ec9d](https://github.com/bboytang/CAIdex/commit/235e3e4d4c1917eafe55282426f41edaa0b6ec9d)，[精确CI38174971743](https://github.com/bboytang/CAIdex/actions/runs/38174971743) 四job completed/success。本封存仅HANDOFF/I-7验收文档/新i7证据，docs-only封存HEAD不替代功能CI SHA；实际branch/HEAD/工作区/远端恢复时用Git核实。有限范围/通过/停止/试用见 [I-7设计验收](docs/CAIdex-I7-运行与恢复-设计与验收-V1.md) 和 [操作说明](cloud/postgres/operations/README.md)。
 
-本机余约6.2GB、RAM1.9GiB/Swap4GiB；可行定向编译/测试优先本机，完整workspace/跨平台或条件不足时GitHub Actions，核验精确提交实际原始证据。不清理有效缓存。不使用ponytail技能。
+实现：云schema4→5事务迁移，旧DDL不改、本地schema5/protocol1不变；Brevo/Resend固定HTTPS适配、持久全局预算/稳定任务hash/unknown不重发/认证回调/硬退信投诉抑制；Broker私有秘密+loopback服务入口/磁盘预留。PG管理员有限一致备份/私有清单/hash/7天7份5GB/硬预算/过期中断partial淘汰；同源最新控制/身份/ACL/epoch/墓碑检查点恢复，旧认证/同步世代全部作废，B旧正文/来源/向量不复活且保留其他owner记忆与Chat。恢复库创建即禁止连接，撤CONNECT后才让管理员恢复，始终不自动发布；缺最新记录则账户暂停/凭据撤销/资料隔离。选定本机Chat JSON导出含分支/附件/未发送附件/进行中草稿，原文与JSON双重secret guard，无session/outbox/重放。
 
-本轮实现：schema5前向事务迁移；Brevo/Resend有限持久预算/幂等状态/认证回调/退信投诉抑制；Git外Broker秘密的loopback服务入口/磁盘预留；有限PG备份/最新检查点/新建隔离恢复；选定本机Chat导出。1000条精确向量压测发现逐行嵌套RLS重复检查，新增语句内授权scope集合并保留双方有效状态/范围/ACL与现有写权限，补普通FK索引保障B批清理。
+性能最小修复：1000向量的逐行嵌套授权查询超登记SLO，新增既有非owner/NOBYPASSRLS guard的语句内授权scope集合，双方active/enabled/范围/pending/ACL规则与原写权限/锁保持；补四个普通FK索引保障大批B清理。完整release密码登录仍Argon2id 64MiB/t3/p1，未降参数或事后放宽SLO。
 
-本机阶段验证：账户116、Memory58具名真实PG/HTTP检查，Chat本地26/0（ignored另记），Chat同步50、最终I-7隔离演练63项/0失败（含邮件回调/独立服务重启/物理ENOSPC/旧schema恢复/7天7份与预算）已验证，不将早期失败或工作区证据当精确提交CI。当前盘余约2.9GB，不清有效缓存；完整workspace/跨平台继续GitHub。操作与复现见 cloud/postgres/operations/README.md。初始dcd2967/CI38174081672数据库功能62/0但非root清理私有PG绑定目录失败，job failure，不授通过；ef87af8/CI38174431345是连接隔离修复，仍有同一清理路径。已补仅本次测试绑定目录归还当前uid/gid，停止容器后执行，保持目录私有；复验/新精确CI后才封存。收尾发现CREATE DATABASE到REVOKE间连接抢占窗口：已改创建即ALLOW_CONNECTIONS=false并添加真实抢占负例，本机63/0及全部指纹匹配；提交最小修复后核验新的最终CI。准确下一步：commit/push main、核验最终精确四job CI并封存原始证据；达到有限条件后停止等独立审计，不启动J。
+精确本机235：I-7隔离63项/0失败、39源码指纹全部匹配、含所有权清理的整个进程exit0；Chat/Memory Rust26/0（ignored另记）、auth lib5/0、cloud lib2/0。真实PG+HTTP本机账户116/Chat50/Memory58具名检查；Chat/Memory相关指纹匹配最终源码，账户报告早于磁盘停止准入修正差异明记，最终CI重新验证116。2CPU/2GiB容器同时运行PG与Rust服务；1000条3维精确向量、3附件、顺序登录8/竞争4/查询20，最终本机登录p95约201ms、检索p95约4.91ms、峰值约145MiB、OOM0；物理16MiB ENOSPC保留已提交Chat/outbox，B旧备份/缺检查点/legacy4→5/ACL撤销/认证作废/预算与淘汰/DB与应用进程中断均实际验证。起点盘余6.2GB，收尾约2.8GB/93%；可行定向优先本机，完整workspace/跨平台由GitHub，不清有效缓存。
+
+精确CI：DB114575329029 I-1 118、账户116、Chat50、Memory58、I-7 63具名检查/0失败、auth lib5/0。Linux114575329207 workspace725/0/84及Runtime81/0；macOS114575329223 workspace724/0/81及Runtime80/0；Windows114575329189 workspace718/0/81及Runtime80/0。ignored不算通过，Linux原生凭据1/Windows Host lib4另记；fmt/Clippy/JS/schema/doctor及I-3/I-4.1/I-4.2/H-1/2/3演示实际成功。CI登录p95约86ms/检索约3.04ms/峰值约152MiB/OOM0；恢复约1.269秒（仅小库实测）。每份原始checkout完整SHA与报告指纹核对。
+
+证据：[最终CI](docs/evidence/i7-ci.json)、[本机/开发过程](docs/evidence/i7-local.json)、[初始CI](docs/evidence/i7-ci-initial.json)、[第二轮CI](docs/evidence/i7-ci-second.json)。38本机原日志/12报告、12CI原日志共62份压缩及原文SHA256核验；旧证据不改。初始dcd2967/38174081672及ef87af8/38174431345三平台成功、DB功能62/63项0失败，但非root清理私有PG绑定目录失败，整体failure，不能授通过；235仅测试绑定目录在停止容器后归还调用者uid/gid并恢复私有权限，最终CI完整成功。开发中的目录沙箱、fixture/schema/启动、reqwest已有feature与Clippy/断言问题保留原日志；不把原失败或超SLO当最终通过。
+
+限制：测试是隔离PG/HTTP/内部Rust API，不是正式GUI/CLI/iOS或物理多设备安装。真实送达/地域/域名、公开部署/运营义务、生产50GB长周期/1536维ANN/人数、强制OOM杀死及全VPS/同盘全损恢复未验；同机库与备份可能全损。邮件无持久明文验证码队列/自动unknown对账/供应商自动切换；当前单worker和实际peer限流的公开入口配置仍须部署前核验。事件/收据/墓碑/邮件元数据未GC，增长需监控；维护不运行/失败时不能宣称7天备份已淘汰。最新检查点只证明所标时点，恢复均隔离，不承诺其后操作或自动发布。F/G-Live与真实模型保持待用户最终验。固定Runtime/Provider/Host/upstream/旧DDL/历史证据保持，外部依赖版本/source/checksum不变，只新增既有libc的目标依赖用途；cloud状态工具/策略未提供，不宣称其就绪。
+
+准确下一步：停止I-7新增功能及跨阶段开发，等待独立新会话/其他模型只读审计235源码、上述原始证据与操作步骤；本范围明确阻断才最小修复复验。须用户确认I-7独立审计通过并明确批准后续阶段才可继续，不把V3整体目标或历史授权当跨阶段授权。
 
 ---
 
