@@ -537,6 +537,7 @@ dependencies = [
 name = "caidex-chat"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "base64 0.22.1",
  "caidex-auth",
  "caidex-cloud-core",
@@ -551,6 +552,7 @@ dependencies = [
  "sha2 0.10.9",
  "thiserror 2.0.21",
  "tokio",
+ "tokio-postgres",
  "uuid",
 ]
 
@@ -591,11 +593,11 @@ name = "caidex-host"
 version = "0.1.0"
 dependencies = [
  "caidex-auth",
- "caidex-cloud-core",
  "caidex-chat",
+ "caidex-cloud-core",
+ "caidex-credentials",
  "caidex-model-core",
  "caidex-provider-custom",
- "caidex-credentials",
  "caidex-runtime",
  "getrandom 0.4.3",
  "libc",

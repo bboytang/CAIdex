@@ -869,7 +869,7 @@ async fn schema_two_upgrade_preserves_chat_memory_permissions_and_unsubmitted_jo
     assert_eq!(
         db.pragma_query_value::<i64, _>(None, "user_version", |r| r.get(0))
             .unwrap(),
-        3
+        4
     );
     assert_eq!(
         db.query_row(

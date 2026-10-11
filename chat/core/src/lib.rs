@@ -2,6 +2,7 @@
 mod cache;
 mod client;
 pub mod memory;
+pub mod sync;
 
 pub use cache::{Attachment, Cache, Conversation, Message, OutboxEntry};
 use caidex_auth::{ConfirmedSession, Trust};
@@ -20,6 +21,12 @@ pub const MAX_HISTORY: usize = 128;
 pub enum Error {
     #[error("Chat storage operation failed")]
     Storage,
+    #[error("Chat sync unavailable; original queue retained")]
+    SyncOffline,
+    #[error("Chat sync consent, authentication or permission refused")]
+    SyncDenied,
+    #[error("Chat sync conflict; original data and operation retained")]
+    SyncConflict,
     #[error("Chat storage path, permissions, owner or schema refused")]
     UnsafeStorage,
     #[error("Chat request or response is invalid or exceeds a limit")]

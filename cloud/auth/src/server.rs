@@ -1,4 +1,5 @@
 //! Linux account service. Migration/admin and ordinary data connections are separate.
+mod chat;
 mod grants;
 mod passkeys;
 
@@ -29,6 +30,10 @@ type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("invalid_request")]
     Invalid,
+    #[error("sync_conflict")]
+    Conflict,
+    #[error("sync_disabled")]
+    Disabled,
     #[error("access_denied")]
     Denied,
     #[error("invalid_grant")]
@@ -55,6 +60,8 @@ impl From<tokio_postgres::Error> for Error {
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let status = match self {
+            Self::Conflict => StatusCode::CONFLICT,
+            Self::Disabled => StatusCode::FORBIDDEN,
             Self::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
             Self::Limited => StatusCode::TOO_MANY_REQUESTS,
             Self::Denied => StatusCode::UNAUTHORIZED,
@@ -271,6 +278,16 @@ impl<S: EmailSender> Service<S> {
             .clone()
             .try_acquire_owned()
             .map_err(|_| Error::Limited)?;
+        self.admitted_request(action, bearer, peer, body).await
+    }
+
+    async fn admitted_request(
+        &self,
+        action: &str,
+        bearer: Option<&str>,
+        peer: &str,
+        body: Value,
+    ) -> Result<Value> {
         let mut auth = self.auth.lock().await;
         // Rate state commits independently, including failed attempts. No client-provided IP is trusted.
         let rate = auth.transaction().await?;
@@ -315,6 +332,7 @@ impl<S: EmailSender> Service<S> {
         body: Value,
     ) -> Result<Value> {
         match action {
+            _ if action.starts_with("chat-") => self.chat(tx, action, bearer, body).await,
             "register" | "recover" => {
                 fields(
                     &body,
@@ -659,7 +677,7 @@ impl<S: EmailSender> Service<S> {
             .ok_or(Error::Denied)?;
         let row=tx.query_opt("SELECT s.* FROM caidex.auth_sessions s JOIN caidex.users u USING(user_id) WHERE s.access_hash=$1 AND s.issuer=$2 AND s.audience='caidex-data-v1' AND s.revoked_at IS NULL AND s.access_expires_at>statement_timestamp() AND s.refresh_expires_at>statement_timestamp() AND u.state='active'",&[&digest(token),&self.trust.issuer()]).await?.ok_or(Error::Denied)?;
         lock_user(tx, row.get("user_id")).await?;
-        let row=tx.query_opt("SELECT *,revoked_at IS NULL AND access_expires_at>statement_timestamp() AND refresh_expires_at>statement_timestamp() AS valid FROM caidex.auth_sessions WHERE session_id=$1 FOR UPDATE",&[&row.get::<_,Uuid>("session_id")]).await?.ok_or(Error::Denied)?;
+        let row=tx.query_opt("SELECT *,revoked_at IS NULL AND access_expires_at>statement_timestamp() AND refresh_expires_at>statement_timestamp() AS valid FROM caidex.auth_sessions WHERE session_id=$1 FOR NO KEY UPDATE",&[&row.get::<_,Uuid>("session_id")]).await?.ok_or(Error::Denied)?;
         if !row.get::<_, bool>("valid") {
             return Err(Error::Denied);
         }
@@ -879,10 +897,11 @@ async fn identity_lock(tx: &Transaction<'_>, address: &str) -> Result<()> {
     .await?;
     Ok(())
 }
+// Serialize control/revocation without blocking data-transaction foreign keys to immutable IDs.
 async fn lock_user(tx: &Transaction<'_>, user: Uuid) -> Result<()> {
     if tx
         .query_opt(
-            "SELECT user_id FROM caidex.users WHERE user_id=$1 AND state='active' FOR UPDATE",
+            "SELECT user_id FROM caidex.users WHERE user_id=$1 AND state='active' FOR NO KEY UPDATE",
             &[&user],
         )
         .await?
@@ -963,6 +982,10 @@ pub fn router<S: EmailSender>(service: Arc<Service<S>>) -> Router {
             get(discovery::<S>),
         )
         .route("/v1/auth/{action}", post(request::<S>))
+        .route(
+            "/v1/chat/{action}",
+            post(chat_request::<S>).layer(DefaultBodyLimit::max(caidex_cloud_core::chat::MAX_WIRE)),
+        )
         .route("/authorize", get(login_page))
         .route("/device", get(login_page))
         .route("/account.js", get(account_script))
@@ -1018,6 +1041,55 @@ async fn request<S: EmailSender>(
     Ok((
         [("Cache-Control", "no-store"), ("Pragma", "no-cache")],
         Json(result),
+    )
+        .into_response())
+}
+async fn chat_request<S: EmailSender>(
+    State(service): State<Arc<Service<S>>>,
+    Path(action): Path<String>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    request: axum::extract::Request,
+) -> Result<Response> {
+    // Admit before reading the larger Chat body; reject instead of queuing payload copies.
+    let _permit = service
+        .hashes
+        .clone()
+        .try_acquire_owned()
+        .map_err(|_| Error::Limited)?;
+
+    if headers
+        .get("origin")
+        .is_some_and(|v| v.to_str().ok() != Some(service.trust.issuer().trim_end_matches('/')))
+    {
+        return Err(Error::Denied);
+    }
+    if headers.get("content-type").and_then(|v| v.to_str().ok()) != Some("application/json") {
+        return Err(Error::Invalid);
+    }
+    let bytes = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        axum::body::to_bytes(request.into_body(), caidex_cloud_core::chat::MAX_WIRE),
+    )
+    .await
+    .map_err(|_| Error::Unavailable)?
+    .map_err(|_| Error::Invalid)?;
+    let body = serde_json::from_slice(&bytes).map_err(|_| Error::Invalid)?;
+    let token = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "));
+    let value = service
+        .admitted_request(
+            &format!("chat-{action}"),
+            token,
+            &peer.ip().to_string(),
+            body,
+        )
+        .await?;
+    Ok((
+        [("Cache-Control", "no-store"), ("Pragma", "no-cache")],
+        Json(value),
     )
         .into_response())
 }

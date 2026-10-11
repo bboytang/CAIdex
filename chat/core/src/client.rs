@@ -1,6 +1,7 @@
 use crate::{
     Cache, Content, Conversation, End, Error, MAX_TEXT, Message, Namespace, OutboxEntry, Result,
 };
+use caidex_auth::ConfirmedSession;
 use caidex_cloud_core::Id;
 use caidex_model_core::{
     CancellationToken, CanonicalRequest, CanonicalResponse, CredentialRequirement, ModelProvider,
@@ -33,6 +34,7 @@ pub(crate) struct State {
     pub(crate) model: Option<LocalModel>,
     pub(crate) generation: u64,
     pub(crate) memory: crate::memory::Session,
+    pub(crate) sync_session: Option<Arc<ConfirmedSession>>,
     pending: BTreeMap<Uuid, CancellationToken>,
 }
 /// Shared client state makes cancellation/account changes invalidate late replies.
@@ -49,6 +51,7 @@ impl Chat {
                 cache: Cache::open(root, namespace)?,
                 model: None,
                 generation: 0,
+                sync_session: None,
                 pending: BTreeMap::new(),
                 memory,
             }),
@@ -88,6 +91,7 @@ impl Chat {
         state.memory = crate::memory::Session::for_namespace(next.namespace());
         state.pending.clear();
         state.model = None;
+        state.sync_session = None;
         state.generation += 1;
         state.cache = next;
         Ok(())

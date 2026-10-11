@@ -330,3 +330,59 @@ mod tests {
         assert!(ConfirmedSession::confirm(&trust, crate::CLI_CLIENT, reply, &online).is_err());
     }
 }
+
+#[derive(Debug, thiserror::Error)]
+pub enum ChatError {
+    #[error("Chat service unavailable; keep the original operation")]
+    Offline,
+    #[error("Chat authentication or synchronization permission refused")]
+    Denied,
+    #[error("Chat synchronization version or operation conflict")]
+    Conflict,
+    #[error("Invalid Chat protocol response")]
+    Invalid,
+}
+impl ConfirmedSession {
+    /// Account transport is pinned to the reviewed issuer. No redirect receives a bearer.
+    pub async fn chat_request(
+        &self,
+        action: &str,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, ChatError> {
+        if !matches!(action, "status" | "control" | "push" | "pull") {
+            return Err(ChatError::Invalid);
+        }
+        let bytes = serde_json::to_vec(&body).map_err(|_| ChatError::Invalid)?;
+        if bytes.len() > caidex_cloud_core::chat::MAX_WIRE {
+            return Err(ChatError::Invalid);
+        }
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|_| ChatError::Offline)?;
+        let mut reply = client
+            .post(format!("{}v1/chat/{action}", self.issuer()))
+            .header("content-type", "application/json")
+            .bearer_auth(&self.tokens.access_token)
+            .body(bytes)
+            .send()
+            .await
+            .map_err(|_| ChatError::Offline)?;
+        match reply.status().as_u16() {
+            200 => (),
+            401 | 403 => return Err(ChatError::Denied),
+            409 => return Err(ChatError::Conflict),
+            429 | 500..=599 => return Err(ChatError::Offline),
+            _ => return Err(ChatError::Invalid),
+        }
+        let mut bytes = Vec::new();
+        while let Some(chunk) = reply.chunk().await.map_err(|_| ChatError::Offline)? {
+            if bytes.len() + chunk.len() > caidex_cloud_core::chat::MAX_WIRE {
+                return Err(ChatError::Invalid);
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        serde_json::from_slice(&bytes).map_err(|_| ChatError::Invalid)
+    }
+}

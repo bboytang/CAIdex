@@ -388,7 +388,7 @@ fn private_storage_lock_future_schema_and_limits_are_refused_without_mutating_ex
     drop(cache);
     let path = root.0.join("guest/cache.sqlite3");
     let db = rusqlite::Connection::open(&path).unwrap();
-    db.pragma_update(None, "user_version", 4).unwrap();
+    db.pragma_update(None, "user_version", 5).unwrap();
     drop(db);
     assert!(matches!(
         Cache::open(&root.0, Namespace::guest()),

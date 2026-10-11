@@ -109,7 +109,7 @@ impl Cache {
             tx.pragma_update(None, "application_id", APPLICATION_ID)?;
             tx.pragma_update(None, "user_version", 1)?;
             tx.commit()?;
-        } else if !(1..=3).contains(&version) || application != APPLICATION_ID {
+        } else if !(1..=4).contains(&version) || application != APPLICATION_ID {
             return Err(Error::UnsafeStorage);
         }
         let identity: String = db.query_row("SELECT namespace FROM identity", [], |r| r.get(0))?;
@@ -132,6 +132,12 @@ impl Cache {
             }
             // Host job references pin an exact target; old binaries must not read this new codec.
             tx.pragma_update(None, "user_version", 3)?;
+            tx.commit()?;
+        }
+        if version < 4 {
+            let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            tx.execute_batch(include_str!("sync_schema4.sql"))?;
+            tx.pragma_update(None, "user_version", 4)?;
             tx.commit()?;
         }
         db.execute(
@@ -166,7 +172,7 @@ impl Cache {
     pub fn conversations(&self, after: Option<Uuid>, limit: usize) -> Result<Vec<Conversation>> {
         page(limit)?;
         let mut q = self.db.prepare(
-            "SELECT id,project_id,title FROM conversations WHERE id>?1 ORDER BY id LIMIT ?2",
+            "SELECT id,project_id,title FROM conversations WHERE id>?1 AND id NOT IN(SELECT id FROM chat_deleted) ORDER BY id LIMIT ?2",
         )?;
         let rows = q.query_map(
             params![
@@ -198,7 +204,7 @@ impl Cache {
         if self
             .db
             .query_row(
-                "SELECT 1 FROM conversations WHERE id=?1",
+                "SELECT 1 FROM conversations WHERE id=?1 AND id NOT IN(SELECT id FROM chat_deleted)",
                 [id.to_string()],
                 |r| r.get::<_, i32>(0),
             )

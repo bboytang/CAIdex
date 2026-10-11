@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+[features]
+sync-test = ["caidex-auth/test-auth", "dep:axum", "dep:tokio-postgres"]
+
 [dependencies]
+axum = { version = "=0.8.9", optional = true, default-features = false, features = ["http1", "tokio", "json"] }
+tokio-postgres = { version = "=0.7.18", optional = true, features = ["with-serde_json-1", "with-uuid-1"] }
 caidex-auth = { path = "../../cloud/auth" }
 caidex-cloud-core = { path = "../../cloud/core" }
 caidex-credentials = { path = "../../credentials/core", default-features = false }
