@@ -27,9 +27,22 @@ I-3及后续Chat/cache/Memory/sync状态机、正式CLI命令/TUI、Windows/iOS�
 
 ## 当前状态
 
-上轮因持久盘ENOSPC停止最终验证；2026-10-11进度/磁盘核查时已有3.7GiB可用，项目目录与/tmp写入/fsync成功，尚未重跑Docker/构建/真实DB。中间108组通过不含最后登录撤销并发修复；最后代码Clippy/共享5项通过，真实DB复验、提交/push/精确CI未完成。不得授I-2通过，恢复步骤和部分证据见HANDOFF。
+开发验证与证据封存完成，停止等待独立审计；本会话不授审计通过或I-3授权。最终功能源码[`951f92e092aec87b25838daf00959c8520588701`](https://github.com/bboytang/CAIdex/commit/951f92e092aec87b25838daf00959c8520588701)，[精确CI38135955674](https://github.com/bboytang/CAIdex/actions/runs/38135955674)四job全部成功，原始checkout均完整功能SHA，认证/数据库源码指纹逐文件核对该提交一致。封存只追加证据/文档，不将封存HEAD冒充功能CI SHA。
 
-用户随后要求后续构建/测试尽量在GitHub并继续I-2。完整构建、真实数据库并发断言与三平台回归转GitHub Actions；本地只做必要静态/语法/差异检查。`scripts/i2-auth.py`补独立`caidex-auth-local`进程的注册→邮箱验证→登录→me操作，以Linux `/proc/PID/status`实测RSS/峰值RSS，以`/proc/PID/stat`的utime+stime差值实测CPU；不计构建、测试客户端或PostgreSQL，峰值包含服务启动。测量使用新合成账户/私有受保护测试邮箱，结束只停自身进程/删除自身fixture，不认领2核2GB压测；最终数值和精确SHA须由实际CI确认。
+| 最终GitHub检查 | 实际结果 | 原始job |
+| --- | --- | --- |
+| Linux workspace / Host / 固定Runtime | 689/0/83；42/0/0；81/0/0 | 114459743624 |
+| Windows workspace / Host / 固定Runtime | 683/0/81；41/0/0；80/0/0 | 114459743521 |
+| macOS workspace / Host / 固定Runtime | 688/0/81；42/0/0；80/0/0 | 114459743474 |
+| 真实数据库与认证 | I-1重建118组/0；I-2具名检查110组/0；共享契约5/0/0 | 114459743364 |
+
+前三行计数为passed/failed/ignored，Host已计入workspace，ignored不计通过。Windows额外Host lib4、Linux原生凭据附加1另记。三平台共享账户5项、fmt/Clippy/授权页JS语法、schema/doctor/H-1/2/3通过。I-2联合Rust集成只有一个测试，110是具名断言组（含SQL/独立进程检查）。真实PG17.10/vector0.8.2、非owner角色/隔离、实际Argon2、软件Passkey签名/origin/重放/撤销、两实例refresh、PKCE/Device/取消迟到/安全存储/邮件故障通过；最后登录锁顺序修复的受控密码撤销并发断言实际通过。
+
+独立`caidex-auth-local`进程测量：新合成账户/受保护私有测试邮箱，注册→验证→登录→me，4.274秒、CPU4.25秒（单核99.43%）；idle RSS11824KiB、结束RSS12824KiB、峰值RSS77696KiB（约75.9MiB，含启动）。Linux `/proc/PID/status`与`/proc/PID/stat`实测，排除构建、测试客户端、PostgreSQL；runner为4逻辑CPU/16372440KiB内存。单次流程不是2核2GB压测/生产吞吐验收，算法65536KiB也不是实际RSS。
+
+上轮持久盘ENOSPC留下未验点；用户核查时3.7GiB可用、写入/fsync通过，随后明确完整构建/测试优先GitHub。首轮CI认证Rust105组/三平台通过后，新增测量probe在初始化期间TimeoutError失败，socket清理又遇镜像更改目录owner/sticky；已最小修复并以最终完整CI复验。不把中间108组、边跑边改源码的final105指纹或首轮部分结果代最终证据。本地只执行必要静态/语法/fmt/差异及证据检查，未重建Rust/Docker，不清理用户/全局Codex/有效缓存。
+
+证据：[最终四job原日志/checkout/逐步骤/指纹](evidence/i2-ci.json)、[最终110组及资源测量](evidence/i2-database-ci.json)、[首轮失败及修正](evidence/i2-ci-first-failed.json)、[历史中间结果](evidence/i2-intermediate.json)、[历史开发失败/ENOSPC](evidence/i2-local-failed.json)。限制：真实邮件/用户Key/商业API/生产部署、Windows Hello/iOS硬件Passkey、正式GUI/CLI、2核2GB容量及I-3以后未验。本地授权HTML/软件认证器与三平台Rust不代正式客户端/真机验收。
 
 ## 实现与边界
 
@@ -64,6 +77,30 @@ python3 scripts/i2-auth.py --output /var/tmp/caidex-i2-recheck.json
 输出路径必须尚不存在。I-1检查只独立重建0001，I-2检查重建0001+0002并注入迁移失败；源码指纹在cargo前记录，运行后再次比对，变化则拒绝封存。`I2_CHECK`是具名断言组，不是Rust测试数量；每组可能包含多个条件，真实联合集成只有一个Rust测试。脚本同时输出PG/vector版本、本机注册/验证/登录时间和Argon内存参数；配置参数不是实际RSS/2核2GB压力测量。三平台默认workspace验证共享契约；真实认证服务仅Linux数据库job验证。
 
 同一脚本在集成检查后构建并启动独立本地服务，测量一个注册/验证/登录流程，报告`measurements`中的`standalone_service_register_verify_login`含实际RSS/CPU和runner CPU/内存环境。脚本的完整JSON报告与具名检查打印到GitHub数据库job原始日志，可按精确run/job下载；本地复现仍可使用上述命令，但日常完整构建/回归优先GitHub。
+
+独立审计可先对Git中的功能951f92e与下列仓库证据做只读校验；封存HEAD不同不会影响按功能SHA读取源码。GitHub不可用时，仓库中的原始job日志和SHA256仍可复核：
+
+```sh
+python3 - <<'PY'
+import gzip, hashlib, json, subprocess
+from pathlib import Path
+base = Path('docs/evidence')
+ci = json.loads((base / 'i2-ci.json').read_text())
+assert ci['source_sha'] == '951f92e092aec87b25838daf00959c8520588701'
+assert ci['conclusion'] == 'success' and len(ci['jobs']) == 4
+for job in ci['jobs']:
+    assert job['checkout_sha'] == ci['source_sha'] and job['conclusion'] == 'success'
+    packed = (base / job['log']).read_bytes()
+    assert hashlib.sha256(packed).hexdigest() == job['gzip_sha256']
+    assert hashlib.sha256(gzip.decompress(packed)).hexdigest() == job['raw_sha256']
+auth = json.loads((base / 'i2-database-ci.json').read_text())
+assert auth['source_head'] == ci['source_sha'] and auth['summary'] == {'passed': 110, 'failed': 0}
+for name, digest in auth['source_sha256'].items():
+    source = subprocess.check_output(['git', 'show', ci['source_sha'] + ':' + name])
+    assert hashlib.sha256(source).hexdigest() == digest, name
+print('Exact CI logs and authentication source fingerprints verified')
+PY
+```
 
 手工试用服务入口：先为**新的私有本地测试库**按管理员顺序执行`cloud/postgres/bootstrap.sql`、0001、0002；建立一个仅继承caidex_auth的LOGIN角色和另一个仅继承caidex_app的LOGIN角色。使用Git目录外新建的0700目录作为邮件sandbox，每个服务实例使用独立目录；不能共享首次初始化pepper目录。设置`CAIDEX_AUTH_DB`和`CAIDEX_DATA_DB`为上述两角色Unix socket DSN，执行：
 

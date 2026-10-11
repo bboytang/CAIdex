@@ -1,32 +1,28 @@
 # CAIdex 开发交接
 
-更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库/源码/验收文档/精确CI，不依赖聊天或/tmp。历史详见下列验收与证据，避免重复流水账。
+更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI。历史见下列验收/证据，不依赖聊天或/tmp。
 
-## 当前批准：I-2认证/会话，待最终复验，未封存
+## 当前批准：I-2认证/会话，开发验证封存，停止待独立审计
 
-用户已确认I-1独立审计通过并明确批准I-2；结论来自用户，本会话不冒充独立审计。范围与通过/停止条件见[设计与验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)。不使用ponytail技能。已批准范围内允许必要源码/迁移/测试/脚本/文档/commit/push main及精确CI，不需要重新批准小步骤。I-3及后续/商业API/真实用户Key/真实邮件/生产部署未授权。
+用户已确认I-1独立审计通过并明确批准I-2；范围/通过与停止条件见[设计与验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)。不使用ponytail技能。用户最新要求后续构建和测试尽量在GitHub，已写入AGENTS；本地只做必要静态/语法/差异/证据检查，完整构建/真实数据库/三平台回归在GitHub执行。本会话不授独立审计通过。I-3及后续/商业API/真实用户Key/真实邮件/生产部署未授权。
 
-用户最新要求：后续构建/测试尽量在GitHub，并继续当前I-2。已提交并push功能SHA `1a57cf9265ff3743b70f5dc4d216d239c028cf59`，[精确CI38135539590](https://github.com/bboytang/CAIdex/actions/runs/38135539590)正在运行四job，尚未取得最终结论。默认沙箱DNS不可用、.git只读，GitHub/提交命令使用已授权require_escalated通道。已补脚本独立服务进程的实际RSS/CPU测量（合成账户/私有测试邮箱），workflow补授权页JS语法检查。本地Python语法、实测/proc解析自检、JS语法、fmt、差异空白和既有锁文件版本/source/checksum不变检查通过；不在本机重建Rust/Docker或清理缓存。下方d007/未提交/ENOSPC段落为此前核查事实，最终封存时更新。
+不可变功能源码[`951f92e092aec87b25838daf00959c8520588701`](https://github.com/bboytang/CAIdex/commit/951f92e092aec87b25838daf00959c8520588701)，[精确CI38135955674](https://github.com/bboytang/CAIdex/actions/runs/38135955674)四job全部成功；各job原始checkout均完整功能SHA，I-1/I-2源码SHA256逐文件与该提交核对一致。实现提交1a57cf9，随后951f92e仅修正测量启动/自身fixture清理。封存提交只追加证据/文档，功能/测试/依赖/脚本/workflow保持上述CI源码；封存HEAD按`git rev-parse HEAD`查询，不当功能CI SHA。保持main流程，完成封存push后核对实际HEAD/main/origin/main/GitHub main与工作区，不改历史。
 
-首轮CI认证Rust联合105组全通过，新增密码撤销并发断言实际通过；认证job随后在独立测量启动probe发生未捕获TimeoutError，清理时PG镜像把本次私有socket目录改为postgres-owned/sticky导致非root runner不能删除。Linux/macOS Runtime job已成功；不能以部分结果代四job通过。已最小修正启动probe在既有30秒循环内重试TimeoutError，容器删除前仅用自身容器root恢复本次socket bind mount的0777，保留0700父目录与无网络隔离。失败原日志/指纹见[首轮GitHub失败](docs/evidence/i2-ci-first-failed.json)，无ENOSPC；待提交修正并验新精确SHA。
+实现：`cloud/auth`默认跨平台共享账户信任/会话与成对安全存储契约；Linux feature-gated真实HTTP认证服务，0002认证迁移，邮箱验证/密码/恢复/身份变更/Passkey、独立设备会话/refresh轮换重放撤销、CLI公开客户端PKCE/Device与取消迟到清理。认证角色与数据角色隔离，固定Codex0.160.1/Runtime/Host/Provider/执行凭据源码未改，0001/bootstrap未改；锁文件新增75包，既有版本/source/checksum不变。正式GUI/CLI/平台Passkey及同步后续能力未认领。
 
-上轮以git rev-parse/git ls-remote核对main/HEAD/origin/main/GitHub main均`d0075114aef5b2761c4c94c07c7edc0853087984`；本轮诊断复核本地main/HEAD/origin/main仍相同，未联网复核远端。I-2实施起点工作区干净，现保留未提交实现及证据；没有commit/push或I-2最终CI，不授开发验收或独立审计通过。
+最终GitHub：Linux job114459743624 workspace689/0/83、Host42、固定Runtime81；Windows job114459743521 workspace683/0/81、Host41、固定Runtime80；macOS job114459743474 workspace688/0/81、Host42、固定Runtime80。Host计入workspace，ignored不计通过；Windows额外Host lib4、Linux原生凭据附加1另记。三平台共享账户5项、fmt/Clippy/授权页JS语法、schema/doctor/H-1/2/3均通过。数据库job114459743364真实PG17.10/vector0.8.2：I-1独立重建118/0；I-2共110组具名检查/0，联合Rust集成只有一个测试，不能把具名断言组当Rust测试数量。
 
-实现：新增`cloud/auth`共享信任/安全成对存储与feature-gated Linux认证服务、0002认证迁移、真实HTTP/PG/WebAuthn/PKCE/Device故障测试及`scripts/i2-auth.py`；修改workspace/锁文件/cloud-core版本2、CI数据库job、AGENTS/README/本设计和交接。0001/bootstrap、Runtime/Host/Provider/执行凭据源码未改；既有依赖版本/source不变，新增75包。全部未提交文件以git status为准；`docs/evidence/i2-*`为本轮证据。没有覆盖用户修改。
+最后登录修复：先锁用户，再读取/验证密码并重查邮箱身份，阻止撤销/身份修改夹在校验与发会话之间。最终真实PG受控锁断言`password_revocation_committed_before_login_cannot_issue_session`实际通过。旧源码缺陷依据静态顺序；上轮尝试修复前复现时Docker ENOSPC，未声称原缺陷已运行复现。中间108组仅对应当时源码，不能代最终110组；final105曾边跑边改源码的无效指纹保留为历史，最终脚本运行前后指纹一致。
 
-验证：I-1独立重建118组全通过。I-2中间完整联合108组（一个Rust集成测试）通过，含实际Argon2、软件Passkey签名/错origin/重放/撤销、两服务实例并发refresh、真实非owner角色/RLS与隔离、mature OAuth token form兑换、安全文件存储、取消/迟到清理、设备分页与邮件失败/超时。该108组在最后登录并发修复前，不能代最终源码。最后代码共享契约5/0/0、Clippy all-targets -Dwarnings、fmt、JS语法和tracked差异空白检查通过；Cargo因全局cache追踪数据库满发环境warning，未清理它。完整workspace/三平台最终CI未执行。
+独立服务实测：新的私有本地测试邮箱/合成账户，启动真实`caidex-auth-local`进程，注册→验证→登录→me。GitHub 4逻辑CPU/16372440KiB内存环境，流程4.274秒/CPU4.25秒，单核占用99.43%；idle RSS11824KiB，结束RSS12824KiB，峰值RSS77696KiB（约75.9MiB，含服务启动）。CPU是该PID的utime+stime差值，RSS为/proc/PID/status，排除构建/测试客户端/PostgreSQL。算法65536KiB与实测不同；不授2核2GB压测、生产吞吐或容量通过。
 
-最后安全修复：静态确认login原先先验证密码、后锁用户，撤销/身份修改可能夹在中间。已移动用户锁到密码读取/验证前并重查邮箱身份，新增受控真实PG锁断言。尝试修复前复现时Docker创建snapshot即ENOSPC，故没有运行时失败复现或修复后DB通过证据；该断言及最终完整真实服务必须重跑。中间成功不掩盖此未验点。
+首轮GitHub38135539590认证Rust105组及三平台Runtime均成功，job随后因新增测量probe未捕获初始化期间TimeoutError失败；PG镜像把本次私有socket目录改为postgres-owned/sticky又使非root runner清理失败。已在既有启动重试中处理TimeoutError，删除自身容器前仅由其root恢复本次socket bind mount的0777，外层0700/无网络隔离不变。失败原日志及修复后精确证据见下方，不隐藏失败，不以首轮部分通过授四job成功。
 
-环境：上轮39GiB持久盘0可用，默认沙箱挂载标记、Docker快照和日志/报告写入均实际ENOSPC。2026-10-11用户要求核查进度/磁盘，本轮`df -h`实测35GiB已用、3.7GiB可用（91%），`df -i`使用6%，项目目录与/tmp各94208字节写入/flush/fsync成功并移除探针；当前磁盘检查满足至少2GiB恢复前提，但未重跑Docker/构建/真实DB，不能据此认领最终验证。未查明空间恢复来源，本轮未清理用户/全局Codex/有效缓存。
+环境：上轮持久盘0可用并实际ENOSPC；本轮诊断39GiB盘35GiB已用/3.7GiB可用（91%），inode6%，项目与/tmp写入/fsync通过。未查明空间恢复来源；本轮不本地重编译、不清理用户/全局Codex/有效缓存。默认沙箱DNS不可用、.git只读，已授权GitHub/提交命令经require_escalated通道成功。原私有内存构建缓存保留，重启会丢失；恢复与验收已依赖仓库/GitHub，不依赖该缓存或/tmp。后续本地构建前仍检查df。
 
-本轮诊断：17份归档gzip完整解压及索引SHA256全部一致；`i2-failed-shm_build.log.gz`明确记录aws-lc编译临时文件ENOSPC，`i2-failed-disk-measurement.log.gz`记录日志写入Errno28。最后server/account测试源码SHA256仍与`i2-intermediate.json`待复验指纹一致。实际本地main/HEAD/origin/main仍d007；本轮未联网核对GitHub、未commit/push、未运行CI，只更新交接与设计当前状态。历史失败也含已修复的代码问题，不能全部归因于磁盘。
+证据：[最终精确四job/逐步骤/原日志及指纹](docs/evidence/i2-ci.json)、[最终真实认证110组/逐文件SHA256/资源测量](docs/evidence/i2-database-ci.json)、[首轮GitHub失败与修正](docs/evidence/i2-ci-first-failed.json)、[历史中间成功/待验索引](docs/evidence/i2-intermediate.json)、[历史开发失败与ENOSPC](docs/evidence/i2-local-failed.json)。原日志gzip及SHA256已核对，试用/独立复现/证据检查见设计与验收。测试身份、邮件和认证器均为隔离合成fixture，无真实邮件、用户Key或商业API调用。
 
-内存构建替代：本轮私有`/dev/shm/caidex-i2-build-d007-20261011`，单job/debug0/无incremental；TMPDIR必须设其tmp子目录。此目录只有require_escalated命令可见/执行，默认沙箱的/dev/shm不同；有效内存缓存保留，重启会丢失。运行脚本同时设`CAIDEX_I2_TEST_TMP_PARENT`到该tmp，使PG socket/凭据fixture也在私有内存目录。临时log/output可写内存目录，但Docker本身仍要持久盘空间。RSS/CPU测量运行因持久日志ENOSPC失败，没有完成测量报告；9.256秒中间注册/验证/登录时间及64MiB算法参数不冒充RSS/2核2GB压测。
-
-恢复顺序：①最终差异/文档/证据检查、commit/push main；②核对精确功能SHA四job GitHub CI（Linux认证真实DB含新增密码撤销并发断言/独立服务RSS/CPU，及原三平台Runtime），失败则最小修正并验最终SHA；③封存原日志/指纹/试用步骤/限制，再次push核对Git实际状态，停止等待I-2独立审计及明确下一步批准。本地构建前仍须df，不清理有效缓存。
-
-证据：[最后部分验证/源码指纹与待办](docs/evidence/i2-intermediate.json)、[失败与环境阻断](docs/evidence/i2-local-failed.json)、[中间联合运行索引](docs/evidence/i2-intermediate.json)。后者complete108源码指纹对应当时源码；final105边运行边改源码，明确不能使用其后置指纹；脚本已改为运行前指纹+运行后拒绝变化。早期日志只含合成身份且隔离库已移除，归档前检查/脱敏；不读真实邮箱/Key，不调用商业API。
+当前无已知未解决的I-2开发通过条件阻断；独立审计尚未执行。准确下一步：由独立新会话/其他模型只读审计上述不可变源码与实际证据；如有阻断在已批准I-2范围内最小修复并复验。用户确认I-2通过且明确批准下一里程碑后，才可启动I-3。等待期间停止新增功能/跨里程碑开发。F/G-Live继续待用户全项目完成后真实验收。
 
 ## 已关闭I-1（用户确认独立审计通过）
 

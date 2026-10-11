@@ -11,5 +11,10 @@
   "failure": "Standalone measurement readiness request timed out during startup; unhandled TimeoutError. Cleanup also failed because the image made the private socket mount postgres-owned/sticky.",
   "fix": "Retry TimeoutError within the existing startup bound; restore mode 0777 only on this container private socket bind mount before removing this container.",
   "disk_full_log_matches": 0,
-  "final_verification": "pending exact new SHA CI"
+  "final_verification": {
+    "source_sha": "951f92e092aec87b25838daf00959c8520588701",
+    "run_id": 38135955674,
+    "conclusion": "success",
+    "evidence": "i2-ci.json"
+  }
 }
