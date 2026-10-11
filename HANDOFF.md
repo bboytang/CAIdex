@@ -2,6 +2,10 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
+## 2026-10-11 用户授权磁盘清理（已完成）
+
+在不影响后续开发的前提下，仅删除已退出且无打开文件引用的157处私有Runtime测试临时plugins-clone目录及2处未完成增量编译working目录，释放771772416字节（约736MiB），可用空间由约2.9GiB增至3.6GiB。保留成功构建/增量缓存、固定项目Codex0.160.1、所有Host journal与审计证据、用户文件及全局Codex；24个已封存证据文件逐项SHA256核对不变；`cargo build -p caidex-host --locked --offline`复用现有缓存，0.19秒通过。源码与H-1功能SHA/CI结论不变，独立审计仍待重新发起；未启动下一阶段。本次只记录维护，不重复全仓Runtime回归。
+
 ## 当前批准工作：H-1 独立审计阻断修复
 
 用户本轮仅授权修复AUD-001版本子进程环境继承、AUD-002Runtime通知污染Host命名空间；AUD-003仅最小证据标注。开始时审计基线/main/HEAD/origin/main/GitHub main均已核实为`b516dbae41b252d365d8fad8848c197f2f6ccd51`，初始工作区干净；旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。构建前约3.1GB空闲，保留有效缓存及全部用户/全局Codex文件。
