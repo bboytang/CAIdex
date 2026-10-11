@@ -56,14 +56,16 @@ class Fixture(http.server.BaseHTTPRequestHandler):
                     "type": "message", "role": "assistant", "content": [{
                         "type": "output_text", "text": json.dumps([{"text": "Use vim", "tags": ["editor"]}])}]}]}
             data = json.dumps(body).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
             try:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
                 self.wfile.write(data)
             except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
-                pass  # Explicit cancellation/Host kill closes the real provider transport.
+                # The two SLOW scenarios explicitly cancel/kill Host after this POST was observed.
+                if self.path != "/responses" or "SLOW" not in request["input"][-1]["content"]:
+                    raise
         except Exception as error:
             with self.lock:
                 self.errors.append(type(error).__name__)
