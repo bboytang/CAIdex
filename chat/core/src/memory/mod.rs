@@ -6,6 +6,7 @@ use host::Executor;
 pub use host::{HostConnection, HostModel, HostModelInfo, host_target};
 pub use inference::{Candidate, InferenceOutput, InferenceRequest, infer};
 mod store;
+pub mod sync;
 pub(crate) use jobs::{automatic_chat_sources, injection};
 
 use crate::{Chat, Error, LocalModel, Result};
@@ -17,115 +18,11 @@ use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, sync::Arc};
 use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-pub enum Scope {
-    Personal,
-    Project { project_id: Id },
-}
-impl Scope {
-    pub(crate) fn key(&self) -> String {
-        match self {
-            Self::Personal => "personal".into(),
-            Self::Project { project_id } => format!("project:{}", String::from(project_id.clone())),
-        }
-    }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Kind {
-    UserDecision,
-    Preference,
-    FileEvidence,
-    ExecutionResult,
-    AiInference,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Privacy {
-    LocalOnly,
-    Shareable,
-}
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-pub enum Origin {
-    User,
-    Chat { conversation: Uuid, message: Uuid },
-    File { reference: String },
-    Git { reference: String },
-    Execution { reference: String },
-    External { reference: String },
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SourceType {
-    User,
-    Chat,
-    File,
-    Git,
-    Execution,
-    External,
-}
-impl Origin {
-    pub fn source_type(&self) -> SourceType {
-        match self {
-            Self::User => SourceType::User,
-            Self::Chat { .. } => SourceType::Chat,
-            Self::File { .. } => SourceType::File,
-            Self::Git { .. } => SourceType::Git,
-            Self::Execution { .. } => SourceType::Execution,
-            Self::External { .. } => SourceType::External,
-        }
-    }
-}
-/// Expected digest covers the complete authorized source, not only the excerpt.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Source {
-    pub scope: Scope,
-    pub origin: Origin,
-    pub sha256: String,
-    pub excerpt: String,
-}
-impl Source {
-    pub fn user(scope: Scope, text: String) -> Self {
-        Self {
-            scope,
-            origin: Origin::User,
-            sha256: digest(text.as_bytes()),
-            excerpt: text,
-        }
-    }
-    pub fn evidence(scope: Scope, origin: Origin, bytes: &[u8], excerpt: String) -> Self {
-        Self {
-            scope,
-            origin,
-            sha256: digest(bytes),
-            excerpt,
-        }
-    }
-    fn fingerprint(&self) -> Result<String> {
-        Ok(digest(
-            &serde_json::to_vec(&(&self.scope, &self.origin, &self.sha256))
-                .map_err(|_| Error::Invalid)?,
-        ))
-    }
-}
+pub use caidex_cloud_core::memory::{Draft, Kind, Origin, Privacy, Scope, Source, SourceType};
 /// Trusted application boundary: must check real file/Git/Host ACL and return current evidence.
 /// It cannot confer execution authority. An unavailable/offline Host returns None.
 pub trait EvidenceResolver: Send + Sync {
     fn read(&self, scope: &Scope, origin: &Origin) -> Option<Vec<u8>>;
-}
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Draft {
-    pub scope: Scope,
-    pub text: String,
-    pub kind: Kind,
-    pub privacy: Privacy,
-    pub tags: Vec<String>,
-    pub sources: Vec<Source>,
-    pub valid_until_millis: Option<i64>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Revision {

@@ -97,7 +97,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--chat-sync', action='store_true', help='Run I-5 shared Chat clients against this same isolated account database')
+    parser.add_argument('--memory-sync', action='store_true', help='Run I-6 shared Memory clients and project RLS failure paths')
     args = parser.parse_args()
+    if args.chat_sync and args.memory_sync:
+        parser.error('choose one integration fixture')
+    sync = args.chat_sync or args.memory_sync
     if args.output and args.output.exists():
         parser.error('output already exists')
     env = os.environ.copy()
@@ -155,30 +159,38 @@ def main():
                 "SELECT max(version)=2 AND to_regclass('caidex.chat_controls') IS NULL AND NOT EXISTS(SELECT FROM information_schema.columns WHERE table_schema='caidex' AND table_name='users' AND column_name='chat_settings_version') FROM caidex.schema_migrations") == 't')
             sql(chat_migration)
             check('v3_chat_migration_applied', sql('SELECT max(version) FROM caidex.schema_migrations') == '3')
-            check('all_24_private_tables_force_rls', sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='caidex' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity") == '24')
+            memory_migration = (ROOT / 'cloud/postgres/migrations/0004_memory_sync.sql').read_text()
+            failed_memory = subprocess.run(docker + ['exec', '-i', name, 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'],
+                                          input=memory_migration.replace('INSERT INTO caidex.schema_migrations(version) VALUES(4);', 'SELECT 1/0;'),
+                                          text=True, capture_output=True, env=env)
+            check('v4_failed_migration_preserves_v3_and_guard', failed_memory.returncode != 0 and sql(
+                "SELECT max(version)=3 AND to_regclass('caidex.memory_controls') IS NULL AND NOT EXISTS(SELECT FROM information_schema.columns WHERE table_schema='caidex' AND table_name='users' AND column_name='memory_delete_pending') FROM caidex.schema_migrations") == 't')
+            sql(memory_migration)
+            check('v4_memory_migration_applied', sql('SELECT max(version) FROM caidex.schema_migrations') == '4')
+            check('all_25_private_tables_force_rls', sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='caidex' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity") == '25')
             sql('CREATE ROLE caidex_auth_test LOGIN INHERIT; GRANT caidex_auth TO caidex_auth_test; CREATE ROLE caidex_data_test LOGIN INHERIT; GRANT caidex_app TO caidex_data_test;')
             env.update({'CAIDEX_I2_AUTH_DB': f'host={socket} user=caidex_auth_test dbname=postgres',
                         'CAIDEX_I2_DATA_DB': f'host={socket} user=caidex_data_test dbname=postgres',
                         'CAIDEX_I2_ADMIN_DB': f'host={socket} user=postgres dbname=postgres',
                         'TMPDIR': work})
-            if args.chat_sync:
-                env.update({k.replace('I2', 'I5'): v for k, v in list(env.items()) if k.startswith('CAIDEX_I2_') and k.endswith('_DB')})
+            if sync:
+                env.update({k.replace('I2', 'I6' if args.memory_sync else 'I5'): v for k, v in list(env.items()) if k.startswith('CAIDEX_I2_') and k.endswith('_DB')})
             source_paths = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + [ROOT / p for p in
                 ['cloud/auth/Cargo.toml', 'cloud/auth/src/account.js', 'cloud/core/src/lib.rs',
                  'cloud/postgres/bootstrap.sql', 'cloud/postgres/migrations/0001_account_scope.sql',
-                 'cloud/postgres/migrations/0002_authentication.sql', 'cloud/postgres/migrations/0003_chat_sync.sql', 'cloud/auth/tests/account.rs',
+                 'cloud/postgres/migrations/0002_authentication.sql', 'cloud/postgres/migrations/0003_chat_sync.sql', 'cloud/postgres/migrations/0004_memory_sync.sql', 'cloud/core/src/memory.rs', 'cloud/core/Cargo.toml', 'cloud/auth/tests/account.rs',
                  'scripts/i2-auth.py', 'Cargo.toml', 'Cargo.lock', '.github/workflows/ci.yml']]
-            if args.chat_sync:
-                source_paths += sorted(ROOT.glob('chat/core/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.sql')) + [ROOT / 'cloud/core/src/chat.rs', ROOT / 'chat/core/Cargo.toml', ROOT / 'scripts/i5-chat-sync.py']
+            if sync:
+                source_paths += sorted(ROOT.glob('chat/core/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.sql')) + [ROOT / 'cloud/core/src/chat.rs', ROOT / 'chat/core/Cargo.toml', ROOT / 'scripts/i5-chat-sync.py', ROOT / 'scripts/i6-memory-sync.py']
                 source_paths = [p for p in source_paths if p.is_file()]
             fingerprints = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_paths}
             test_command = (['cargo', 'test', '-p', 'caidex-chat', '--features', 'sync-test', '--locked',
-                             '--lib', 'real_http_chat_sync_and_isolation', '--', '--ignored', '--nocapture']
-                            if args.chat_sync else
+                             '--lib', 'real_http_memory_sync_and_isolation' if args.memory_sync else 'real_http_chat_sync_and_isolation', '--', '--ignored', '--nocapture']
+                            if sync else
                             ['cargo', 'test', '-p', 'caidex-auth', '--features', 'test-auth', '--locked',
                              '--test', 'account', '--', '--ignored', '--nocapture'])
             result = subprocess.run(test_command, cwd=ROOT, env=env, text=True, capture_output=True, timeout=600)
-            marker = 'I5_CHECK ' if args.chat_sync else 'I2_CHECK '
+            marker = 'I6_CHECK ' if args.memory_sync else ('I5_CHECK ' if args.chat_sync else 'I2_CHECK ')
             print(result.stdout, end='', flush=True)
             print(result.stderr, end='', flush=True)
             for line in result.stdout.splitlines():
@@ -187,7 +199,7 @@ def main():
             if result.returncode:
                 raise RuntimeError('account/Chat integration test failed')
             measured = None
-            if not args.chat_sync:
+            if not sync:
                 sql("UPDATE caidex.auth_limits SET reset_at=now()-interval '1 second',last_at=now()-interval '1 hour'")
                 build = subprocess.run(['cargo', 'build', '-p', 'caidex-auth', '--features', 'test-auth',
                                         '--bin', 'caidex-auth-local', '--locked', '--message-format=json'],
@@ -203,14 +215,14 @@ def main():
                 print('I2_MEASUREMENT ' + json.dumps(measured), flush=True)
             if any(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != digest for p, digest in fingerprints.items()):
                 raise RuntimeError('source changed during verification; retry with unchanged source')
-            check('rust_real_chat_integration_completed' if args.chat_sync else 'rust_real_account_integration_completed', 'test result: ok. 1 passed' in result.stdout)
+            check('rust_real_memory_integration_completed' if args.memory_sync else ('rust_real_chat_integration_completed' if args.chat_sync else 'rust_real_account_integration_completed'), 'test result: ok. 1 passed' in result.stdout)
             report = {'source_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                       'postgres_version': sql('SHOW server_version'), 'pgvector_version': sql("SELECT extversion FROM pg_extension WHERE extname='vector'"),
                       'image': IMAGE, 'elapsed_seconds': round(time.monotonic()-started, 3), 'checks': checks,
                       'source_sha256': fingerprints,
                       'measurements': [json.loads(line.removeprefix('I2_MEASUREMENT ')) for line in result.stdout.splitlines() if line.startswith('I2_MEASUREMENT ')] + ([measured] if measured else []),
                       'summary': {'passed': len(checks), 'failed': 0},
-                      'limits': (['synthetic accounts verified at the trusted backend', 'two Chat cache instances in one Rust test process', 'committed response replaced with HTTP503 or delayed by test middleware', 'fixture rate windows reset between scenarios; production limiter unchanged', 'no native GUI/CLI/production capacity or deployment'] if args.chat_sync else ['synthetic accounts', 'process-private sandbox mail', 'software Passkey authenticator', 'no native GUI/CLI/production deployment'])}
+                      'limits': (['synthetic accounts verified at the trusted backend', 'isolated Chat/Memory cache instances in one Rust test process', 'committed response replaced with HTTP503 or delayed by test middleware', 'fixture rate windows reset between scenarios; production limiter unchanged', 'no native GUI/CLI/production capacity or deployment'] if sync else ['synthetic accounts', 'process-private sandbox mail', 'software Passkey authenticator', 'no native GUI/CLI/production deployment'])}
             print(json.dumps(report, ensure_ascii=False), flush=True)
             if args.output:
                 args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')

@@ -175,9 +175,22 @@ fn load_internal(s: &State, id: Uuid, disclose: bool) -> Result<Memory> {
     if revisions.len() > 1024 {
         return Err(Error::Invalid);
     }
+    let linked: Option<String> = s
+        .cache
+        .db
+        .query_row(
+            "SELECT owner FROM memory_sync_links WHERE memory=?1",
+            [id.to_string()],
+            |r| r.get(0),
+        )
+        .optional()?;
+    let owner_user_id = linked
+        .map(Id::try_from)
+        .transpose()?
+        .or_else(|| s.cache.namespace().owner_user_id().cloned());
     Ok(Memory {
         id,
-        owner_user_id: s.cache.namespace().owner_user_id().cloned(),
+        owner_user_id,
         head: parse(&head)?,
         state,
         revisions,
@@ -201,17 +214,31 @@ fn parse(value: &str) -> Result<Uuid> {
     Uuid::parse_str(value).map_err(|_| Error::UnsafeStorage)
 }
 pub(crate) fn deleted_source(s: &State, source: &Source) -> Result<bool> {
-    Ok(s.cache
-        .db
-        .query_row(
-            "SELECT 1 FROM memory_deleted_sources WHERE scope=?1 AND fingerprint=?2",
-            params![source.scope.key(), source.fingerprint()?],
-            |r| r.get::<_, i32>(0),
-        )
-        .optional()?
-        .is_some())
+    let synchronized: bool = s.cache.db.query_row(
+        "SELECT EXISTS(SELECT 1 FROM memory_sync_deleted_sources WHERE scope=?1 AND hash=?2)",
+        params![source.scope.key(), source.sha256],
+        |r| r.get(0),
+    )?;
+    Ok(synchronized
+        || s.cache
+            .db
+            .query_row(
+                "SELECT 1 FROM memory_deleted_sources WHERE scope=?1 AND fingerprint=?2",
+                params![source.scope.key(), source.fingerprint()?],
+                |r| r.get::<_, i32>(0),
+            )
+            .optional()?
+            .is_some())
 }
 pub(crate) fn insert(s: &mut State, draft: Draft, candidate: bool) -> Result<Uuid> {
+    insert_mode(s, draft, candidate, false)
+}
+pub(crate) fn insert_mode(
+    s: &mut State,
+    draft: Draft,
+    candidate: bool,
+    recreate: bool,
+) -> Result<Uuid> {
     validate(s, &draft)?;
     let count: i64 = s.cache.db.query_row(
         "SELECT count(*) FROM memories WHERE scope=?1 AND state!='deleted'",
@@ -251,16 +278,12 @@ pub(crate) fn insert(s: &mut State, draft: Draft, candidate: bool) -> Result<Uui
         "INSERT INTO memory_payloads VALUES(?1,?2)",
         params![revision.to_string(), value],
     )?;
-    queue(&tx, id, "create")?;
+    queue(&tx, id, if recreate { "recreate" } else { "create" })?;
     tx.commit()?;
     Ok(id)
 }
 fn queue(tx: &rusqlite::Transaction<'_>, id: Uuid, kind: &str) -> Result<()> {
-    tx.execute(
-        "INSERT INTO memory_outbox(operation,entity,kind) VALUES(?1,?2,?3)",
-        params![Uuid::new_v4().to_string(), id.to_string(), kind],
-    )?;
-    Ok(())
+    super::sync::queue(tx, id, kind)
 }
 pub(crate) fn eligible(s: &State, memory: &Memory, time: i64) -> bool {
     memory.state == "active"

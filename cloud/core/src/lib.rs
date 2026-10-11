@@ -2,11 +2,14 @@
 use serde::{Deserialize, Serialize};
 
 pub mod chat;
+pub mod memory;
 
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 4;
 pub const PROTOCOL_VERSION: u32 = 1;
 pub const ACCOUNT_MIGRATION: &str =
     include_str!("../../postgres/migrations/0001_account_scope.sql");
+
+pub const MEMORY_MIGRATION: &str = include_str!("../../postgres/migrations/0004_memory_sync.sql");
 
 pub const CHAT_MIGRATION: &str = include_str!("../../postgres/migrations/0003_chat_sync.sql");
 
@@ -135,7 +138,7 @@ mod tests {
         assert!(serde_json::from_value::<SyncControl>(control.clone()).is_ok());
         control["token"] = "secret".into();
         assert!(serde_json::from_value::<SyncControl>(control).is_err());
-        assert_eq!(SCHEMA_VERSION, 3);
+        assert_eq!(SCHEMA_VERSION, 4);
         assert!(AUTH_MIGRATION.contains("VALUES (2)"));
         assert!(
             ACCOUNT_MIGRATION.contains("INSERT INTO caidex.schema_migrations(version) VALUES (1)")

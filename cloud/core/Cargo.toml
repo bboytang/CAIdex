@@ -7,6 +7,6 @@ rust-version.workspace = true
 [dependencies]
 serde.workspace = true
 thiserror.workspace = true
-
-[dev-dependencies]
 serde_json.workspace = true
+sha2 = "=0.10.9"
+uuid = { version = "=1.23.0", features = ["v4", "serde"] }

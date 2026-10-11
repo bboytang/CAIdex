@@ -109,7 +109,7 @@ impl Cache {
             tx.pragma_update(None, "application_id", APPLICATION_ID)?;
             tx.pragma_update(None, "user_version", 1)?;
             tx.commit()?;
-        } else if !(1..=4).contains(&version) || application != APPLICATION_ID {
+        } else if !(1..=5).contains(&version) || application != APPLICATION_ID {
             return Err(Error::UnsafeStorage);
         }
         let identity: String = db.query_row("SELECT namespace FROM identity", [], |r| r.get(0))?;
@@ -138,6 +138,12 @@ impl Cache {
             let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
             tx.execute_batch(include_str!("sync_schema4.sql"))?;
             tx.pragma_update(None, "user_version", 4)?;
+            tx.commit()?;
+        }
+        if version < 5 {
+            let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            tx.execute_batch(include_str!("memory/schema5.sql"))?;
+            tx.pragma_update(None, "user_version", 5)?;
             tx.commit()?;
         }
         db.execute(

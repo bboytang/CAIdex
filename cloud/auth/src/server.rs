@@ -1,6 +1,7 @@
 //! Linux account service. Migration/admin and ordinary data connections are separate.
 mod chat;
 mod grants;
+mod memory;
 mod passkeys;
 
 use crate::{AUDIENCE, CLI_CLIENT, Trust};
@@ -333,6 +334,7 @@ impl<S: EmailSender> Service<S> {
     ) -> Result<Value> {
         match action {
             _ if action.starts_with("chat-") => self.chat(tx, action, bearer, body).await,
+            _ if action.starts_with("memory-") => self.memory(tx, action, bearer, body).await,
             "register" | "recover" => {
                 fields(
                     &body,
@@ -986,6 +988,11 @@ pub fn router<S: EmailSender>(service: Arc<Service<S>>) -> Router {
             "/v1/chat/{action}",
             post(chat_request::<S>).layer(DefaultBodyLimit::max(caidex_cloud_core::chat::MAX_WIRE)),
         )
+        .route(
+            "/v1/memory/{action}",
+            post(chat_request::<S>)
+                .layer(DefaultBodyLimit::max(caidex_cloud_core::memory::MAX_WIRE)),
+        )
         .route("/authorize", get(login_page))
         .route("/device", get(login_page))
         .route("/account.js", get(account_script))
@@ -1051,7 +1058,14 @@ async fn chat_request<S: EmailSender>(
     headers: HeaderMap,
     request: axum::extract::Request,
 ) -> Result<Response> {
-    // Admit before reading the larger Chat body; reject instead of queuing payload copies.
+    let memory = request.uri().path().starts_with("/v1/memory/");
+    let prefix = if memory { "memory" } else { "chat" };
+    let maximum = if memory {
+        caidex_cloud_core::memory::MAX_WIRE
+    } else {
+        caidex_cloud_core::chat::MAX_WIRE
+    };
+    // Admit before reading a sync body; reject instead of queuing payload copies.
     let _permit = service
         .hashes
         .clone()
@@ -1069,7 +1083,7 @@ async fn chat_request<S: EmailSender>(
     }
     let bytes = tokio::time::timeout(
         std::time::Duration::from_secs(10),
-        axum::body::to_bytes(request.into_body(), caidex_cloud_core::chat::MAX_WIRE),
+        axum::body::to_bytes(request.into_body(), maximum),
     )
     .await
     .map_err(|_| Error::Unavailable)?
@@ -1081,7 +1095,7 @@ async fn chat_request<S: EmailSender>(
         .and_then(|v| v.strip_prefix("Bearer "));
     let value = service
         .admitted_request(
-            &format!("chat-{action}"),
+            &format!("{prefix}-{action}"),
             token,
             &peer.ip().to_string(),
             body,

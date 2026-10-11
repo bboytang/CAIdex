@@ -48,6 +48,11 @@ pub enum Error {
     #[error("Chat account changed or the turn was cancelled")]
     Cancelled,
 }
+impl From<caidex_cloud_core::Invalid> for Error {
+    fn from(_: caidex_cloud_core::Invalid) -> Self {
+        Self::Invalid
+    }
+}
 impl From<rusqlite::Error> for Error {
     fn from(_: rusqlite::Error) -> Self {
         Self::Storage

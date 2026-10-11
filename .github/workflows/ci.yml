@@ -53,6 +53,9 @@ jobs:
       - name: I-5 real PostgreSQL and HTTP Chat synchronization, branches and deletion
         run: python3 scripts/i5-chat-sync.py --output i5-chat-sync.json
 
+      - name: I-6 real PostgreSQL and HTTP Memory state, A/B deletion and member isolation
+        run: python3 scripts/i6-memory-sync.py --output i6-memory-sync.json
+
   runtime:
     name: Runtime (${{ matrix.os }})
     strategy:

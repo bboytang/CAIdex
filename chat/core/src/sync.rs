@@ -817,4 +817,4 @@ mod tests {
 
 #[cfg(all(test, feature = "sync-test"))]
 #[path = "sync_http_tests.rs"]
-mod http_tests;
+pub(crate) mod http_tests;

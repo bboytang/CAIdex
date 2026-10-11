@@ -2,17 +2,17 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前：I-6 已批准启动，项目协作规则待确认
+## 当前：I-6 实施中，项目协作规则已确认
 
 2026-10-11 用户明确“确认I-5独立审计通过，启动 I-6”。这是用户审计确认，解除 I-5 的历史等待；本会话不自行授独立审计。I-6 有限目标/任务/非目标/依赖/验收/通过/停止见 [I-6设计验收](docs/CAIdex-I6-Memory同步-设计与验收-V1.md)。允许必要源码/迁移/测试/文档/commit/push main/精确CI；I-7及后续、商业API/真实Key/邮件/部署未授权。不使用ponytail技能。
 
-启动起点 main `56ff013bee88b1183865d6af5f702c467fa6783d`，本地/origin/GitHub 完整SHA一致，工作区起点干净。已读本交接、AGENTS/V3/Account设计、I-5证据索引及相关 Memory/认证/RLS/迁移/CI 源码；启动修改仅 HANDOFF、I-5状态说明与 I-6 设计验收，无功能代码/迁移实现，不宣称 I-6 编译/测试/CI 已通过。三份文档47个本地链接及最终差异检查通过；文档提交不替 I-5 功能CI，docs-only不触发既有CI。实际提交HEAD恢复时用Git核实。
+启动起点 main `56ff013bee88b1183865d6af5f702c467fa6783d`，文档启动提交 `2a0645568d36f3318db27e98bbff0b1da7a1f129`；当前功能实现尚未提交，实际 Git 状态恢复时核实。用户确认的七条规则已落实到新 PG schema4 / SQLite5、Memory 控制与数据 API、双方 enabled/范围/ACL 的 RLS、持久意图/精确上传许可/独立队列及 cursor、多 revision 冲突、A/B 和删除屏障。B 先独立提交关闭/epoch/pending，后每次最多32条清理，清理失败保持屏障；ACL保留。
 
-必须确认：Account设计§8.2明确要求所有者关闭后的成员行为“影响产品行为时先确认”。现有 `caidex.memory_access` 要求所有者和请求成员同时开启；所有者 A 关闭后成员同步也暂停，但ACL保留。已通过文本问题请求用户选择保持现有规则（建议）或让成员继续；尚未答复，不能把建议当批准，不能先改相关授权模型。B/删除屏障、writer/reader最小权限和个人隔离均须保持。
+本机真实 PG17.10/vector0.8.2 + HTTP 第六轮54具名检查通过（含双服务 worker 的成员写入/所有者关闭锁竞争），记录 `/tmp/caidex-i6-verification/sixth.json` / `.log`。第七轮新负例发现跨 epoch 旧操作收据误确认，正文未复活；已补 epoch 校验，最终重跑中，不能将旧通过当最终源码通过。另补分批清理进度及迁移/导入容量回滚测试。最终本机PG/HTTP为56具名检查/0失败，cached单元7/0（2项数据库ignored另有专用入口），Clippy sync-test 全 targets 已通过；未完成精确 CI，最终证据尚未归档；不清理有效缓存。
 
-验证偏好仍为本机满足条件时优先本机，否则GitHub。启动盘余约1.1GiB/98%，内存1.9GiB；不清理有效缓存，完整回归/跨平台转GitHub，本机静态/必要定向检查按实际资源评估。cloud状态工具/策略文件缺失；GitHub main 实际经执行沙箱提升核实，不读取秘密。当前只有文档启动核对，不重复旧Runtime回归。
+当前未提交路径：cloud/core Memory DTO/常量/内部依赖，cloud/postgres 新迁移4，cloud/auth Memory service/router/transport，chat/core Cache/Memory sync/store/reexport/测试，scripts i2装配/I6入口，CI，本设计及HANDOFF。固定Runtime/Provider/Host/旧DDL/旧证据未改。准确下一步：完成最终定向验证和差异核对，提交/push main，核验精确提交四job CI、归档原始日志与限制，封存后等待I-6独立审计；不启动I-7。
 
-准确下一步：获得项目协作选择后，按I-6设计细化协议/原子边界，实现云迁移/权威控制与数据API、本地许可/持久intent/队列/cursor/epoch处理及真实PG/HTTP负例，核验精确CI后封存等待I-6独立审计；不自动启动I-7。恢复先核实实际HEAD/工作区与本节之后的用户答复。
+验证偏好本机满足条件优先，否则GitHub。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前盘余约0.7GiB；完整workspace及跨平台转GitHub，保留有效缓存。单元测试不匹配缓存特性的额外编译已主动中断，改既有sync-test组合；不是测试失败/通过。Git外私有TMPDIR避免/tmp/.git安全保护，未削弱目录检查。cloud状态工具/策略文件缺失，不宣称就绪；Docker/GitHub经沙箱提升真实访问，无商业API/真实Key/邮件/部署。
 
 ## 已关闭 I-5（用户确认独立审计通过）
 

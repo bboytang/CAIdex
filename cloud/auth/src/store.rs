@@ -352,8 +352,32 @@ impl ConfirmedSession {
         if !matches!(action, "status" | "control" | "push" | "pull") {
             return Err(ChatError::Invalid);
         }
+        self.sync_request("chat", action, body, caidex_cloud_core::chat::MAX_WIRE)
+            .await
+    }
+    pub async fn memory_request(
+        &self,
+        action: &str,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, ChatError> {
+        if !matches!(
+            action,
+            "status" | "control" | "scope" | "push" | "pull" | "cleanup"
+        ) {
+            return Err(ChatError::Invalid);
+        }
+        self.sync_request("memory", action, body, caidex_cloud_core::memory::MAX_WIRE)
+            .await
+    }
+    async fn sync_request(
+        &self,
+        channel: &str,
+        action: &str,
+        body: serde_json::Value,
+        maximum: usize,
+    ) -> Result<serde_json::Value, ChatError> {
         let bytes = serde_json::to_vec(&body).map_err(|_| ChatError::Invalid)?;
-        if bytes.len() > caidex_cloud_core::chat::MAX_WIRE {
+        if bytes.len() > maximum {
             return Err(ChatError::Invalid);
         }
         let client = reqwest::Client::builder()
@@ -362,7 +386,7 @@ impl ConfirmedSession {
             .build()
             .map_err(|_| ChatError::Offline)?;
         let mut reply = client
-            .post(format!("{}v1/chat/{action}", self.issuer()))
+            .post(format!("{}v1/{channel}/{action}", self.issuer()))
             .header("content-type", "application/json")
             .bearer_auth(&self.tokens.access_token)
             .body(bytes)
@@ -378,7 +402,7 @@ impl ConfirmedSession {
         }
         let mut bytes = Vec::new();
         while let Some(chunk) = reply.chunk().await.map_err(|_| ChatError::Offline)? {
-            if bytes.len() + chunk.len() > caidex_cloud_core::chat::MAX_WIRE {
+            if bytes.len() + chunk.len() > maximum {
                 return Err(ChatError::Invalid);
             }
             bytes.extend_from_slice(&chunk);

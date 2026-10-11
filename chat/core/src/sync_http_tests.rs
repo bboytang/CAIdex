@@ -16,14 +16,19 @@ use tokio::sync::Notify;
 use tokio_postgres::{Client, NoTls};
 
 #[derive(Clone, Default)]
-struct Fault {
-    mode: Arc<AtomicU8>,
-    entered: Arc<Notify>,
-    release: Arc<Notify>,
+pub(crate) struct Fault {
+    pub(crate) mode: Arc<AtomicU8>,
+    pub(crate) entered: Arc<Notify>,
+    pub(crate) release: Arc<Notify>,
 }
-async fn response_fault(State(fault): State<Fault>, request: Request, next: Next) -> Response {
-    let data =
-        request.uri().path().starts_with("/v1/chat/") && !request.uri().path().ends_with("status");
+pub(crate) async fn response_fault(
+    State(fault): State<Fault>,
+    request: Request,
+    next: Next,
+) -> Response {
+    let data = (request.uri().path().starts_with("/v1/chat/")
+        || request.uri().path().starts_with("/v1/memory/"))
+        && !request.uri().path().ends_with("status");
     let reply = next.run(request).await;
     if data && reply.status() == StatusCode::OK {
         match fault.mode.swap(0, Ordering::SeqCst) {
@@ -41,14 +46,14 @@ fn check(name: &str, passed: bool) {
     assert!(passed, "I5 {name}");
     println!("I5_CHECK {}", json!({"name":name,"passed":true}));
 }
-async fn database(dsn: &str) -> Client {
+pub(crate) async fn database(dsn: &str) -> Client {
     let (db, connection) = tokio_postgres::connect(dsn, NoTls).await.unwrap();
     tokio::spawn(async move {
         let _ = connection.await;
     });
     db
 }
-async fn fixture_session(
+pub(crate) async fn fixture_session(
     admin: &Client,
     service: &Service<SandboxMail>,
     trust: &Trust,
@@ -73,7 +78,7 @@ async fn fixture_session(
         .unwrap();
     Arc::new(ConfirmedSession::confirm(trust, CLI_CLIENT, reply, &me).unwrap())
 }
-async fn reset_limits(admin: &Client) {
+pub(crate) async fn reset_limits(admin: &Client) {
     admin
         .batch_execute("UPDATE caidex.auth_limits SET reset_at=now()-interval '1 second'")
         .await
