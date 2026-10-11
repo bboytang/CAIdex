@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "milestone": "H-3",
+  "final_source_sha": "3a63c0f932477387fd8ccdb62ca401917e6a2637",
+  "baseline_sha": "0151b488127f7357df3523176e5e2c24be63bdd8",
+  "logs_are_intermediate_working_trees": true,
+  "failures": [
+    {
+      "label": "before",
+      "reason": "Regression against unmodified H-2 source: client/grant unsupported; new client waits for correlated reply and test times out. One named test failed, not a zero-test pass.",
+      "counts": {
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0
+      },
+      "log": {
+        "artifact": "h3-local-failed-before.log.gz",
+        "raw_sha256": "a35ba6223e72cbc6e788ff75fe1ae071bf27d319c9272a46cae240f220cb7f05",
+        "gzip_sha256": "dd1e5ccade03cc4df3ee745aab65f52035342b10573cd018357034cbe1edf9bf",
+        "raw_bytes": 1007
+      }
+    },
+    {
+      "label": "host-first",
+      "reason": "New fixture integer literal inferred as i32 overflow; corrected to u64 before running regression.",
+      "counts": null,
+      "log": {
+        "artifact": "h3-local-failed-host-first.log.gz",
+        "raw_sha256": "a36c2f7fdb571f1d01714e5619a3e845527366979083a973050f2e56ef32eaf4",
+        "gzip_sha256": "0a798828efc4d6bc0efcf610c125a8a527857db7f39bc13b58559cf8af37cf54",
+        "raw_bytes": 1179
+      }
+    },
+    {
+      "label": "host-second",
+      "reason": "Actual new request revocation reason overwritten by Cancel as unavailable; fixed to preserve revoked/expired/resolved states.",
+      "counts": {
+        "passed": 38,
+        "failed": 1,
+        "ignored": 0
+      },
+      "log": {
+        "artifact": "h3-local-failed-host-second.log.gz",
+        "raw_sha256": "cf87d68c170c49d58a08a5b08c564ff30c1a4438220cfabeea7808a6c72042f3",
+        "gzip_sha256": "4242699a89d3a4b63057a92d50879ab90d19b3bd851f06891a76dce89408a5a4",
+        "raw_bytes": 4825
+      }
+    },
+    {
+      "label": "clippy-first",
+      "reason": "New nested-if Clippy violation; corrected without weakening -D warnings.",
+      "counts": null,
+      "log": {
+        "artifact": "h3-local-failed-clippy-first.log.gz",
+        "raw_sha256": "9db3ba056bef701c94f53b48558b676648f1b21d6542763c5e845d402166218a",
+        "gzip_sha256": "6d0a53165e2b06289fda9f9b89fef2bb852c0b55855e6444e7774e5df2dd815e",
+        "raw_bytes": 1198
+      }
+    },
+    {
+      "label": "host-final",
+      "reason": "Incorrect test expected raw stored unknown after failed SQLite commit; corrected to require last committed blocked, absent claim, offline/restarted unknown and zero new Runtime RPC.",
+      "counts": {
+        "passed": 41,
+        "failed": 1,
+        "ignored": 0
+      },
+      "log": {
+        "artifact": "h3-local-failed-host-final.log.gz",
+        "raw_sha256": "69946c71296182cc75d5be4c25b430225335bb120ced5d1ff0528a9630bc8290",
+        "gzip_sha256": "fa60d60750d8cc9d7c503a9deae7d7482edbbdd54c4a42f7e1974fe2eee5d33c",
+        "raw_bytes": 5008
+      }
+    },
+    {
+      "label": "demo-first",
+      "reason": "Expected rejected-auth response lacked authorized field; demo helper incorrectly raised KeyError. Added explicit negative-auth response assertion; Runtime checks preserved.",
+      "counts": null,
+      "log": {
+        "artifact": "h3-local-failed-demo-first.log.gz",
+        "raw_sha256": "660890010c67c5495bfb462f25fcb381ebbcece8b6772cda67a2caab89927cdd",
+        "gzip_sha256": "61deec134fe0081118ed44f5f41209dd49d2eba07bc7c6f9e6b821c541086727",
+        "raw_bytes": 519
+      }
+    },
+    {
+      "label": "late-diff-fixture",
+      "reason": "New late-Diff regression fixture omitted its matching durable operation, so strict projection validation correctly refused the invalid fixture. Fixed only the fixture; validation was not weakened.",
+      "log": {
+        "artifact": "h3-local-failed-late-diff-fixture.log.gz",
+        "raw_sha256": "c73bb7c48fc9526dec4e9473ac9903e6697129510cc07ce6362bb85f00ce1e7d",
+        "gzip_sha256": "e067563167e5c6a477803c6dbe571bd67db6baa79c47938a6b62b4ec9ba61e9c"
+      }
+    }
+  ],
+  "final_validation": "All checks and real demos passed, see h3-local.json; no ignored failures.",
+  "cancel_bound_regression": "h3-cancel-bound-regression.json"
+}

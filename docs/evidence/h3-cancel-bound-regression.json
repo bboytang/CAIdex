@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "milestone": "H-3",
+  "final_source_sha": "3a63c0f932477387fd8ccdb62ca401917e6a2637",
+  "baseline_sha": "dc38cfbce4827c87bd87ec2972f533db07368e89",
+  "test": "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+  "baseline_production_with_new_failing_assertion": {
+    "counts": {
+      "passed": 0,
+      "failed": 1,
+      "ignored": 0
+    },
+    "log": {
+      "artifact": "h3-cancel-bound-before.log.gz",
+      "raw_sha256": "c206f2f0146f8d92e3796fcfaa507b83c321c0e1b6095dc2f565c57a838bd0f7",
+      "gzip_sha256": "d5ca95b88cdd3ad03a2c1eff4827d6537632edaff9abf1c0fa9031e97dd26923"
+    }
+  },
+  "fixed_production_with_expanded_test": {
+    "counts": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "log": {
+      "artifact": "h3-cancel-bound-after.log.gz",
+      "raw_sha256": "cda512724de5494a9e2e68bfb5bcb5f2a3c081550911c48209d2b2d5c7909050",
+      "gzip_sha256": "82960c5e17b7a2ce2c676d0dcfb8fa79b3bcfaee4e2c5ad1b1c491a17abd447c"
+    }
+  },
+  "assertions": [
+    "Acknowledged cancel without native terminal expires after at most 15 seconds",
+    "Persist unknown before refusing and stopping Runtime via existing serve error path",
+    "Repeated new cancel operation does not extend UTC deadline or monotonic origin",
+    "UTC rollback cannot extend cancel confirmation",
+    "Four expected explicit/native interrupts and no automatic timeout resend or approval"
+  ],
+  "log_scope": "Intermediate working-tree focused tests; final immutable-source full workspace and exact CI include the same expanded named test."
+}

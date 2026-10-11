@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "milestone": "H-3",
+  "code_base_sha": "85faba6d4b9f1f9484a6c866cb1de40b7ccd3088",
+  "positive_demo_sha256": "fce74b0f3d8e5f92964eed850160da628fc3d41195eef57985bdc38db5bb8eaf",
+  "fixed_codex_version": "0.160.1",
+  "fixed_codex_commit": "d27764b82f7118f674371e6d6e76271d9d606edb",
+  "runtime_binary_sha256": "f34a4d2301892ae96c90097786bfe5dc269f187b6f69faf42a7b357b8c081e35",
+  "cases": [
+    {
+      "case": "negative",
+      "uid": 65534,
+      "evidence_directory": "/tmp/caidex-h3-nonroot-eei4enue/temp/caidex-h3-demo-au3xqa8g",
+      "aggregate_diff_events": 0,
+      "native_file_change_events": 1,
+      "model_requests": 2,
+      "native_patch_contents": "CAIDEX_H3_PATCH",
+      "artifacts": {
+        "journal_events": {
+          "artifact": "h3-diff-boundary-negative-events.json.gz",
+          "raw_sha256": "a91952971636d5a012c4179bacf315bf040172562d9c79d1fd85be8f93fe919a",
+          "gzip_sha256": "00995324ebc38c8d83f8aaa8ba3beb015fa1e7a28895bc391f4e7f0aa50f8e68"
+        },
+        "snapshot": {
+          "artifact": "h3-diff-boundary-negative-snapshot.json.gz",
+          "raw_sha256": "b4c6b01ed0750487e1890a201fff6222552f32789bd124531990642d381c4a0d",
+          "gzip_sha256": "333c36bf80f78d9fe1a07628565e9f8cce9ae24795b39aa02e874471f664b17c"
+        },
+        "http_trace": {
+          "artifact": "h3-diff-boundary-negative-http-trace.json.gz",
+          "raw_sha256": "60664fbfba673b508628ab98e1519457b8535a644e7f8ef849b3f11647f02472",
+          "gzip_sha256": "15859f481ca61cdc8b131b01ba0098f2ca09d5580c35e5bb464281fc61a0fe84"
+        }
+      }
+    },
+    {
+      "case": "positive",
+      "uid": 65534,
+      "evidence_directory": "/tmp/caidex-h3-nonroot-xesbdt6p/temp/caidex-h3-demo-dl87drdq",
+      "aggregate_diff_events": 0,
+      "native_file_change_events": 1,
+      "model_requests": 9,
+      "native_patch_contents": "CAIDEX_H3_PATCH",
+      "artifacts": {
+        "journal_events": {
+          "artifact": "h3-diff-boundary-positive-events.json.gz",
+          "raw_sha256": "e726bd139d121eba1075913e6cb2adcbea2d20ae2bd07a9dd8bd6ff3f380eb4f",
+          "gzip_sha256": "11359fd1be88f449ddd8142ee8fb6a51c2ec7f93729a14ed040b73fe8180775e"
+        },
+        "snapshot": {
+          "artifact": "h3-diff-boundary-positive-snapshot.json.gz",
+          "raw_sha256": "abc7fe208f4c99bdb7d678d59a8843f779d3b29e0e7f092271976a221d6ee589",
+          "gzip_sha256": "5f11ce1a732f7be71f2a4982fd968c3bc3b1744f990f26f12b0e2e554494647a"
+        },
+        "http_trace": {
+          "artifact": "h3-diff-boundary-positive-http-trace.json.gz",
+          "raw_sha256": "43e7e45873b4a845756b4d3c3eaf5f26e2f0295366e4ada5e94b563e2b9a5432",
+          "gzip_sha256": "485700dd9018ca3302f216d38436015d2cc2e4958e21926037a1e71f6df5dab7"
+        }
+      }
+    }
+  ],
+  "positive_report": {
+    "status": "ok",
+    "codex_version": "0.160.1",
+    "clients": 2,
+    "evidence_directory": "/tmp/caidex-h3-nonroot-xesbdt6p/temp/caidex-h3-demo-dl87drdq",
+    "approval_claims": 1,
+    "winning_operation": "race-a",
+    "native_patch_contents": "CAIDEX_H3_PATCH",
+    "native_diff_restored": true,
+    "native_diff_source": "item/fileChange.changes[].diff",
+    "aggregate_diff_events": 0,
+    "native_review_restored": true,
+    "revoked_client_rejected": true,
+    "revoked_request_not_executed": true,
+    "snapshot_gap_recovered": true,
+    "unanswered_task": "unknown",
+    "restart_model_requests": 0,
+    "model_requests": 9,
+    "native_patch_offers": 3,
+    "authorization_header_seen": false,
+    "evidence_basis": {
+      "counts": "measured SQLite claim/aggregate Diff count and local HTTP trace",
+      "native_flow": "real independent Host/Runtime, file contents and original per-file Diff/recovery assertions; aggregate only when emitted",
+      "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+    }
+  },
+  "positive_log": {
+    "artifact": "h3-local-nonroot-demo.log.gz",
+    "raw_sha256": "b633c98705a20796f80bcebd0f8e68093843260d533044d4768d4c980eeb24ab",
+    "gzip_sha256": "a621ea6d210569a544577ddc5ed9d3ef6a319fa3e5c7cdd6608825e00203d6d5"
+  },
+  "native_warnings": {
+    "artifact": "h3-diff-boundary-native-warnings.json.gz",
+    "raw_sha256": "13810ba03fb61e34d290e403474a73ffc6959d08023bf947da8c6e4746df3787",
+    "gzip_sha256": "3f98c6d145d79a44d96563bc4bcf7b7081ffd812e214ca7d9cf0fe0a6724e115"
+  },
+  "upstream": [
+    {
+      "path": "codex-rs/apply-patch/src/lib.rs",
+      "url": "https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/apply-patch/src/lib.rs",
+      "sha256": "5e6f736f3a4b66c1d651baa9b85ce6e6921de170faf901e6c2f78ad9a383eaf9",
+      "focus": "failed write marks delta.exact=false"
+    },
+    {
+      "path": "codex-rs/core/src/tools/runtimes/apply_patch.rs",
+      "url": "https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/runtimes/apply_patch.rs",
+      "sha256": "058641f57de8b390d1b4915deb283f67d11234ec7c4a44e2f0d7dca43e3ca992",
+      "focus": "committed delta accumulated across attempts"
+    },
+    {
+      "path": "codex-rs/core/src/turn_diff_tracker.rs",
+      "url": "https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/turn_diff_tracker.rs",
+      "sha256": "743fbb96d27381a68d59f3ed49c7fd0d6e2fccc448a20579a7aa3d850fb3dda1",
+      "focus": "inexact delta invalidates tracker"
+    },
+    {
+      "path": "codex-rs/core/src/tools/events.rs",
+      "url": "https://github.com/openai/codex/blob/d27764b82f7118f674371e6d6e76271d9d606edb/codex-rs/core/src/tools/events.rs",
+      "sha256": "3feb1b42fd5d645af3d1761e3a0761ae19210c601d6ffa85c9a873a236eff912",
+      "focus": "native fileChange emitted before conditional aggregate Diff"
+    }
+  ],
+  "conclusion": "Raw native fileChange Diff persisted and restored. Aggregate notification absent, not dropped by Host. Native write violation and pinned source explain conservative invalidation; runtime in-memory delta not directly observed. Require original per-file path/content/recovery and validate aggregate only when emitted; zero does not assert aggregate success. No permission relaxation or Host-generated Diff.",
+  "auxiliary_network_limit": "Observed unauthenticated featured-plugin cache request returned 401; local model request counts are not global network telemetry. No real user credentials were used; model endpoint is synthetic loopback.",
+  "final_source_sha": "3a63c0f932477387fd8ccdb62ca401917e6a2637",
+  "positive_case_source_note": "Earlier per-file Diff fix and aggregate-boundary demonstration; final-source repeat below uses rebuilt Host.",
+  "final_source_nonroot_repeat": {
+    "source_sha": "3a63c0f932477387fd8ccdb62ca401917e6a2637",
+    "uid": 65534,
+    "report": {
+      "status": "ok",
+      "codex_version": "0.160.1",
+      "clients": 2,
+      "evidence_directory": "/tmp/caidex-h3-nonroot-u37hpyqe/temp/caidex-h3-demo-qazsomsj",
+      "approval_claims": 1,
+      "winning_operation": "race-a",
+      "native_patch_contents": "CAIDEX_H3_PATCH",
+      "native_diff_restored": true,
+      "native_diff_source": "item/fileChange.changes[].diff",
+      "aggregate_diff_events": 0,
+      "native_review_restored": true,
+      "revoked_client_rejected": true,
+      "revoked_request_not_executed": true,
+      "snapshot_gap_recovered": true,
+      "unanswered_task": "unknown",
+      "restart_model_requests": 0,
+      "model_requests": 9,
+      "native_patch_offers": 3,
+      "authorization_header_seen": false,
+      "evidence_basis": {
+        "counts": "measured SQLite claim/aggregate Diff count and local HTTP trace",
+        "native_flow": "real independent Host/Runtime, file contents and original per-file Diff/recovery assertions; aggregate only when emitted",
+        "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+      }
+    },
+    "log": {
+      "artifact": "h3-final-nonroot-demo.log.gz",
+      "raw_sha256": "ffa548b88eb5c509cbfc46d8ec11077bcfbcbf34732004b6e0ae0c1856411232",
+      "gzip_sha256": "4e9754bdfe086813c96c8c0d204d77f7622f78c3b5427f2cbeaa9403761af44f"
+    },
+    "host_source_sha256": "cc0000953ed5a1a709a6eb65cd5ce10fcfd41f92f5c3f24aeb4523f8add7f088",
+    "host_binary_sha256": "7c18f55524a5a9cde05cee43350dadd3c5c365365bcb4efecc45d613b2132581",
+    "runtime_binary_sha256": "f34a4d2301892ae96c90097786bfe5dc269f187b6f69faf42a7b357b8c081e35",
+    "original_modes_unchanged": true,
+    "read_only_hardlinks": true
+  }
+}

@@ -2,19 +2,19 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
-## 当前批准工作：H-3 多端审批、Diff与纵向集成（本地验证通过，最终源码精确CI运行中）
+## 当前批准工作：H-3 多端审批、Diff与纵向集成（开发验证完成，停止待独立审计）
 
-2026-10-11用户确认H-2独立审计通过，并明确批准H-3。开始时main/HEAD/origin/main/GitHub main均为0151b488127f7357df3523176e5e2c24be63bdd8，工作区干净；磁盘2.4GiB可用。已读AGENTS/V3/CLI Host审批契约及H-1/2源码/测试，复用固定Codex0.160.1和原Facade，不读真实Key/不调商业模型。
+2026-10-11用户确认H-2独立审计通过并批准H-3。起点main/HEAD/origin/main/GitHub main均0151b488127f7357df3523176e5e2c24be63bdd8，工作区干净，构建前2.4GiB可用。已按AGENTS/V3/审批契约记录目标、有限计划、依赖、非目标、通过/停止条件，见[H-3设计与验收](docs/CAIdex-H3-Host-设计与验收-V1.md)。仅复用固定Codex0.160.1/原Facade的持久多端审批、Host独立授权撤销、原生Diff/Review恢复与有界纵向链；未读真实Key/调商业模型，不使用ponytail插件，不清理用户/全局Codex/有效缓存。
 
-目标/有限计划/依赖/非目标/通过/停止条件见[H-3设计与验收](docs/CAIdex-H3-Host-设计与验收-V1.md)。仅审批持久有效性/首次竞争/期限撤销、独立Host权限撤销、真实输出与Diff/Review恢复及有界纵向链；main直接commit/push、最终源码精确三平台CI封存后停止待独立审计。I及后续阶段/生产部署/账户/正式GUI/SSH/Relay未授权；不使用ponytail插件，不清理用户/全局Codex/有效缓存。
+最终功能源码[`3a63c0f932477387fd8ccdb62ca401917e6a2637`](https://github.com/bboytang/CAIdex/commit/3a63c0f932477387fd8ccdb62ca401917e6a2637)已直接提交push main；[精确CI38107842905](https://github.com/bboytang/CAIdex/actions/runs/38107842905)三平台全部成功，各job实际checkout均为完整功能SHA。Linux job114377025918 workspace682/0/83、Host42/0/0、固定Runtime81/0/0；Windows job114377025755 workspace676/0/81、Host41/0/0、Runtime80/0/0；macOS job114377025910 workspace681/0/81、Host42/0/0、Runtime80/0/0。Host计入workspace，忽略不当通过；Linux凭据附加1/Windows额外Host lib4另记。fmt/Clippy/schema/doctor/H-1/2/3真实进程步骤全成功，本地全仓及固定Runtime同样完整通过，最终源码非root演示也通过。
 
-已实现schema v3及v1/v2事务升级、独立Host委托授权/撤销、审批持久首次claim/120秒有效期/单调时间上限/显式撤销、原生Diff/Review与工具artifact恢复；保持固定Runtime和旧operation hash边界。新增9项Host回归，另加强单调超时、迁移失败回滚及artifact字节上限测试。全仓fmt/Clippy/workspace实际682通过/0失败/83忽略（含Host42/0/0）、固定Runtime81/0/0、Linux原生凭据附加1/0/0、schema/doctor、H-1/2/3真实进程演示全部通过。H-3实测首次审批claim1、本机HTTP请求9、原生patch offer3、重启请求增量0，实际文件/Diff/Review/撤销/快照缺口恢复断言通过。固定离线声明不是独立全局遥测。
+已实现schema v3及v1/v2事务升级、最多64个独立Host委托令牌摘要/权限/撤销、审批持久首次claim/120秒请求期限/单调时钟/显式撤销、原生Diff/Review与工具artifact明确归属恢复；旧operation hash不变。9项新增Host回归及增强原期限/迁移/容量测试通过。取消RPC确认无终态的真实缺口先失败复现0/1/0，再增加15秒确认截止/重复取消不延长/UTC回拨上限，逾期持久unknown并停止Runtime；修复后定向1/0/0及最终三平台完整通过。H-3双端实测claim1，异常重启模型请求增量0，文件/原生逐文件Diff/Review/请求和授权撤销/快照缺口断言通过。
 
-中间源码dc38cfbce4827c87bd87ec2972f533db07368e89的[CI38106599664](https://github.com/bboytang/CAIdex/actions/runs/38106599664)三平台成功；最终检查另发现取消RPC有确认却无终态时cancel-requested永久跳过超时。先加失败回归0通过/1失败，再在task.rs增加15秒UTC/单调确认上限，重复取消不延长；逾期持久unknown并停止Runtime，不伪造终态/重发。修复后定向1/0/0、全仓682/0/83、固定Runtime81/0/0及H-1/2/3完整演示已通过。新修复尚待提交及最终SHA三平台精确CI，旧成功不可代替。首轮CI38105001809及第二轮38105455389因Linux/Windows聚合Diff假设失败；macOS成功，失败日志保留。非root原始journal聚合事件0、原生fileChange Diff与文件完整，固定Runtime sandbox失败写入使累计delta不精确并失效聚合tracker；Host没有遗漏已发聚合事件。
+证据入口：[最终CI逐job/步骤/原始日志与实际计数](docs/evidence/h3-ci.json)、[本地日志/最终源码指纹](docs/evidence/h3-local.json)、[Host42测试名](docs/evidence/h3-host-tests.log)、[HTTP trace](docs/evidence/h3-local-http-trace.json.gz)、[v3快照](docs/evidence/h3-local-snapshot.json.gz)、[取消期限修复前后](docs/evidence/h3-cancel-bound-regression.json)、[开发失败及修正](docs/evidence/h3-local-failed.json)、[原生Diff能力边界/最终非root验证](docs/evidence/h3-runtime-diff-boundary.json)。失败两轮CI及被取消修复取代的中间成功CI留H-3文档，不代最终源码验证。所有证据仓库内封存，gzip/原始SHA256及实际checkout已复核，文档含独立运行步骤和只读证据核对代码。
 
-最小修正只在演示明确核对真实逐文件Diff路径/内容与完整恢复，聚合Diff单独实测事件数并验证实际发出的数据；不更改Runtime、readonly/on-request/user权限或自行计算Diff。修正后的非root完整纵向演示已通过（claim1/本机HTTP9/聚合Diff0/重启增量0），root全仓fmt/Clippy/workspace682/0/83（Host42/0/0）、固定Runtime81/0/0、凭据/schema/doctor/构建及H-1/2/3演示完整重跑通过，root聚合Diff实际3。原生聚合Diff并非每次编辑必有，保留为固定Runtime能力限制；审计见H-3文档与diff-boundary证据。正在全量核对新SHA三平台，不沿用旧部分成功。
+限制：固定Runtime在sandbox失败尝试后可能不发有效聚合Diff；非root实际0，原生逐文件Diff完整保存/恢复，有发出的聚合仍强制核对；不自行重算或声称无条件聚合。Review合成文字不代模型质量或独立审计。期限是配置截止，实际停止受每秒tick、调度及SQLite影响；未验生产吞吐/备份容灾/正式GUI与完整CLI/远程配对/商业兼容。模型HTTP计数不是全部网络遥测，原生辅助无认证featured-plugin缓存401另记，不使用真实用户凭据。
 
-[本地逐检查日志/最终源码指纹](docs/evidence/h3-local.json)、[Host42测试名](docs/evidence/h3-host-tests.log)、[HTTP trace](docs/evidence/h3-local-http-trace.json.gz)、[停止后v3快照](docs/evidence/h3-local-snapshot.json.gz)、[开发失败与修正](docs/evidence/h3-local-failed.json)、[首轮失败CI](docs/evidence/h3-failed-ci.json)已生成，待最终CI证据一起封存。当前未提交task.rs取消期限修复及本轮证据与交接/验收更新；无用户修改被覆盖，磁盘约1.7GiB。下一步核对最终三平台实际checkout、各步骤及计数并封存，完成后停止待H-3独立审计；会话中断先核实Git和GitHub。
+封存仅H-3证据与验收/交接文档，功能/测试/依赖/脚本/workflow与上述功能SHA无差异。main流程保留，推送后核实工作区干净及HEAD/main/origin/main/GitHub main一致；封存HEAD用git rev-parse HEAD查询，不将其当功能CI SHA。磁盘约1.7GiB，本轮未删除文件或有效缓存，无用户修改被覆盖。开发验证完成，当前无明确阻断，H-3独立审计尚未进行，已停止等待用户重新发起独立审计；I及后续、商业API/真实Key/生产部署未授权，不自行启动。
 
 ## H-2 历史交付（用户已确认独立审计通过）
 
@@ -57,7 +57,7 @@ F/G-Live仍待用户最终真实模型/费用/实际Ollama等实测；没有用�
 
 ## 未实现、未验证与风险
 
-- H-1已由用户确认审计通过；H-2有限任务/幂等/原生执行链/轮次约束与父子关联已实现并验证，用户确认独立审计通过；H-3已批准，正在实施，完整生产Host仍未验。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
+- H-1已由用户确认审计通过；H-2有限任务/幂等/原生执行链/轮次约束与父子关联已实现并验证，用户确认独立审计通过；H-3开发验证与精确CI/证据封存完成，停止待独立审计，完整生产Host仍未验。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
 - I官方账户/PostgreSQL/Memory/同步/Email及J–O客户端、L SSH、P完整英文CLI、Q加密Relay、R实际平台/安装升级/权限/恢复仍待。当前CLI仅doctor、credentials status/set/remove、version/help；CLI-01～34不因底层协议存在而完成。
 - 各Provider限制以专属验收/profile为准；未知Runtime扩展不保证类型化持久化全量往返。native载体为JSON一致性门控而非密码学真实性，backend配置不是实际endpoint证明；终态缓冲受idle/预算限制，完整前缀可能二次增长。
 - compaction只验明确Classic/Lite本地/远端成功与失败/取消、Total采样前自动阈值/磁盘恢复；其他scope/轮末/TokenBudget/无限历史不认领。同步SecretStore开始后不能强停，保证取消后不POST；跨Gateway keepalive未承诺。
@@ -67,4 +67,4 @@ F/G-Live仍待用户最终真实模型/费用/实际Ollama等实测；没有用�
 
 - [AGENTS规则](AGENTS.md)、[V3阶段/里程碑/交付](docs/CAIdex-实施计划-V3.md)、[UI规范](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud设计](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI-01～34](docs/CAIdex-CLI-完整交互与验收规范-V1.md)。
 - [F/G退出核对](docs/CAIdex-FG-离线验收核对-V1.md)、[Gateway](docs/CAIdex-Model-Gateway-设计与验收.md)、[Runtime能力](docs/CAIdex-Runtime-能力对照.md)、[18条Provider路由报告](docs/CAIdex-Provider-路由离线兼容性报告-V1.md)、[4条切换报告](docs/CAIdex-模型切换-离线兼容性报告-V1.md)。各Provider专属验收由上述索引进入，历史CI留原文/GitHub。
-- H-1源码/测试 `runtime/host/`、真实进程演示 `scripts/h1-demo.py`；既有源码 `runtime/bridge/src/`、`model/core/src/`、`model/gateway/src/`、`model/providers/`、`credentials/core/`；固定Runtime/切换/Provider集成测试位于 `runtime/bridge/tests/`。当前H-2有限本地任务Host已实现，入口/演示见H-2文档与scripts/h2-demo.py；无完整生产Host/Windows/iOS工程，当前仅续接批准的H-3，完成后不自行开始I。
+- H-1源码/测试 `runtime/host/`、真实进程演示 `scripts/h1-demo.py`；既有源码 `runtime/bridge/src/`、`model/core/src/`、`model/gateway/src/`、`model/providers/`、`credentials/core/`；固定Runtime/切换/Provider集成测试位于 `runtime/bridge/tests/`。当前H-2有限本地任务Host已实现，入口/演示见H-2文档与scripts/h2-demo.py；无完整生产Host/Windows/iOS工程，H-3演示见scripts/h3-demo.py及验收证据，当前停止待其独立审计，不自行开始I。

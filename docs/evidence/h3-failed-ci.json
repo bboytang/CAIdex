@@ -1,0 +1,514 @@
+{
+  "schema_version": 1,
+  "milestone": "H-3",
+  "run_id": 38105001809,
+  "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38105001809",
+  "source_sha": "dc322e007bbfdb9380880bbf6bea4113f28b973a",
+  "conclusion": "failure",
+  "cause": "Linux/Windows immediate aggregate Diff lookup KeyError. Initial timing hypothesis was disproved by the second CI after bounded waiting. Non-root raw journal and pinned source explain inexact sandbox delta suppressing aggregate notifications while original per-file Diff survives; see h3-second-failed-ci.json and h3-runtime-diff-boundary.json. Final demo requires original per-file path/content/recovery and measures/verifies aggregate only when emitted; no Runtime or permission change.",
+  "jobs": [
+    {
+      "platform": "linux",
+      "job_id": 114368522511,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38105001809/job/114368522511",
+      "checkout_sha": "dc322e007bbfdb9380880bbf6bea4113f28b973a",
+      "conclusion": "failure",
+      "workspace": {
+        "passed": 682,
+        "failed": 0,
+        "ignored": 83
+      },
+      "host_tests": {
+        "passed": 42,
+        "failed": 0,
+        "ignored": 0
+      },
+      "fixed_runtime": null,
+      "failed_steps": [
+        "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)"
+      ],
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install Linux native credential test service",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Linux native credential store in an isolated session",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "failure",
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 19,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 37,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 38,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 39,
+          "status": "completed"
+        }
+      ],
+      "logs": {
+        "raw": {
+          "artifact": "h3-failed-ci-linux.log.gz",
+          "raw_sha256": "4d9322e1e884e14a44f9128aac644f923787ee1fede70fb4e632f068532148e5",
+          "gzip_sha256": "bb7b06ffa3f9381dca6c8f2eecc64a2567fc3e292add1f649ff3a99a417013f3"
+        },
+        "steps": {
+          "artifact": "h3-failed-ci-linux-steps.log.gz",
+          "raw_sha256": "47633f9ac055640da19ea32f6688aa32b87c35cd4df5ea8fa709f2db1ff64513",
+          "gzip_sha256": "15b94894e95648f809d982c357febcbdb7c996f20fcbd5cb640c9061c33ce4a3"
+        }
+      }
+    },
+    {
+      "platform": "macos",
+      "job_id": 114368522566,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38105001809/job/114368522566",
+      "checkout_sha": "dc322e007bbfdb9380880bbf6bea4113f28b973a",
+      "conclusion": "success",
+      "workspace": {
+        "passed": 681,
+        "failed": 0,
+        "ignored": 81
+      },
+      "host_tests": {
+        "passed": 42,
+        "failed": 0,
+        "ignored": 0
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "failed_steps": [],
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Install Linux native credential test service",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Linux native credential store in an isolated session",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 19,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 37,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 38,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 39,
+          "status": "completed"
+        }
+      ],
+      "logs": {
+        "raw": {
+          "artifact": "h3-failed-ci-macos.log.gz",
+          "raw_sha256": "0384f825dcfb2f7ab1d0216432c5c9e5ba3b34aadef50e2b1df1ecc5b0a09b6f",
+          "gzip_sha256": "15bced21361a734d9d0b5beb855cf90a4b3da4c79ced11d7684167bc6ef4546b"
+        },
+        "steps": {
+          "artifact": "h3-failed-ci-macos-steps.log.gz",
+          "raw_sha256": "2a00656e9e6526a604f28652d675760e09856ce07b4355c10733d12cae04f2cd",
+          "gzip_sha256": "4c60be68056f305e15ec161c44904327b9b15d6529c3c611170cbc976ee04c8b"
+        }
+      }
+    },
+    {
+      "platform": "windows",
+      "job_id": 114368522583,
+      "job_url": "https://github.com/bboytang/CAIdex/actions/runs/38105001809/job/114368522583",
+      "checkout_sha": "dc322e007bbfdb9380880bbf6bea4113f28b973a",
+      "conclusion": "failure",
+      "workspace": {
+        "passed": 676,
+        "failed": 0,
+        "ignored": 81
+      },
+      "host_tests": {
+        "passed": 41,
+        "failed": 0,
+        "ignored": 0
+      },
+      "fixed_runtime": null,
+      "failed_steps": [
+        "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)"
+      ],
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Install Linux native credential test service",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Linux native credential store in an isolated session",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "failure",
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 19,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 37,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 38,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 39,
+          "status": "completed"
+        }
+      ],
+      "logs": {
+        "raw": {
+          "artifact": "h3-failed-ci-windows.log.gz",
+          "raw_sha256": "e8e88044e522a2e3d7185226ed354976495ef8fd5f50872e94184d6157965ac7",
+          "gzip_sha256": "d5584f6543969993766bc699d71ae72c53960fde6580d3e0382dde8fba7c92b0"
+        },
+        "steps": {
+          "artifact": "h3-failed-ci-windows-steps.log.gz",
+          "raw_sha256": "d2b59e314ae88893bdfaa0f2b4bc568a8985721ac9137a483b23829e5aeefb50",
+          "gzip_sha256": "417582c8cce48b56f6ca3e198562f0bade4d2427576e348e24a17802840e9332"
+        }
+      }
+    }
+  ]
+}
