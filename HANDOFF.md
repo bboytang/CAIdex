@@ -2,7 +2,19 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前停止：I-5 已封存，等待独立审计
+## 当前：I-6 已批准启动，项目协作规则待确认
+
+2026-10-11 用户明确“确认I-5独立审计通过，启动 I-6”。这是用户审计确认，解除 I-5 的历史等待；本会话不自行授独立审计。I-6 有限目标/任务/非目标/依赖/验收/通过/停止见 [I-6设计验收](docs/CAIdex-I6-Memory同步-设计与验收-V1.md)。允许必要源码/迁移/测试/文档/commit/push main/精确CI；I-7及后续、商业API/真实Key/邮件/部署未授权。不使用ponytail技能。
+
+启动起点 main `56ff013bee88b1183865d6af5f702c467fa6783d`，本地/origin/GitHub 完整SHA一致，工作区起点干净。已读本交接、AGENTS/V3/Account设计、I-5证据索引及相关 Memory/认证/RLS/迁移/CI 源码；启动修改仅 HANDOFF、I-5状态说明与 I-6 设计验收，无功能代码/迁移实现，不宣称 I-6 编译/测试/CI 已通过。三份文档47个本地链接及最终差异检查通过；文档提交不替 I-5 功能CI，docs-only不触发既有CI。实际提交HEAD恢复时用Git核实。
+
+必须确认：Account设计§8.2明确要求所有者关闭后的成员行为“影响产品行为时先确认”。现有 `caidex.memory_access` 要求所有者和请求成员同时开启；所有者 A 关闭后成员同步也暂停，但ACL保留。已通过文本问题请求用户选择保持现有规则（建议）或让成员继续；尚未答复，不能把建议当批准，不能先改相关授权模型。B/删除屏障、writer/reader最小权限和个人隔离均须保持。
+
+验证偏好仍为本机满足条件时优先本机，否则GitHub。启动盘余约1.1GiB/98%，内存1.9GiB；不清理有效缓存，完整回归/跨平台转GitHub，本机静态/必要定向检查按实际资源评估。cloud状态工具/策略文件缺失；GitHub main 实际经执行沙箱提升核实，不读取秘密。当前只有文档启动核对，不重复旧Runtime回归。
+
+准确下一步：获得项目协作选择后，按I-6设计细化协议/原子边界，实现云迁移/权威控制与数据API、本地许可/持久intent/队列/cursor/epoch处理及真实PG/HTTP负例，核验精确CI后封存等待I-6独立审计；不自动启动I-7。恢复先核实实际HEAD/工作区与本节之后的用户答复。
+
+## 已关闭 I-5（用户确认独立审计通过）
 
 2026-10-11 用户明确确认 I-4.2 独立审计通过并批准 I-5；本机满足编译/测试/构建条件时优先本机，否则 GitHub。有限目标/任务/非目标/通过/停止、实际契约与试用见 [I-5设计验收](docs/CAIdex-I5-Chat同步-设计与验收-V1.md)。允许必要实现/迁移/测试/文档/commit/push main/精确CI，本轮开发验证已完成；I-6及后续、商业API/真实Key/邮件/部署未授权。不使用ponytail技能。
 
@@ -18,7 +30,7 @@ CI实际：Linux114517333757 workspace723/0/83、固定Runtime81/0；macOS114517
 
 限制：当前只同步账户自身拥有的个人/项目Chat，无项目协作新入口；新本机conversation需显式选择。服务器单worker串行请求，事件/收据/墓碑永久留存，无生产容量/备份净化/GC承诺；SQLite明文与HTTPS云信任边界，未登记任意秘密仍须用户范围选择。Memory同步/A/B删除归I-6，运营/备份/物理资源归I-7。正式GUI/CLI/iOS、真实模型及F/G-Live未验。
 
-准确下一步：独立新会话/其他模型只读审计上述不可变源码、完整调用路径与实际原证据；有当前范围阻断则最小修复/相关精确复验。等待用户确认I-5审计通过并另行批准I-6；实施会话不授独立审计，不跨阶段开发。恢复先核实实际main/HEAD/工作区/远端，不能假定封存后一直干净。
+I-5 的历史停止已由用户确认独立审计通过及 I-6 新授权解除；上述功能源码、精确证据及限制保持。当前准确下一步以本文件顶部 I-6 为准，实施会话不授独立审计。
 
 ## 已关闭 I-4.2（用户确认独立审计通过）
 
@@ -98,6 +110,6 @@ Windows11x64 Tauri2/React/Rust、iOS17 SwiftUI/UniFFI、Linux Host/英文CLI不�
 
 ## 恢复索引
 
-[AGENTS](AGENTS.md)、[V3](docs/CAIdex-实施计划-V3.md)、[UI](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)为既定边界，当前 I-4.2 不得更改 A–R 顺序或整产品范围。
+[AGENTS](AGENTS.md)、[V3](docs/CAIdex-实施计划-V3.md)、[UI](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)为既定边界，当前 I-6 不得更改 A–R 顺序或整产品范围。
 
 源码：`chat/core`（内部演示`scripts/i3-chat.py`）；`cloud/core`、`cloud/postgres`、`cloud/auth`；认证复现`scripts/i2-auth.py`，I-1数据库`scripts/i1-database.py`。固定Runtime/Host在`runtime/bridge`/`runtime/host`，H-1/2/3演示`scripts/h1-demo.py`/`h2-demo.py`/`h3-demo.py`；既有凭据/Provider无需重建改写。未解生产吞吐/备份/边界以各验收报告为准；新有证据权限/隔离/完整性缺陷须按批准通过条件修复复验。
