@@ -1,0 +1,502 @@
+{
+  "source_head": "bc421f01993531c378da852b7a63be207658b91c",
+  "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+  "pgvector_version": "0.8.2",
+  "image": "pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966",
+  "elapsed_seconds": 68.824,
+  "checks": [
+    {
+      "name": "v2_failed_migration_rolls_back_role_tables_and_columns",
+      "passed": true
+    },
+    {
+      "name": "v2_migration_applied_once",
+      "passed": true
+    },
+    {
+      "name": "all_23_private_tables_force_rls",
+      "passed": true
+    },
+    {
+      "name": "trusted_discovery_and_endpoints",
+      "passed": true
+    },
+    {
+      "name": "wrong_issuer_discovery_refused",
+      "passed": true
+    },
+    {
+      "name": "existing_account_authorization_page_has_confirmation_and_no_registration",
+      "passed": true
+    },
+    {
+      "name": "no_context_and_fake_account_bearer_refused",
+      "passed": true
+    },
+    {
+      "name": "register_generic_without_token_or_user_id",
+      "passed": true
+    },
+    {
+      "name": "short_password_and_untrusted_fields_refused",
+      "passed": true
+    },
+    {
+      "name": "unverified_identity_cannot_login",
+      "passed": true
+    },
+    {
+      "name": "challenge_wrong_purpose_and_missing_token_refused",
+      "passed": true
+    },
+    {
+      "name": "verification_concurrent_consume_exactly_once",
+      "passed": true
+    },
+    {
+      "name": "verification_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "verified_password_login_creates_independent_session",
+      "passed": true
+    },
+    {
+      "name": "argon2id_salt_and_versioned_64mib_parameters_no_plaintext",
+      "passed": true
+    },
+    {
+      "name": "verification_material_digest_not_raw_password_or_token",
+      "passed": true
+    },
+    {
+      "name": "new_account_settings_default_off_and_no_host_authority",
+      "passed": true
+    },
+    {
+      "name": "client_supplied_actor_refused",
+      "passed": true
+    },
+    {
+      "name": "resend_cooldown_real_account",
+      "passed": true
+    },
+    {
+      "name": "duplicate_registration_generic_no_second_identity_or_email",
+      "passed": true
+    },
+    {
+      "name": "unknown_recovery_generic",
+      "passed": true
+    },
+    {
+      "name": "unknown_address_same_resend_limit",
+      "passed": true
+    },
+    {
+      "name": "second_account_verified",
+      "passed": true
+    },
+    {
+      "name": "reused_data_connection_switches_account_without_leak",
+      "passed": true
+    },
+    {
+      "name": "data_role_cannot_read_auth_credentials_or_grant_state",
+      "passed": true
+    },
+    {
+      "name": "auth_role_cannot_read_chat_memory_projects_or_set_owner",
+      "passed": true
+    },
+    {
+      "name": "auth_role_cannot_enable_memory_sync_or_rewrite_user_id",
+      "passed": true
+    },
+    {
+      "name": "privileged_db_principal_rejected_at_service_start",
+      "passed": true
+    },
+    {
+      "name": "parameterized_transaction_actor_is_authenticated_user",
+      "passed": true
+    },
+    {
+      "name": "real_reused_connection_rollback_clears_context",
+      "passed": true
+    },
+    {
+      "name": "password_revocation_committed_before_login_cannot_issue_session",
+      "passed": true
+    },
+    {
+      "name": "device_list_current_display_and_no_secret_columns",
+      "passed": true
+    },
+    {
+      "name": "foreign_session_revoke_refused",
+      "passed": true
+    },
+    {
+      "name": "ambiguous_or_nonboolean_revoke_cannot_log_out_current_session",
+      "passed": true
+    },
+    {
+      "name": "unlimited_device_list_pages_without_duplicates_or_foreign_cursor",
+      "passed": true
+    },
+    {
+      "name": "device_name_is_display_only",
+      "passed": true
+    },
+    {
+      "name": "single_device_revoke_confirmed",
+      "passed": true
+    },
+    {
+      "name": "revoked_access_rejected_before_natural_expiry",
+      "passed": true
+    },
+    {
+      "name": "refresh_wrong_issuer_or_audience_refused",
+      "passed": true
+    },
+    {
+      "name": "refresh_rotates_access_and_refresh_atomically",
+      "passed": true
+    },
+    {
+      "name": "rotation_invalidates_old_access",
+      "passed": true
+    },
+    {
+      "name": "lost_response_old_refresh_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "refresh_replay_revokes_successor_family",
+      "passed": true
+    },
+    {
+      "name": "two_backend_instances_concurrent_refresh_one_wins",
+      "passed": true
+    },
+    {
+      "name": "concurrent_old_token_replay_blocks_winner_family",
+      "passed": true
+    },
+    {
+      "name": "password_reauthentication_issues_narrow_one_use_proof",
+      "passed": true
+    },
+    {
+      "name": "passkey_enrollment_without_proof_refused",
+      "passed": true
+    },
+    {
+      "name": "passkey_server_challenge_and_uv_required",
+      "passed": true
+    },
+    {
+      "name": "reauthentication_proof_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "real_webauthn_software_registration_signature_verified",
+      "passed": true
+    },
+    {
+      "name": "passkey_registration_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "real_webauthn_software_login_signature_and_uv_verified",
+      "passed": true
+    },
+    {
+      "name": "passkey_authentication_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "wrong_origin_valid_software_signature_refused",
+      "passed": true
+    },
+    {
+      "name": "invalid_passkey_signature_refused",
+      "passed": true
+    },
+    {
+      "name": "passkey_persists_public_metadata_without_private_key",
+      "passed": true
+    },
+    {
+      "name": "fresh_backend_reads_persisted_passkey_public_state",
+      "passed": true
+    },
+    {
+      "name": "passkey_can_reauthenticate_sensitive_operation",
+      "passed": true
+    },
+    {
+      "name": "cross_session_sensitive_proof_refused",
+      "passed": true
+    },
+    {
+      "name": "credential_revoke_preserves_password_login_method",
+      "passed": true
+    },
+    {
+      "name": "revoked_passkey_no_new_authentication",
+      "passed": true
+    },
+    {
+      "name": "last_authentication_method_cannot_be_removed",
+      "passed": true
+    },
+    {
+      "name": "public_client_plain_pkce_refused",
+      "passed": true
+    },
+    {
+      "name": "public_client_nonloopback_redirect_refused",
+      "passed": true
+    },
+    {
+      "name": "public_client_secret_and_unknown_fields_refused",
+      "passed": true
+    },
+    {
+      "name": "pkce_high_entropy_context_accepted",
+      "passed": true
+    },
+    {
+      "name": "pkce_existing_account_confirmation_required",
+      "passed": true
+    },
+    {
+      "name": "pkce_redirect_code_and_state_exactly_bound",
+      "passed": true
+    },
+    {
+      "name": "pkce_wrong_verifier_refused_without_consuming_valid_grant",
+      "passed": true
+    },
+    {
+      "name": "mature_oauth_library_pkce_form_exchange_independent_cli_session",
+      "passed": true
+    },
+    {
+      "name": "real_protected_pair_save_and_current_pkce_context_confirmed",
+      "passed": true
+    },
+    {
+      "name": "reopened_pair_unverified_and_keystore_private",
+      "passed": true
+    },
+    {
+      "name": "account_store_real_owner_only_directory_and_file",
+      "passed": true
+    },
+    {
+      "name": "authorization_code_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "cancel_after_token_return_revokes_only_new_session",
+      "passed": true
+    },
+    {
+      "name": "cancel_before_approval_blocks_late_approval",
+      "passed": true
+    },
+    {
+      "name": "device_pending_and_default_interval",
+      "passed": true
+    },
+    {
+      "name": "device_early_poll_slow_down_persists",
+      "passed": true
+    },
+    {
+      "name": "device_wrong_user_code_refused",
+      "passed": true
+    },
+    {
+      "name": "device_explicit_existing_account_approval",
+      "passed": true
+    },
+    {
+      "name": "device_once_creates_independent_cli_session",
+      "passed": true
+    },
+    {
+      "name": "device_code_replay_refused",
+      "passed": true
+    },
+    {
+      "name": "device_denial_terminal",
+      "passed": true
+    },
+    {
+      "name": "device_expiry_and_late_approval_refused",
+      "passed": true
+    },
+    {
+      "name": "hostile_browser_origin_refused_without_cors",
+      "passed": true
+    },
+    {
+      "name": "http_body_bound",
+      "passed": true
+    },
+    {
+      "name": "protected_and_token_responses_no_store",
+      "passed": true
+    },
+    {
+      "name": "sensitive_email_change_requires_fresh_proof",
+      "passed": true
+    },
+    {
+      "name": "new_email_verification_required",
+      "passed": true
+    },
+    {
+      "name": "verified_email_changes_identity_not_user_id",
+      "passed": true
+    },
+    {
+      "name": "old_email_and_prechange_sessions_refused",
+      "passed": true
+    },
+    {
+      "name": "new_email_retains_account_and_defaults",
+      "passed": true
+    },
+    {
+      "name": "recovery_generic_and_sandbox_notice",
+      "passed": true
+    },
+    {
+      "name": "password_recovery_valid_once_preserves_user_id",
+      "passed": true
+    },
+    {
+      "name": "recovery_blocks_old_password_sessions_and_old_grants",
+      "passed": true
+    },
+    {
+      "name": "recovered_password_login_and_security_event",
+      "passed": true
+    },
+    {
+      "name": "security_mail_contains_no_password_or_account_tokens",
+      "passed": true
+    },
+    {
+      "name": "new_device_does_not_require_old_device_approval",
+      "passed": true
+    },
+    {
+      "name": "logout_others_confirmed_preserves_current_and_other_account",
+      "passed": true
+    },
+    {
+      "name": "account_disable_requires_proof_and_confirms_erasure_pending",
+      "passed": true
+    },
+    {
+      "name": "disabled_account_tokens_rejected_other_account_untouched",
+      "passed": true
+    },
+    {
+      "name": "mail_outage_does_not_enumerate_recovery_eligibility",
+      "passed": true
+    },
+    {
+      "name": "mail_outage_cannot_undo_refresh_replay_revocation",
+      "passed": true
+    },
+    {
+      "name": "revoked_family_remains_closed_when_notifier_unavailable",
+      "passed": true
+    },
+    {
+      "name": "mail_transport_timeout_does_not_hold_authentication_indefinitely",
+      "passed": true
+    },
+    {
+      "name": "account_address_failed_login_limit",
+      "passed": true
+    },
+    {
+      "name": "peer_ip_limit_not_client_forwarded_identity",
+      "passed": true
+    },
+    {
+      "name": "global_limit",
+      "passed": true
+    },
+    {
+      "name": "standalone_service_real_http_and_measured_rss_cpu",
+      "passed": true
+    },
+    {
+      "name": "rust_real_account_integration_completed",
+      "passed": true
+    }
+  ],
+  "source_sha256": {
+    "cloud/auth/src/client.rs": "761d765ca0c70ba48e913fc79a77a8afd239bde34c0989f853313e0902bf2621",
+    "cloud/auth/src/lib.rs": "3ffe788d76ebf456bd17383e8d3faf8300bfdf8b018cbf47b1a48f9fd10b287e",
+    "cloud/auth/src/main.rs": "0fc00d6f807c8d61b79f1e141bda3cccdcce0db9a43dc5432d9f7a9aa6eadd79",
+    "cloud/auth/src/server/grants.rs": "f813ef3c849aeff0ae3e3d0d748531328c1d030642df1f0461ddb141966914cd",
+    "cloud/auth/src/server/passkeys.rs": "4deb75717c660467f753b6f18606af59aa34b1e8487b43d739f9270829de2ba8",
+    "cloud/auth/src/server.rs": "bbe0eb5c2ba3157859917c1c7e22741ea5b679bc9dc0d3072728e256458b1d5d",
+    "cloud/auth/src/store.rs": "c48e3d0dbb460f97cc6269402b20e4bd2de43aa5df0f57912c3d1d58d5d033e3",
+    "cloud/auth/Cargo.toml": "c4c5723370f2e59ddc5e1066359fae626c0a445b2c00c8c42d7c58a710825e1f",
+    "cloud/auth/src/account.js": "6cce751f9a600016ef59c67a2b2a55836be05e512974bff2791a3b9f2a7853f3",
+    "cloud/core/src/lib.rs": "827f8ada62597e21452746e393096c86f8f51794e8df8631e65393509bff9554",
+    "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+    "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+    "cloud/postgres/migrations/0002_authentication.sql": "7ef50facbc4feef52c5faec87a9232199e2521496a2e80ccdc7745fff8f84659",
+    "cloud/auth/tests/account.rs": "a2afe814d541a14996133bd95f4e847d477502a83c5ec0ff3a73cf18e3631f75",
+    "scripts/i2-auth.py": "e01a9f70c8f16c7d20d438aed2acf12113239eca3771ba2d24a893d0f0f7977e",
+    "Cargo.toml": "4b5b950b6486b08abf16e3026d43c024aa932cb8cd2c27e39395e02b706cc011",
+    "Cargo.lock": "4ffa90a2498a7d03cf2de9e13fa3e795d89e4f310e66497ac1a2b96c0c7a63b9",
+    ".github/workflows/ci.yml": "638b12a0d4a9c0b6302ac1a6673dea59ae58b6141b3bf7226f3b11a99595c0e3"
+  },
+  "measurements": [
+    {
+      "argon2_memory_kib": 65536,
+      "hash_concurrency": 1,
+      "register_verify_login_elapsed_ms": 5370,
+      "two_core_two_gib_load_test": false
+    },
+    {
+      "kind": "standalone_service_register_verify_login",
+      "instances": 1,
+      "elapsed_seconds": 2.559,
+      "cpu_seconds": 2.55,
+      "cpu_percent_one_core": 99.66,
+      "idle_rss_kib": 11852,
+      "rss_kib": 12564,
+      "peak_rss_kib": 77524,
+      "rss_source": "Linux /proc/PID/status VmRSS/VmHWM; peak includes service startup",
+      "cpu_source": "Linux /proc/PID/stat utime+stime delta during workload",
+      "logical_cpus": 4,
+      "host_memory_kib": 16373452,
+      "two_core_two_gib_load_test": false
+    }
+  ],
+  "summary": {
+    "passed": 110,
+    "failed": 0
+  },
+  "limits": [
+    "synthetic accounts",
+    "process-private sandbox mail",
+    "software Passkey authenticator",
+    "no native GUI/CLI/production deployment"
+  ]
+}

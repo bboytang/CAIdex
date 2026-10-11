@@ -1,0 +1,1918 @@
+{
+  "schema_version": 1,
+  "milestone": "I-3",
+  "source_sha": "bc421f01993531c378da852b7a63be207658b91c",
+  "run_id": 38138552078,
+  "run_url": "https://github.com/bboytang/CAIdex/actions/runs/38138552078",
+  "conclusion": "success",
+  "generated_at": "2026-10-11T12:26:07.614546+00:00",
+  "source_sha256": {
+    ".github/workflows/ci.yml": "638b12a0d4a9c0b6302ac1a6673dea59ae58b6141b3bf7226f3b11a99595c0e3",
+    "Cargo.lock": "4ffa90a2498a7d03cf2de9e13fa3e795d89e4f310e66497ac1a2b96c0c7a63b9",
+    "Cargo.toml": "4b5b950b6486b08abf16e3026d43c024aa932cb8cd2c27e39395e02b706cc011",
+    "chat/core/Cargo.toml": "67357ff606cbabbfd19d1a74c72c09b386ed8047b84dcfb5205dbbccfd28230b",
+    "chat/core/examples/local_chat.rs": "733ef3c5a771d6b520e796568a3dcc9657e81916afbbcb1d62ee6dcd5a61a364",
+    "chat/core/src/cache.rs": "3ac2fc3f3d29bf9e94baaa5a97265c196a22332df0531d9f918b5a611b6b328c",
+    "chat/core/src/client.rs": "20e2bcdc3e26c8f30df24f7b24fd092c74b14ce0d0a1fd9f97caa58cd1a41648",
+    "chat/core/src/lib.rs": "79fe3a081f23ee9c0b85fe70def723160ff8f512fa7d1ea1c7bedbe6ebc36b82",
+    "chat/core/src/schema.sql": "800ab41cb79798ed5913065b6baff7f752a4837a4c381e5316807558692099fe",
+    "chat/core/tests/chat.rs": "4686e014360644880d6329a9e15439292a4dc7a6d7791122ef3017f3c82931cb",
+    "cloud/auth/src/store.rs": "c48e3d0dbb460f97cc6269402b20e4bd2de43aa5df0f57912c3d1d58d5d033e3",
+    "credentials/core/src/lib.rs": "a87318fd9715d9d2afaeb02dd242a7815d6c5c16197011e93e37f37a6e5a6f3e",
+    "credentials/core/src/private_directory.rs": "bcff0eb05b54021a6101a74f683e6eb10f052566fa99f5b6a06dc9844be775ab",
+    "runtime/host/Cargo.toml": "47d9ff480edf11f5585387112ab8f993ef5b600f864256f561d620e6277d1361",
+    "runtime/host/src/security.rs": "273ce27e9b3bfa764372894e4916d940d6449df606dc2ed91c6fe600d945c21c",
+    "scripts/i3-chat.py": "11d7ce160ec6fe6bed810d31e73e6be03957445384f422d0ca36a18ef420aea7"
+  },
+  "jobs": [
+    {
+      "completedAt": "2026-10-11T12:18:01Z",
+      "conclusion": "success",
+      "databaseId": 114467405723,
+      "name": "I-1/I-2 database and authentication (Linux)",
+      "startedAt": "2026-10-11T12:15:10Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Pull pinned PostgreSQL and pgvector test image",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Rebuild and verify real database isolation and failure paths",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Authentication server and fixture Clippy",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Account trust, cancellation and protected store contracts",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38138552078/job/114467405723",
+      "checkout_sha": "bc421f01993531c378da852b7a63be207658b91c",
+      "log": "i3-ci-114467405723.log.gz",
+      "raw_sha256": "369932dd23a3dd7960200dccbcdd5087b19b563fe5d08b4a6cee53aeaf20e60c",
+      "gzip_sha256": "172ea717cd8772a37db04558c0d3ab8f02ad42267edde0cca96bfce737cda184",
+      "i1_summary": {
+        "head": "bc421f01993531c378da852b7a63be207658b91c",
+        "image": "pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966",
+        "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+        "vector_version": "0.8.2",
+        "elapsed_seconds": 8.434,
+        "passed": 118,
+        "failed": 0,
+        "synthetic_sessions": true,
+        "network": "none",
+        "source_sha256": {
+          "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+          "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+          "cloud/postgres/tests/fixture.sql": "2603f2ce5a3fabc51f444d3d2e8ba0503d80f1eeab29e5b55a041b0735d432df",
+          "scripts/i1-database.py": "ca259a13985caccfe24d233217808d11626c1996babab37da87b7af82ef3b213",
+          "cloud/core/src/lib.rs": "827f8ada62597e21452746e393096c86f8f51794e8df8631e65393509bff9554"
+        }
+      },
+      "i1_checks": [
+        {
+          "name": "bootstrap_roles_and_pinned_extensions",
+          "passed": true,
+          "sqlstate": null,
+          "output": "",
+          "stderr": ""
+        },
+        {
+          "name": "migration_failure_rolls_back",
+          "passed": true,
+          "sqlstate": "22012",
+          "output": "",
+          "stderr": "ERROR:  22012"
+        },
+        {
+          "name": "no_partial_schema",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "migration_from_empty_database",
+          "passed": true,
+          "sqlstate": null,
+          "output": "",
+          "stderr": ""
+        },
+        {
+          "name": "migration_replay_refused",
+          "passed": true,
+          "sqlstate": "42P07",
+          "output": "",
+          "stderr": "ERROR:  42P07"
+        },
+        {
+          "name": "migration_version_preserved",
+          "passed": true,
+          "sqlstate": null,
+          "output": "1",
+          "stderr": ""
+        },
+        {
+          "name": "synthetic_fixture",
+          "passed": true,
+          "sqlstate": null,
+          "output": "",
+          "stderr": ""
+        },
+        {
+          "name": "all_private_tables_force_rls",
+          "passed": true,
+          "sqlstate": null,
+          "output": "19",
+          "stderr": ""
+        },
+        {
+          "name": "actual_runtime_login_is_unprivileged",
+          "passed": true,
+          "sqlstate": null,
+          "output": "f|f|f|f|f|f|f",
+          "stderr": ""
+        },
+        {
+          "name": "runtime_owns_no_tables",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_users",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_projects",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_conversations",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_messages",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_memories",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_memory_revisions",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_memory_sources",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_embedding_spaces",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_memory_embeddings",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_memory_jobs",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_sync_events",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_sync_cursors",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_deletion_tombstones",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "missing_context_attachments",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "forged_user_and_token_denied",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "unknown_session_denied",
+          "passed": true,
+          "sqlstate": "28000",
+          "output": "",
+          "stderr": "ERROR:  28000"
+        },
+        {
+          "name": "short_session_denied",
+          "passed": true,
+          "sqlstate": "28000",
+          "output": "",
+          "stderr": "ERROR:  28000"
+        },
+        {
+          "name": "missing_context_write_denied",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "valid_session_ignores_forged_user_id",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "security_events_own_only",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n1",
+          "stderr": ""
+        },
+        {
+          "name": "session_metadata_own_only",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "cannot_extend_session_lifetime",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "guard_function_does_not_disclose_other_user_state",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\nf",
+          "stderr": ""
+        },
+        {
+          "name": "guard_rejects_forged_project_owner",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\nf",
+          "stderr": ""
+        },
+        {
+          "name": "stale_snapshot_isolation_refused",
+          "passed": true,
+          "sqlstate": "28000",
+          "output": "",
+          "stderr": "ERROR:  28000"
+        },
+        {
+          "name": "A_scope_conversations",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_conversations",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_messages",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_messages",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_memories",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_memories",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_memory_revisions",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_memory_revisions",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_memory_sources",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_memory_sources",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_embedding_spaces",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_embedding_spaces",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_memory_embeddings",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_memory_embeddings",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_memory_jobs",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_memory_jobs",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_sync_events",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_sync_events",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_sync_cursors",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_sync_cursors",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_deletion_tombstones",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_deletion_tombstones",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "A_scope_attachments",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+          "stderr": ""
+        },
+        {
+          "name": "B_scope_attachments",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "own_profile_only",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "new_account_sync_defaults",
+          "passed": true,
+          "sqlstate": null,
+          "output": "cccccccc-cccc-cccc-cccc-cccccccccccc\nf|f|1|1",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_cloud_memory_upload_denied",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "guessed_foreign_revision_hidden",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "vector_candidates_filtered_in_sql",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-0000-0000-0000-000000000001",
+          "stderr": ""
+        },
+        {
+          "name": "keyword_candidates_filtered_in_sql",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "password_material_hidden",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "login_identity_hidden",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "session_hash_hidden",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "sync_control_not_user_mutable",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "user_id_immutable",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "messages_immutable",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "revisions_immutable",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "source_evidence_immutable",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "truncate_denied",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "schema_ddl_denied",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "owner_escalation_denied",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "guard_escalation_denied",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "rls_cannot_be_disabled",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "message_author_cannot_be_forged",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "revision_author_cannot_be_forged",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "foreign_embedding_space_denied",
+          "passed": true,
+          "sqlstate": "23503",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  23503"
+        },
+        {
+          "name": "embedding_dimensions_enforced",
+          "passed": true,
+          "sqlstate": "23514",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  23514"
+        },
+        {
+          "name": "deleted_memory_vector_hidden",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "stale_vector_hidden",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "expired_revision_vector_hidden",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_memories",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_memory_revisions",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_memory_sources",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_memory_embeddings",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_memory_jobs",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_sync_events",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "disabled_memory_download_sync_cursors",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "cross_account_foreign_key_denied",
+          "passed": true,
+          "sqlstate": "23503",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  23503"
+        },
+        {
+          "name": "cross_project_source_denied",
+          "passed": true,
+          "sqlstate": "23503",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  23503"
+        },
+        {
+          "name": "revision_memory_scope_binding",
+          "passed": true,
+          "sqlstate": "23503",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  23503"
+        },
+        {
+          "name": "cannot_self_grant_foreign_project",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "owner_grants_reader",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "reader_can_read_shared_project",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+          "stderr": ""
+        },
+        {
+          "name": "reader_cannot_write",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "project_reader_cursor_binds_own_session",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "stderr": ""
+        },
+        {
+          "name": "project_owner_cannot_read_member_cursor",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+          "stderr": ""
+        },
+        {
+          "name": "cursor_cannot_reference_foreign_session",
+          "passed": true,
+          "sqlstate": "23503",
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "stderr": "ERROR:  23503"
+        },
+        {
+          "name": "cursor_cannot_impersonate_session_user",
+          "passed": true,
+          "sqlstate": "42501",
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "stderr": "ERROR:  42501"
+        },
+        {
+          "name": "owner_grants_writer",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "writer_keeps_project_owner_and_separate_author",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "stderr": ""
+        },
+        {
+          "name": "owner_revokes_member",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "stderr": ""
+        },
+        {
+          "name": "revoked_project_read_denied",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n0",
+          "stderr": ""
+        },
+        {
+          "name": "revoked_project_write_denied",
+          "passed": true,
+          "sqlstate": null,
+          "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "stderr": ""
+        },
+        {
+          "name": "one_connection_commit_rollback_tenant_reset",
+          "passed": true,
+          "sqlstate": null,
+          "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n3\n0\nbbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1\n0",
+          "stderr": ""
+        },
+        {
+          "name": "revoked_session_bind_denied",
+          "passed": true,
+          "sqlstate": "28000",
+          "output": "",
+          "stderr": "ERROR:  28000"
+        },
+        {
+          "name": "revoked_session_direct_context_denied",
+          "passed": true,
+          "sqlstate": null,
+          "output": "0",
+          "stderr": ""
+        },
+        {
+          "name": "expired_session_denied",
+          "passed": true,
+          "sqlstate": "28000",
+          "output": "",
+          "stderr": "ERROR:  28000"
+        },
+        {
+          "name": "deleted_account_denied",
+          "passed": true,
+          "sqlstate": "28000",
+          "output": "",
+          "stderr": "ERROR:  28000"
+        },
+        {
+          "name": "password_credential_requires_hash",
+          "passed": true,
+          "sqlstate": "23514",
+          "output": "",
+          "stderr": "ERROR:  23514"
+        },
+        {
+          "name": "conversation_self_branch_denied",
+          "passed": true,
+          "sqlstate": "23514",
+          "output": "",
+          "stderr": "ERROR:  23514"
+        },
+        {
+          "name": "revision_self_parent_denied",
+          "passed": true,
+          "sqlstate": "23514",
+          "output": "",
+          "stderr": "ERROR:  23514"
+        },
+        {
+          "name": "independent_database_rebuild",
+          "passed": true,
+          "sqlstate": null,
+          "output": "",
+          "stderr": ""
+        },
+        {
+          "name": "rebuild_entities_and_version",
+          "passed": true,
+          "sqlstate": null,
+          "output": "20\n1",
+          "stderr": ""
+        }
+      ],
+      "i2_summary": {
+        "passed": 110,
+        "failed": 0
+      },
+      "i2_report": "i3-auth-regression.json"
+    },
+    {
+      "completedAt": "2026-10-11T12:19:24Z",
+      "conclusion": "success",
+      "databaseId": 114467405810,
+      "name": "Runtime (ubuntu-24.04)",
+      "startedAt": "2026-10-11T12:15:10Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check account authorization JavaScript",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install Linux native credential test service",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Linux native credential store in an isolated session",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 19,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "number": 20,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 21,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 41,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 42,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 43,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38138552078/job/114467405810",
+      "checkout_sha": "bc421f01993531c378da852b7a63be207658b91c",
+      "log": "i3-ci-114467405810.log.gz",
+      "raw_sha256": "4fa86ffcd9660f30d945a0e947efdb4e0b6f3c3a8a6a2e8401053bbf848d6916",
+      "gzip_sha256": "1694921fbae3412ad8ce176140119ac28b4ede83f3a7a2431b126aff368eb3c2",
+      "workspace": {
+        "passed": 696,
+        "failed": 0,
+        "ignored": 83
+      },
+      "fixed_runtime": {
+        "passed": 81,
+        "failed": 0,
+        "ignored": 0
+      },
+      "chat_pass_names": [
+        "cache::tests::restart_finalizes_persisted_draft_and_full_disk_rolls_back_user_and_outbox",
+        "cancellation_transport_failure_tool_and_truncation_are_visible_terminal_messages",
+        "host_key_and_other_accounts_provider_reference_cannot_be_bound",
+        "immutable_branches_selected_history_attachments_and_outbox_survive_reopen",
+        "private_storage_lock_future_schema_and_limits_are_refused_without_mutating_existing_data",
+        "switch_logout_and_offline_reopen_never_adopt_foreign_data_or_model",
+        "unsafe_mode_symlink_hardlink_and_git_paths_are_refused"
+      ],
+      "chat_test_count": 7,
+      "host_pass_names": [
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "approval_commit_failure_does_not_send_a_decision_or_record_a_winner",
+        "artifact_capacity_failure_rolls_back_event_and_snapshot",
+        "cancel_during_thread_creation_never_starts_a_turn",
+        "cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary",
+        "delegated_approval_race_is_one_durable_winner_and_retries_do_not_write_again",
+        "delegated_scope_and_revocation_reject_existing_connections_and_reconnect",
+        "diff_review_and_tool_artifacts_preserve_wire_ids_unknown_fields_and_restart",
+        "durable_submit_lost_client_response_idempotency_and_native_approval",
+        "explicit_request_revocation_interrupts_without_approval_and_late_response_is_rejected",
+        "external_host_task_cannot_forge_terminal_state_or_operation",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "failed_grant_commit_cannot_authorize_a_client_or_publish_a_secret",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+        "failed_v1_migration_rolls_back_snapshot_and_version",
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval",
+        "native_resolved_request_and_thread_close_are_barriers_to_late_approval",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "rate_limit_receipt_omits_payload_but_account_auth_still_stops_host",
+        "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+        "runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation",
+        "runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+        "tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config",
+        "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+        "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+        "v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes",
+        "validated_v1_migration_preserves_identity_events_and_read_only_inspection"
+      ],
+      "host_count": 42,
+      "i3_demo": {
+        "account_a_messages": 2,
+        "account_b_cannot_read_a": true,
+        "attachments_persisted": true,
+        "authenticated_cloud": false,
+        "commercial_api": false,
+        "concurrent_branches": true,
+        "formal_gui_cli": false,
+        "guest_messages": 6,
+        "guest_not_adopted": true,
+        "milestone": "I-3",
+        "outbox_uploads": 0,
+        "restart_retains_original_scope": true,
+        "switch_clears_model": true,
+        "transport": "loopback HTTP SSE via CustomResponsesProvider + ModelRouter",
+        "http_requests": 4,
+        "fixture_request_assertions": "passed",
+        "platform": "posix"
+      },
+      "host_demos": {
+        "H-1": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "host_id": "7acf7cacbe498da0f0f059a295564fad",
+          "before_restart_seq": 6,
+          "after_restart_seq": 9,
+          "clients": 2,
+          "observer_process_exit_detaches": true,
+          "replay_identical": true,
+          "snapshot_restored": true,
+          "old_runtime_state": "unknown",
+          "restart_resubmissions": 0,
+          "model_turns": 0,
+          "commercial_calls": 0,
+          "user_keys_read": false,
+          "evidence_basis": {
+            "restart_resubmissions": "measured SQLite probeStarted count difference",
+            "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+            "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+          }
+        },
+        "H-2": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "clients": 2,
+          "evidence_directory": "/tmp/caidex-h2-demo-6fjbefjd",
+          "submitted_tasks": 5,
+          "native_marker_writes": 2,
+          "restart_model_requests": 0,
+          "model_requests": 7,
+          "native_tool_offers": 3,
+          "lost_response_same_operation": true,
+          "native_approval_execution": true,
+          "native_cancelled": true,
+          "same_provider_model_boundary": true,
+          "cross_profile_fresh_thread_association": true,
+          "replay_or_snapshot_identical": true,
+          "executed_unconfirmed_task": "unknown",
+          "authorization_header_seen": false,
+          "evidence_basis": {
+            "counts": "measured local HTTP trace, marker lines and snapshot",
+            "process_and_contract": "assertions against real independent Host and pinned Runtime",
+            "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+          }
+        },
+        "H-3": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "clients": 2,
+          "evidence_directory": "/tmp/caidex-h3-demo-1xdj0wka",
+          "approval_claims": 1,
+          "winning_operation": "race-a",
+          "native_patch_contents": "CAIDEX_H3_PATCH",
+          "native_diff_restored": true,
+          "native_diff_source": "item/fileChange.changes[].diff",
+          "aggregate_diff_events": 0,
+          "native_review_restored": true,
+          "revoked_client_rejected": true,
+          "revoked_request_not_executed": true,
+          "snapshot_gap_recovered": true,
+          "unanswered_task": "unknown",
+          "restart_model_requests": 0,
+          "model_requests": 9,
+          "native_patch_offers": 3,
+          "authorization_header_seen": false,
+          "evidence_basis": {
+            "counts": "measured SQLite claim/aggregate Diff count and local HTTP trace",
+            "native_flow": "real independent Host/Runtime, file contents and original per-file Diff/recovery assertions; aggregate only when emitted",
+            "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+          }
+        }
+      },
+      "native_credential_extra": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "completedAt": "2026-10-11T12:21:26Z",
+      "conclusion": "success",
+      "databaseId": 114467405812,
+      "name": "Runtime (macos-15)",
+      "startedAt": "2026-10-11T12:15:15Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check account authorization JavaScript",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Install Linux native credential test service",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Linux native credential store in an isolated session",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 19,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "number": 20,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 21,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 41,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 42,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 43,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38138552078/job/114467405812",
+      "checkout_sha": "bc421f01993531c378da852b7a63be207658b91c",
+      "log": "i3-ci-114467405812.log.gz",
+      "raw_sha256": "2ece254f436349efdbaee75c3d9582069422082e93d4a2b4de52ab020c76d2f3",
+      "gzip_sha256": "915e06d8cb264b26c30d3258a95ce9b7d85113f3e6bd029ab3aaee65ea3729b0",
+      "workspace": {
+        "passed": 695,
+        "failed": 0,
+        "ignored": 81
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "chat_pass_names": [
+        "cache::tests::restart_finalizes_persisted_draft_and_full_disk_rolls_back_user_and_outbox",
+        "cancellation_transport_failure_tool_and_truncation_are_visible_terminal_messages",
+        "host_key_and_other_accounts_provider_reference_cannot_be_bound",
+        "immutable_branches_selected_history_attachments_and_outbox_survive_reopen",
+        "private_storage_lock_future_schema_and_limits_are_refused_without_mutating_existing_data",
+        "switch_logout_and_offline_reopen_never_adopt_foreign_data_or_model",
+        "unsafe_mode_symlink_hardlink_and_git_paths_are_refused"
+      ],
+      "chat_test_count": 7,
+      "host_pass_names": [
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "approval_commit_failure_does_not_send_a_decision_or_record_a_winner",
+        "artifact_capacity_failure_rolls_back_event_and_snapshot",
+        "cancel_during_thread_creation_never_starts_a_turn",
+        "cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary",
+        "delegated_approval_race_is_one_durable_winner_and_retries_do_not_write_again",
+        "delegated_scope_and_revocation_reject_existing_connections_and_reconnect",
+        "diff_review_and_tool_artifacts_preserve_wire_ids_unknown_fields_and_restart",
+        "durable_submit_lost_client_response_idempotency_and_native_approval",
+        "explicit_request_revocation_interrupts_without_approval_and_late_response_is_rejected",
+        "external_host_task_cannot_forge_terminal_state_or_operation",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "failed_grant_commit_cannot_authorize_a_client_or_publish_a_secret",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+        "failed_v1_migration_rolls_back_snapshot_and_version",
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval",
+        "native_resolved_request_and_thread_close_are_barriers_to_late_approval",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "rate_limit_receipt_omits_payload_but_account_auth_still_stops_host",
+        "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+        "runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation",
+        "runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+        "tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config",
+        "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+        "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "unsafe_directory_and_storage_links_are_rejected_without_touching_targets",
+        "v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes",
+        "validated_v1_migration_preserves_identity_events_and_read_only_inspection"
+      ],
+      "host_count": 42,
+      "i3_demo": {
+        "account_a_messages": 2,
+        "account_b_cannot_read_a": true,
+        "attachments_persisted": true,
+        "authenticated_cloud": false,
+        "commercial_api": false,
+        "concurrent_branches": true,
+        "formal_gui_cli": false,
+        "guest_messages": 6,
+        "guest_not_adopted": true,
+        "milestone": "I-3",
+        "outbox_uploads": 0,
+        "restart_retains_original_scope": true,
+        "switch_clears_model": true,
+        "transport": "loopback HTTP SSE via CustomResponsesProvider + ModelRouter",
+        "http_requests": 4,
+        "fixture_request_assertions": "passed",
+        "platform": "posix"
+      },
+      "host_demos": {
+        "H-1": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "host_id": "0f21930aec95abadb32702dc18f6b6d0",
+          "before_restart_seq": 5,
+          "after_restart_seq": 7,
+          "clients": 2,
+          "observer_process_exit_detaches": true,
+          "replay_identical": true,
+          "snapshot_restored": true,
+          "old_runtime_state": "unknown",
+          "restart_resubmissions": 0,
+          "model_turns": 0,
+          "commercial_calls": 0,
+          "user_keys_read": false,
+          "evidence_basis": {
+            "restart_resubmissions": "measured SQLite probeStarted count difference",
+            "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+            "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+          }
+        },
+        "H-2": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "clients": 2,
+          "evidence_directory": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/caidex-h2-demo-y585v_uv",
+          "submitted_tasks": 5,
+          "native_marker_writes": 2,
+          "restart_model_requests": 0,
+          "model_requests": 7,
+          "native_tool_offers": 3,
+          "lost_response_same_operation": true,
+          "native_approval_execution": true,
+          "native_cancelled": true,
+          "same_provider_model_boundary": true,
+          "cross_profile_fresh_thread_association": true,
+          "replay_or_snapshot_identical": true,
+          "executed_unconfirmed_task": "unknown",
+          "authorization_header_seen": false,
+          "evidence_basis": {
+            "counts": "measured local HTTP trace, marker lines and snapshot",
+            "process_and_contract": "assertions against real independent Host and pinned Runtime",
+            "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+          }
+        },
+        "H-3": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "clients": 2,
+          "evidence_directory": "/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/caidex-h3-demo-9bijeo84",
+          "approval_claims": 1,
+          "winning_operation": "race-a",
+          "native_patch_contents": "CAIDEX_H3_PATCH",
+          "native_diff_restored": true,
+          "native_diff_source": "item/fileChange.changes[].diff",
+          "aggregate_diff_events": 3,
+          "native_review_restored": true,
+          "revoked_client_rejected": true,
+          "revoked_request_not_executed": true,
+          "snapshot_gap_recovered": true,
+          "unanswered_task": "unknown",
+          "restart_model_requests": 0,
+          "model_requests": 9,
+          "native_patch_offers": 3,
+          "authorization_header_seen": false,
+          "evidence_basis": {
+            "counts": "measured SQLite claim/aggregate Diff count and local HTTP trace",
+            "native_flow": "real independent Host/Runtime, file contents and original per-file Diff/recovery assertions; aggregate only when emitted",
+            "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+          }
+        }
+      }
+    },
+    {
+      "completedAt": "2026-10-11T12:25:33Z",
+      "conclusion": "success",
+      "databaseId": 114467405820,
+      "name": "Runtime (windows-2022)",
+      "startedAt": "2026-10-11T12:15:10Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check account authorization JavaScript",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Windows Host owner-only storage boundary",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned Rust toolchain",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Windows Host storage through the Rust process boundary",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Check formatting",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Clippy",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Protocol tests",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+          "number": 11,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Install Linux native credential test service",
+          "number": 12,
+          "status": "completed"
+        },
+        {
+          "conclusion": "skipped",
+          "name": "Linux native credential store in an isolated session",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Install pinned upstream CLI",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Locate native Codex executable",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify pinned stable and experimental schemas",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify real app-server without a model turn",
+          "number": 17,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "number": 18,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "number": 19,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "number": 20,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Real Runtime with local Responses fixtures",
+          "number": 21,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 41,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 42,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 43,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38138552078/job/114467405820",
+      "checkout_sha": "bc421f01993531c378da852b7a63be207658b91c",
+      "log": "i3-ci-114467405820.log.gz",
+      "raw_sha256": "c543dbb0a4e223043db62334a7a2fe26d7582b14cfbd4a027b3ae5b073d04cad",
+      "gzip_sha256": "2159ce7991b1eca63838dc576e475b2e2421ccc7ee07e7382532b658a746dc33",
+      "workspace": {
+        "passed": 689,
+        "failed": 0,
+        "ignored": 81
+      },
+      "fixed_runtime": {
+        "passed": 80,
+        "failed": 0,
+        "ignored": 0
+      },
+      "chat_pass_names": [
+        "cache::tests::restart_finalizes_persisted_draft_and_full_disk_rolls_back_user_and_outbox",
+        "cancellation_transport_failure_tool_and_truncation_are_visible_terminal_messages",
+        "host_key_and_other_accounts_provider_reference_cannot_be_bound",
+        "immutable_branches_selected_history_attachments_and_outbox_survive_reopen",
+        "private_storage_lock_future_schema_and_limits_are_refused_without_mutating_existing_data",
+        "switch_logout_and_offline_reopen_never_adopt_foreign_data_or_model"
+      ],
+      "chat_test_count": 6,
+      "host_pass_names": [
+        "abrupt_host_loss_preserves_unknown_probe_and_restart_never_resends_it",
+        "approval_commit_failure_does_not_send_a_decision_or_record_a_winner",
+        "artifact_capacity_failure_rolls_back_event_and_snapshot",
+        "cancel_during_thread_creation_never_starts_a_turn",
+        "cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary",
+        "delegated_approval_race_is_one_durable_winner_and_retries_do_not_write_again",
+        "delegated_scope_and_revocation_reject_existing_connections_and_reconnect",
+        "diff_review_and_tool_artifacts_preserve_wire_ids_unknown_fields_and_restart",
+        "durable_submit_lost_client_response_idempotency_and_native_approval",
+        "explicit_request_revocation_interrupts_without_approval_and_late_response_is_rejected",
+        "external_host_task_cannot_forge_terminal_state_or_operation",
+        "failed_commit_does_not_advance_event_or_snapshot",
+        "failed_grant_commit_cannot_authorize_a_client_or_publish_a_secret",
+        "failed_intent_commit_neither_calls_runtime_nor_broadcasts_an_event",
+        "failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed",
+        "failed_v1_migration_rolls_back_snapshot_and_version",
+        "journal::tests::actual_sqlite_full_rolls_back_event_and_snapshot",
+        "journal::tests::journal_close_releases_lock_even_when_a_duplicate_handle_survives",
+        "journal_reopens_with_host_identity_sequences_snapshot_and_unknown_intent",
+        "lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval",
+        "native_resolved_request_and_thread_close_are_barriers_to_late_approval",
+        "newer_schema_wrong_application_unversioned_and_corrupt_databases_are_preserved",
+        "offline_inspection_never_migrates_or_creates_a_database",
+        "oversized_event_is_rejected_without_advancing_watermark",
+        "partial_client_frame_survives_interleaved_event_broadcast",
+        "rate_limit_receipt_omits_payload_but_account_auth_still_stops_host",
+        "runtime_host_namespace_cannot_control_lifecycle_stream_or_recovery",
+        "runtime_loss_marks_unavailable_and_does_not_claim_probe_failed",
+        "runtime_reserved_names_preserve_unknown_intents_and_never_change_host_projection",
+        "runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation",
+        "runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids",
+        "second_owner_is_rejected_and_lock_releases_after_close",
+        "service::tests::lagged_subscriber_gets_explicit_gap_and_reconnects_to_consistent_snapshot",
+        "task::tests::reply_completion_is_per_request_and_deadline_interrupts_once_without_approval",
+        "tests::offline_endpoint_cannot_select_remote_credentials_or_inject_config",
+        "tests::runtime_environment_uses_same_os_allowlist_and_owned_codex_home",
+        "tests::version_probe_environment_is_private_and_version_rejection_remains_strict",
+        "two_clients_replay_detach_live_events_and_snapshot_have_one_committed_watermark",
+        "unauthorized_clients_unavailable_actions_and_auth_payloads_are_rejected",
+        "v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes",
+        "validated_v1_migration_preserves_identity_events_and_read_only_inspection"
+      ],
+      "host_count": 41,
+      "i3_demo": {
+        "account_a_messages": 2,
+        "account_b_cannot_read_a": true,
+        "attachments_persisted": true,
+        "authenticated_cloud": false,
+        "commercial_api": false,
+        "concurrent_branches": true,
+        "formal_gui_cli": false,
+        "guest_messages": 6,
+        "guest_not_adopted": true,
+        "milestone": "I-3",
+        "outbox_uploads": 0,
+        "restart_retains_original_scope": true,
+        "switch_clears_model": true,
+        "transport": "loopback HTTP SSE via CustomResponsesProvider + ModelRouter",
+        "http_requests": 4,
+        "fixture_request_assertions": "passed",
+        "platform": "nt"
+      },
+      "host_demos": {
+        "H-1": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "host_id": "95755932727808794ab8d95c87feb56a",
+          "before_restart_seq": 5,
+          "after_restart_seq": 7,
+          "clients": 2,
+          "observer_process_exit_detaches": true,
+          "replay_identical": true,
+          "snapshot_restored": true,
+          "old_runtime_state": "unknown",
+          "restart_resubmissions": 0,
+          "model_turns": 0,
+          "commercial_calls": 0,
+          "user_keys_read": false,
+          "evidence_basis": {
+            "restart_resubmissions": "measured SQLite probeStarted count difference",
+            "client_exit_replay_snapshot": "asserted process, socket and snapshot checks",
+            "model_turns_commercial_calls_user_keys_read": "fixed scenario declarations; no independent telemetry"
+          }
+        },
+        "H-2": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "clients": 2,
+          "evidence_directory": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\caidex-h2-demo-im732dkm",
+          "submitted_tasks": 5,
+          "native_marker_writes": 2,
+          "restart_model_requests": 0,
+          "model_requests": 7,
+          "native_tool_offers": 3,
+          "lost_response_same_operation": true,
+          "native_approval_execution": true,
+          "native_cancelled": true,
+          "same_provider_model_boundary": true,
+          "cross_profile_fresh_thread_association": true,
+          "replay_or_snapshot_identical": true,
+          "executed_unconfirmed_task": "unknown",
+          "authorization_header_seen": false,
+          "evidence_basis": {
+            "counts": "measured local HTTP trace, marker lines and snapshot",
+            "process_and_contract": "assertions against real independent Host and pinned Runtime",
+            "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+          }
+        },
+        "H-3": {
+          "status": "ok",
+          "codex_version": "0.160.1",
+          "clients": 2,
+          "evidence_directory": "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\caidex-h3-demo-_qgvc42j",
+          "approval_claims": 1,
+          "winning_operation": "race-a",
+          "native_patch_contents": "CAIDEX_H3_PATCH",
+          "native_diff_restored": true,
+          "native_diff_source": "item/fileChange.changes[].diff",
+          "aggregate_diff_events": 0,
+          "native_review_restored": true,
+          "revoked_client_rejected": true,
+          "revoked_request_not_executed": true,
+          "snapshot_gap_recovered": true,
+          "unanswered_task": "unknown",
+          "restart_model_requests": 0,
+          "model_requests": 9,
+          "native_patch_offers": 3,
+          "authorization_header_seen": false,
+          "evidence_basis": {
+            "counts": "measured SQLite claim/aggregate Diff count and local HTTP trace",
+            "native_flow": "real independent Host/Runtime, file contents and original per-file Diff/recovery assertions; aggregate only when emitted",
+            "commercial_calls_user_keys": "offline scenario declaration, no independent global telemetry"
+          }
+        }
+      },
+      "host_lib_extra": {
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0
+      }
+    }
+  ],
+  "limits": [
+    "Development verification is not independent audit approval.",
+    "Local synthetic provider/accounts; no commercial API, real user key or authenticated Chat sync.",
+    "Host counts are included in workspace; extra platform tests counted separately.",
+    "macOS Rust does not verify iOS Simulator, Archive, device, GUI or formal CLI.",
+    "SQLite files are OS-protected plaintext; no E2EE or protection against the local OS owner/admin."
+  ]
+}

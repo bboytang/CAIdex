@@ -1,44 +1,42 @@
 # CAIdex 开发交接
 
-更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI。历史见下列验收/证据，不依赖聊天或/tmp。
+更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前批准：I-3独立Chat与缓存，实施中
+## 当前批准：I-3独立Chat与缓存，开发验证封存，停止待独立审计
 
-2026-10-11用户纠正阶段编号，明确确认I-2独立审计通过并批准I-3。范围、验收与停止条件见[设计与验收](docs/CAIdex-I3-独立Chat缓存-设计与验收-V1.md)。基线main/HEAD 6176529dc8fca874db878a881028f1e49953881b，工作区原先干净；磁盘3.7GiB可用，完整构建/回归优先GitHub。本轮不使用ponytail技能，不启动I-4。已实现初版chat/core SQLite缓存/流收发、消息DAG/附件/outbox、账号切换取消与ModelProvider/Broker边界；新增合成HTTP内部演示及测试，复用共享私有目录。仅本地fmt/语法/差异检查，首次CI38138193270在Chat编译失败（错误使用cloud Id API/usize SQL参数），原Linux日志/tmp/caidex-i3-first-linux.log；已按既有TryFrom/From及有符号分页参数修正，补消息时间戳/并发上限，修复提交b8af139/CI38138337723随后在测试模块两个glob导入Error歧义失败，已改为明确导入（生产lib已编译通过）。准备再次提交。未授通过，最终封存须包含失败原日志与精确成功证据。
+用户纠正阶段编号后，明确确认I-2独立审计通过并批准I-3；这是用户确认，不是本实施会话自行审计。有限范围/通过/停止/试用见[设计与验收](docs/CAIdex-I3-独立Chat缓存-设计与验收-V1.md)。不使用ponytail技能。允许main流程中的实现/修复/commit/push/精确CI；I-4及后续、商业API/真实用户Key/真实邮件/生产部署未授权。构建/完整测试优先GitHub，未本地重编译。
+
+不可变功能源码[`bc421f01993531c378da852b7a63be207658b91c`](https://github.com/bboytang/CAIdex/commit/bc421f01993531c378da852b7a63be207658b91c)，[精确CI38138552078](https://github.com/bboytang/CAIdex/actions/runs/38138552078)四job全部成功，原始checkout完整SHA逐一核对。实现6585761，b8af139修接口/时间戳/边界，bc421f0修测试导入；封存提交仅追加文档/证据，不当功能CI SHA。实际封存HEAD用git rev-parse HEAD；封存push后核实main/origin/main/GitHub main与工作区，不改历史。
+
+实现：`chat/core`共享Rust普通Chat，复用ModelProvider+Broker/Router，不接Runtime/Host。按可信issuer/user_id/测试域或游客独立SQLite，独占锁/身份/schema检查，conversation项目标记、不可变消息DAG/并发编辑分支、事务附件BLOB/outbox、流式草稿/终态/取消/断流/重启封存；不重发未知模型POST。切账户取消旧任务/封存原归属/拒迟到结果/清模型，登出只开游客。Host Key owner被拒，模型Key不入缓存/云端。Provider载体/推理/工具不写入正文，工具永不执行。附件/文本/历史/页/库/并发/deadline有界。outbox仅本地待同步引用，无云上传/控制/ack；I-4 Memory/I-5同步不在本轮。
+
+GitHub实际结果：Linux114467405810 workspace696/0/83、新Chat7、Host42、固定Runtime81；macOS114467405812 workspace695/0/81、Chat7、Host42、Runtime80；Windows114467405820 workspace689/0/81、Chat6、Host41、Runtime80。Host与Chat计入workspace，ignored不计通过；Windows额外Host lib4/Linux原生凭据附加1另记。三平台fmt/Clippy/JS/schema/doctor与Chat/H-1/2/3演示均成功。数据库114467405723真实PG17.10/vector0.8.2，I-1 118/0、I-2 110具名组/0、共享认证5测试；110组不是Rust测试数。每端Chat演示4次实际loopback HTTP SSE请求，6条游客/2条A消息、附件/分支、切B隔离/清模型、重启恢复，上传0；不是商业Live或正式GUI/CLI/iOS验收。
+
+证据：[最终四job/步骤/原日志/源码SHA256/演示](docs/evidence/i3-ci.json)、[同提交真实认证回归](docs/evidence/i3-auth-regression.json)、[两轮开发失败/八份原日志](docs/evidence/i3-development-failed.json)。38138193270错误使用云Id/SQLite整数接口，38138337723测试Error glob歧义；均已修，未当通过。最终/失败日志gzip及原文SHA256核对。既有所有证据逐字保留，外部依赖版本/source/checksum、Provider Adapter/固定Runtime/PostgreSQL源码不变。共享私有目录抽至credentials/core，Host仍原调用契约；Windows生产ACL脚本与基线逐字相同。
+
+限制：SQLite明文受Unix0700/Windows单SID ACL保护，不能防同一OS用户/管理员。项目标记是本地分区，不授云ACL。磁盘失败回滚旧数据，pending封存失败留待空间恢复；max_page_count注入验证SQLITE容量失败，不授I-7物理VPS满盘/性能压测。真实模型/附件兼容性仍F/G-Live待用户最终验；macOS Rust不代iOS Simulator/Archive/真机，内部例子不代正式CLI/GUI。删除/同步/Memory语义留对应批准阶段。
+
+环境：盘39GiB/已用35GiB/可用3.7GiB（91%），inode此前6%；本轮没有本地完整构建/用户或全局缓存清理，最终及失败CI原日志未见ENOSPC/No space left on device。历史I-2确有持久盘满/ENOSPC，见旧失败证据。默认沙箱DNS不可用/.git只读，已授权GitHub/提交经require_escalated成功；恢复不依赖/tmp/易失缓存，后续本地构建前仍查df。
+
+准确下一步：I-3开发通过条件已满足，停止新增功能；由独立新会话/其他模型只读审计不可变bc421f0源码及上述实际证据/限制。存在审计阻断则在当前批准范围最小修复并相关复验；用户确认I-3通过并明确批准I-4才启动下一里程碑。本会话不自行授独立审计通过。
 
 ## 已关闭I-2（用户确认独立审计通过）
 
-用户已确认I-1独立审计通过并明确批准I-2；范围/通过与停止条件见[设计与验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)。不使用ponytail技能。用户最新要求后续构建和测试尽量在GitHub，已写入AGENTS；本地只做必要静态/语法/差异/证据检查，完整构建/真实数据库/三平台回归在GitHub执行。本会话不授独立审计通过。I-3现已获批；I-4及后续/商业API/真实用户Key/真实邮件/生产部署未授权。
+功能源码[951f92e092aec87b25838daf00959c8520588701](https://github.com/bboytang/CAIdex/commit/951f92e092aec87b25838daf00959c8520588701)，[CI38135955674](https://github.com/bboytang/CAIdex/actions/runs/38135955674)四job成功，原封存6176529。认证/会话、邮箱验证/密码/恢复/身份/Passkey、refresh轮换/重放撤销、CLI公开客户端PKCE/Device和取消清理、账户信任与成对安全存储已验。登录先锁用户再校验，受控真实PG撤销竞争断言通过；旧缺陷的修复前运行复现因ENOSPC失败，未伪称复现。CLI正式交互/原生GUI/平台Passkey/真实邮件仍后续。
 
-不可变功能源码[`951f92e092aec87b25838daf00959c8520588701`](https://github.com/bboytang/CAIdex/commit/951f92e092aec87b25838daf00959c8520588701)，[精确CI38135955674](https://github.com/bboytang/CAIdex/actions/runs/38135955674)四job全部成功；各job原始checkout均完整功能SHA，I-1/I-2源码SHA256逐文件与该提交核对一致。实现提交1a57cf9，随后951f92e仅修正测量启动/自身fixture清理。封存提交只追加证据/文档，功能/测试/依赖/脚本/workflow保持上述CI源码；封存HEAD按`git rev-parse HEAD`查询，不当功能CI SHA。保持main流程，完成封存push后核对实际HEAD/main/origin/main/GitHub main与工作区，不改历史。
-
-实现：`cloud/auth`默认跨平台共享账户信任/会话与成对安全存储契约；Linux feature-gated真实HTTP认证服务，0002认证迁移，邮箱验证/密码/恢复/身份变更/Passkey、独立设备会话/refresh轮换重放撤销、CLI公开客户端PKCE/Device与取消迟到清理。认证角色与数据角色隔离，固定Codex0.160.1/Runtime/Host/Provider/执行凭据源码未改，0001/bootstrap未改；锁文件新增75包，既有版本/source/checksum不变。正式GUI/CLI/平台Passkey及同步后续能力未认领。
-
-最终GitHub：Linux job114459743624 workspace689/0/83、Host42、固定Runtime81；Windows job114459743521 workspace683/0/81、Host41、固定Runtime80；macOS job114459743474 workspace688/0/81、Host42、固定Runtime80。Host计入workspace，ignored不计通过；Windows额外Host lib4、Linux原生凭据附加1另记。三平台共享账户5项、fmt/Clippy/授权页JS语法、schema/doctor/H-1/2/3均通过。数据库job114459743364真实PG17.10/vector0.8.2：I-1独立重建118/0；I-2共110组具名检查/0，联合Rust集成只有一个测试，不能把具名断言组当Rust测试数量。
-
-最后登录修复：先锁用户，再读取/验证密码并重查邮箱身份，阻止撤销/身份修改夹在校验与发会话之间。最终真实PG受控锁断言`password_revocation_committed_before_login_cannot_issue_session`实际通过。旧源码缺陷依据静态顺序；上轮尝试修复前复现时Docker ENOSPC，未声称原缺陷已运行复现。中间108组仅对应当时源码，不能代最终110组；final105曾边跑边改源码的无效指纹保留为历史，最终脚本运行前后指纹一致。
-
-独立服务实测：新的私有本地测试邮箱/合成账户，启动真实`caidex-auth-local`进程，注册→验证→登录→me。GitHub 4逻辑CPU/16372440KiB内存环境，流程4.274秒/CPU4.25秒，单核占用99.43%；idle RSS11824KiB，结束RSS12824KiB，峰值RSS77696KiB（约75.9MiB，含服务启动）。CPU是该PID的utime+stime差值，RSS为/proc/PID/status，排除构建/测试客户端/PostgreSQL。算法65536KiB与实测不同；不授2核2GB压测、生产吞吐或容量通过。
-
-首轮GitHub38135539590认证Rust105组及三平台Runtime均成功，job随后因新增测量probe未捕获初始化期间TimeoutError失败；PG镜像把本次私有socket目录改为postgres-owned/sticky又使非root runner清理失败。已在既有启动重试中处理TimeoutError，删除自身容器前仅由其root恢复本次socket bind mount的0777，外层0700/无网络隔离不变。失败原日志及修复后精确证据见下方，不隐藏失败，不以首轮部分通过授四job成功。
-
-环境：上轮持久盘0可用并实际ENOSPC；本轮诊断39GiB盘35GiB已用/3.7GiB可用（91%），inode6%，项目与/tmp写入/fsync通过。未查明空间恢复来源；本轮不本地重编译、不清理用户/全局Codex/有效缓存。默认沙箱DNS不可用、.git只读，已授权GitHub/提交命令经require_escalated通道成功。原私有内存构建缓存保留，重启会丢失；恢复与验收已依赖仓库/GitHub，不依赖该缓存或/tmp。后续本地构建前仍检查df。
-
-证据：[最终精确四job/逐步骤/原日志及指纹](docs/evidence/i2-ci.json)、[最终真实认证110组/逐文件SHA256/资源测量](docs/evidence/i2-database-ci.json)、[首轮GitHub失败与修正](docs/evidence/i2-ci-first-failed.json)、[历史中间成功/待验索引](docs/evidence/i2-intermediate.json)、[历史开发失败与ENOSPC](docs/evidence/i2-local-failed.json)。原日志gzip及SHA256已核对，试用/独立复现/证据检查见设计与验收。测试身份、邮件和认证器均为隔离合成fixture，无真实邮件、用户Key或商业API调用。
-
-用户已确认I-2独立审计通过，本会话保留原不可变证据，不重授审计结论；下一步实施已批准I-3。F/G-Live继续待用户全项目完成后真实验收。
+I-2原精确workspace Linux689/0/83、mac688/0/81、Windows683/0/81；Host42/42/41计入workspace，固定Runtime81/80/80另计。真实PG I-1 118/0、I-2 110具名检查/0；独立服务流程4.274秒/CPU4.25秒、idle RSS11824KiB/结束12824/峰值77696KiB，GitHub4逻辑CPU/约16GiB内存，非2核2GB容量验收。首轮CI测量初始化TimeoutError/socket清理问题已修并保留失败；完整证据与试用见[I-2设计验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)、[最终四job](docs/evidence/i2-ci.json)、[数据库/测量](docs/evidence/i2-database-ci.json)、[首次GitHub失败](docs/evidence/i2-ci-first-failed.json)、[历史中间](docs/evidence/i2-intermediate.json)、[本地失败/ENOSPC](docs/evidence/i2-local-failed.json)。本轮只新增非秘密身份getter并精确CI复验，不重授I-2审计。
 
 ## 已关闭I-1（用户确认独立审计通过）
 
 功能源码[bb9c0a18493b7e55debcb961d187b7a196a52eef](https://github.com/bboytang/CAIdex/commit/bb9c0a18493b7e55debcb961d187b7a196a52eef)，[精确CI38109361127](https://github.com/bboytang/CAIdex/actions/runs/38109361127)四job实际checkout均功能SHA并成功。Linux workspace684/0/83、Host42、Runtime81；Windows678/0/81、Host41、Runtime80；macOS683/0/81、Host42、Runtime80；Host计入workspace，ignored不计通过。DB118/0，PG17.10/vector0.8.2。封存d007已核实main一致；2026-10-11用户接受独立审计并授权I-2。
 
-17逻辑实体+附件/Embedding空间，19私有表FORCE RLS/20表事务创建，scope组合FK及最小app权限、会话摘要guard/事务隔离/项目ACL、来源/revision/向量失效/同步默认关已验。I-1本身没有认证服务或Memory/sync业务，本轮I-2不代I-4/5/6来源、CAS/epoch、首次上传、A/B删除与防复活，也不认领真实部署。
+17逻辑实体+附件/Embedding空间，19私有表FORCE RLS/20表事务创建，scope组合FK及最小app权限、会话摘要guard/事务隔离/项目ACL、来源/revision/向量失效/同步默认关已验。I-1本身没有认证服务或Memory/sync业务，本轮I-3不代I-4/5/6来源、CAS/epoch、首次上传、A/B删除与防复活，也不认领真实部署。
 
 [验收与复现](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)、[精确CI](docs/evidence/i1-ci.json)、[本地与边界](docs/evidence/i1-local.json)、[数据库](docs/evidence/i1-database-local.json)、[开发失败](docs/evidence/i1-local-failed.json)保留不可变。全仓旧本地684在最终SQL修改前，最终定向DB/core+精确三平台CI补足。凭据/tmp/.git保护未放宽，使用新私有Git外TMPDIR；只删自身临时DB容器，保留镜像/缓存。
 
 ## H/F/G历史与架构约束
 
-H-1/H-2/H-3均经用户确认独立审计通过，不在本轮重授。H-3最终3a63c0f/CI38107842905（Linux682/Host42/Runtime81，Win676/41/80，mac681/42/80）及原生Diff限制/取消期限修正见[验收](docs/CAIdex-H3-Host-设计与验收-V1.md)/[证据](docs/evidence/h3-ci.json)。H-2 a6c22072/CI38102729830见[验收](docs/CAIdex-H2-Host-设计与验收-V1.md)/[证据](docs/evidence/h2-ci.json)；H-1 9df99f71/CI38098407943见[验收](docs/CAIdex-H1-Host-设计与验收-V1.md)/[证据](docs/evidence/h1-audit-fix-ci.json)。旧历史“后续未授权”仅是当时范围，不覆盖当前I-2授权。
+H-1/H-2/H-3均经用户确认独立审计通过，不在本轮重授。H-3最终3a63c0f/CI38107842905（Linux682/Host42/Runtime81，Win676/41/80，mac681/42/80）及原生Diff限制/取消期限修正见[验收](docs/CAIdex-H3-Host-设计与验收-V1.md)/[证据](docs/evidence/h3-ci.json)。H-2 a6c22072/CI38102729830见[验收](docs/CAIdex-H2-Host-设计与验收-V1.md)/[证据](docs/evidence/h2-ci.json)；H-1 9df99f71/CI38098407943见[验收](docs/CAIdex-H1-Host-设计与验收-V1.md)/[证据](docs/evidence/h1-audit-fix-ci.json)。旧历史“后续未授权”仅是当时范围，不覆盖当前I-3授权。
 
 F/G-Offline用户已正式关闭，九Adapter/18route/4切换复用[退出矩阵](docs/CAIdex-FG-离线验收核对-V1.md)。F/G-Live留用户最终真实模型/费用/Ollama实测，未读用户Key/调商业API、不授LiveRuntime/Full。H-2前用户授权的磁盘维护只删除无引用的157个私有临时plugin-clone和2个未完成working，释放736MiB并保留证据/缓存；本轮没有追加此类清理。
 
@@ -50,6 +48,6 @@ Windows11x64 Tauri2/React/Rust、iOS17 SwiftUI/UniFFI、Linux Host/英文CLI不�
 
 ## 恢复索引
 
-[AGENTS](AGENTS.md)、[V3](docs/CAIdex-实施计划-V3.md)、[UI](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)为既定边界，I-2本轮设计不得更改A–R顺序或整产品范围。
+[AGENTS](AGENTS.md)、[V3](docs/CAIdex-实施计划-V3.md)、[UI](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)为既定边界，I-3本轮不得更改A–R顺序或整产品范围。
 
-源码：`cloud/core`、`cloud/postgres`、`cloud/auth`；认证复现`scripts/i2-auth.py`，I-1数据库`scripts/i1-database.py`。固定Runtime/Host在`runtime/bridge`/`runtime/host`，H-1/2/3演示`scripts/h1-demo.py`/`h2-demo.py`/`h3-demo.py`；既有凭据/Provider无需重建改写。未解生产吞吐/备份/边界以各验收报告为准；新有证据权限/隔离/完整性缺陷须按批准通过条件修复复验。
+源码：`chat/core`（内部演示`scripts/i3-chat.py`）；`cloud/core`、`cloud/postgres`、`cloud/auth`；认证复现`scripts/i2-auth.py`，I-1数据库`scripts/i1-database.py`。固定Runtime/Host在`runtime/bridge`/`runtime/host`，H-1/2/3演示`scripts/h1-demo.py`/`h2-demo.py`/`h3-demo.py`；既有凭据/Provider无需重建改写。未解生产吞吐/备份/边界以各验收报告为准；新有证据权限/隔离/完整性缺陷须按批准通过条件修复复验。
