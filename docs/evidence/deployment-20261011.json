@@ -1,0 +1,695 @@
+{
+  "format": "caidex-deployment-evidence-v1",
+  "recorded_at": "2026-10-11T22:13:34.050130+00:00",
+  "source_head": "c522a57c72709dc145e16f3c498fd9722a4082cb",
+  "previous_i7_functional_source": "235e3e4d4c1917eafe55282426f41edaa0b6ec9d",
+  "base_sealed_head": "ad589c3d70664d12dc08e7a6d4fb70fb319449eb",
+  "independent_audit_claimed": false,
+  "next_milestone_started": false,
+  "target": {
+    "ssh_host": "43.128.156.73",
+    "ssh_user": "ubuntu",
+    "ssh_port": 22,
+    "domain": "caidex.cn",
+    "dns_verified": true,
+    "os": "Ubuntu24.04.4",
+    "arch": "x86_64",
+    "cpu": 2,
+    "memory_mib": 1935,
+    "swap_mib": 1987,
+    "root_disk_gb_observed": 40,
+    "free_gb_final_observed": 32,
+    "postgres": "17.11 (Ubuntu 17.11-1.pgdg24.04+2)",
+    "vector": "0.8.2",
+    "schema": 5,
+    "private_force_rls_tables": 27,
+    "ssh_host_key_independently_confirmed": false,
+    "ssh_host_key_tofu_fingerprint": "SHA256:XAq4ejpAoCZ0MM/uatDKk6baiEBLAlIw/3Grl95Pqjs"
+  },
+  "production_build": {
+    "command": "cargo build --release -p caidex-auth --bin caidex-auth-service --features server --locked --offline",
+    "exit_code": 0,
+    "test_auth_feature": false,
+    "binary_sha256": "bb36671c0f54eb61267490ca992952b70d64f5dcfe680670ca698cfcca791e54",
+    "credentials_cli_build": "cargo build -p caidex-cli --bin caidex --locked --offline",
+    "credentials_cli_profile": "debug",
+    "credentials_cli_sha256": "96f4444bc2992f0eb15222b4550d7a3d915c611dce30ecbf32a7d9fcfcc4fde9",
+    "remote_hashes_verified": true
+  },
+  "source_fingerprints": {
+    "cloud/auth/src/service.rs": "9f8070fdedd50645201992b424adecb9549ebfedb9236780724f65a76702ad08",
+    "cloud/auth/src/server.rs": "ca480fb05e5d65bd31b9418069f40dedce6b27b2319e8dfd4815ac27d581baf9",
+    "cloud/auth/src/server/email.rs": "027e1706f2c954b4325431487cdc698a49f04ced3e4a088241d3808fa2a193c4",
+    "cloud/auth/tests/operations.rs": "7bfb9b9fea014e1cb0713694c716fc691677511b104db0ec8241439c6b62c5c7",
+    "cloud/postgres/operations/backup.py": "b5dfbe9c9c9b9b02a06741f801d6f026a044d7e7bfe527d62bd1b1c33f35572c",
+    "cloud/postgres/operations/quarantine.sql": "156affa3359358a0247d0ce4755564eb8309c61fa6ac2582dbd4a9c5c8f8cbe3",
+    "cloud/postgres/operations/deployment/caidex-alert@.service": "745078987d3c4a1a34baefc1bd5997f9f55e0c6e039d1c2fe002e541451b32fc",
+    "cloud/postgres/operations/deployment/caidex-backup.service": "2d545a3632086b6c4930a273da6f7b6d8d2ee8aafb1c9c2fbe154e2fa3e9cae8",
+    "cloud/postgres/operations/deployment/caidex-backup.timer": "f7bdda5d21bb77dd9a6de95e321088d092141ce48913749d10615a5617c48a91",
+    "cloud/postgres/operations/deployment/caidex-monitor.service": "5e07b93777b2673324c610aaeedfab5758c33d88a6c9918ad0776666f80937f2",
+    "cloud/postgres/operations/deployment/caidex-monitor.timer": "9a5e154a66586cef0ac8e0e586884d01f132337bfd5d6c1067706f0cb845302d",
+    "cloud/postgres/operations/deployment/caidex-prune.service": "2c7f8398a49443e863f2e2494188354b32d29b27dc378c59856b5a6128561682",
+    "cloud/postgres/operations/deployment/caidex-prune.timer": "dd8035cef75c548a7e98b45132bc83ea03d8c48786a64a97c668e693944d60ef",
+    "cloud/postgres/operations/deployment/caidex.service": "bc3e8de015cdcfa9e62e18c1932d99e05cb3e8a5689ddaa195a92b60e324de7e",
+    "cloud/postgres/operations/deployment/monitor.py": "c1a32862bb65f0495d792d7cf2016cc412b59efddbe724ce327620678818c8d4",
+    "cloud/postgres/operations/deployment/nginx.conf": "d3db3ae157da55fef5fc3e292037c5797d2540b1bfe3e926f197080277461e6c"
+  },
+  "verification": {
+    "local_i7": {
+      "checks": 65,
+      "failures": 0,
+      "reported_head": "ad589c3d70664d12dc08e7a6d4fb70fb319449eb",
+      "working_tree_patch_at_execution": true,
+      "all_39_fingerprints_match_deployed_source": true
+    },
+    "auth_lib": {
+      "passed": 5,
+      "failed": 0
+    },
+    "fmt": "passed",
+    "clippy": "passed",
+    "diff_and_relative_links": "passed",
+    "public_http": {
+      "server": "43.128.156.73",
+      "issuer": "https://caidex.cn/",
+      "checked_at": 1791756204.142778,
+      "checks": [
+        {
+          "name": "https_discovery_fixed_production_issuer",
+          "passed": true,
+          "details": {
+            "authorization_endpoint": "https://caidex.cn/authorize",
+            "code_challenge_methods_supported": [
+              "S256"
+            ],
+            "device_authorization_endpoint": "https://caidex.cn/v1/auth/device",
+            "grant_types_supported": [
+              "authorization_code",
+              "urn:ietf:params:oauth:grant-type:device_code",
+              "refresh_token"
+            ],
+            "issuer": "https://caidex.cn/",
+            "revocation_endpoint": "https://caidex.cn/v1/auth/revoke",
+            "token_endpoint": "https://caidex.cn/v1/auth/token",
+            "verification_uri": "https://caidex.cn/device"
+          }
+        },
+        {
+          "name": "existing_authorization_protocol_page_https_no_store_csp",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "https_hsts_nosniff_referrer_headers",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "anonymous_me_denied",
+          "passed": true,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "name": "anonymous_sessions_denied",
+          "passed": true,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "name": "anonymous_chat-status_denied",
+          "passed": true,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "name": "anonymous_memory-status_denied",
+          "passed": true,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "name": "disabled_mail_register_unavailable",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "disabled_mail_recover_unavailable",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "disabled_mail_change-email_unavailable",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "disabled_mail_callback_denied",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "untrusted_origin_not_granted_by_forwarded_header",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "real_client_ingress_burst_limited_despite_forged_forwarded_ips",
+          "passed": true,
+          "details": {
+            "200": 11,
+            "429": 13
+          }
+        }
+      ],
+      "real_email_sent": false,
+      "formal_gui_verified": false
+    },
+    "server": {
+      "checked_at": 1791756141.2222612,
+      "head": "c522a57c72709dc145e16f3c498fd9722a4082cb",
+      "checks": [
+        {
+          "name": "immutable_release_head",
+          "passed": true,
+          "details": "c522a57c72709dc145e16f3c498fd9722a4082cb"
+        },
+        {
+          "name": "production_binary_sha256",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "credential_cli_sha256",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "explicit_mail_disabled_no_sender",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "private_owner_mode_config",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "private_owner_mode_config.json",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "private_owner_mode_secrets",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "secret_files_owner_only_without_reading_values",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "pg17_vector082_schema5_all_private_tables_force_rls",
+          "passed": true,
+          "details": {
+            "users": 0,
+            "schema": 5,
+            "tables": 28,
+            "vector": "0.8.2",
+            "postgres": "17.11 (Ubuntu 17.11-1.pgdg24.04+2)",
+            "challenges": 0,
+            "mail_tasks": 0,
+            "private_tables": 27
+          }
+        },
+        {
+          "name": "http_smoke_created_no_account_challenge_or_mail",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "service_roles_no_owner_or_privilege_escape",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "role_caidex_auth_service_cannot_read_messages",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "role_caidex_data_service_cannot_read_auth_credentials",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "data_role_without_session_reads_no_body",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "ubuntu_not_mapped_to_auth_role",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "service_os_user_not_postgres_admin",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "database_tcp_closed_and_app_loopback_only",
+          "passed": true,
+          "details": [
+            "LISTEN 0      4096      127.0.0.54:53   0.0.0.0:*",
+            "LISTEN 0      128        127.0.0.1:8080 0.0.0.0:*",
+            "LISTEN 0      511          0.0.0.0:443  0.0.0.0:*",
+            "LISTEN 0      511          0.0.0.0:80   0.0.0.0:*",
+            "LISTEN 0      4096   127.0.0.53%lo:53   0.0.0.0:*",
+            "LISTEN 0      4096         0.0.0.0:22   0.0.0.0:*",
+            "LISTEN 0      511             [::]:443     [::]:*",
+            "LISTEN 0      511             [::]:80      [::]:*",
+            "LISTEN 0      4096            [::]:22      [::]:*"
+          ]
+        },
+        {
+          "name": "firewall_only_ssh_http_https",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "real_private_backup_integrity_and_source",
+          "passed": true,
+          "details": {
+            "bytes": 362395,
+            "source_head": "c522a57c72709dc145e16f3c498fd9722a4082cb",
+            "retention_days": 7,
+            "max_count": 7
+          }
+        },
+        {
+          "name": "pg1711_real_backup_restore_always_quarantined",
+          "passed": true,
+          "details": {
+            "database": "caidex_restore_deploy_20261011",
+            "quarantined": true,
+            "automatic_publication": false,
+            "backup_point": 1791755990.890066,
+            "backup_window": [
+              1791755990.890066,
+              1791755991.0040107
+            ],
+            "checkpoint_point": 1791756139.309239,
+            "later_operations_known": false,
+            "latest_checkpoint_applied": true,
+            "old_sessions_valid": false,
+            "sync_enabled": false,
+            "restore_seconds": 0.376,
+            "schema": 5
+          }
+        },
+        {
+          "name": "restored_db_denies_both_runtime_connect",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "restored_db_no_sessions_sync_or_risky_roles",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "scheduled_expiry_margin_prunes_before_7days_and_keeps_fresh",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "real_monitor_service_passes",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "actual_failure_triggers_local_operator_alert",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "all_service_and_timers_enabled",
+          "passed": true,
+          "details": null
+        }
+      ],
+      "failure_count": 0,
+      "backup": {
+        "manifest": "/var/lib/caidex-backups/snapshot-1791755990-988bef3c19c04ce7af097c5008eb55db.json",
+        "bytes": 362395
+      },
+      "restore": {
+        "database": "caidex_restore_deploy_20261011",
+        "quarantined": true,
+        "automatic_publication": false,
+        "backup_point": 1791755990.890066,
+        "backup_window": [
+          1791755990.890066,
+          1791755991.0040107
+        ],
+        "checkpoint_point": 1791756139.309239,
+        "later_operations_known": false,
+        "latest_checkpoint_applied": true,
+        "old_sessions_valid": false,
+        "sync_enabled": false,
+        "restore_seconds": 0.376,
+        "schema": 5
+      },
+      "mail_disabled": true,
+      "synthetic_production_accounts_created": false
+    },
+    "restarts": {
+      "checks": [
+        {
+          "name": "app_systemd_restart_ready",
+          "passed": true,
+          "details": {
+            "seconds": 0.254
+          }
+        },
+        {
+          "name": "app_process_replaced",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "pg_restart_restarts_dependent_app_and_readies",
+          "passed": true,
+          "details": {
+            "seconds": 2.651
+          }
+        },
+        {
+          "name": "stable_device_secret_metadata_not_regenerated",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "committed_backup_unchanged_after_restarts",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "no_auth_users_or_challenges_after_restart",
+          "passed": true,
+          "details": null
+        },
+        {
+          "name": "current_sources_nginx_and_systemd_match_immutable_release",
+          "passed": true,
+          "details": null
+        }
+      ],
+      "failure_count": 0,
+      "forced_oom_verified": false,
+      "whole_vps_loss_verified": false
+    },
+    "certificate_renewal_dry_run": {
+      "exit_code": 0,
+      "nginx_deploy_hook_executed": true,
+      "certificate_expires": "2027-01-09T20:51:50Z"
+    },
+    "ci_i7": {
+      "source_head": "c522a57c72709dc145e16f3c498fd9722a4082cb",
+      "checks": 65,
+      "failures": 0,
+      "all_39_fingerprints_match": true
+    },
+    "native_vector_operator": {
+      "check": "native_pg1711_vector082_cosine_operator",
+      "passed": true
+    }
+  },
+  "ci": {
+    "run_id": 38178334082,
+    "url": "https://github.com/bboytang/CAIdex/actions/runs/38178334082",
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "c522a57c72709dc145e16f3c498fd9722a4082cb",
+    "jobs": [
+      {
+        "id": 114585364328,
+        "name": "I-1/I-2 database and authentication (Linux)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-11T21:55:24Z",
+        "completed_at": "2026-10-11T22:02:44Z",
+        "html_url": "https://github.com/bboytang/CAIdex/actions/runs/38178334082/job/114585364328"
+      },
+      {
+        "id": 114585364412,
+        "name": "Runtime (ubuntu-24.04)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-11T21:55:24Z",
+        "completed_at": "2026-10-11T22:00:54Z",
+        "html_url": "https://github.com/bboytang/CAIdex/actions/runs/38178334082/job/114585364412"
+      },
+      {
+        "id": 114585364574,
+        "name": "Runtime (macos-15)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-11T21:55:28Z",
+        "completed_at": "2026-10-11T22:02:47Z",
+        "html_url": "https://github.com/bboytang/CAIdex/actions/runs/38178334082/job/114585364574"
+      },
+      {
+        "id": 114585364634,
+        "name": "Runtime (windows-2022)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-11T21:55:23Z",
+        "completed_at": "2026-10-11T22:10:24Z",
+        "html_url": "https://github.com/bboytang/CAIdex/actions/runs/38178334082/job/114585364634"
+      }
+    ],
+    "checkout_sha_verified_from_all_four_raw_logs": true
+  },
+  "mail": {
+    "configured": false,
+    "explicitly_disabled": true,
+    "fake_vendor_credentials_used": false,
+    "real_email_sent": false,
+    "real_delivery_verified": false,
+    "brevo_https_reachable_without_auth_response": 401,
+    "registration_recovery_change_email_unavailable": true
+  },
+  "backup_policy": {
+    "max_age_seconds": 604800,
+    "max_count": 7,
+    "max_bytes": 5000000000,
+    "reserve_bytes": 268435456,
+    "schedule_utc": "19:00 daily",
+    "independent_prune_schedule": "hourly at minute30",
+    "prune_advance_seconds": 7200,
+    "monitor_seconds": 300,
+    "external_alerts_configured": false,
+    "local_failure_alert_verified": true,
+    "offsite_backup": false,
+    "first_backup_bytes": 362395,
+    "restore_database": "caidex_restore_deploy_20261011",
+    "restore_always_quarantined": true
+  },
+  "development_failures": [
+    {
+      "kind": "new_test_rate_limit_collision",
+      "evidence": "caidex-deployment-i7-local.log.gz",
+      "fixed": "separate synthetic recovery address; existing limits unchanged; full65 checks passed"
+    },
+    {
+      "kind": "transfer_install_boundary",
+      "effect": "initial install stopped at missing CLI before DB/app initialization; complete artifact SHA256 checked and reinstalled"
+    },
+    {
+      "kind": "http_check_header_case",
+      "evidence": "caidex-deployment-http-check-first.log.gz",
+      "fixed": "case-insensitive HTTP header comparison; server unchanged;13 checks passed"
+    },
+    {
+      "kind": "vector_probe_shell_quoting",
+      "effect": "SQL parser rejected first probe without data changes",
+      "fixed": "stdin heredoc and actual normal-data-role operator assertion passed"
+    }
+  ],
+  "unverified": [
+    "independent_audit",
+    "real_email_sender_and_SPF_DKIM_DMARC_delivery",
+    "public_service_operator_obligations",
+    "formal_product_GUI_CLI_installers_iOS",
+    "production_long_duration_capacity_50GB_1536dim_ANN_user_count",
+    "forced_OOM",
+    "whole_VPS_or_shared_disk_disaster_recovery",
+    "future_scheduled_backups_over_multiple_days",
+    "independent_SSH_host_key_confirmation"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/evidence/caidex-deployment-i7-local.log.gz",
+      "raw_bytes": 5536,
+      "raw_sha256": "1a442c274f52d13cc67ffe421828900739a3ded68db3abf0cdfb1719dcdd1c52",
+      "gzip_sha256": "d52366c59bb07334b9d95cbef6964c40cd0d1a69669a5a6fcd076fafb96d30c1"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-i7-local-final.log.gz",
+      "raw_bytes": 29292,
+      "raw_sha256": "ce9c3221e6a71a34890ee4ef9541244ed43cf8cf03fb2a4f8a07021c25663453",
+      "gzip_sha256": "aaf86cf850f675eabc0f59c52f418abfdfd8830c061b575e22115fcd391f18c8"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-i7-local-final.json.gz",
+      "raw_bytes": 28886,
+      "raw_sha256": "dfbf56dbd27124a98a6c57113af9ef2fa0012a5308f230b931b1c5fb5b8b2d2a",
+      "gzip_sha256": "b1d0e4113c092aebc25f46373924460e32bf06bcb0db5bd5beb733901e82b2af"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-install.log.gz",
+      "raw_bytes": 2209,
+      "raw_sha256": "4fc9316c5937554a65cbe535018ac42c04a6d6ccc68141c9abd53f0c632be23c",
+      "gzip_sha256": "4836a1bd2f65111ca14e72d49e6e7ca03d05e2562fc695fa26538e86b5342337"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-http-check.py.gz",
+      "raw_bytes": 3176,
+      "raw_sha256": "8abf621f8c5bb9fee1c06cadfc8dc9cf4b1f55a3961da79726dcb5465b7e4f77",
+      "gzip_sha256": "e90b4e0291b15893ac294c9454f5195bdc7a53b36193b7830c64205c39a29874"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-http-check-first.log.gz",
+      "raw_bytes": 474,
+      "raw_sha256": "be9bc48347270fecdc90e50e275295bd804992c93d66e5369649a4b7af2659bc",
+      "gzip_sha256": "b1502a46b0e799aafaaeddacf5f18afaed933e41eb538988df5d61f89c3c0a17"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-http-check.log.gz",
+      "raw_bytes": 170,
+      "raw_sha256": "e91f9b5e9c1798cd75a466daadeafdcac4e0ae413fc02953f46f42656c29a3cd",
+      "gzip_sha256": "f8fce7630682218db45fcd079075c9a1984a8855bf52389825cd63de9a8b816a"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-http-report.json.gz",
+      "raw_bytes": 2385,
+      "raw_sha256": "81924951aa74c125397cf6acd2d02c89f56c2dbd001af1452a60470d449b9e12",
+      "gzip_sha256": "959db61066c8dc23f940e3870176edae7fd645d7942cfde4e07baa2a30425372"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-server-check.py.gz",
+      "raw_bytes": 7623,
+      "raw_sha256": "44dbd36c1b73e93fa0411746bf54f2ac55320f233c46d11d2bfd4d3b7e39b504",
+      "gzip_sha256": "34bb36f1d3e91c79c07bc2e36badd9ebd764734784b599cb431d368242c31acd"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-server-check.log.gz",
+      "raw_bytes": 0,
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-server-report.json.gz",
+      "raw_bytes": 5228,
+      "raw_sha256": "9b78fe8222d490284de2eb275542fb5a1f0ab98e9fcfd05d731f319422e2533d",
+      "gzip_sha256": "47155ac99d76446d91f2c030e7cc21acccfbece01bf00bc01aa22994972df675"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-restart-report.json.gz",
+      "raw_bytes": 970,
+      "raw_sha256": "b5852913526fa550f641d3c1c9aeecaf6630471bb228936b283c8e72878e1f60",
+      "gzip_sha256": "8424e07e062c1a238cfc92a411b9867eabeb0866902813f880aa27da876c23a9"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-certbot-dry-run.log.gz",
+      "raw_bytes": 814,
+      "raw_sha256": "0ec2b620450064914046ce87b2d3b188a04011edef7183aa46abc8e7166b2d36",
+      "gzip_sha256": "cb469e8f53cd799bf3d36531ae8b35c9191e2378b1a6d8bfd04b7e3d41e6763f"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-final-state.log.gz",
+      "raw_bytes": 2678,
+      "raw_sha256": "4e8f5b0eeedf0abf986e34e8f4d235840dd4cbe629fcd1e12cf8fad616317624",
+      "gzip_sha256": "4bda0ef83fd3cc862ab5aab51f199978d5e94be5f17f30166be56d0e824b5def"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-www-redirect.log.gz",
+      "raw_bytes": 203,
+      "raw_sha256": "5b1a7c42673b28cf74a864e96f8ffcd9099965708d9e0ec0f21d1014a4f00573",
+      "gzip_sha256": "8c7b412ffcdbd9258507da5f49ad5ab98820b72591d313daf75cb7733903db1c"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-http-redirect.log.gz",
+      "raw_bytes": 203,
+      "raw_sha256": "433d97eae3bb133088a436e3bc3945183b03756a9d73dd65ff0a833daddcd26b",
+      "gzip_sha256": "b9bbc6e66230dee3fa21d71fc5c689119161c09f6560fe56ef1b55277f198908"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-final-discovery.json.gz",
+      "raw_bytes": 461,
+      "raw_sha256": "dfed497679087eb1a0a7fe19e38f986be87eebdcc30f4eba0aee88010df1e886",
+      "gzip_sha256": "ed9b7d3ef263b43b30afff27ebe9ce08daf363dd5d2b95a652708b92589aa026"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-114585364328.log.gz",
+      "raw_bytes": 189590,
+      "raw_sha256": "aced5a1603f840ff6992c5a11fe8786c76c4135713d647d389979262c389cb11",
+      "gzip_sha256": "1944523415100cec7d03af3750cf46d428d9a0873488278e78de26992bfa4124"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-114585364412.log.gz",
+      "raw_bytes": 235730,
+      "raw_sha256": "a8feb903f722f5ab42737bef8c919cdf2955a4085175feedd940296aa174f4f1",
+      "gzip_sha256": "633bbcb148a7af7c819c3b90a6da45dafc4c680457ae88eed7dc0526ff123785"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-114585364574.log.gz",
+      "raw_bytes": 213327,
+      "raw_sha256": "118885aa5d94b178d76be3f9eeb64b2a253eb35e54261675181df8783dabd624",
+      "gzip_sha256": "d8bbab860e28abeb64cca0d86dd7c270c4ea2d7f502f9c63e008c9f19c4f89dc"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-114585364634.log.gz",
+      "raw_bytes": 219209,
+      "raw_sha256": "d50fc78c4ef1c21a11244ac858212dd88caf999c2760398ca94e71c1a2c247de",
+      "gzip_sha256": "432a776269dd57fde289f48b80d37e590857bbcf8c338648ebfc9104f70c0c6e"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-run.json.gz",
+      "raw_bytes": 11705,
+      "raw_sha256": "c1927a6fc23bc9c5cf9bb5cfef97d464ffb779b80b9766d65a2b6f427b7bc1fc",
+      "gzip_sha256": "76b7648623190b3e7b0b73f144b68415e852a3ae4c789596f712a6af042802a2"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-jobs.json.gz",
+      "raw_bytes": 20918,
+      "raw_sha256": "e429eb25ab6d26d29572ff89ea4313a246d94b414a1bbd078973945cd52981e5",
+      "gzip_sha256": "aa84c82ad4feb1625e8d85b2168d6aaf9ae8f6216d90dbf0115190eb7d3709c5"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-i7-report.json.gz",
+      "raw_bytes": 26925,
+      "raw_sha256": "3041c2aa81f09e9a412d59721baa557cb361264fb96f05f155f03e8adb125769",
+      "gzip_sha256": "ac3e39885a78a35de9697bf62004c3184a8111335b00b508594e42aea1a630b9"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-ci-watch.log.gz",
+      "raw_bytes": 10871,
+      "raw_sha256": "47fc42f7116b82061afc0fce0f4961fbf34f09c8c93c17cef08af1545ce4ce55",
+      "gzip_sha256": "b1fe8f385a95acb95f4bd2b8a1f43900f7ad81f9bdb14c380e83e9f0fedb5c2a"
+    },
+    {
+      "path": "docs/evidence/caidex-deployment-vector-probe.json.gz",
+      "raw_bytes": 69,
+      "raw_sha256": "00c417322385f84d77eeeb272c65b0ba4e86d550003b195b7965cb078b41e526",
+      "gzip_sha256": "29b39fc783d761a48cc4b352ba6f651ac411daa7c8f8d09826a1172b244f792d"
+    }
+  ]
+}
