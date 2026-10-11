@@ -27,7 +27,7 @@ jobs:
   database:
     name: I-1/I-2 database and authentication (Linux)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_PROFILE_DEV_DEBUG: 0
@@ -55,6 +55,9 @@ jobs:
 
       - name: I-6 real PostgreSQL and HTTP Memory state, A/B deletion and member isolation
         run: python3 scripts/i6-memory-sync.py --output i6-memory-sync.json
+
+      - name: I-7 synthetic email, 2CPU/2GiB operations, physical disk failure and isolated restore
+        run: python3 scripts/i7-operations.py --output i7-operations.json
 
   runtime:
     name: Runtime (${{ matrix.os }})

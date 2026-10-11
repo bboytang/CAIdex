@@ -221,6 +221,22 @@ impl Cache {
         }
         Ok(())
     }
+    pub(crate) fn conversation_detail(&self, id: Uuid) -> Result<Conversation> {
+        self.conversation(id)?;
+        let (project, title): (Option<String>, String) = self.db.query_row(
+            "SELECT project_id,title FROM conversations WHERE id=?1",
+            [id.to_string()],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )?;
+        Ok(Conversation {
+            id,
+            project_id: project
+                .map(Id::try_from)
+                .transpose()
+                .map_err(|_| Error::UnsafeStorage)?,
+            title,
+        })
+    }
     pub fn attach(
         &mut self,
         conversation: Uuid,

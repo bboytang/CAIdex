@@ -516,6 +516,7 @@ dependencies = [
  "caidex-credentials",
  "getrandom 0.4.3",
  "hmac 0.12.1",
+ "libc",
  "oauth2",
  "reqwest",
  "serde",

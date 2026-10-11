@@ -135,6 +135,82 @@ impl Chat {
     pub fn outbox(&self, after: i64, limit: usize) -> Result<Vec<OutboxEntry>> {
         self.state()?.cache.outbox(after, limit)
     }
+    /// A portable local snapshot of one explicitly selected Chat, never credentials or sync queues.
+    pub fn export_conversation(&self, conversation: Uuid) -> Result<String> {
+        use base64::{Engine, engine::general_purpose::STANDARD};
+        let state = self.state()?;
+        let selected = state.cache.conversation_detail(conversation)?;
+        if !state.memory.safe(&selected.title) {
+            return Err(Error::Invalid);
+        }
+        let mut messages = Vec::new();
+        let mut after = 0;
+        let mut bytes = selected.title.len();
+        loop {
+            let page = state.cache.messages(conversation, after, 128)?;
+            if page.is_empty() {
+                break;
+            }
+            after = page.last().ok_or(Error::Storage)?.sequence;
+            for message in page {
+                bytes += message.content.text.len();
+                if bytes > 16 * 1024 * 1024
+                    || messages.len() >= 4096
+                    || !state.memory.safe(&message.content.text)
+                {
+                    return Err(Error::Invalid);
+                }
+                messages.push(message);
+            }
+        }
+        let mut drafts = Vec::new();
+        let mut pending = state.cache.db.prepare("SELECT operation,user_message,assistant_message,draft FROM turns WHERE conversation=?1 AND status='pending' ORDER BY operation LIMIT 17")?;
+        let rows = pending.query_map([conversation.to_string()], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                r.get::<_, String>(3)?,
+            ))
+        })?;
+        for row in rows {
+            let (operation, user, assistant, draft) = row?;
+            bytes += draft.len();
+            if bytes > 16 * 1024 * 1024 || drafts.len() >= 16 || !state.memory.safe(&draft) {
+                return Err(Error::Invalid);
+            }
+            drafts.push(json!({"operation":operation,"user_message":user,"assistant_message":assistant,"draft":draft,"status":"pending"}));
+        }
+        let mut attachments = Vec::new();
+        let mut selected_attachments = state
+            .cache
+            .db
+            .prepare("SELECT id FROM attachments WHERE conversation=?1 ORDER BY id LIMIT 65")?;
+        let ids = selected_attachments
+            .query_map([conversation.to_string()], |r| r.get::<_, String>(0))?;
+        for id in ids {
+            let id = Uuid::parse_str(&id?).map_err(|_| Error::UnsafeStorage)?;
+            let attachment = state.cache.attachment(conversation, id)?;
+            bytes += attachment.bytes.len().div_ceil(3) * 4;
+            if bytes > 16 * 1024 * 1024 || attachments.len() >= 64 {
+                return Err(Error::Invalid);
+            }
+            if !state.memory.safe(&attachment.name)
+                || !state.memory.safe(&attachment.media_type)
+                || !state
+                    .memory
+                    .safe(&String::from_utf8_lossy(&attachment.bytes))
+            {
+                return Err(Error::Invalid);
+            }
+            attachments.push(json!({"id":id,"name":attachment.name,"media_type":attachment.media_type,"base64":STANDARD.encode(attachment.bytes)}));
+        }
+        let output = json!({"format":"caidex-chat-export","version":1,"conversation":selected,"messages":messages,"pending_turns":drafts,"attachments":attachments}).to_string();
+        if output.len() > 16 * 1024 * 1024 || !state.memory.safe(&output) {
+            return Err(Error::Invalid);
+        }
+        Ok(output)
+    }
     /// Callers choose a parent explicitly; concurrent sends produce sibling branches.
     pub async fn send(&self, send: Send) -> Result<Message> {
         let (provider, request, cancel, generation, has_memory) = {

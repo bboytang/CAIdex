@@ -1,5 +1,7 @@
 //! Linux account service. Migration/admin and ordinary data connections are separate.
 mod chat;
+mod disk;
+pub mod email;
 mod grants;
 mod memory;
 mod passkeys;
@@ -89,6 +91,7 @@ pub struct Service<S: EmailSender> {
     rp_id: String,
     sender: S,
     code_key: [u8; 32],
+    disk: Mutex<Option<disk::Guard>>,
 }
 
 /// Transport only; providers receive minimal recipient/template/expiry/idempotency data.
@@ -102,6 +105,13 @@ pub struct Mail {
 }
 pub trait EmailSender: Send + Sync + 'static {
     fn send(&self, mail: Mail) -> impl Future<Output = Result<()>> + Send;
+    fn callback(
+        &self,
+        _headers: &HeaderMap,
+        _body: &[u8],
+    ) -> impl Future<Output = Result<()>> + Send {
+        async { Err(Error::Denied) }
+    }
 }
 
 /// Process-private sandbox; it never sends mail or exposes an inbox HTTP endpoint.
@@ -253,7 +263,22 @@ impl<S: EmailSender> Service<S> {
             rp_id: rp_id.to_owned(),
             sender,
             code_key,
+            disk: Mutex::new(None),
         }))
+    }
+
+    /// Mandatory for the service entry point; the local protocol fixture may omit it.
+    pub async fn guard_disk(&self, path: std::path::PathBuf, reserve: u64) -> Result<()> {
+        if !path.is_absolute()
+            || !(1024 * 1024..=2 * 1024 * 1024 * 1024).contains(&reserve)
+            || !path.is_dir()
+        {
+            return Err(Error::Invalid);
+        }
+        let guard = disk::Guard { path, reserve };
+        guard.check()?;
+        *self.disk.lock().await = Some(guard);
+        Ok(())
     }
 
     pub fn metadata(&self) -> Value {
@@ -289,6 +314,18 @@ impl<S: EmailSender> Service<S> {
         peer: &str,
         body: Value,
     ) -> Result<Value> {
+        let stopping = (action == "chat-control" && body["enabled"] == false)
+            || (action == "memory-control"
+                && matches!(body["mode"].as_str(), Some("keep" | "delete")));
+        if !stopping
+            && !matches!(
+                action,
+                "me" | "sessions" | "settings" | "chat-status" | "memory-status" | "memory-cleanup"
+            )
+            && let Some(guard) = self.disk.lock().await.as_ref()
+        {
+            guard.check()?;
+        }
         let mut auth = self.auth.lock().await;
         // Rate state commits independently, including failed attempts. No client-provided IP is trusted.
         let rate = auth.transaction().await?;
@@ -985,6 +1022,10 @@ pub fn router<S: EmailSender>(service: Arc<Service<S>>) -> Router {
         )
         .route("/v1/auth/{action}", post(request::<S>))
         .route(
+            "/v1/mail/events",
+            post(mail_callback::<S>).layer(DefaultBodyLimit::max(65536)),
+        )
+        .route(
             "/v1/chat/{action}",
             post(chat_request::<S>).layer(DefaultBodyLimit::max(caidex_cloud_core::chat::MAX_WIRE)),
         )
@@ -1129,4 +1170,25 @@ async fn account_script() -> impl IntoResponse {
         ],
         include_str!("account.js"),
     )
+}
+
+async fn mail_callback<S: EmailSender>(
+    State(service): State<Arc<Service<S>>>,
+    headers: HeaderMap,
+    request: axum::extract::Request,
+) -> Result<Json<Value>> {
+    let _permit = service
+        .hashes
+        .clone()
+        .try_acquire_owned()
+        .map_err(|_| Error::Limited)?;
+    let body = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        axum::body::to_bytes(request.into_body(), 65536),
+    )
+    .await
+    .map_err(|_| Error::Unavailable)?
+    .map_err(|_| Error::Invalid)?;
+    service.sender.callback(&headers, &body).await?;
+    Ok(Json(json!({"status":"accepted"})))
 }

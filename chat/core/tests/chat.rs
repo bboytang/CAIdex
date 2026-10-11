@@ -155,6 +155,112 @@ fn send(conversation: Uuid, parent: Option<Uuid>, text: &str) -> Send {
 }
 
 #[tokio::test]
+async fn selected_local_export_keeps_branches_attachments_and_account_isolation() {
+    let root = Root::new();
+    let chat =
+        Arc::new(Chat::open(&root.0, account("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")).unwrap());
+    Fixture::new("complete").bind(&chat);
+    let selected = chat.create_conversation(None, "selected".into()).unwrap();
+    let excluded = chat
+        .create_conversation(None, "EXCLUDED-CHAT".into())
+        .unwrap();
+    let attachment = chat
+        .attach(
+            selected,
+            "test.txt".into(),
+            "text/plain".into(),
+            b"exported attachment".to_vec(),
+        )
+        .unwrap();
+    let mut request = send(selected, None, "original");
+    request.content.attachments.push(attachment);
+    let first = chat.send(request).await.unwrap();
+    chat.send(send(selected, Some(first.id), "left"))
+        .await
+        .unwrap();
+    chat.send(send(selected, Some(first.id), "right"))
+        .await
+        .unwrap();
+    let queued = chat
+        .attach(
+            selected,
+            "queued.txt".into(),
+            "text/plain".into(),
+            b"not yet sent".to_vec(),
+        )
+        .unwrap();
+    let export = chat.export_conversation(selected).unwrap();
+    let parsed: Value = serde_json::from_str(&export).unwrap();
+    assert_eq!(parsed["messages"].as_array().unwrap().len(), 6);
+    assert_eq!(parsed["attachments"].as_array().unwrap().len(), 2);
+    assert!(
+        parsed["attachments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["id"] == queued.to_string())
+    );
+    assert!(
+        parsed["attachments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["base64"] == "ZXhwb3J0ZWQgYXR0YWNobWVudA==")
+    );
+    assert!(!export.contains("EXCLUDED-CHAT"));
+    assert!(!export.contains("PRIVATE-CARRIER"));
+    assert!(!export.contains("refresh_token"));
+    assert!(!export.contains("outbox"));
+    Fixture::new("hang").bind(&chat);
+    let pending = chat
+        .create_conversation(None, "pending draft".into())
+        .unwrap();
+    let request = send(pending, None, "save in progress");
+    let operation = request.operation;
+    let worker = {
+        let chat = chat.clone();
+        tokio::spawn(async move { chat.send(request).await })
+    };
+    let mut saved = false;
+    for _ in 0..100 {
+        let snapshot: Value =
+            serde_json::from_str(&chat.export_conversation(pending).unwrap()).unwrap();
+        if snapshot["pending_turns"][0]["draft"] == "partial" {
+            saved = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert!(saved);
+    chat.cancel(operation).unwrap();
+    let _ = worker.await.unwrap();
+    chat.switch(account("cccccccc-cccc-cccc-cccc-cccccccccccc"))
+        .unwrap();
+    assert!(matches!(
+        chat.export_conversation(selected),
+        Err(Error::NotFound)
+    ));
+    assert!(matches!(
+        chat.export_conversation(excluded),
+        Err(Error::NotFound)
+    ));
+    let guard = Arc::new(caidex_credentials::Redactor::default());
+    guard
+        .register(
+            &caidex_credentials::Secret::new("synthetic registered \"credential\"".into()).unwrap(),
+        )
+        .unwrap();
+    chat.memory().protect_credentials(guard).unwrap();
+    let secret = chat
+        .create_conversation(None, "synthetic registered \"credential\"".into())
+        .unwrap();
+    assert!(matches!(
+        chat.export_conversation(secret),
+        Err(Error::Invalid)
+    ));
+}
+
+#[tokio::test]
 async fn immutable_branches_selected_history_attachments_and_outbox_survive_reopen() {
     let root = Root::new();
     let chat = Chat::open(&root.0, Namespace::guest()).unwrap();
@@ -436,4 +542,43 @@ fn unsafe_mode_symlink_hardlink_and_git_paths_are_refused() {
         Cache::open(&root.0, Namespace::guest()),
         Err(Error::UnsafeStorage)
     ));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+#[ignore = "scripts/i7-operations.py provides a disposable physical 16MiB tmpfs"]
+fn physical_enospc_preserves_committed_cache_and_queue() {
+    use std::io::Write;
+    let base = PathBuf::from(std::env::var("CAIDEX_I7_DISK_ROOT").unwrap());
+    assert_eq!(base, PathBuf::from("/fault"));
+    let root = base.join("cache");
+    let mut cache = Cache::open(&root, Namespace::guest()).unwrap();
+    let first = cache
+        .create_conversation(None, "committed before ENOSPC".into())
+        .unwrap();
+    let queue = cache.outbox(0, 10).unwrap().len();
+    let mut filler = std::fs::File::create(base.join("filler")).unwrap();
+    let block = vec![0u8; 1024 * 1024];
+    let error = loop {
+        if let Err(error) = filler.write_all(&block) {
+            break error;
+        }
+    };
+    assert_eq!(error.raw_os_error(), Some(28));
+    assert!(matches!(
+        cache.create_conversation(None, "must roll back".into()),
+        Err(Error::Storage)
+    ));
+    assert_eq!(cache.conversations(None, 10).unwrap().len(), 1);
+    assert_eq!(cache.conversations(None, 10).unwrap()[0].id, first);
+    drop(filler);
+    std::fs::remove_file(base.join("filler")).unwrap();
+    drop(cache);
+    let cache = Cache::open(&root, Namespace::guest()).unwrap();
+    assert_eq!(cache.conversations(None, 10).unwrap()[0].id, first);
+    assert_eq!(cache.outbox(0, 10).unwrap().len(), queue);
+    println!(
+        "I7_CHECK {}",
+        json!({"name":"physical_enospc_sqlite_committed_chat_and_outbox_reopen_unchanged","passed":true})
+    );
 }

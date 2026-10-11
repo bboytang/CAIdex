@@ -38,3 +38,11 @@ reqwest = { version = "=0.13.5", default-features = false, features = ["rustls"]
 name = "caidex-auth-local"
 path = "src/main.rs"
 required-features = ["server"]
+
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.190"
+
+[[bin]]
+name = "caidex-auth-service"
+path = "src/service.rs"
+required-features = ["server"]
