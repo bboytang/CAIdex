@@ -145,7 +145,7 @@ def demo(binary, root):
         snapshot = a.call("snapshot")
         a.call("shutdown")
         assert process.wait(timeout=15) == 0, process.stderr.read()
-        report = {"status": "ok", "codex_version": "0.160.1", "clients": 2,
+        report = {"status": "ok", "codex_version": "0.160.1", "clients": 2, "evidence_directory": str(root),
                   "submitted_tasks": len(snapshot["tasks"]), "native_marker_writes": 2,
                   "restart_model_requests": trace["requests"] - before,
                   "model_requests": trace["requests"], "native_tool_offers": len(trace["hostCommands"]),
@@ -189,8 +189,8 @@ def main():
         args.directory.mkdir(mode=0o700, parents=False, exist_ok=False)
         demo(args.host_bin, args.directory)
     else:
-        with tempfile.TemporaryDirectory(prefix="caidex-h2-demo-") as root:
-            demo(args.host_bin, Path(root))
+        # Preserve evidence; Windows can deny deletion of Runtime clone files.
+        demo(args.host_bin, Path(tempfile.mkdtemp(prefix="caidex-h2-demo-")))
 
 
 if __name__ == "__main__":

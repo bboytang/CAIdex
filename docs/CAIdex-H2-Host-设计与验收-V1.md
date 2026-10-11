@@ -58,7 +58,7 @@ python3 scripts/h2-demo.py --directory /absolute/new-h2-evidence-directory
 cargo test -p caidex-runtime --test real_runtime --locked -- --ignored
 ```
 
-PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python命令用`python`。演示--directory要求新目录，不替换现有资料；省略时脚本仅清理自己创建的TemporaryDirectory。保存目录含Host journal、私有Runtime home/隔离项目、trace.json与h2-result-held信号，可offline inspect（Host退出后）及SQLite只读查询；不要把用户Token传给模型端点。
+PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python命令用`python`。演示--directory要求新目录，不替换现有资料；省略时创建并保留自己的私有临时证据目录，报告evidence_directory给出路径；不自动清理Runtime下载或journal。保存目录含Host journal、私有Runtime home/隔离项目、trace.json与h2-result-held信号，可offline inspect（Host退出后）及SQLite只读查询；不要把用户Token传给模型端点。
 
 预期H-2报告status=ok、submitted_tasks=5、native_marker_writes=2、model_requests=7、native_tool_offers=3、restart_model_requests=0、executed_unconfirmed_task=unknown、authorization_header_seen=false。实际7次本机请求是测量值；商业调用/真实Key不读取是场景约束，不宣称独立全局遥测。内部submitter进程在读提交回复前退出；另一端按原operation找回blocked任务；批准后标记实际写入。两端从同cursor恢复；同Provider轮次切换、新profile新线程关联、取消待审批任务；最后已执行工具而终态被合成端点持有时强杀Host，重启查回Unknown，原operation重试仍无HTTP请求/标记增量，已完成任务保留终态。
 
@@ -71,11 +71,11 @@ PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python
 剩余限制：仅本地同OS用户/Host Token授权；没有生产Provider配置/真实商业调用、H-3跨设备身份与审批竞争/请求级expiry/Diff、完整客户端、生产吞吐/裁剪/备份或外部exactly-once承诺。工具副作用无法回滚；未知结果只能安全显示/查询/外部核实，不自动重放。Runtime关掉后的子工具终止效果未对任意工具承诺。新版本拒绝降级；v2迁移不修复旧v1未标来源的历史命名冲突。journal全snapshot随任务累计扩大，达到有限容量拒绝新操作；生产调度/保留策略尚未实现。
 
 
-## 最终源码与证据（精确CI运行中）
+## 初轮源码与验证历史（不代最终源码）
 
-功能源码[f674f4b22e0653a6a2b85a8d0001f810f05c207f](https://github.com/bboytang/CAIdex/commit/f674f4b22e0653a6a2b85a8d0001f810f05c207f)已提交推送main；[CI38100999321](https://github.com/bboytang/CAIdex/actions/runs/38100999321)正在该SHA运行Linux/Windows/macOS，未使用H-1旧CI认领本次结果。
+功能源码[f674f4b22e0653a6a2b85a8d0001f810f05c207f](https://github.com/bboytang/CAIdex/commit/f674f4b22e0653a6a2b85a8d0001f810f05c207f)已提交推送main；[CI38100999321](https://github.com/bboytang/CAIdex/actions/runs/38100999321)已结束：Linux/macOS成功，Windows替身CRLF断言失败；不认领为最终成功。
 
-[本地摘要/源码指纹/完整日志哈希](evidence/h2-local.json)：workspace672通过/0失败/83忽略，Host32/0/0（新增12项）、固定Runtime81/0/0（1 filtered），Linux原生凭据另1/0/0。fmt、全仓Clippy、构建、schema、doctor、两阶段真实进程演示全部通过；[Host实际测试名](evidence/h2-host-tests.log)、[HTTP原始合成请求证据](evidence/h2-local-http-trace.json.gz)、[开发失败/环境修正](evidence/h2-local-failed.json)。Runtime完整回归早于最后Host内部Request ID收敛修正；Facade/Runtime/fixture源码未再改变，后续完整workspace及Host真实演示已重跑，最终CI仍完整复验。
+[初轮本地摘要/源码指纹/完整日志哈希](evidence/h2-initial-local.json)：workspace672通过/0失败/83忽略，Host32/0/0（新增12项）、固定Runtime81/0/0（1 filtered），Linux原生凭据另1/0/0。fmt、全仓Clippy、构建、schema、doctor、两阶段真实进程演示全部通过；[初轮Host测试名](evidence/h2-initial-host-tests.log)、[初轮HTTP合成证据](evidence/h2-initial-local-http-trace.json.gz)、[开发失败/环境修正](evidence/h2-local-failed.json)。Runtime完整回归早于最后Host内部Request ID收敛修正；Facade/Runtime/fixture源码未再改变，后续完整workspace及Host真实演示已重跑，最终CI仍完整复验。
 
 封存前会独立核对三job实际checkout SHA、各步骤、workspace/Host/Runtime实测计数及两阶段演示；源码无新改动时仅追加文档/证据提交，不把文档HEAD冒充功能CI源码。当前状态：本地开发验证完成，精确CI待完成，H-2独立审计未执行。
 
@@ -84,3 +84,13 @@ PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python
 
 
 同轮最小边界复核补充：未关联线程任务的thread_id/turn_id为None；缺失ID的原始turn通知不得以None相等推进状态。投影要求两个显式ID，审批交互也要求明确ID；缺失/异线程/异Turn通知仍保留原文而不改变任务，新定向回归验证匹配真实终态才能完成。修正后本地完整workspace673/0/83、Host33/0/0（H-2新增13项），fmt/全仓Clippy及H-1/H-2真实进程演示通过。第一轮Linux/macOS成功保留历史，不能代新最终SHA的三平台精确CI。
+
+
+## 最终功能源码（新精确CI运行中）
+
+[5282ac49cc3f1802d578de9123baa8d772f5244c](https://github.com/bboytang/CAIdex/commit/5282ac49cc3f1802d578de9123baa8d772f5244c)已推送main；[新CI38101361081](https://github.com/bboytang/CAIdex/actions/runs/38101361081)正在该SHA重新完整三平台运行。当前只有本地开发验证完成，没有H-2独立审计结论。
+
+[最终本地摘要/源码指纹/原日志哈希](evidence/h2-local.json)：workspace673/0/83、Host33/0/0（新增13项）、固定Runtime81/0/0（1 filtered）、Linux原生凭据另1/0/0；fmt/全仓Clippy/schema/doctor/两阶段真实进程演示通过。[最终Host实际测试名](evidence/h2-host-tests.log)、[最终HTTP合成请求证据](evidence/h2-local-http-trace.json.gz)、[初轮失败CI及最小修复](evidence/h2-failed-ci.json)可独立复核。等待新CI所有job后追加逐平台checkout/计数/步骤与演示结果，封存后停止。
+
+
+第二轮功能5282ac49/CI38101361081：Linux/macOS全部成功，Windows workspace667/0/81、Host32/0/0及H-1通过；H-2报告status=ok后，Python TemporaryDirectory自动删除私有Runtime的plugins-clone Git pack文件时WinError5，步骤退出1，未运行后续固定Runtime完整回归，不能认领该job成功。原日志不确定具体占用者或文件属性，故不编造锁来源。最小修复只让演示保留自己创建的私有证据目录并报告路径，不强行清理/改变ACL/忽略异常或降低断言；新SHA需重新完整三平台CI。生产Host/Runtime逻辑未因该清理问题改变。
