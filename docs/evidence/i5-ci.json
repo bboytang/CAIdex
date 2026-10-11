@@ -1,0 +1,2964 @@
+{
+  "milestone": "I-5",
+  "base_sha": "4efdde0a6ec9f5580e0651ec60d10e5b9d3875ef",
+  "source_sha": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+  "run_id": 38155435916,
+  "url": "https://github.com/bboytang/CAIdex/actions/runs/38155435916",
+  "status": "completed",
+  "conclusion": "success",
+  "source_sha256": {
+    "cloud/auth/src/client.rs": "761d765ca0c70ba48e913fc79a77a8afd239bde34c0989f853313e0902bf2621",
+    "cloud/auth/src/lib.rs": "3ffe788d76ebf456bd17383e8d3faf8300bfdf8b018cbf47b1a48f9fd10b287e",
+    "cloud/auth/src/main.rs": "0fc00d6f807c8d61b79f1e141bda3cccdcce0db9a43dc5432d9f7a9aa6eadd79",
+    "cloud/auth/src/server/chat.rs": "9ded2fc825ab807af85c6a4d5d7fd25321ce66a6eeff8bb32520347a2744916e",
+    "cloud/auth/src/server/grants.rs": "f813ef3c849aeff0ae3e3d0d748531328c1d030642df1f0461ddb141966914cd",
+    "cloud/auth/src/server/passkeys.rs": "4deb75717c660467f753b6f18606af59aa34b1e8487b43d739f9270829de2ba8",
+    "cloud/auth/src/server.rs": "b978c0f66584d3c2d9371d5989696dd6c8d2899068e99724a926cff951353382",
+    "cloud/auth/src/store.rs": "7175ce4a6bc38541c521851e5b303b08d8995f42eb9bee9315049529185955dd",
+    "cloud/auth/Cargo.toml": "ce590b86ac369a27789c3a0aed9eb6837f49bbfdaa90b7d8f0fc4013394c601e",
+    "cloud/auth/src/account.js": "6cce751f9a600016ef59c67a2b2a55836be05e512974bff2791a3b9f2a7853f3",
+    "cloud/core/src/lib.rs": "d34813a5cedf2815c1e03efb86cbc7f555a1dc802c66068e2dc923c3e763d203",
+    "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+    "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+    "cloud/postgres/migrations/0002_authentication.sql": "7ef50facbc4feef52c5faec87a9232199e2521496a2e80ccdc7745fff8f84659",
+    "cloud/postgres/migrations/0003_chat_sync.sql": "8da171b75d379c325e4a3b35446c043a95cb47aef9f5ba103fae749b747299ce",
+    "cloud/auth/tests/account.rs": "a2afe814d541a14996133bd95f4e847d477502a83c5ec0ff3a73cf18e3631f75",
+    "scripts/i2-auth.py": "5ed1ff38a01f8540559515fe19edc0edc91f00f93c159f3fd3316eec2f134b1a",
+    "Cargo.toml": "4b5b950b6486b08abf16e3026d43c024aa932cb8cd2c27e39395e02b706cc011",
+    "Cargo.lock": "7e760bb11364ea2167f7b4aed3c96c2cb8414f85b6e3df7eded97969357a326e",
+    ".github/workflows/ci.yml": "52ef4d9e0445485d9dc07426a00c0586d33aefc3e10ce86469ea91813a3084fd",
+    "chat/core/src/cache.rs": "ce1630841f6cbce8ff543ab760a7054f3367979f0a8f30f41281a3888cb73708",
+    "chat/core/src/client.rs": "4f533332a7c5414c30876d91f1140d61cd2fa36b71edba5fe5da25589901625c",
+    "chat/core/src/lib.rs": "d35ad8ce8e17e2a14ba9b0fdb3cd2ae9118d6ac9701c5aee1fcc802592a51d7d",
+    "chat/core/src/memory/host.rs": "1d8a8b2fb366f5d387473e18ec9646b42dadda727aefb3764df2641833cfa175",
+    "chat/core/src/memory/inference.rs": "942eb088d89575d7256253a45853f82afc07939095bd32a31f7b31f81909a011",
+    "chat/core/src/memory/jobs.rs": "71e3df88c1cf06986a5ea0347158e4143f8e192941fd9bcdb7b1221076c9784d",
+    "chat/core/src/memory/mod.rs": "20518bd69a3e3bf9eecd5df9f06c299b937a5523af583e4afbfcba2e6e56d1bc",
+    "chat/core/src/memory/store.rs": "90ff9a184edddf0ba822bac0562d60e59831c5109363013ad2fb6f77dc54369f",
+    "chat/core/src/sync.rs": "f59f157b90e6117fbe4b01057d6ce39a9702b27b56e11a18097d37f64106d774",
+    "chat/core/src/sync_http_tests.rs": "8f7a10203d66acbde49fa646d0fa40ef182fe6e1652bff9fbed0d8e75447b38f",
+    "chat/core/src/memory/schema2.sql": "597748b9c35637dbcf44d25506da2e38e9a05b1e4676c818b40469c3320554eb",
+    "chat/core/src/schema.sql": "800ab41cb79798ed5913065b6baff7f752a4837a4c381e5316807558692099fe",
+    "chat/core/src/sync_schema4.sql": "5b9f7fddbce6771ab95db11b004321550844d8311dec4c1369fb204ea6a99459",
+    "cloud/core/src/chat.rs": "e4d1dfba2e4a851319968498d32f25ba48c9e5e1b2613ef7247ae2d6be31a700",
+    "chat/core/Cargo.toml": "3850abd6da9e5433e889fc8af66b654ef2d0276b45917e03d9a37371d44634a7",
+    "scripts/i5-chat-sync.py": "82a1c8c27fc5c47cf5cf56fe185f75de8484d9378fa23fb8bfa924edc94e3a14"
+  },
+  "jobs": [
+    {
+      "id": 114517333457,
+      "name": "I-1/I-2 database and authentication (Linux)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38155435916/job/114517333457",
+      "checkout_sha": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Pull pinned PostgreSQL and pgvector test image",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 4,
+          "name": "Rebuild and verify real database isolation and failure paths",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 5,
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 6,
+          "name": "Authentication server and fixture Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 7,
+          "name": "Account trust, cancellation and protected store contracts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 8,
+          "name": "Chat sync API and shared clients Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 9,
+          "name": "Real HTTP, PostgreSQL and WebAuthn account failure paths",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 10,
+          "name": "I-5 real PostgreSQL and HTTP Chat synchronization, branches and deletion",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 20,
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 21,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "log": "i5-ci38155435916-job114517333457.log.gz",
+      "gzip_sha256": "cb45493f8f05d427bc1179e46ca901c741e8905460a7161f354eae69d0327ba0",
+      "raw_sha256": "f229c2d398b0932a1320659377d1c00688594e59bdea3b4930a16df2feb3d750",
+      "raw_bytes": 124214,
+      "enospc": false,
+      "test_groups": {
+        "cargo test -p caidex-auth --features test-auth --lib --locked": {
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        },
+        "python3 scripts/i2-auth.py --output i2-auth.json": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        },
+        "python3 scripts/i5-chat-sync.py --output i5-chat-sync.json": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        }
+      },
+      "checks": {
+        "python3 scripts/i1-database.py --output i1-database.json": [
+          {
+            "name": "bootstrap_roles_and_pinned_extensions",
+            "passed": true,
+            "sqlstate": null,
+            "output": "",
+            "stderr": ""
+          },
+          {
+            "name": "migration_failure_rolls_back",
+            "passed": true,
+            "sqlstate": "22012",
+            "output": "",
+            "stderr": "ERROR:  22012"
+          },
+          {
+            "name": "no_partial_schema",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "migration_from_empty_database",
+            "passed": true,
+            "sqlstate": null,
+            "output": "",
+            "stderr": ""
+          },
+          {
+            "name": "migration_replay_refused",
+            "passed": true,
+            "sqlstate": "42P07",
+            "output": "",
+            "stderr": "ERROR:  42P07"
+          },
+          {
+            "name": "migration_version_preserved",
+            "passed": true,
+            "sqlstate": null,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "name": "synthetic_fixture",
+            "passed": true,
+            "sqlstate": null,
+            "output": "",
+            "stderr": ""
+          },
+          {
+            "name": "all_private_tables_force_rls",
+            "passed": true,
+            "sqlstate": null,
+            "output": "19",
+            "stderr": ""
+          },
+          {
+            "name": "actual_runtime_login_is_unprivileged",
+            "passed": true,
+            "sqlstate": null,
+            "output": "f|f|f|f|f|f|f",
+            "stderr": ""
+          },
+          {
+            "name": "runtime_owns_no_tables",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_users",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_projects",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_conversations",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_messages",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_memories",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_memory_revisions",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_memory_sources",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_embedding_spaces",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_memory_embeddings",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_memory_jobs",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_sync_events",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_sync_cursors",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_deletion_tombstones",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "missing_context_attachments",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "forged_user_and_token_denied",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "unknown_session_denied",
+            "passed": true,
+            "sqlstate": "28000",
+            "output": "",
+            "stderr": "ERROR:  28000"
+          },
+          {
+            "name": "short_session_denied",
+            "passed": true,
+            "sqlstate": "28000",
+            "output": "",
+            "stderr": "ERROR:  28000"
+          },
+          {
+            "name": "missing_context_write_denied",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "valid_session_ignores_forged_user_id",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "security_events_own_only",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n1",
+            "stderr": ""
+          },
+          {
+            "name": "session_metadata_own_only",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "cannot_extend_session_lifetime",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "guard_function_does_not_disclose_other_user_state",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\nf",
+            "stderr": ""
+          },
+          {
+            "name": "guard_rejects_forged_project_owner",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\nf",
+            "stderr": ""
+          },
+          {
+            "name": "stale_snapshot_isolation_refused",
+            "passed": true,
+            "sqlstate": "28000",
+            "output": "",
+            "stderr": "ERROR:  28000"
+          },
+          {
+            "name": "A_scope_conversations",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_conversations",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_messages",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_messages",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_memories",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_memories",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_memory_revisions",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_memory_revisions",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_memory_sources",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_memory_sources",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_embedding_spaces",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_embedding_spaces",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_memory_embeddings",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_memory_embeddings",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_memory_jobs",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_memory_jobs",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_sync_events",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_sync_events",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_sync_cursors",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_sync_cursors",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_deletion_tombstones",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_deletion_tombstones",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "A_scope_attachments",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+            "stderr": ""
+          },
+          {
+            "name": "B_scope_attachments",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "own_profile_only",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "new_account_sync_defaults",
+            "passed": true,
+            "sqlstate": null,
+            "output": "cccccccc-cccc-cccc-cccc-cccccccccccc\nf|f|1|1",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_cloud_memory_upload_denied",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "guessed_foreign_revision_hidden",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "vector_candidates_filtered_in_sql",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-0000-0000-0000-000000000001",
+            "stderr": ""
+          },
+          {
+            "name": "keyword_candidates_filtered_in_sql",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "password_material_hidden",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "login_identity_hidden",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "session_hash_hidden",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "sync_control_not_user_mutable",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "user_id_immutable",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "messages_immutable",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "revisions_immutable",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "source_evidence_immutable",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "truncate_denied",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "schema_ddl_denied",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "owner_escalation_denied",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "guard_escalation_denied",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "rls_cannot_be_disabled",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "message_author_cannot_be_forged",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "revision_author_cannot_be_forged",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "foreign_embedding_space_denied",
+            "passed": true,
+            "sqlstate": "23503",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  23503"
+          },
+          {
+            "name": "embedding_dimensions_enforced",
+            "passed": true,
+            "sqlstate": "23514",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  23514"
+          },
+          {
+            "name": "deleted_memory_vector_hidden",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "stale_vector_hidden",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "expired_revision_vector_hidden",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_memories",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_memory_revisions",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_memory_sources",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_memory_embeddings",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_memory_jobs",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_sync_events",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "disabled_memory_download_sync_cursors",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "cross_account_foreign_key_denied",
+            "passed": true,
+            "sqlstate": "23503",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  23503"
+          },
+          {
+            "name": "cross_project_source_denied",
+            "passed": true,
+            "sqlstate": "23503",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  23503"
+          },
+          {
+            "name": "revision_memory_scope_binding",
+            "passed": true,
+            "sqlstate": "23503",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  23503"
+          },
+          {
+            "name": "cannot_self_grant_foreign_project",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "owner_grants_reader",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "reader_can_read_shared_project",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+            "stderr": ""
+          },
+          {
+            "name": "reader_cannot_write",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "project_reader_cursor_binds_own_session",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "stderr": ""
+          },
+          {
+            "name": "project_owner_cannot_read_member_cursor",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+            "stderr": ""
+          },
+          {
+            "name": "cursor_cannot_reference_foreign_session",
+            "passed": true,
+            "sqlstate": "23503",
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "stderr": "ERROR:  23503"
+          },
+          {
+            "name": "cursor_cannot_impersonate_session_user",
+            "passed": true,
+            "sqlstate": "42501",
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "stderr": "ERROR:  42501"
+          },
+          {
+            "name": "owner_grants_writer",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "writer_keeps_project_owner_and_separate_author",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "stderr": ""
+          },
+          {
+            "name": "owner_revokes_member",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "stderr": ""
+          },
+          {
+            "name": "revoked_project_read_denied",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n0",
+            "stderr": ""
+          },
+          {
+            "name": "revoked_project_write_denied",
+            "passed": true,
+            "sqlstate": null,
+            "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "stderr": ""
+          },
+          {
+            "name": "one_connection_commit_rollback_tenant_reset",
+            "passed": true,
+            "sqlstate": null,
+            "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n3\n0\nbbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1\n0",
+            "stderr": ""
+          },
+          {
+            "name": "revoked_session_bind_denied",
+            "passed": true,
+            "sqlstate": "28000",
+            "output": "",
+            "stderr": "ERROR:  28000"
+          },
+          {
+            "name": "revoked_session_direct_context_denied",
+            "passed": true,
+            "sqlstate": null,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "name": "expired_session_denied",
+            "passed": true,
+            "sqlstate": "28000",
+            "output": "",
+            "stderr": "ERROR:  28000"
+          },
+          {
+            "name": "deleted_account_denied",
+            "passed": true,
+            "sqlstate": "28000",
+            "output": "",
+            "stderr": "ERROR:  28000"
+          },
+          {
+            "name": "password_credential_requires_hash",
+            "passed": true,
+            "sqlstate": "23514",
+            "output": "",
+            "stderr": "ERROR:  23514"
+          },
+          {
+            "name": "conversation_self_branch_denied",
+            "passed": true,
+            "sqlstate": "23514",
+            "output": "",
+            "stderr": "ERROR:  23514"
+          },
+          {
+            "name": "revision_self_parent_denied",
+            "passed": true,
+            "sqlstate": "23514",
+            "output": "",
+            "stderr": "ERROR:  23514"
+          },
+          {
+            "name": "independent_database_rebuild",
+            "passed": true,
+            "sqlstate": null,
+            "output": "",
+            "stderr": ""
+          },
+          {
+            "name": "rebuild_entities_and_version",
+            "passed": true,
+            "sqlstate": null,
+            "output": "20\n1",
+            "stderr": ""
+          }
+        ],
+        "python3 scripts/i2-auth.py --output i2-auth.json": [
+          {
+            "name": "v2_failed_migration_rolls_back_role_tables_and_columns",
+            "passed": true
+          },
+          {
+            "name": "v2_migration_applied_once",
+            "passed": true
+          },
+          {
+            "name": "v3_failed_migration_preserves_v2_schema_and_privileges",
+            "passed": true
+          },
+          {
+            "name": "v3_chat_migration_applied",
+            "passed": true
+          },
+          {
+            "name": "all_24_private_tables_force_rls",
+            "passed": true
+          },
+          {
+            "name": "trusted_discovery_and_endpoints",
+            "passed": true
+          },
+          {
+            "name": "wrong_issuer_discovery_refused",
+            "passed": true
+          },
+          {
+            "name": "existing_account_authorization_page_has_confirmation_and_no_registration",
+            "passed": true
+          },
+          {
+            "name": "no_context_and_fake_account_bearer_refused",
+            "passed": true
+          },
+          {
+            "name": "register_generic_without_token_or_user_id",
+            "passed": true
+          },
+          {
+            "name": "short_password_and_untrusted_fields_refused",
+            "passed": true
+          },
+          {
+            "name": "unverified_identity_cannot_login",
+            "passed": true
+          },
+          {
+            "name": "challenge_wrong_purpose_and_missing_token_refused",
+            "passed": true
+          },
+          {
+            "name": "verification_concurrent_consume_exactly_once",
+            "passed": true
+          },
+          {
+            "name": "verification_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "verified_password_login_creates_independent_session",
+            "passed": true
+          },
+          {
+            "name": "argon2id_salt_and_versioned_64mib_parameters_no_plaintext",
+            "passed": true
+          },
+          {
+            "name": "verification_material_digest_not_raw_password_or_token",
+            "passed": true
+          },
+          {
+            "name": "new_account_settings_default_off_and_no_host_authority",
+            "passed": true
+          },
+          {
+            "name": "client_supplied_actor_refused",
+            "passed": true
+          },
+          {
+            "name": "resend_cooldown_real_account",
+            "passed": true
+          },
+          {
+            "name": "duplicate_registration_generic_no_second_identity_or_email",
+            "passed": true
+          },
+          {
+            "name": "unknown_recovery_generic",
+            "passed": true
+          },
+          {
+            "name": "unknown_address_same_resend_limit",
+            "passed": true
+          },
+          {
+            "name": "second_account_verified",
+            "passed": true
+          },
+          {
+            "name": "reused_data_connection_switches_account_without_leak",
+            "passed": true
+          },
+          {
+            "name": "data_role_cannot_read_auth_credentials_or_grant_state",
+            "passed": true
+          },
+          {
+            "name": "auth_role_cannot_read_chat_memory_projects_or_set_owner",
+            "passed": true
+          },
+          {
+            "name": "auth_role_cannot_enable_memory_sync_or_rewrite_user_id",
+            "passed": true
+          },
+          {
+            "name": "privileged_db_principal_rejected_at_service_start",
+            "passed": true
+          },
+          {
+            "name": "parameterized_transaction_actor_is_authenticated_user",
+            "passed": true
+          },
+          {
+            "name": "real_reused_connection_rollback_clears_context",
+            "passed": true
+          },
+          {
+            "name": "password_revocation_committed_before_login_cannot_issue_session",
+            "passed": true
+          },
+          {
+            "name": "device_list_current_display_and_no_secret_columns",
+            "passed": true
+          },
+          {
+            "name": "foreign_session_revoke_refused",
+            "passed": true
+          },
+          {
+            "name": "ambiguous_or_nonboolean_revoke_cannot_log_out_current_session",
+            "passed": true
+          },
+          {
+            "name": "unlimited_device_list_pages_without_duplicates_or_foreign_cursor",
+            "passed": true
+          },
+          {
+            "name": "device_name_is_display_only",
+            "passed": true
+          },
+          {
+            "name": "single_device_revoke_confirmed",
+            "passed": true
+          },
+          {
+            "name": "revoked_access_rejected_before_natural_expiry",
+            "passed": true
+          },
+          {
+            "name": "refresh_wrong_issuer_or_audience_refused",
+            "passed": true
+          },
+          {
+            "name": "refresh_rotates_access_and_refresh_atomically",
+            "passed": true
+          },
+          {
+            "name": "rotation_invalidates_old_access",
+            "passed": true
+          },
+          {
+            "name": "lost_response_old_refresh_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "refresh_replay_revokes_successor_family",
+            "passed": true
+          },
+          {
+            "name": "two_backend_instances_concurrent_refresh_one_wins",
+            "passed": true
+          },
+          {
+            "name": "concurrent_old_token_replay_blocks_winner_family",
+            "passed": true
+          },
+          {
+            "name": "password_reauthentication_issues_narrow_one_use_proof",
+            "passed": true
+          },
+          {
+            "name": "passkey_enrollment_without_proof_refused",
+            "passed": true
+          },
+          {
+            "name": "passkey_server_challenge_and_uv_required",
+            "passed": true
+          },
+          {
+            "name": "reauthentication_proof_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "real_webauthn_software_registration_signature_verified",
+            "passed": true
+          },
+          {
+            "name": "passkey_registration_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "real_webauthn_software_login_signature_and_uv_verified",
+            "passed": true
+          },
+          {
+            "name": "passkey_authentication_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "wrong_origin_valid_software_signature_refused",
+            "passed": true
+          },
+          {
+            "name": "invalid_passkey_signature_refused",
+            "passed": true
+          },
+          {
+            "name": "passkey_persists_public_metadata_without_private_key",
+            "passed": true
+          },
+          {
+            "name": "fresh_backend_reads_persisted_passkey_public_state",
+            "passed": true
+          },
+          {
+            "name": "passkey_can_reauthenticate_sensitive_operation",
+            "passed": true
+          },
+          {
+            "name": "cross_session_sensitive_proof_refused",
+            "passed": true
+          },
+          {
+            "name": "credential_revoke_preserves_password_login_method",
+            "passed": true
+          },
+          {
+            "name": "revoked_passkey_no_new_authentication",
+            "passed": true
+          },
+          {
+            "name": "last_authentication_method_cannot_be_removed",
+            "passed": true
+          },
+          {
+            "name": "public_client_plain_pkce_refused",
+            "passed": true
+          },
+          {
+            "name": "public_client_nonloopback_redirect_refused",
+            "passed": true
+          },
+          {
+            "name": "public_client_secret_and_unknown_fields_refused",
+            "passed": true
+          },
+          {
+            "name": "pkce_high_entropy_context_accepted",
+            "passed": true
+          },
+          {
+            "name": "pkce_existing_account_confirmation_required",
+            "passed": true
+          },
+          {
+            "name": "pkce_redirect_code_and_state_exactly_bound",
+            "passed": true
+          },
+          {
+            "name": "pkce_wrong_verifier_refused_without_consuming_valid_grant",
+            "passed": true
+          },
+          {
+            "name": "mature_oauth_library_pkce_form_exchange_independent_cli_session",
+            "passed": true
+          },
+          {
+            "name": "real_protected_pair_save_and_current_pkce_context_confirmed",
+            "passed": true
+          },
+          {
+            "name": "reopened_pair_unverified_and_keystore_private",
+            "passed": true
+          },
+          {
+            "name": "account_store_real_owner_only_directory_and_file",
+            "passed": true
+          },
+          {
+            "name": "authorization_code_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "cancel_after_token_return_revokes_only_new_session",
+            "passed": true
+          },
+          {
+            "name": "cancel_before_approval_blocks_late_approval",
+            "passed": true
+          },
+          {
+            "name": "device_pending_and_default_interval",
+            "passed": true
+          },
+          {
+            "name": "device_early_poll_slow_down_persists",
+            "passed": true
+          },
+          {
+            "name": "device_wrong_user_code_refused",
+            "passed": true
+          },
+          {
+            "name": "device_explicit_existing_account_approval",
+            "passed": true
+          },
+          {
+            "name": "device_once_creates_independent_cli_session",
+            "passed": true
+          },
+          {
+            "name": "device_code_replay_refused",
+            "passed": true
+          },
+          {
+            "name": "device_denial_terminal",
+            "passed": true
+          },
+          {
+            "name": "device_expiry_and_late_approval_refused",
+            "passed": true
+          },
+          {
+            "name": "hostile_browser_origin_refused_without_cors",
+            "passed": true
+          },
+          {
+            "name": "http_body_bound",
+            "passed": true
+          },
+          {
+            "name": "protected_and_token_responses_no_store",
+            "passed": true
+          },
+          {
+            "name": "sensitive_email_change_requires_fresh_proof",
+            "passed": true
+          },
+          {
+            "name": "new_email_verification_required",
+            "passed": true
+          },
+          {
+            "name": "verified_email_changes_identity_not_user_id",
+            "passed": true
+          },
+          {
+            "name": "old_email_and_prechange_sessions_refused",
+            "passed": true
+          },
+          {
+            "name": "new_email_retains_account_and_defaults",
+            "passed": true
+          },
+          {
+            "name": "recovery_generic_and_sandbox_notice",
+            "passed": true
+          },
+          {
+            "name": "password_recovery_valid_once_preserves_user_id",
+            "passed": true
+          },
+          {
+            "name": "recovery_blocks_old_password_sessions_and_old_grants",
+            "passed": true
+          },
+          {
+            "name": "recovered_password_login_and_security_event",
+            "passed": true
+          },
+          {
+            "name": "security_mail_contains_no_password_or_account_tokens",
+            "passed": true
+          },
+          {
+            "name": "new_device_does_not_require_old_device_approval",
+            "passed": true
+          },
+          {
+            "name": "logout_others_confirmed_preserves_current_and_other_account",
+            "passed": true
+          },
+          {
+            "name": "account_disable_requires_proof_and_confirms_erasure_pending",
+            "passed": true
+          },
+          {
+            "name": "disabled_account_tokens_rejected_other_account_untouched",
+            "passed": true
+          },
+          {
+            "name": "mail_outage_does_not_enumerate_recovery_eligibility",
+            "passed": true
+          },
+          {
+            "name": "mail_outage_cannot_undo_refresh_replay_revocation",
+            "passed": true
+          },
+          {
+            "name": "revoked_family_remains_closed_when_notifier_unavailable",
+            "passed": true
+          },
+          {
+            "name": "mail_transport_timeout_does_not_hold_authentication_indefinitely",
+            "passed": true
+          },
+          {
+            "name": "account_address_failed_login_limit",
+            "passed": true
+          },
+          {
+            "name": "peer_ip_limit_not_client_forwarded_identity",
+            "passed": true
+          },
+          {
+            "name": "global_limit",
+            "passed": true
+          },
+          {
+            "name": "standalone_service_real_http_and_measured_rss_cpu",
+            "passed": true
+          },
+          {
+            "name": "rust_real_account_integration_completed",
+            "passed": true
+          }
+        ],
+        "python3 scripts/i5-chat-sync.py --output i5-chat-sync.json": [
+          {
+            "name": "v2_failed_migration_rolls_back_role_tables_and_columns",
+            "passed": true
+          },
+          {
+            "name": "v2_migration_applied_once",
+            "passed": true
+          },
+          {
+            "name": "v3_failed_migration_preserves_v2_schema_and_privileges",
+            "passed": true
+          },
+          {
+            "name": "v3_chat_migration_applied",
+            "passed": true
+          },
+          {
+            "name": "all_24_private_tables_force_rls",
+            "passed": true
+          },
+          {
+            "name": "default_disabled_and_queues_retained",
+            "passed": true
+          },
+          {
+            "name": "data_rejected_while_disabled",
+            "passed": true
+          },
+          {
+            "name": "committed_control_response_lost_keeps_intent",
+            "passed": true
+          },
+          {
+            "name": "control_retry_commits_once",
+            "passed": true
+          },
+          {
+            "name": "committed_upload_response_lost_keeps_outbox",
+            "passed": true
+          },
+          {
+            "name": "restart_preserves_original_operation",
+            "passed": true
+          },
+          {
+            "name": "two_clients_restore_complete_and_attachment",
+            "passed": true
+          },
+          {
+            "name": "ordinary_data_role_cannot_mutate_immutable_messages",
+            "passed": true
+          },
+          {
+            "name": "erasure_function_refuses_active_conversation",
+            "passed": true
+          },
+          {
+            "name": "unconfirmed_local_history_never_uploads",
+            "passed": true
+          },
+          {
+            "name": "download_has_no_outbox_echo",
+            "passed": true
+          },
+          {
+            "name": "memory_authority_remains_disabled",
+            "passed": true
+          },
+          {
+            "name": "concurrent_branches_and_interrupted_endings_preserved",
+            "passed": true
+          },
+          {
+            "name": "other_account_download_empty",
+            "passed": true
+          },
+          {
+            "name": "guessed_other_account_write_refused",
+            "passed": true
+          },
+          {
+            "name": "local_project_marker_does_not_grant_cloud_acl",
+            "passed": true
+          },
+          {
+            "name": "same_operation_same_payload_one_result",
+            "passed": true
+          },
+          {
+            "name": "same_operation_different_payload_conflict",
+            "passed": true
+          },
+          {
+            "name": "old_protocol_and_unknown_fields_refused",
+            "passed": true
+          },
+          {
+            "name": "future_cursor_refused",
+            "passed": true
+          },
+          {
+            "name": "event_failure_rolls_back_data",
+            "passed": true
+          },
+          {
+            "name": "late_page_after_account_switch_refused",
+            "passed": true
+          },
+          {
+            "name": "stale_control_cas_conflict_keeps_local_intent",
+            "passed": true
+          },
+          {
+            "name": "explicit_conflict_resolution_inherits_current_disabled",
+            "passed": true
+          },
+          {
+            "name": "confirmed_stop_rejects_new_data",
+            "passed": true
+          },
+          {
+            "name": "offline_stop_survives_late_enable_result",
+            "passed": true
+          },
+          {
+            "name": "stop_control_prioritized_before_any_data",
+            "passed": true
+          },
+          {
+            "name": "owned_project_scope_and_messages_restore",
+            "passed": true
+          },
+          {
+            "name": "stale_settings_version_refused",
+            "passed": true
+          },
+          {
+            "name": "known_account_token_in_payload_refused",
+            "passed": true
+          },
+          {
+            "name": "same_account_cross_project_parent_and_attachment_refused",
+            "passed": true
+          },
+          {
+            "name": "deletion_purges_cloud_bodies_and_attachment_bytes",
+            "passed": true
+          },
+          {
+            "name": "chat_erasure_preserves_independent_memory_and_source_identity",
+            "passed": true
+          },
+          {
+            "name": "second_client_applies_deletion_without_resurrection",
+            "passed": true
+          },
+          {
+            "name": "old_device_new_operation_cannot_resurrect",
+            "passed": true
+          },
+          {
+            "name": "old_confirmed_operation_returns_receipt_without_body",
+            "passed": true
+          },
+          {
+            "name": "minimum_permanent_tombstone_exists",
+            "passed": true
+          },
+          {
+            "name": "acknowledged_cursor_persisted_per_auth_session",
+            "passed": true
+          },
+          {
+            "name": "revoked_session_refused_without_queue_loss",
+            "passed": true
+          },
+          {
+            "name": "logout_locks_account_and_drops_sync_session",
+            "passed": true
+          },
+          {
+            "name": "rust_real_chat_integration_completed",
+            "passed": true
+          }
+        ]
+      },
+      "reports": [
+        {
+          "command": "python3 scripts/i2-auth.py --output i2-auth.json",
+          "report": {
+            "source_head": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+            "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+            "pgvector_version": "0.8.2",
+            "image": "pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966",
+            "elapsed_seconds": 87.142,
+            "checks": [
+              {
+                "name": "v2_failed_migration_rolls_back_role_tables_and_columns",
+                "passed": true
+              },
+              {
+                "name": "v2_migration_applied_once",
+                "passed": true
+              },
+              {
+                "name": "v3_failed_migration_preserves_v2_schema_and_privileges",
+                "passed": true
+              },
+              {
+                "name": "v3_chat_migration_applied",
+                "passed": true
+              },
+              {
+                "name": "all_24_private_tables_force_rls",
+                "passed": true
+              },
+              {
+                "name": "trusted_discovery_and_endpoints",
+                "passed": true
+              },
+              {
+                "name": "wrong_issuer_discovery_refused",
+                "passed": true
+              },
+              {
+                "name": "existing_account_authorization_page_has_confirmation_and_no_registration",
+                "passed": true
+              },
+              {
+                "name": "no_context_and_fake_account_bearer_refused",
+                "passed": true
+              },
+              {
+                "name": "register_generic_without_token_or_user_id",
+                "passed": true
+              },
+              {
+                "name": "short_password_and_untrusted_fields_refused",
+                "passed": true
+              },
+              {
+                "name": "unverified_identity_cannot_login",
+                "passed": true
+              },
+              {
+                "name": "challenge_wrong_purpose_and_missing_token_refused",
+                "passed": true
+              },
+              {
+                "name": "verification_concurrent_consume_exactly_once",
+                "passed": true
+              },
+              {
+                "name": "verification_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "verified_password_login_creates_independent_session",
+                "passed": true
+              },
+              {
+                "name": "argon2id_salt_and_versioned_64mib_parameters_no_plaintext",
+                "passed": true
+              },
+              {
+                "name": "verification_material_digest_not_raw_password_or_token",
+                "passed": true
+              },
+              {
+                "name": "new_account_settings_default_off_and_no_host_authority",
+                "passed": true
+              },
+              {
+                "name": "client_supplied_actor_refused",
+                "passed": true
+              },
+              {
+                "name": "resend_cooldown_real_account",
+                "passed": true
+              },
+              {
+                "name": "duplicate_registration_generic_no_second_identity_or_email",
+                "passed": true
+              },
+              {
+                "name": "unknown_recovery_generic",
+                "passed": true
+              },
+              {
+                "name": "unknown_address_same_resend_limit",
+                "passed": true
+              },
+              {
+                "name": "second_account_verified",
+                "passed": true
+              },
+              {
+                "name": "reused_data_connection_switches_account_without_leak",
+                "passed": true
+              },
+              {
+                "name": "data_role_cannot_read_auth_credentials_or_grant_state",
+                "passed": true
+              },
+              {
+                "name": "auth_role_cannot_read_chat_memory_projects_or_set_owner",
+                "passed": true
+              },
+              {
+                "name": "auth_role_cannot_enable_memory_sync_or_rewrite_user_id",
+                "passed": true
+              },
+              {
+                "name": "privileged_db_principal_rejected_at_service_start",
+                "passed": true
+              },
+              {
+                "name": "parameterized_transaction_actor_is_authenticated_user",
+                "passed": true
+              },
+              {
+                "name": "real_reused_connection_rollback_clears_context",
+                "passed": true
+              },
+              {
+                "name": "password_revocation_committed_before_login_cannot_issue_session",
+                "passed": true
+              },
+              {
+                "name": "device_list_current_display_and_no_secret_columns",
+                "passed": true
+              },
+              {
+                "name": "foreign_session_revoke_refused",
+                "passed": true
+              },
+              {
+                "name": "ambiguous_or_nonboolean_revoke_cannot_log_out_current_session",
+                "passed": true
+              },
+              {
+                "name": "unlimited_device_list_pages_without_duplicates_or_foreign_cursor",
+                "passed": true
+              },
+              {
+                "name": "device_name_is_display_only",
+                "passed": true
+              },
+              {
+                "name": "single_device_revoke_confirmed",
+                "passed": true
+              },
+              {
+                "name": "revoked_access_rejected_before_natural_expiry",
+                "passed": true
+              },
+              {
+                "name": "refresh_wrong_issuer_or_audience_refused",
+                "passed": true
+              },
+              {
+                "name": "refresh_rotates_access_and_refresh_atomically",
+                "passed": true
+              },
+              {
+                "name": "rotation_invalidates_old_access",
+                "passed": true
+              },
+              {
+                "name": "lost_response_old_refresh_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "refresh_replay_revokes_successor_family",
+                "passed": true
+              },
+              {
+                "name": "two_backend_instances_concurrent_refresh_one_wins",
+                "passed": true
+              },
+              {
+                "name": "concurrent_old_token_replay_blocks_winner_family",
+                "passed": true
+              },
+              {
+                "name": "password_reauthentication_issues_narrow_one_use_proof",
+                "passed": true
+              },
+              {
+                "name": "passkey_enrollment_without_proof_refused",
+                "passed": true
+              },
+              {
+                "name": "passkey_server_challenge_and_uv_required",
+                "passed": true
+              },
+              {
+                "name": "reauthentication_proof_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "real_webauthn_software_registration_signature_verified",
+                "passed": true
+              },
+              {
+                "name": "passkey_registration_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "real_webauthn_software_login_signature_and_uv_verified",
+                "passed": true
+              },
+              {
+                "name": "passkey_authentication_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "wrong_origin_valid_software_signature_refused",
+                "passed": true
+              },
+              {
+                "name": "invalid_passkey_signature_refused",
+                "passed": true
+              },
+              {
+                "name": "passkey_persists_public_metadata_without_private_key",
+                "passed": true
+              },
+              {
+                "name": "fresh_backend_reads_persisted_passkey_public_state",
+                "passed": true
+              },
+              {
+                "name": "passkey_can_reauthenticate_sensitive_operation",
+                "passed": true
+              },
+              {
+                "name": "cross_session_sensitive_proof_refused",
+                "passed": true
+              },
+              {
+                "name": "credential_revoke_preserves_password_login_method",
+                "passed": true
+              },
+              {
+                "name": "revoked_passkey_no_new_authentication",
+                "passed": true
+              },
+              {
+                "name": "last_authentication_method_cannot_be_removed",
+                "passed": true
+              },
+              {
+                "name": "public_client_plain_pkce_refused",
+                "passed": true
+              },
+              {
+                "name": "public_client_nonloopback_redirect_refused",
+                "passed": true
+              },
+              {
+                "name": "public_client_secret_and_unknown_fields_refused",
+                "passed": true
+              },
+              {
+                "name": "pkce_high_entropy_context_accepted",
+                "passed": true
+              },
+              {
+                "name": "pkce_existing_account_confirmation_required",
+                "passed": true
+              },
+              {
+                "name": "pkce_redirect_code_and_state_exactly_bound",
+                "passed": true
+              },
+              {
+                "name": "pkce_wrong_verifier_refused_without_consuming_valid_grant",
+                "passed": true
+              },
+              {
+                "name": "mature_oauth_library_pkce_form_exchange_independent_cli_session",
+                "passed": true
+              },
+              {
+                "name": "real_protected_pair_save_and_current_pkce_context_confirmed",
+                "passed": true
+              },
+              {
+                "name": "reopened_pair_unverified_and_keystore_private",
+                "passed": true
+              },
+              {
+                "name": "account_store_real_owner_only_directory_and_file",
+                "passed": true
+              },
+              {
+                "name": "authorization_code_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "cancel_after_token_return_revokes_only_new_session",
+                "passed": true
+              },
+              {
+                "name": "cancel_before_approval_blocks_late_approval",
+                "passed": true
+              },
+              {
+                "name": "device_pending_and_default_interval",
+                "passed": true
+              },
+              {
+                "name": "device_early_poll_slow_down_persists",
+                "passed": true
+              },
+              {
+                "name": "device_wrong_user_code_refused",
+                "passed": true
+              },
+              {
+                "name": "device_explicit_existing_account_approval",
+                "passed": true
+              },
+              {
+                "name": "device_once_creates_independent_cli_session",
+                "passed": true
+              },
+              {
+                "name": "device_code_replay_refused",
+                "passed": true
+              },
+              {
+                "name": "device_denial_terminal",
+                "passed": true
+              },
+              {
+                "name": "device_expiry_and_late_approval_refused",
+                "passed": true
+              },
+              {
+                "name": "hostile_browser_origin_refused_without_cors",
+                "passed": true
+              },
+              {
+                "name": "http_body_bound",
+                "passed": true
+              },
+              {
+                "name": "protected_and_token_responses_no_store",
+                "passed": true
+              },
+              {
+                "name": "sensitive_email_change_requires_fresh_proof",
+                "passed": true
+              },
+              {
+                "name": "new_email_verification_required",
+                "passed": true
+              },
+              {
+                "name": "verified_email_changes_identity_not_user_id",
+                "passed": true
+              },
+              {
+                "name": "old_email_and_prechange_sessions_refused",
+                "passed": true
+              },
+              {
+                "name": "new_email_retains_account_and_defaults",
+                "passed": true
+              },
+              {
+                "name": "recovery_generic_and_sandbox_notice",
+                "passed": true
+              },
+              {
+                "name": "password_recovery_valid_once_preserves_user_id",
+                "passed": true
+              },
+              {
+                "name": "recovery_blocks_old_password_sessions_and_old_grants",
+                "passed": true
+              },
+              {
+                "name": "recovered_password_login_and_security_event",
+                "passed": true
+              },
+              {
+                "name": "security_mail_contains_no_password_or_account_tokens",
+                "passed": true
+              },
+              {
+                "name": "new_device_does_not_require_old_device_approval",
+                "passed": true
+              },
+              {
+                "name": "logout_others_confirmed_preserves_current_and_other_account",
+                "passed": true
+              },
+              {
+                "name": "account_disable_requires_proof_and_confirms_erasure_pending",
+                "passed": true
+              },
+              {
+                "name": "disabled_account_tokens_rejected_other_account_untouched",
+                "passed": true
+              },
+              {
+                "name": "mail_outage_does_not_enumerate_recovery_eligibility",
+                "passed": true
+              },
+              {
+                "name": "mail_outage_cannot_undo_refresh_replay_revocation",
+                "passed": true
+              },
+              {
+                "name": "revoked_family_remains_closed_when_notifier_unavailable",
+                "passed": true
+              },
+              {
+                "name": "mail_transport_timeout_does_not_hold_authentication_indefinitely",
+                "passed": true
+              },
+              {
+                "name": "account_address_failed_login_limit",
+                "passed": true
+              },
+              {
+                "name": "peer_ip_limit_not_client_forwarded_identity",
+                "passed": true
+              },
+              {
+                "name": "global_limit",
+                "passed": true
+              },
+              {
+                "name": "standalone_service_real_http_and_measured_rss_cpu",
+                "passed": true
+              },
+              {
+                "name": "rust_real_account_integration_completed",
+                "passed": true
+              }
+            ],
+            "source_sha256": {
+              "cloud/auth/src/client.rs": "761d765ca0c70ba48e913fc79a77a8afd239bde34c0989f853313e0902bf2621",
+              "cloud/auth/src/lib.rs": "3ffe788d76ebf456bd17383e8d3faf8300bfdf8b018cbf47b1a48f9fd10b287e",
+              "cloud/auth/src/main.rs": "0fc00d6f807c8d61b79f1e141bda3cccdcce0db9a43dc5432d9f7a9aa6eadd79",
+              "cloud/auth/src/server/chat.rs": "9ded2fc825ab807af85c6a4d5d7fd25321ce66a6eeff8bb32520347a2744916e",
+              "cloud/auth/src/server/grants.rs": "f813ef3c849aeff0ae3e3d0d748531328c1d030642df1f0461ddb141966914cd",
+              "cloud/auth/src/server/passkeys.rs": "4deb75717c660467f753b6f18606af59aa34b1e8487b43d739f9270829de2ba8",
+              "cloud/auth/src/server.rs": "b978c0f66584d3c2d9371d5989696dd6c8d2899068e99724a926cff951353382",
+              "cloud/auth/src/store.rs": "7175ce4a6bc38541c521851e5b303b08d8995f42eb9bee9315049529185955dd",
+              "cloud/auth/Cargo.toml": "ce590b86ac369a27789c3a0aed9eb6837f49bbfdaa90b7d8f0fc4013394c601e",
+              "cloud/auth/src/account.js": "6cce751f9a600016ef59c67a2b2a55836be05e512974bff2791a3b9f2a7853f3",
+              "cloud/core/src/lib.rs": "d34813a5cedf2815c1e03efb86cbc7f555a1dc802c66068e2dc923c3e763d203",
+              "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+              "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+              "cloud/postgres/migrations/0002_authentication.sql": "7ef50facbc4feef52c5faec87a9232199e2521496a2e80ccdc7745fff8f84659",
+              "cloud/postgres/migrations/0003_chat_sync.sql": "8da171b75d379c325e4a3b35446c043a95cb47aef9f5ba103fae749b747299ce",
+              "cloud/auth/tests/account.rs": "a2afe814d541a14996133bd95f4e847d477502a83c5ec0ff3a73cf18e3631f75",
+              "scripts/i2-auth.py": "5ed1ff38a01f8540559515fe19edc0edc91f00f93c159f3fd3316eec2f134b1a",
+              "Cargo.toml": "4b5b950b6486b08abf16e3026d43c024aa932cb8cd2c27e39395e02b706cc011",
+              "Cargo.lock": "7e760bb11364ea2167f7b4aed3c96c2cb8414f85b6e3df7eded97969357a326e",
+              ".github/workflows/ci.yml": "52ef4d9e0445485d9dc07426a00c0586d33aefc3e10ce86469ea91813a3084fd"
+            },
+            "measurements": [
+              {
+                "argon2_memory_kib": 65536,
+                "hash_concurrency": 1,
+                "register_verify_login_elapsed_ms": 7511,
+                "two_core_two_gib_load_test": false
+              },
+              {
+                "kind": "standalone_service_register_verify_login",
+                "instances": 1,
+                "elapsed_seconds": 3.753,
+                "cpu_seconds": 3.74,
+                "cpu_percent_one_core": 99.66,
+                "idle_rss_kib": 12092,
+                "rss_kib": 13148,
+                "peak_rss_kib": 77964,
+                "rss_source": "Linux /proc/PID/status VmRSS/VmHWM; peak includes service startup",
+                "cpu_source": "Linux /proc/PID/stat utime+stime delta during workload",
+                "logical_cpus": 4,
+                "host_memory_kib": 16373452,
+                "two_core_two_gib_load_test": false
+              }
+            ],
+            "summary": {
+              "passed": 112,
+              "failed": 0
+            },
+            "limits": [
+              "synthetic accounts",
+              "process-private sandbox mail",
+              "software Passkey authenticator",
+              "no native GUI/CLI/production deployment"
+            ]
+          }
+        },
+        {
+          "command": "python3 scripts/i5-chat-sync.py --output i5-chat-sync.json",
+          "report": {
+            "source_head": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+            "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+            "pgvector_version": "0.8.2",
+            "image": "pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966",
+            "elapsed_seconds": 22.216,
+            "checks": [
+              {
+                "name": "v2_failed_migration_rolls_back_role_tables_and_columns",
+                "passed": true
+              },
+              {
+                "name": "v2_migration_applied_once",
+                "passed": true
+              },
+              {
+                "name": "v3_failed_migration_preserves_v2_schema_and_privileges",
+                "passed": true
+              },
+              {
+                "name": "v3_chat_migration_applied",
+                "passed": true
+              },
+              {
+                "name": "all_24_private_tables_force_rls",
+                "passed": true
+              },
+              {
+                "name": "default_disabled_and_queues_retained",
+                "passed": true
+              },
+              {
+                "name": "data_rejected_while_disabled",
+                "passed": true
+              },
+              {
+                "name": "committed_control_response_lost_keeps_intent",
+                "passed": true
+              },
+              {
+                "name": "control_retry_commits_once",
+                "passed": true
+              },
+              {
+                "name": "committed_upload_response_lost_keeps_outbox",
+                "passed": true
+              },
+              {
+                "name": "restart_preserves_original_operation",
+                "passed": true
+              },
+              {
+                "name": "two_clients_restore_complete_and_attachment",
+                "passed": true
+              },
+              {
+                "name": "ordinary_data_role_cannot_mutate_immutable_messages",
+                "passed": true
+              },
+              {
+                "name": "erasure_function_refuses_active_conversation",
+                "passed": true
+              },
+              {
+                "name": "unconfirmed_local_history_never_uploads",
+                "passed": true
+              },
+              {
+                "name": "download_has_no_outbox_echo",
+                "passed": true
+              },
+              {
+                "name": "memory_authority_remains_disabled",
+                "passed": true
+              },
+              {
+                "name": "concurrent_branches_and_interrupted_endings_preserved",
+                "passed": true
+              },
+              {
+                "name": "other_account_download_empty",
+                "passed": true
+              },
+              {
+                "name": "guessed_other_account_write_refused",
+                "passed": true
+              },
+              {
+                "name": "local_project_marker_does_not_grant_cloud_acl",
+                "passed": true
+              },
+              {
+                "name": "same_operation_same_payload_one_result",
+                "passed": true
+              },
+              {
+                "name": "same_operation_different_payload_conflict",
+                "passed": true
+              },
+              {
+                "name": "old_protocol_and_unknown_fields_refused",
+                "passed": true
+              },
+              {
+                "name": "future_cursor_refused",
+                "passed": true
+              },
+              {
+                "name": "event_failure_rolls_back_data",
+                "passed": true
+              },
+              {
+                "name": "late_page_after_account_switch_refused",
+                "passed": true
+              },
+              {
+                "name": "stale_control_cas_conflict_keeps_local_intent",
+                "passed": true
+              },
+              {
+                "name": "explicit_conflict_resolution_inherits_current_disabled",
+                "passed": true
+              },
+              {
+                "name": "confirmed_stop_rejects_new_data",
+                "passed": true
+              },
+              {
+                "name": "offline_stop_survives_late_enable_result",
+                "passed": true
+              },
+              {
+                "name": "stop_control_prioritized_before_any_data",
+                "passed": true
+              },
+              {
+                "name": "owned_project_scope_and_messages_restore",
+                "passed": true
+              },
+              {
+                "name": "stale_settings_version_refused",
+                "passed": true
+              },
+              {
+                "name": "known_account_token_in_payload_refused",
+                "passed": true
+              },
+              {
+                "name": "same_account_cross_project_parent_and_attachment_refused",
+                "passed": true
+              },
+              {
+                "name": "deletion_purges_cloud_bodies_and_attachment_bytes",
+                "passed": true
+              },
+              {
+                "name": "chat_erasure_preserves_independent_memory_and_source_identity",
+                "passed": true
+              },
+              {
+                "name": "second_client_applies_deletion_without_resurrection",
+                "passed": true
+              },
+              {
+                "name": "old_device_new_operation_cannot_resurrect",
+                "passed": true
+              },
+              {
+                "name": "old_confirmed_operation_returns_receipt_without_body",
+                "passed": true
+              },
+              {
+                "name": "minimum_permanent_tombstone_exists",
+                "passed": true
+              },
+              {
+                "name": "acknowledged_cursor_persisted_per_auth_session",
+                "passed": true
+              },
+              {
+                "name": "revoked_session_refused_without_queue_loss",
+                "passed": true
+              },
+              {
+                "name": "logout_locks_account_and_drops_sync_session",
+                "passed": true
+              },
+              {
+                "name": "rust_real_chat_integration_completed",
+                "passed": true
+              }
+            ],
+            "source_sha256": {
+              "cloud/auth/src/client.rs": "761d765ca0c70ba48e913fc79a77a8afd239bde34c0989f853313e0902bf2621",
+              "cloud/auth/src/lib.rs": "3ffe788d76ebf456bd17383e8d3faf8300bfdf8b018cbf47b1a48f9fd10b287e",
+              "cloud/auth/src/main.rs": "0fc00d6f807c8d61b79f1e141bda3cccdcce0db9a43dc5432d9f7a9aa6eadd79",
+              "cloud/auth/src/server/chat.rs": "9ded2fc825ab807af85c6a4d5d7fd25321ce66a6eeff8bb32520347a2744916e",
+              "cloud/auth/src/server/grants.rs": "f813ef3c849aeff0ae3e3d0d748531328c1d030642df1f0461ddb141966914cd",
+              "cloud/auth/src/server/passkeys.rs": "4deb75717c660467f753b6f18606af59aa34b1e8487b43d739f9270829de2ba8",
+              "cloud/auth/src/server.rs": "b978c0f66584d3c2d9371d5989696dd6c8d2899068e99724a926cff951353382",
+              "cloud/auth/src/store.rs": "7175ce4a6bc38541c521851e5b303b08d8995f42eb9bee9315049529185955dd",
+              "cloud/auth/Cargo.toml": "ce590b86ac369a27789c3a0aed9eb6837f49bbfdaa90b7d8f0fc4013394c601e",
+              "cloud/auth/src/account.js": "6cce751f9a600016ef59c67a2b2a55836be05e512974bff2791a3b9f2a7853f3",
+              "cloud/core/src/lib.rs": "d34813a5cedf2815c1e03efb86cbc7f555a1dc802c66068e2dc923c3e763d203",
+              "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+              "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+              "cloud/postgres/migrations/0002_authentication.sql": "7ef50facbc4feef52c5faec87a9232199e2521496a2e80ccdc7745fff8f84659",
+              "cloud/postgres/migrations/0003_chat_sync.sql": "8da171b75d379c325e4a3b35446c043a95cb47aef9f5ba103fae749b747299ce",
+              "cloud/auth/tests/account.rs": "a2afe814d541a14996133bd95f4e847d477502a83c5ec0ff3a73cf18e3631f75",
+              "scripts/i2-auth.py": "5ed1ff38a01f8540559515fe19edc0edc91f00f93c159f3fd3316eec2f134b1a",
+              "Cargo.toml": "4b5b950b6486b08abf16e3026d43c024aa932cb8cd2c27e39395e02b706cc011",
+              "Cargo.lock": "7e760bb11364ea2167f7b4aed3c96c2cb8414f85b6e3df7eded97969357a326e",
+              ".github/workflows/ci.yml": "52ef4d9e0445485d9dc07426a00c0586d33aefc3e10ce86469ea91813a3084fd",
+              "chat/core/src/cache.rs": "ce1630841f6cbce8ff543ab760a7054f3367979f0a8f30f41281a3888cb73708",
+              "chat/core/src/client.rs": "4f533332a7c5414c30876d91f1140d61cd2fa36b71edba5fe5da25589901625c",
+              "chat/core/src/lib.rs": "d35ad8ce8e17e2a14ba9b0fdb3cd2ae9118d6ac9701c5aee1fcc802592a51d7d",
+              "chat/core/src/memory/host.rs": "1d8a8b2fb366f5d387473e18ec9646b42dadda727aefb3764df2641833cfa175",
+              "chat/core/src/memory/inference.rs": "942eb088d89575d7256253a45853f82afc07939095bd32a31f7b31f81909a011",
+              "chat/core/src/memory/jobs.rs": "71e3df88c1cf06986a5ea0347158e4143f8e192941fd9bcdb7b1221076c9784d",
+              "chat/core/src/memory/mod.rs": "20518bd69a3e3bf9eecd5df9f06c299b937a5523af583e4afbfcba2e6e56d1bc",
+              "chat/core/src/memory/store.rs": "90ff9a184edddf0ba822bac0562d60e59831c5109363013ad2fb6f77dc54369f",
+              "chat/core/src/sync.rs": "f59f157b90e6117fbe4b01057d6ce39a9702b27b56e11a18097d37f64106d774",
+              "chat/core/src/sync_http_tests.rs": "8f7a10203d66acbde49fa646d0fa40ef182fe6e1652bff9fbed0d8e75447b38f",
+              "chat/core/src/memory/schema2.sql": "597748b9c35637dbcf44d25506da2e38e9a05b1e4676c818b40469c3320554eb",
+              "chat/core/src/schema.sql": "800ab41cb79798ed5913065b6baff7f752a4837a4c381e5316807558692099fe",
+              "chat/core/src/sync_schema4.sql": "5b9f7fddbce6771ab95db11b004321550844d8311dec4c1369fb204ea6a99459",
+              "cloud/core/src/chat.rs": "e4d1dfba2e4a851319968498d32f25ba48c9e5e1b2613ef7247ae2d6be31a700",
+              "chat/core/Cargo.toml": "3850abd6da9e5433e889fc8af66b654ef2d0276b45917e03d9a37371d44634a7",
+              "scripts/i5-chat-sync.py": "82a1c8c27fc5c47cf5cf56fe185f75de8484d9378fa23fb8bfa924edc94e3a14"
+            },
+            "measurements": [],
+            "summary": {
+              "passed": 46,
+              "failed": 0
+            },
+            "limits": [
+              "synthetic accounts verified at the trusted backend",
+              "two Chat cache instances in one Rust test process",
+              "committed response replaced with HTTP503 or delayed by test middleware",
+              "fixture rate windows reset between scenarios; production limiter unchanged",
+              "no native GUI/CLI/production capacity or deployment"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 114517333629,
+      "name": "Runtime (windows-2022)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38155435916/job/114517333629",
+      "checkout_sha": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 4,
+          "name": "Check account authorization JavaScript",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 5,
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 6,
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 7,
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 8,
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 9,
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 10,
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 11,
+          "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 12,
+          "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 13,
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 14,
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 15,
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 16,
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 17,
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 18,
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 19,
+          "name": "I-4.2 Host Memory Broker, offline recovery and real Runtime sources (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 20,
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 21,
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 22,
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 23,
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 45,
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 46,
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 47,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "log": "i5-ci38155435916-job114517333629.log.gz",
+      "gzip_sha256": "8fc72211f998ad356e58731f5817b6003d489ce0dd142031321041bb6120bbd4",
+      "raw_sha256": "862f7ba660948f83df67906de9592af6b97aa419da9628c4f15ae4fa21a2427e",
+      "raw_bytes": 218428,
+      "enospc": false,
+      "test_groups": {
+        "cargo test -p caidex-host --lib --locked": {
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        },
+        "cargo test --workspace --locked": {
+          "passed": 716,
+          "failed": 0,
+          "ignored": 81,
+          "summaries": 85
+        },
+        "cargo test -p caidex-runtime --test real_runtime --locked -- --ignored": {
+          "passed": 80,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        }
+      },
+      "checks": {},
+      "reports": []
+    },
+    {
+      "id": 114517333630,
+      "name": "Runtime (macos-15)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38155435916/job/114517333630",
+      "checkout_sha": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 4,
+          "name": "Check account authorization JavaScript",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 5,
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 6,
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 7,
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 8,
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 9,
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 10,
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 11,
+          "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 12,
+          "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 13,
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 14,
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 15,
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 16,
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 17,
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 18,
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 19,
+          "name": "I-4.2 Host Memory Broker, offline recovery and real Runtime sources (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 20,
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 21,
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 22,
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 23,
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 45,
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 46,
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 47,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "log": "i5-ci38155435916-job114517333630.log.gz",
+      "gzip_sha256": "7c00412b6b03624f9f3a16884a5037f7ef21c01f692aad81073dda57e112b586",
+      "raw_sha256": "68aa1d28de800a22dd7ebe391908f773c2e3ff7a694cb7faf7436791b25c7881",
+      "raw_bytes": 212719,
+      "enospc": false,
+      "test_groups": {
+        "cargo test --workspace --locked": {
+          "passed": 722,
+          "failed": 0,
+          "ignored": 81,
+          "summaries": 85
+        },
+        "cargo test -p caidex-runtime --test real_runtime --locked -- --ignored": {
+          "passed": 80,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        }
+      },
+      "checks": {},
+      "reports": []
+    },
+    {
+      "id": 114517333757,
+      "name": "Runtime (ubuntu-24.04)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38155435916/job/114517333757",
+      "checkout_sha": "1db9de95e1f770f4a160748b1fcd263175e7071d",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 4,
+          "name": "Check account authorization JavaScript",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 5,
+          "name": "Windows Host owner-only storage boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 6,
+          "name": "Install pinned Rust toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 7,
+          "name": "Windows Host storage through the Rust process boundary",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "number": 8,
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 9,
+          "name": "Clippy",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 10,
+          "name": "Protocol tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 11,
+          "name": "I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 12,
+          "name": "I-4.1 Memory revisions, permissions, embedding and Chat (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 13,
+          "name": "Install Linux native credential test service",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 14,
+          "name": "Linux native credential store in an isolated session",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 15,
+          "name": "Install pinned upstream CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 16,
+          "name": "Locate native Codex executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 17,
+          "name": "Verify pinned stable and experimental schemas",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 18,
+          "name": "Verify real app-server without a model turn",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 19,
+          "name": "I-4.2 Host Memory Broker, offline recovery and real Runtime sources (synthetic HTTP)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 20,
+          "name": "H-1 independent Host and two-client recovery (no model turn)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 21,
+          "name": "H-2 persistent tasks and real native execution (local synthetic model)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 22,
+          "name": "H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 23,
+          "name": "Real Runtime with local Responses fixtures",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 45,
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 46,
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 47,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "log": "i5-ci38155435916-job114517333757.log.gz",
+      "gzip_sha256": "530374021cee5ca5fa00b9870ae0cea1e8ee8ecdaae9114165e4baa213796812",
+      "raw_sha256": "b4ed858d28c858f6ba99c537e26ae6aa8db4cf4774342000d5b7a26928277593",
+      "raw_bytes": 234955,
+      "enospc": false,
+      "test_groups": {
+        "cargo test --workspace --locked": {
+          "passed": 723,
+          "failed": 0,
+          "ignored": 83,
+          "summaries": 85
+        },
+        "bash scripts/test-linux-secret-service.sh": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        },
+        "cargo test -p caidex-runtime --test real_runtime --locked -- --ignored": {
+          "passed": 81,
+          "failed": 0,
+          "ignored": 0,
+          "summaries": 1
+        }
+      },
+      "checks": {},
+      "reports": []
+    }
+  ],
+  "limitations": [
+    "Rust CI is not GUI/CLI/iOS/native installation acceptance",
+    "Real PostgreSQL and HTTP two-cache synchronization is Linux only",
+    "fixtures use no commercial model or real user Key",
+    "local and CI evidence are implementation verification, not independent audit"
+  ]
+}

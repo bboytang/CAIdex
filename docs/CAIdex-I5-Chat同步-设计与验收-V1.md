@@ -23,7 +23,7 @@
 
 ## 实施与实际证据
 
-当前：实现完成，正在最终开发验证与精确CI，尚未独立审计。起点 main `4efdde0a6ec9f5580e0651ec60d10e5b9d3875ef`，本地/origin/GitHub 一致，工作区干净。Rust1.99.0/cache/pgvector 镜像在本机；盘可用约3.6GiB、总内存1.9GiB，构建前逐次检查；不清理有效缓存。网络及 Docker 需要执行沙箱提升，既有授权涵盖测试和 main/CI。
+当前：实现/开发验证/精确CI与证据封存完成，等待独立审计；实施会话未授独立审计。起点 main `4efdde0a6ec9f5580e0651ec60d10e5b9d3875ef`，本地/origin/GitHub 一致，工作区干净。Rust1.99.0/cache/pgvector 镜像在本机；盘可用约3.6GiB、总内存1.9GiB，构建前逐次检查；不清理有效缓存。网络及 Docker 需要执行沙箱提升，既有授权涵盖测试和 main/CI。
 
 
 ## 最终实现契约与试用
@@ -47,3 +47,22 @@ python3 scripts/i5-chat-sync.py --output /absolute/new/i5-chat-sync.json
 脚本复用 I-2 私有 PostgreSQL 装配，测试容器 network none/512MiB/2CPU/tmpfs256MiB，创建本轮 synthetic 账户/会话并经可信后端 me 验证。实际 Rust HTTP server + A/D1、A/D2、B/D3 三个隔离 Cache 实例；不是三个独立客户端进程或正式终端。输出具名检查、PG/vector版本、源码 SHA256 和真实 test result；目标文件已存在则拒写。测试 middleware 在服务端实际提交之后将回应替为503/暂缓，证明未知结果恢复与迟到拒绝，不冒充实际物理断线压测。已保存 Broker/session 凭据与明显秘密字段阻断同步；未登记任意内容秘密仍须用户范围选择，不承诺通用秘密识别。
 
 环境与限制：本机定向26项及真实PG/HTTP场景已验；末次完整证据在封存时登记。开始盘3.6GiB，经复用缓存的编译后约1.8GiB，无 ENOSPC，不清有效缓存；完整跨模块构建/回归转精确 GitHub。云事件/墓碑永久保留，当前没有生产容量、物理满盘、备份净化或 tombstone GC 承诺；两客户端不是 GUI/CLI/iOS/真实多设备安装包验收。服务器串行账户请求，未授吞吐或2核2GB生产支持容量。
+
+
+## 封存与实际结果
+
+不可变功能源码 [`1db9de95e1f770f4a160748b1fcd263175e7071d`](https://github.com/bboytang/CAIdex/commit/1db9de95e1f770f4a160748b1fcd263175e7071d)，[CI38155435916](https://github.com/bboytang/CAIdex/actions/runs/38155435916) 四job全部 completed/success。每job原始checkout完整SHA、每份源码指纹与Git不可变内容核对；封存提交只补文档/证据，不替功能CI SHA。
+
+| 环境 | 实际结果 | 原始证据 |
+| --- | --- | --- |
+| 本机Linux/必要定向构建 | 26 Rust测试/0；最终Clippy/fmt/Python compile/链接/diff通过；精确I-5 46具名组/0，精确认证112具名组/0，真实PG17.10/vector0.8.2 | [本机/开发证据](evidence/i5-local.json)，36个I-5源码指纹；10份原日志 |
+| GitHub DB job114517333457 | I-1 118具名组/0；I-2 112具名组/0；I-5 46具名组/0；认证lib5/0；两项真实HTTP Rust集成各1/0 | [最终CI](evidence/i5-ci.json)及对应原日志 |
+| GitHub Linux114517333757 | workspace723/0/83 ignored；固定Runtime81/0；原生凭据附加1/0；全部演示/静态检查通过 | 同上 |
+| GitHub macOS114517333630 | workspace722/0/81 ignored；固定Runtime80/0；全部演示/静态检查通过 | 同上 |
+| GitHub Windows114517333629 | workspace716/0/81 ignored；固定Runtime80/0；额外Host lib4/0；全部演示/静态检查通过 | 同上 |
+
+workspace已含4项新增同步单元及原Chat/Memory/Host回归；具名HTTP检查组不是Rust测试数，ignored不算通过。本机实际保留记录：单进程独立账户服务注册/验证/登录4.833秒、CPU4.81秒、idle RSS12640KiB/峰值78616KiB，2逻辑CPU/约1.9GiB机器；不是同期用户负载/生产容量验收。14份本机/CI原日志均校验gzip/raw SHA256，无ENOSPC；最终本机盘约1.1GiB/98%，不重跑完整workspace、不清有效缓存。原证据和固定Runtime/Provider/upstream未改，外部依赖版本/source/checksum未变。
+
+开发中的/tmp Git保护拒建、生成列FK删除方案不可用和两轮外键锁55P03失败完整保留；分别修复测试TMPDIR、受限正文擦除及用户/会话非键锁。后两轮本机I-5、最终精确功能I-5/I-2及四jobCI通过，失败不替通过、未提交失败源快照不冒充最终SHA。后续只有相关变化/新失败证据才补测，不扩展功能。
+
+停止条件已达到：本轮封存停止，等待独立只读审计及用户确认；I-6/后续仍未授权。独立审计须复查未知控制/上传恢复、事务与会话锁、RLS/guard擦除、墓碑与来源引用，以及实际日志/限制。不得把实施自查或上述成功测试当成独立审计。

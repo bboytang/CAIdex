@@ -2,15 +2,23 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前批准：I-5 Chat 同步
+## 当前停止：I-5 已封存，等待独立审计
 
-2026-10-11 用户明确确认 I-4.2 独立审计通过并授权 I-5；本机满足编译/测试/构建条件时优先本机，否则 GitHub。有限目标/任务/非目标/通过/停止见 [I-5设计验收](docs/CAIdex-I5-Chat同步-设计与验收-V1.md)。允许必要实现/迁移/测试/文档/commit/push main/精确CI。I-6及后续、商业API/真实Key/邮件/部署未授权。
+2026-10-11 用户明确确认 I-4.2 独立审计通过并批准 I-5；本机满足编译/测试/构建条件时优先本机，否则 GitHub。有限目标/任务/非目标/通过/停止、实际契约与试用见 [I-5设计验收](docs/CAIdex-I5-Chat同步-设计与验收-V1.md)。允许必要实现/迁移/测试/文档/commit/push main/精确CI，本轮开发验证已完成；I-6及后续、商业API/真实Key/邮件/部署未授权。不使用ponytail技能。
 
-起点 main `4efdde0a6ec9f5580e0651ec60d10e5b9d3875ef`，本地/origin/GitHub一致、工作区干净。已读相关正式设计与源码，已实现独立 Chat 同步，定向26测试通过、真实PG/HTTP46具名检查曾通过，正在补齐最终请求接收界限及精确CI；尚未独立审计。环境 Rust1.99.0、既有 target/registry 与 pgvector 镜像可用；盘约3.6GiB、内存1.9GiB，定向验证先复用缓存，不清理有效缓存。cloud-environment 状态工具/网络策略文件未提供，不宣称其就绪；实际 GitHub及Docker只读检查经沙箱提升成功。
+起点 main `4efdde0a6ec9f5580e0651ec60d10e5b9d3875ef`，本地/origin/GitHub一致且工作区干净。不可变功能源码 [`1db9de95e1f770f4a160748b1fcd263175e7071d`](https://github.com/bboytang/CAIdex/commit/1db9de95e1f770f4a160748b1fcd263175e7071d)，[精确CI38155435916](https://github.com/bboytang/CAIdex/actions/runs/38155435916) 四job completed/success，各原始checkout完整SHA核对。封存提交只HANDOFF/设计验收/i5证据，实际HEAD恢复时核实，不当功能CI SHA。
 
-已新增 cloud/core Chat DTO、云 schema3/本地schema4、可信账户HTTP transport、独立CAS控制/范围/outbox/cursor/附件/删除；用户/会话非键锁修复外键自阻塞，专用RLS guard仅清已删除Chat正文，不误删独立Memory或改普通消息不可变契约。源码为工作区，当前功能SHA待提交；开发失败含/tmp Git保护拒建缓存、最初ON DELETE生成列不可用及FK锁超时，均有原日志且未替通过。
+实现：云schema2→3/SQLite3→4保留旧Chat/Memory及待同步队列；独立Chat默认关闭/CAS版本/显式本机conversation范围，Memory/自动记忆/Provider/Host权限不变。固定账户issuer、无redirect的窄HTTP transport；大载荷读取前复用单worker配额，限时/有界单实体。稳定operation+实体hash、原操作收据、数据/事件/幂等同RLS事务；不可变消息父关系/完成及中断原因、附件；下载落盘+cursor同事务且无回声outbox。持久离线stop/未知开启先收据后关闭、CAS冲突显式处理、切账户/重配session迟到拒绝。删除清本地正文/附件/turn/outbox并隐藏；云清title/正文/附件，永久墓碑防旧设备复活；保留独立Memory来源所需不可变消息元数据，专用非owner/NOBYPASSRLS guard只清已删除且本人可写Chat，app仍不能UPDATE消息正文。认证用户/会话非键锁与关闭/撤销互斥，并允许数据事务检查不可变ID外键。
 
-下一步：最终本机定向HTTP及认证回归；盘约1.8GiB，不满足完整新增构建余量，完整跨模块与三平台走精确GitHub。核实源码/差异、commit/push main并核对精确CI原证据，修复阻断封存；之后等待I-5独立审计，不启动I-6。未提交文件以实际 git status 为准。
+本机实际：定向26 Rust测试/0失败；精确功能PG17.10/vector0.8.2 +真实HTTP I-5为46具名检查/0失败（1 Rust集成），I-2认证为112具名检查/0失败（1 Rust集成），Clippy/fmt/Python compile/链接/diff/36源码指纹通过。I-5真实HTTP server与A/D1、A/D2、B/D3三个隔离Cache实例在一个Rust进程；提交后503/延迟fixture证明未知收据恢复、重启、并发分支、92KB附件、独立Memory控制、账户/项目/跨scope隔离、CAS与关闭、撤销、删除/Memory来源FK不误删。不是独立客户端进程、正式CLI/GUI或物理网络/磁盘容量验收。
+
+CI实际：Linux114517333757 workspace723/0/83、固定Runtime81/0；macOS114517333630 workspace722/0/81、Runtime80/0；Windows114517333629 workspace716/0/81、Runtime80/0。4项新增同步单元已计入workspace，ignored不计通过；Linux原生凭据1/Windows额外Host lib4另记。数据库114517333457真实I-1 118/0、I-2 112具名组/0、I-5 46具名组/0、认证lib5/0。三平台fmt/Clippy/JS/schema/doctor及I-3/I-4.1/I-4.2/H-1/2/3演示均成功。证据：[最终四job及原日志](docs/evidence/i5-ci.json)、[本机最终/开发失败/原日志](docs/evidence/i5-local.json)；14份日志压缩/原文SHA256核对，无ENOSPC。旧证据/固定Runtime/Provider/Host/upstream及旧DDL不变，外部依赖版本/source/checksum不变，仅内部依赖元数据/既有依赖用途调整。
+
+开发失败：默认/tmp有.git保护标记导致缓存拒建，改Git外私有TMPDIR且保留安全规则；最初生成列FK不支持ON DELETE SET NULL，最终保留最小消息标识并受限清正文；跨auth/data的FOR UPDATE自阻塞55P03修为不可变ID的非键更新锁，实际I-2竞争回归通过。原未提交开发失败日志保留，不标最终源码通过。本机起点盘3.6GiB，复用缓存完成必要构建/定向测试后余约1.1GiB/98%，完整workspace及跨平台回归转GitHub，不清理有效缓存。cloud环境状态工具/策略文件未提供，不宣称其就绪；Git/Docker/CI经沙箱提升实际成功。
+
+限制：当前只同步账户自身拥有的个人/项目Chat，无项目协作新入口；新本机conversation需显式选择。服务器单worker串行请求，事件/收据/墓碑永久留存，无生产容量/备份净化/GC承诺；SQLite明文与HTTPS云信任边界，未登记任意秘密仍须用户范围选择。Memory同步/A/B删除归I-6，运营/备份/物理资源归I-7。正式GUI/CLI/iOS、真实模型及F/G-Live未验。
+
+准确下一步：独立新会话/其他模型只读审计上述不可变源码、完整调用路径与实际原证据；有当前范围阻断则最小修复/相关精确复验。等待用户确认I-5审计通过并另行批准I-6；实施会话不授独立审计，不跨阶段开发。恢复先核实实际main/HEAD/工作区/远端，不能假定封存后一直干净。
 
 ## 已关闭 I-4.2（用户确认独立审计通过）
 
