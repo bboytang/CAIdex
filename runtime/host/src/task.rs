@@ -306,6 +306,11 @@ impl Tasks {
         events: &tokio::sync::broadcast::Sender<Event>,
         request: Interaction,
     ) -> Result<()> {
+        if request.thread_id().is_none() || request.turn_id().is_none() {
+            return Err(Error::Refused(
+                "interaction requires explicit thread and turn IDs",
+            ));
+        }
         let snapshot = journal.snapshot();
         let mut task = snapshot
             .tasks

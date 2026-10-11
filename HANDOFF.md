@@ -8,7 +8,7 @@
 
 目标/有限计划/非目标/依赖/通过与停止条件见[H-2设计与验收](docs/CAIdex-H2-Host-设计与验收-V1.md)。仅H-2持久任务/operation幂等/查询取消/原生执行审批转交/实际策略/未知恢复/轮次边界与持久关联；复用Codex0.160.1与既有Facade，不读真实Key/不调用商业API。main直接提交推送及最终功能SHA三平台精确CI，封存后停止等待独立审计；H-3/I未授权。
 
-已实现schema v2事务升级及任务/operation投影、幂等/hash与受理/终态分离、原生执行/审批/取消、300秒任务上限、同live stream已确认边界的模型轮次及独立profile新线程父子关联。H-1命名空间隔离/环境/凭据边界保持；rateLimits仅无载荷收据。真实双端+独立提交者退出/丢回应、原生实际标记写入、取消、已执行但终态未确认强杀重启演示通过，HTTP测量7次请求/重启增量0，5任务、2实际标记写入。全部本地检查通过，当前等待功能commit/push及其三平台精确CI，不能认领CI或H-2审计通过。
+已实现schema v2事务升级及任务/operation投影、幂等/hash与受理/终态分离、原生执行/审批/取消、300秒任务上限、同live stream已确认边界的模型轮次及独立profile新线程父子关联。H-1命名空间隔离/环境/凭据边界保持；rateLimits仅无载荷收据。真实双端+独立提交者退出/丢回应、原生实际标记写入、取消、已执行但终态未确认强杀重启演示通过，HTTP测量7次请求/重启增量0，5任务、2实际标记写入。全部本地检查通过，最终功能源码f674f4b22e0653a6a2b85a8d0001f810f05c207f已commit/push main，[精确CI38100999321](https://github.com/bboytang/CAIdex/actions/runs/38100999321)Windows job114356728434失败于测试替身使用默认CRLF、断言预期LF；原始日志已保留。仅将本会话替身标记文件明确写LF，不改生产执行/审批逻辑或断言门槛；第一轮Linux/macOS全部成功，但不代新最终源码；另补明确Thread/Turn ID边界及回归，以新功能SHA重新完整三平台CI，尚不认领CI或H-2审计通过。新最终本地workspace673/0/83、Host33/0/0、Runtime81/0/0、Linux原生凭据另1项全部通过；[本地证据](docs/evidence/h2-local.json)、[开发失败与修正记录](docs/evidence/h2-local-failed.json)已归档，最终CI完成后封存。
 
 本地Git外新建私有/var/tmp测试目录，未删除/tmp/.git或弱化凭据保护；原生凭据测试依赖缺失已按既有CI安装测试服务并复验通过。磁盘约2.5GiB可用，未清理用户文件/全局Codex/有效缓存。待提交文件均属本轮Host/必要Facade serde/测试/脚本/workflow及授权与验收文档，无其他用户修改；最终以Git核实。
 

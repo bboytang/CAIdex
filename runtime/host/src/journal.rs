@@ -103,6 +103,9 @@ impl Snapshot {
             "turn/started" | "turn/completed" => {
                 let thread = data.pointer("/params/threadId").and_then(Value::as_str);
                 let turn = data.pointer("/params/turn/id").and_then(Value::as_str);
+                if thread.is_none() || turn.is_none() {
+                    return;
+                }
                 for task in self.tasks.values_mut().filter(|task| {
                     task.stream == self.stream
                         && task.thread_id.as_deref() == thread

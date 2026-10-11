@@ -346,3 +346,68 @@ fn failed_v1_migration_rolls_back_snapshot_and_version() {
         1
     );
 }
+
+#[test]
+fn runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids() {
+    let directory = Directory::new();
+    let mut journal = Journal::open(&directory.0).unwrap();
+    journal.append("host/started", json!({})).unwrap();
+    let mut task = caidex_host::Task {
+        task_id: "task".into(),
+        operation_id: "submit".into(),
+        submission: caidex_host::Submission {
+            prompt: "fixture".into(),
+            model: "gpt-5.5".into(),
+            provider: "caidex_h2_a".into(),
+            parent_task_id: None,
+            continue_thread: false,
+        },
+        status: "submitted".into(),
+        thread_id: None,
+        turn_id: None,
+        actual: serde_json::Value::Null,
+        pending: Default::default(),
+        last_seq: 0,
+        stream: 1,
+        expires_at: 9999999999,
+    };
+    let operation = caidex_host::Operation {
+        operation_id: "submit".into(),
+        payload_hash: "a".repeat(64),
+        task_id: "task".into(),
+        action: "submit".into(),
+        outcome: "accepted".into(),
+        last_seq: 0,
+    };
+    journal
+        .append("host/task", json!({"task": task, "operation": operation}))
+        .unwrap();
+    for method in ["turn/started", "turn/completed"] {
+        let raw =
+            json!({"method": method, "params": {"turn": {"id": "foreign", "status": "completed"}}});
+        assert_eq!(
+            journal.append_runtime(method, raw.clone()).unwrap().data,
+            raw
+        );
+        assert_eq!(journal.snapshot().tasks["task"].status, "submitted");
+        assert!(journal.snapshot().tasks["task"].turn_id.is_none());
+    }
+    task.thread_id = Some("real-thread".into());
+    task.turn_id = Some("real-turn".into());
+    task.status = "running".into();
+    journal.append("host/task", json!({"task": task})).unwrap();
+    for (thread, turn) in [
+        ("foreign-thread", "real-turn"),
+        ("real-thread", "foreign-turn"),
+    ] {
+        journal.append_runtime("turn/completed", json!({"params": {"threadId": thread, "turn": {"id": turn, "status": "completed"}}})).unwrap();
+        assert_eq!(journal.snapshot().tasks["task"].status, "running");
+    }
+    journal.append_runtime("turn/completed", json!({"params": {"threadId": "real-thread", "turn": {"id": "real-turn", "status": "completed"}}})).unwrap();
+    assert_eq!(journal.snapshot().tasks["task"].status, "completed");
+    drop(journal);
+    assert_eq!(
+        Journal::inspect(&directory.0).unwrap().tasks["task"].status,
+        "completed"
+    );
+}

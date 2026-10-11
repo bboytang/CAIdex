@@ -69,3 +69,18 @@ PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python
 开发中第一次本地workspace在/tmp/.git触发既有凭据文件保护，未改保护/删除.git，改用新建Git外/var/tmp私有目录重新完整验证。Linux原生凭据附加测试初次因本机缺gnome-keyring-daemon退出；按既有CI依赖安装测试服务后重跑，不改凭据源码。最初原生演示被H-1全account通知拒绝、以及loaded thread/resume返回旧配置挡住；按固定schema加入无载荷rateLimits收据、采用原生turn/start边界，未降低认证/策略检查。
 
 剩余限制：仅本地同OS用户/Host Token授权；没有生产Provider配置/真实商业调用、H-3跨设备身份与审批竞争/请求级expiry/Diff、完整客户端、生产吞吐/裁剪/备份或外部exactly-once承诺。工具副作用无法回滚；未知结果只能安全显示/查询/外部核实，不自动重放。Runtime关掉后的子工具终止效果未对任意工具承诺。新版本拒绝降级；v2迁移不修复旧v1未标来源的历史命名冲突。journal全snapshot随任务累计扩大，达到有限容量拒绝新操作；生产调度/保留策略尚未实现。
+
+
+## 最终源码与证据（精确CI运行中）
+
+功能源码[f674f4b22e0653a6a2b85a8d0001f810f05c207f](https://github.com/bboytang/CAIdex/commit/f674f4b22e0653a6a2b85a8d0001f810f05c207f)已提交推送main；[CI38100999321](https://github.com/bboytang/CAIdex/actions/runs/38100999321)正在该SHA运行Linux/Windows/macOS，未使用H-1旧CI认领本次结果。
+
+[本地摘要/源码指纹/完整日志哈希](evidence/h2-local.json)：workspace672通过/0失败/83忽略，Host32/0/0（新增12项）、固定Runtime81/0/0（1 filtered），Linux原生凭据另1/0/0。fmt、全仓Clippy、构建、schema、doctor、两阶段真实进程演示全部通过；[Host实际测试名](evidence/h2-host-tests.log)、[HTTP原始合成请求证据](evidence/h2-local-http-trace.json.gz)、[开发失败/环境修正](evidence/h2-local-failed.json)。Runtime完整回归早于最后Host内部Request ID收敛修正；Facade/Runtime/fixture源码未再改变，后续完整workspace及Host真实演示已重跑，最终CI仍完整复验。
+
+封存前会独立核对三job实际checkout SHA、各步骤、workspace/Host/Runtime实测计数及两阶段演示；源码无新改动时仅追加文档/证据提交，不把文档HEAD冒充功能CI源码。当前状态：本地开发验证完成，精确CI待完成，H-2独立审计未执行。
+
+
+首次精确CI38100999321的Windows job114356728434失败：deadline定向测试替身写出turn/interrupt\r\n，而断言应为turn/interrupt\n。根因是新增Python标记写入缺少显式newline，H-1原标记已有LF约定。最小修复仅给新增替身所有标记写入指定newline="\n"，保留严格单次调用断言，不改生产Runtime或测试门槛。原日志将归档；新功能SHA必须重新完整三平台CI。
+
+
+同轮最小边界复核补充：未关联线程任务的thread_id/turn_id为None；缺失ID的原始turn通知不得以None相等推进状态。投影要求两个显式ID，审批交互也要求明确ID；缺失/异线程/异Turn通知仍保留原文而不改变任务，新定向回归验证匹配真实终态才能完成。修正后本地完整workspace673/0/83、Host33/0/0（H-2新增13项），fmt/全仓Clippy及H-1/H-2真实进程演示通过。第一轮Linux/macOS成功保留历史，不能代新最终SHA的三平台精确CI。
