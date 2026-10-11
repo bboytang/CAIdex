@@ -94,3 +94,6 @@ PowerShell设置`$env:CAIDEX_CODEX_BIN = node scripts/codex-binary.mjs`，Python
 
 
 第二轮功能5282ac49/CI38101361081：Linux/macOS全部成功，Windows workspace667/0/81、Host32/0/0及H-1通过；H-2报告status=ok后，Python TemporaryDirectory自动删除私有Runtime的plugins-clone Git pack文件时WinError5，步骤退出1，未运行后续固定Runtime完整回归，不能认领该job成功。原日志不确定具体占用者或文件属性，故不编造锁来源。最小修复只让演示保留自己创建的私有证据目录并报告路径，不强行清理/改变ACL/忽略异常或降低断言；新SHA需重新完整三平台CI。生产Host/Runtime逻辑未因该清理问题改变。
+
+
+最终封存边界复核：配置拒绝路径已收到真实Thread ID/配置但检查失败时未落盘。增强现有故障回归先在a7f5d10生产源码上明确失败（0/1，14 filtered），[修复前证据](evidence/h2-policy-binding-regression.json)保存。最小修复仅把原有绑定/实际配置持久化移到同样严格的检查之前；错误策略仍拒绝启动Turn，未知状态可查已知ID与真实policy，权限/执行/审批策略不变。该修正属于H-2故障恢复/持久关联原范围，不新增里程碑功能；须使用新的最终源码完整三平台CI。

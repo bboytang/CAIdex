@@ -367,6 +367,9 @@ impl Tasks {
                         .pointer("/thread/id")
                         .and_then(Value::as_str)
                         .ok_or(Error::Refused("Runtime returned no thread ID"))?;
+                    task.thread_id = Some(thread.into());
+                    task.actual = json!({"model": value["model"], "provider": value["modelProvider"], "policy": value["approvalPolicy"], "reviewer": value["approvalsReviewer"], "sandbox": value["sandbox"], "cwd": value["cwd"]});
+                    persist(journal, events, &task, None)?;
                     if value["approvalPolicy"] != "on-request"
                         || value["approvalsReviewer"] != "user"
                         || value.pointer("/sandbox/type").and_then(Value::as_str)
@@ -378,9 +381,6 @@ impl Tasks {
                             "Runtime actual configuration violates Host policy",
                         ));
                     }
-                    task.thread_id = Some(thread.into());
-                    task.actual = json!({"model": value["model"], "provider": value["modelProvider"], "policy": value["approvalPolicy"], "reviewer": value["approvalsReviewer"], "sandbox": value["sandbox"], "cwd": value["cwd"]});
-                    persist(journal, events, &task, None)?;
                     if task.status == "cancel-requested" {
                         task.status = "cancelled".into();
                         persist(journal, events, &task, None)?;

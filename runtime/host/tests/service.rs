@@ -727,6 +727,13 @@ async fn failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails
     );
     let snapshot = Journal::inspect(&harness.directory).unwrap();
     assert!(snapshot.tasks.values().all(|task| task.status == "unknown"));
+    assert!(
+        snapshot
+            .tasks
+            .values()
+            .all(|task| task.thread_id.as_deref() == Some("task-thread")
+                && task.actual["policy"] == "never")
+    );
     std::fs::remove_dir_all(&harness.directory).unwrap();
 }
 
