@@ -2,9 +2,19 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为仓库、源码、验收文档及精确GitHub CI，不依赖旧聊天或/tmp日志。
 
-## 当前批准工作：I-1 账户/权限与数据库（实施中）
+## 当前批准工作：I-1 账户/权限与数据库（开发验证完成，停止待独立审计）
 
-2026-10-11用户确认H-3独立审计通过并批准下一步，按V3既定顺序启动I-1，范围见[设计与验收](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)。起点main/HEAD/origin/main/GitHub main均db854bbe6b87edfda7dcd733a9c7f960032d5a65，初始工作区干净、磁盘1.7GiB。实施17实体/PostgreSQL+pgvector迁移/ACL/RLS及必要共享DTO和隔离真实数据库验证；I-2及后续/生产部署/商业API未授权。用户要求不使用ponytail技能。已读取环境规则；environment_status工具及网络policy文件不存在，普通shell网络DNS失败，git ls-remote通过受审查提升权限核实，未读取凭据。已完成17实体另加附件/Embedding空间、19表FORCE RLS/20表事务迁移、基于会话摘要的事务身份与项目ACL、共享游标会话归属及窄RustDTO。真实PostgreSQL17.10/pgvector0.8.2隔离118项检查通过，workspace684/0/83、core2/0/0、fmt/Clippy通过；数据库启动误识临时服务和/tmp/.git导致凭据测试失败已记录并修正复验。当前未提交：cloud/core、cloud/postgres、scripts/i1-database.py、workspace成员/lock/CI与里程碑/授权/README/交接文档；未改Runtime/Host/Provider/凭据生产逻辑。下一步提交push main、最终功能SHA三平台Rust与Linux数据库精确CI、封存实际原始证据后停止待I-1独立审计。
+2026-10-11用户确认H-3独立审计通过并批准下一步，按V3既定顺序实施I-1，范围及通过/停止条件见[设计与验收](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)。起点main/HEAD/origin/main/GitHub main均db854bbe6b87edfda7dcd733a9c7f960032d5a65，初始工作区干净、磁盘1.7GiB。只实施不可变user_id/项目ACL/17实体/PostgreSQL+pgvector迁移/最小权限RLS及相关共享DTO，未改固定Runtime/Host/Provider/凭据生产逻辑。用户要求不使用ponytail技能；I-2及后续/商业API/用户Key/生产部署未授权。
+
+最终功能源码[`bb9c0a18493b7e55debcb961d187b7a196a52eef`](https://github.com/bboytang/CAIdex/commit/bb9c0a18493b7e55debcb961d187b7a196a52eef)已提交push main；[精确CI38109361127](https://github.com/bboytang/CAIdex/actions/runs/38109361127)四job全部成功，原始checkout均完整功能SHA。Linux job114381512936 workspace684/0/83、Host42/0/0、固定Runtime81/0/0；Windows job114381512776 workspace678/0/81、Host41/0/0、Runtime80/0/0；macOS job114381512862 workspace683/0/81、Host42/0/0、Runtime80/0/0。各平台cloud/core2/0/0，fmt/Clippy/schema/doctor/H-1/2/3演示全部通过。Host已计入workspace，ignored不计通过；Linux凭据附加1及Windows额外Host lib4另记。数据库job114381512893与精确SHA本地均118/0/0，真实PostgreSQL17.10/pgvector0.8.2，镜像digest锁定。全仓本地684/0/83在最后SQL游标/约束修改前运行，最终定向core/数据库及完整三平台CI补足，不冒称旧本地结果是最终完整回归。
+
+已实现17逻辑实体另加附件/Embedding空间、19私有表全部FORCE RLS/20表事务创建；scope组合FK防跨账户/项目，项目数据所有者与作者分开、共享游标独立绑定会话用户。非owner/non-superuser/NOBYPASSRLS app不能DDL/TRUNCATE/提升角色/读写认证材料/延长会话/改同步权威状态。窄guard函数从未撤销未过期会话摘要验证actor，不信任user_id GUC，READ COMMITTED事务COMMIT/ROLLBACK清绑定；假上下文/旧快照/过期撤销/删除账户拒绝。项目读者/写者/撤销、个人/project来源FK、不可变消息/revision/来源、作者冒用、无权限SQL关键词/向量与失效向量、新账户同步默认关及禁读写云记忆均实测。
+
+证据入口：[精确CI逐job/步骤/计数/源码哈希及原日志](docs/evidence/i1-ci.json)、[本地精确数据库118条断言](docs/evidence/i1-database-local.json)、[本地日志/最终源码指纹/17实体覆盖](docs/evidence/i1-local.json)、[开发失败及修正](docs/evidence/i1-local-failed.json)。凭据测试因/tmp/.git触发保护，改用新建Git外私有TMPDIR完整复验；DB runner曾误识初始化临时服务，修正为PID1正式postgres及ready后完整复验。没有放宽凭据/RLS或用静态SQL代验。所有gzip/原始SHA256已复核，验收文档有独立重建及只读证据检查步骤。
+
+限制：没有实际认证/Passkey/密码验证/refresh/Email/HTTP服务，合成session只验证DB授权；没有本地SQLite缓存/Memory Engine/同步状态机/真实Embedding/对象存储/生产部署/容量/备份。I-2须安全参数绑定与会话认证/连接池事务清理，SQL约束错误由API安全分类；I-4/5/6须完成来源验证、业务CAS/epoch/首次上传授权/A/B删除/防复活及数据-event原子业务。已有DML/字段不冒充这些功能。已开始的语句和已交付数据不能回收；生产服务须短事务和有界超时。共享DTO不授Host权限、不携带Token/Key。
+
+本次封存只追加证据/验收/状态文档，功能/测试/依赖/脚本/workflow与上述功能SHA一致。推送后核实工作区、HEAD/main/origin/main/GitHub main；封存HEAD用git rev-parse HEAD查询，不当功能CI SHA。本轮只移除自己创建的私有临时DB容器，保留镜像/用户文件/全局Codex/有效缓存；磁盘约1.1GiB。开发验证完成，无当前明确阻断，停止等待I-1独立新会话只读审计，不自行授审计通过或启动I-2。F/G-Live保持待验。
 
 ## H-3 历史交付（用户已确认独立审计通过）
 
@@ -62,7 +72,7 @@ F/G-Live仍待用户最终真实模型/费用/实际Ollama等实测；没有用�
 ## 未实现、未验证与风险
 
 - H-1已由用户确认审计通过；H-2有限任务/幂等/原生执行链/轮次约束与父子关联已实现并验证，用户确认独立审计通过；H-3开发验证与精确CI/证据封存完成，用户已确认独立审计通过，完整生产Host仍未验。稳定thread/start无原始history；实验thread/resume.history为云专用禁止入口，未使用。
-- I-1账户数据库/RLS实施中，I-2及后续官方认证/Memory/同步/Email及J–O客户端、L SSH、P完整英文CLI、Q加密Relay、R实际平台/安装升级/权限/恢复仍待。当前CLI仅doctor、credentials status/set/remove、version/help；CLI-01～34不因底层协议存在而完成。
+- I-1账户数据库/RLS开发验证完成、待独立审计，I-2及后续官方认证/Memory/同步/Email及J–O客户端、L SSH、P完整英文CLI、Q加密Relay、R实际平台/安装升级/权限/恢复仍待。当前CLI仅doctor、credentials status/set/remove、version/help；CLI-01～34不因底层协议存在而完成。
 - 各Provider限制以专属验收/profile为准；未知Runtime扩展不保证类型化持久化全量往返。native载体为JSON一致性门控而非密码学真实性，backend配置不是实际endpoint证明；终态缓冲受idle/预算限制，完整前缀可能二次增长。
 - compaction只验明确Classic/Lite本地/远端成功与失败/取消、Total采样前自动阈值/磁盘恢复；其他scope/轮末/TokenBudget/无限历史不认领。同步SecretStore开始后不能强停，保证取消后不POST；跨Gateway keepalive未承诺。
 - H-1无journal裁剪/高负载吞吐/备份恢复承诺；SQLite提交在服务任务同步执行、同OS用户授权域，Runtime丢事件无法凭已捕获日志重建完整真源。jsonschema0.58.6有字节/regex限制但无硬CPU抢占；后续H须分析生产隔离/有界失败，此限制不写成已解决。当前未发现有实际证据的新F/G阻断；后续若出现影响权限/隔离/数据完整性/后续正确性的明确缺陷，重新纳入阻断分析。

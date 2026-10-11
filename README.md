@@ -21,7 +21,7 @@ CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通e
 
 F/G-Offline已关闭，F/G-Live由用户全项目完成后验收。H-1/H-2/H-3已完成开发验证、精确三平台CI和证据封存，用户于2026-10-11确认H-3独立审计通过。固定Runtime与Provider证据仍有效，不因账户数据库改为云端Agent。
 
-当前批准[I-1账户/权限与数据库](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)：PostgreSQL+pgvector、17逻辑实体、项目ACL、RLS及共享DTO；提供隔离真实数据库运行检查。该工作不代表正式账户认证、Memory Engine、同步服务、GUI或完整CLI完成。I-2及后续/商业API/生产部署未授权。
+当前已完成开发验证、待独立审计的[I-1账户/权限与数据库](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)：PostgreSQL+pgvector、17逻辑实体、项目ACL、RLS及共享DTO；提供隔离真实数据库运行检查。该工作不代表正式账户认证、Memory Engine、同步服务、GUI或完整CLI完成。I-2及后续/商业API/生产部署未授权。
 
 开发按[AGENTS](AGENTS.md)在已批准里程碑内自主实现/验证/push main，达到有限通过条件后封存源码/精确CI/可复现步骤，停止等待独立审计与下一里程碑批准。恢复事实与证据入口以[HANDOFF](HANDOFF.md)为准，保持[V3架构和A–R顺序](docs/CAIdex-实施计划-V3.md)。以下Provider子阶段记录保留为历史，不作为当前待办。
 

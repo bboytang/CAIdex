@@ -1,0 +1,124 @@
+{
+  "source_head": "bb9c0a18493b7e55debcb961d187b7a196a52eef",
+  "logs": {
+    "workspace": {
+      "log": "i1-local-workspace.log.gz",
+      "raw_sha256": "721440bcbc1268b59608d019ea092e4ba12802e7a752c4c518c2d2c420c06cb6",
+      "gzip_sha256": "f07eeea36bf3031779556f68ea2e4b4454737e3f407e2641ad61af01c6614e6b",
+      "counts": [
+        684,
+        0,
+        83
+      ],
+      "exit_code": 0
+    },
+    "clippy": {
+      "log": "i1-local-clippy.log.gz",
+      "raw_sha256": "531183989187c5a7175083d7bab50d4e0417dddfafd69c07359774118f15685e",
+      "gzip_sha256": "0b6d9951b7099cfbcb2bfcf9636d0f2481be843ae9219dabc79527b8ff363011",
+      "counts": null,
+      "exit_code": 0
+    },
+    "core": {
+      "log": "i1-local-core.log.gz",
+      "raw_sha256": "3ebc9ec7723260027d262d750ac7c93d23945f966fbc4e8c5fdc1685b453aa12",
+      "gzip_sha256": "a14d3eddb1c08425ad4798c28e32c181ada33fc0f02171d7359ba528363dada2",
+      "counts": [
+        2,
+        0,
+        0
+      ],
+      "exit_code": 0
+    },
+    "core_clippy": {
+      "log": "i1-local-core_clippy.log.gz",
+      "raw_sha256": "d6abc5c3a7b725fc06b6ff2c328d1455acb951af682509d08548962edd96bd4f",
+      "gzip_sha256": "40d9beb8afcebd10827475c619f344f6e75c6022d5f14612951f2e311be03a99",
+      "counts": null,
+      "exit_code": 0
+    },
+    "database": {
+      "log": "i1-local-database.log.gz",
+      "raw_sha256": "0bfd66303c6358f0b750e4fe20b4bafbdb9288d3d914dd3fefdf43c563180c02",
+      "gzip_sha256": "9867243d65f5f83ce49298bad478dedc6ae67aa83960c9c7289b0cd22e856cd8",
+      "counts": [
+        118,
+        0,
+        0
+      ],
+      "exit_code": 0
+    }
+  },
+  "doc_check": {
+    "markdown_files": 6,
+    "local_links": 74,
+    "passed": true
+  },
+  "database_evidence": "i1-database-local.json",
+  "failed_evidence": "i1-local-failed.json",
+  "notes": [
+    "workspace684/0/83 was run before final SQL cursor/constraint changes; exact final core test covers the embedded migration and exact final database118 checks cover SQL; final exact CI will cover all platforms.",
+    "No Runtime/Host/Provider/credentials implementation changes. Prior fixed Runtime local evidence reused; exact final CI reruns fixed Runtime.",
+    "fmt check and Python compile check passed. No commercial model API, real user Key, Email or production database."
+  ],
+  "functional_source_sha256": {
+    ".github/workflows/ci.yml": "aa64f2ee1123bdf006b3e75fbcf90f1a01343a713148febaddf957ca5f618004",
+    "Cargo.lock": "6a61f32a4a7cab63c15cf24d8243d335e011b37977a0a8045f235f7152e598ab",
+    "Cargo.toml": "5cc2d8c2905c65ce313a0022c697cd04037d8a87a7d7507095299bb725088fac",
+    "cloud/core/Cargo.toml": "1d4046959e67f20a19ed8c49e53ff227ff039dfa19faaf25b4e4081af4fcceb5",
+    "cloud/core/src/lib.rs": "0b1171f700cf37eca6f3ce8beea5c314f9f2469cc40f9874624173aedb9576f4",
+    "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+    "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+    "cloud/postgres/tests/fixture.sql": "2603f2ce5a3fabc51f444d3d2e8ba0503d80f1eeab29e5b55a041b0735d432df",
+    "scripts/i1-database.py": "ca259a13985caccfe24d233217808d11626c1996babab37da87b7af82ef3b213"
+  },
+  "entity_coverage": {
+    "logical_entities": [
+      "users",
+      "user_identities",
+      "auth_credentials",
+      "auth_sessions",
+      "security_events",
+      "projects",
+      "project_members",
+      "conversations",
+      "messages",
+      "memories",
+      "memory_sources",
+      "memory_revisions",
+      "memory_embeddings",
+      "memory_jobs",
+      "sync_events",
+      "sync_cursors",
+      "deletion_tombstones"
+    ],
+    "actual_tables": [
+      "schema_migrations",
+      "users",
+      "user_identities",
+      "auth_credentials",
+      "auth_sessions",
+      "security_events",
+      "projects",
+      "project_members",
+      "conversations",
+      "messages",
+      "memories",
+      "memory_revisions",
+      "memory_sources",
+      "embedding_spaces",
+      "memory_embeddings",
+      "memory_jobs",
+      "sync_events",
+      "sync_cursors",
+      "deletion_tombstones",
+      "attachments"
+    ],
+    "forced_rls_tables": 19
+  },
+  "final_doc_check": {
+    "markdown_files": 6,
+    "local_links": 82,
+    "readonly_evidence_check": "passed"
+  }
+}

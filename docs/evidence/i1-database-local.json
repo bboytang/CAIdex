@@ -1,0 +1,846 @@
+{
+  "head": "bb9c0a18493b7e55debcb961d187b7a196a52eef",
+  "image": "pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966",
+  "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+  "vector_version": "0.8.2",
+  "elapsed_seconds": 14.317,
+  "passed": 118,
+  "failed": 0,
+  "synthetic_sessions": true,
+  "network": "none",
+  "checks": [
+    {
+      "name": "bootstrap_roles_and_pinned_extensions",
+      "passed": true,
+      "sqlstate": null,
+      "output": "",
+      "stderr": ""
+    },
+    {
+      "name": "migration_failure_rolls_back",
+      "passed": true,
+      "sqlstate": "22012",
+      "output": "",
+      "stderr": "ERROR:  22012"
+    },
+    {
+      "name": "no_partial_schema",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "migration_from_empty_database",
+      "passed": true,
+      "sqlstate": null,
+      "output": "",
+      "stderr": ""
+    },
+    {
+      "name": "migration_replay_refused",
+      "passed": true,
+      "sqlstate": "42P07",
+      "output": "",
+      "stderr": "ERROR:  42P07"
+    },
+    {
+      "name": "migration_version_preserved",
+      "passed": true,
+      "sqlstate": null,
+      "output": "1",
+      "stderr": ""
+    },
+    {
+      "name": "synthetic_fixture",
+      "passed": true,
+      "sqlstate": null,
+      "output": "",
+      "stderr": ""
+    },
+    {
+      "name": "all_private_tables_force_rls",
+      "passed": true,
+      "sqlstate": null,
+      "output": "19",
+      "stderr": ""
+    },
+    {
+      "name": "actual_runtime_login_is_unprivileged",
+      "passed": true,
+      "sqlstate": null,
+      "output": "f|f|f|f|f|f|f",
+      "stderr": ""
+    },
+    {
+      "name": "runtime_owns_no_tables",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_users",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_projects",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_conversations",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_messages",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_memories",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_memory_revisions",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_memory_sources",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_embedding_spaces",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_memory_embeddings",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_memory_jobs",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_sync_events",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_sync_cursors",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_deletion_tombstones",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "missing_context_attachments",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "forged_user_and_token_denied",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "unknown_session_denied",
+      "passed": true,
+      "sqlstate": "28000",
+      "output": "",
+      "stderr": "ERROR:  28000"
+    },
+    {
+      "name": "short_session_denied",
+      "passed": true,
+      "sqlstate": "28000",
+      "output": "",
+      "stderr": "ERROR:  28000"
+    },
+    {
+      "name": "missing_context_write_denied",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "valid_session_ignores_forged_user_id",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "security_events_own_only",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n1",
+      "stderr": ""
+    },
+    {
+      "name": "session_metadata_own_only",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "cannot_extend_session_lifetime",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "guard_function_does_not_disclose_other_user_state",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\nf",
+      "stderr": ""
+    },
+    {
+      "name": "guard_rejects_forged_project_owner",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\nf",
+      "stderr": ""
+    },
+    {
+      "name": "stale_snapshot_isolation_refused",
+      "passed": true,
+      "sqlstate": "28000",
+      "output": "",
+      "stderr": "ERROR:  28000"
+    },
+    {
+      "name": "A_scope_conversations",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_conversations",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_messages",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_messages",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_memories",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_memories",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_memory_revisions",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_memory_revisions",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_memory_sources",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_memory_sources",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_embedding_spaces",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_embedding_spaces",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_memory_embeddings",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_memory_embeddings",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_memory_jobs",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_memory_jobs",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_sync_events",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_sync_events",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_sync_cursors",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_sync_cursors",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_deletion_tombstones",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_deletion_tombstones",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "A_scope_attachments",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n2",
+      "stderr": ""
+    },
+    {
+      "name": "B_scope_attachments",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "own_profile_only",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "new_account_sync_defaults",
+      "passed": true,
+      "sqlstate": null,
+      "output": "cccccccc-cccc-cccc-cccc-cccccccccccc\nf|f|1|1",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_cloud_memory_upload_denied",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "guessed_foreign_revision_hidden",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "vector_candidates_filtered_in_sql",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\naaaaaaaa-0000-0000-0000-000000000001",
+      "stderr": ""
+    },
+    {
+      "name": "keyword_candidates_filtered_in_sql",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "password_material_hidden",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "login_identity_hidden",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "session_hash_hidden",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "sync_control_not_user_mutable",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "user_id_immutable",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "messages_immutable",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "revisions_immutable",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "source_evidence_immutable",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "truncate_denied",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "schema_ddl_denied",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "owner_escalation_denied",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "guard_escalation_denied",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "rls_cannot_be_disabled",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "message_author_cannot_be_forged",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "revision_author_cannot_be_forged",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "foreign_embedding_space_denied",
+      "passed": true,
+      "sqlstate": "23503",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  23503"
+    },
+    {
+      "name": "embedding_dimensions_enforced",
+      "passed": true,
+      "sqlstate": "23514",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  23514"
+    },
+    {
+      "name": "deleted_memory_vector_hidden",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "stale_vector_hidden",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "expired_revision_vector_hidden",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_memories",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_memory_revisions",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_memory_sources",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_memory_embeddings",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_memory_jobs",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_sync_events",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "disabled_memory_download_sync_cursors",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "cross_account_foreign_key_denied",
+      "passed": true,
+      "sqlstate": "23503",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  23503"
+    },
+    {
+      "name": "cross_project_source_denied",
+      "passed": true,
+      "sqlstate": "23503",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  23503"
+    },
+    {
+      "name": "revision_memory_scope_binding",
+      "passed": true,
+      "sqlstate": "23503",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  23503"
+    },
+    {
+      "name": "cannot_self_grant_foreign_project",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "owner_grants_reader",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "reader_can_read_shared_project",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1",
+      "stderr": ""
+    },
+    {
+      "name": "reader_cannot_write",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "project_reader_cursor_binds_own_session",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "stderr": ""
+    },
+    {
+      "name": "project_owner_cannot_read_member_cursor",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n0",
+      "stderr": ""
+    },
+    {
+      "name": "cursor_cannot_reference_foreign_session",
+      "passed": true,
+      "sqlstate": "23503",
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "stderr": "ERROR:  23503"
+    },
+    {
+      "name": "cursor_cannot_impersonate_session_user",
+      "passed": true,
+      "sqlstate": "42501",
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "stderr": "ERROR:  42501"
+    },
+    {
+      "name": "owner_grants_writer",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "writer_keeps_project_owner_and_separate_author",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "stderr": ""
+    },
+    {
+      "name": "owner_revokes_member",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "stderr": ""
+    },
+    {
+      "name": "revoked_project_read_denied",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n0",
+      "stderr": ""
+    },
+    {
+      "name": "revoked_project_write_denied",
+      "passed": true,
+      "sqlstate": null,
+      "output": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "stderr": ""
+    },
+    {
+      "name": "one_connection_commit_rollback_tenant_reset",
+      "passed": true,
+      "sqlstate": null,
+      "output": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n3\n0\nbbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\n1\n0",
+      "stderr": ""
+    },
+    {
+      "name": "revoked_session_bind_denied",
+      "passed": true,
+      "sqlstate": "28000",
+      "output": "",
+      "stderr": "ERROR:  28000"
+    },
+    {
+      "name": "revoked_session_direct_context_denied",
+      "passed": true,
+      "sqlstate": null,
+      "output": "0",
+      "stderr": ""
+    },
+    {
+      "name": "expired_session_denied",
+      "passed": true,
+      "sqlstate": "28000",
+      "output": "",
+      "stderr": "ERROR:  28000"
+    },
+    {
+      "name": "deleted_account_denied",
+      "passed": true,
+      "sqlstate": "28000",
+      "output": "",
+      "stderr": "ERROR:  28000"
+    },
+    {
+      "name": "password_credential_requires_hash",
+      "passed": true,
+      "sqlstate": "23514",
+      "output": "",
+      "stderr": "ERROR:  23514"
+    },
+    {
+      "name": "conversation_self_branch_denied",
+      "passed": true,
+      "sqlstate": "23514",
+      "output": "",
+      "stderr": "ERROR:  23514"
+    },
+    {
+      "name": "revision_self_parent_denied",
+      "passed": true,
+      "sqlstate": "23514",
+      "output": "",
+      "stderr": "ERROR:  23514"
+    },
+    {
+      "name": "independent_database_rebuild",
+      "passed": true,
+      "sqlstate": null,
+      "output": "",
+      "stderr": ""
+    },
+    {
+      "name": "rebuild_entities_and_version",
+      "passed": true,
+      "sqlstate": null,
+      "output": "20\n1",
+      "stderr": ""
+    }
+  ],
+  "source_sha256": {
+    "cloud/postgres/bootstrap.sql": "d59a00e255e1ca68695200c229bf611cd56520dbb9e2965f4a3413c88827eae7",
+    "cloud/postgres/migrations/0001_account_scope.sql": "691722be1681974b9498fea6f2821ade2efb02b23e2701c85f18629012f7dda2",
+    "cloud/postgres/tests/fixture.sql": "2603f2ce5a3fabc51f444d3d2e8ba0503d80f1eeab29e5b55a041b0735d432df",
+    "scripts/i1-database.py": "ca259a13985caccfe24d233217808d11626c1996babab37da87b7af82ef3b213",
+    "cloud/core/src/lib.rs": "0b1171f700cf37eca6f3ce8beea5c314f9f2469cc40f9874624173aedb9576f4"
+  }
+}

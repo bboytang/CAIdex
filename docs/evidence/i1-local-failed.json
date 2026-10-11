@@ -1,0 +1,16 @@
+{
+  "workspace": {
+    "log": "i1-failed-workspace.log.gz",
+    "raw_sha256": "810846ca9d1ff9c964be867e41ab3dc80f62e1ce40af7e599785d42d97f40a17",
+    "gzip_sha256": "b3a7bc81731875a73eeb7e290a277eb9cca6f180978922e3eed9aa2e2ca09651",
+    "exit_code": 101,
+    "reason_and_fix": "Existing /tmp/.git triggers credential storage protection; private Git-external TMPDIR rerun passes without relaxing protection."
+  },
+  "database_startup": {
+    "log": "i1-failed-database_startup.log.gz",
+    "raw_sha256": "ea99ef78ed24b747e47246d9791826a61ba253e734d8a26e71a888be83b7fe9b",
+    "gzip_sha256": "536f6cfa012f1643dbb598e2739aa5e68ce79c47d0f0d8f26119d098e3637b8e",
+    "exit_code": 1,
+    "reason_and_fix": "pg_isready saw the temporary initialization server; runner now requires PID 1 to be final postgres before readiness."
+  }
+}

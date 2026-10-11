@@ -1,6 +1,6 @@
 # CAIdex Account、Memory 与 Cloud：设计与验收 V1
 
-正式产品决定：2026-10-08。状态：**设计已确定；[I-1账户/权限与数据库](CAIdex-I1-账户权限数据库-设计与验收-V1.md)实施中，其他核心及完整产品验收仍待**。本文补充 [实施计划 V3](CAIdex-实施计划-V3.md) 与 [UI 规范](CAIdex-UI-规范-V1.md)，不改变现有 F/G → H → I → Windows → iOS → CLI → Relay → R 主线；L SSH Remote 仍按 V3 位于 Windows 与 iOS 之间。原 V2 仅作需求背景；账户、数据库、记忆和云同步冲突处以本文及更新后的 V3/UI 为准。
+正式产品决定：2026-10-08。状态：**设计已确定；[I-1账户/权限与数据库](CAIdex-I1-账户权限数据库-设计与验收-V1.md)数据库/权限有限核心已实现与验证、待独立审计，其他核心及完整产品验收仍待**。本文补充 [实施计划 V3](CAIdex-实施计划-V3.md) 与 [UI 规范](CAIdex-UI-规范-V1.md)，不改变现有 F/G → H → I → Windows → iOS → CLI → Relay → R 主线；L SSH Remote 仍按 V3 位于 Windows 与 iOS 之间。原 V2 仅作需求背景；账户、数据库、记忆和云同步冲突处以本文及更新后的 V3/UI 为准。
 
 ## 1. 目标、非目标与当前事实
 

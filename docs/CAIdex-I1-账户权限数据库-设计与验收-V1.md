@@ -26,7 +26,19 @@
 
 新账户Memory Sync为false，app不能改控制状态；记忆云数据读写还需当前账户及项目所有者enabled。共享DTO区分权威控制、待确认停止与本地范围许可。这里只是存储/权限与DTO边界，首次范围许可、CAS/epoch/关闭A/B、旧job提交/防复活、数据变更与sync_event同事务的业务方法仍由I-4/5/6完成；不能把字段和底层DML当同步状态机已验。Chat开关存储默认false，本里程碑不执行Chat同步。
 
-本地118项数据库检查及2项Rust契约测试通过；fmt和Clippy workspace/all-targets/locked通过，全仓回归已通过，workspace684/0/83（通过/失败/忽略，ignored不当通过），最终SHA与CI在封存时填写。数据库实测PostgreSQL17.10、pgvector0.8.2；镜像digest固定。三平台RustCI与Linux数据库CI已接入，精确源码结果待核验。
+本地118项数据库检查及2项Rust契约测试通过；fmt和Clippy workspace/all-targets/locked通过，全仓回归已通过，workspace684/0/83（通过/失败/忽略，ignored不当通过），最终SHA与CI如下。数据库实测PostgreSQL17.10、pgvector0.8.2；镜像digest固定。最终功能源码[`bb9c0a18493b7e55debcb961d187b7a196a52eef`](https://github.com/bboytang/CAIdex/commit/bb9c0a18493b7e55debcb961d187b7a196a52eef)已push main；[精确CI38109361127](https://github.com/bboytang/CAIdex/actions/runs/38109361127)四job全部success，原始checkout逐一为该完整SHA，所有必要step成功。实际计数如下（通过/失败/忽略）：
+
+| 平台 / job | workspace | Host（已计入workspace） | 固定Runtime（单独显式运行） |
+| --- | --- | --- | --- |
+| Linux / 114381512936 | 684/0/83 | 42/0/0 | 81/0/0 |
+| Windows / 114381512776 | 678/0/81 | 41/0/0 | 80/0/0 |
+| macOS / 114381512862 | 683/0/81 | 42/0/0 | 80/0/0 |
+
+各平台新cloud/core两项均一次成功；fmt/Clippy/schema/doctor/H-1/2/3真实进程演示全部成功。Linux凭据附加1/0/0、Windows额外Host lib4/0/0另记，ignored不计通过。数据库job114381512893实测118/0/0，PostgreSQL17.10/pgvector0.8.2，与本地精确功能SHA118项结果一致；初始空库失败回滚/重放拒绝/第二独立数据库重建均实测，不用静态SQL声明代替。
+
+[完整CI逐job/step/原始日志与实际checkout/计数/源码哈希](evidence/i1-ci.json)、[精确SHA本地数据库全部断言](evidence/i1-database-local.json)、[本地检查与日志/源码指纹索引](evidence/i1-local.json)、[开发失败及修正原日志](evidence/i1-local-failed.json)已封存。所有gzip原始内容与压缩文件各有SHA256。全仓本地684/0/83在最后游标/约束修改前运行；其后精确最终core与数据库定向复验通过，精确最终CI重新跑全仓/固定Runtime，不将旧本地结果冒充最终源码完整回归。本次封存只有证据/文档，与功能SHA的功能/测试/依赖/脚本/workflow无差异。
+
+开发验证及精确CI完成，无当前通过条件对应的剩余阻断。停止等待I-1独立只读审计，不自行授审计通过或启动I-2。
 
 ## 独立运行
 
@@ -50,3 +62,45 @@ cargo test -p caidex-cloud-core --locked
 - 关键检查使用合成数据并实际连接PostgreSQL；测试计数不是独立安全审计、认证质量或生产吞吐证据。用户Key/商业API/生产部署未执行，F/G-Live保持待验。
 
 参考：[PostgreSQL17 RLS与权限边界](https://www.postgresql.org/docs/17/ddl-rowsecurity.html)、[pgvector官方说明](https://github.com/pgvector/pgvector)。
+
+
+## 封存证据只读核对
+
+在仓库根目录运行以下检查，核对原日志、源码指纹和实际计数。哈希/计数检查不等于独立审计；仍须结合SQL、权限调用链及逐条负例原日志。
+
+```python
+from pathlib import Path
+import gzip, hashlib, json, subprocess
+root = Path("docs/evidence")
+ci = json.loads((root / "i1-ci.json").read_text())
+assert ci["source_sha"] == "bb9c0a18493b7e55debcb961d187b7a196a52eef"
+assert ci["conclusion"] == "success" and len(ci["jobs"]) == 4
+for job in ci["jobs"]:
+    packed = (root / job["log"]).read_bytes()
+    raw = gzip.decompress(packed)
+    assert hashlib.sha256(packed).hexdigest() == job["gzip_sha256"]
+    assert hashlib.sha256(raw).hexdigest() == job["raw_sha256"]
+    assert job["checkout_sha"] == ci["source_sha"]
+    assert ci["source_sha"] in raw.decode()
+    if "database_summary" in job:
+        assert job["database_summary"]["passed"] == 118
+        assert job["database_summary"]["failed"] == 0
+        assert len(job["database_checks"]) == 118
+        assert all(c["passed"] for c in job["database_checks"])
+    else:
+        assert len(job["cloud_core_pass_names"]) == 2
+        assert len(job["host_pass_names"]) == job["host"]["passed"]
+        assert job["workspace"]["failed"] == job["fixed_runtime"]["failed"] == 0
+for index in ["i1-local.json", "i1-local-failed.json"]:
+    data = json.loads((root / index).read_text())
+    for item in data.get("logs", data).values():
+        packed = (root / item["log"]).read_bytes()
+        assert hashlib.sha256(packed).hexdigest() == item["gzip_sha256"]
+        assert hashlib.sha256(gzip.decompress(packed)).hexdigest() == item["raw_sha256"]
+local = json.loads((root / "i1-local.json").read_text())
+for name, expected in local["functional_source_sha256"].items():
+    source = subprocess.check_output(["git", "show", ci["source_sha"] + ":" + name])
+    assert hashlib.sha256(source).hexdigest() == expected
+    assert hashlib.sha256(Path(name).read_bytes()).hexdigest() == expected
+print("I-1 sealed source and success/failure evidence verified")
+```
