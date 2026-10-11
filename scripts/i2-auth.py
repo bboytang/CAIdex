@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""Run real I-2 HTTP/PostgreSQL/WebAuthn tests with synthetic accounts and sandbox mail."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import socket
+import subprocess
+import tempfile
+import time
+import urllib.error
+import urllib.request
+import uuid
+
+ROOT = Path(__file__).resolve().parents[1]
+IMAGE = 'pgvector/pgvector@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966'
+
+
+def process_usage(pid):
+    fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
+    cpu = (int(fields[11]) + int(fields[12])) / os.sysconf('SC_CLK_TCK')
+    status = {line.split(':', 1)[0]: line.split(':', 1)[1].strip()
+              for line in Path(f'/proc/{pid}/status').read_text().splitlines() if ':' in line}
+    return cpu, int(status['VmRSS'].split()[0]), int(status['VmHWM'].split()[0])
+
+
+def measure_service(binary, work, env):
+    # Measure only the standalone service PID, excluding compilation, test client and PostgreSQL.
+    with socket.socket() as reservation:
+        reservation.bind(('127.0.0.1', 0))
+        port = reservation.getsockname()[1]
+    base = f'http://127.0.0.1:{port}/'
+    mailbox = Path(work) / 'measurement-mail'
+    service_env = env | {'CAIDEX_AUTH_DB': env['CAIDEX_I2_AUTH_DB'],
+                         'CAIDEX_DATA_DB': env['CAIDEX_I2_DATA_DB']}
+    http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    def request(action, body, token=None):
+        headers = {'Content-Type': 'application/json'}
+        if token:
+            headers['Authorization'] = 'Bearer ' + token
+        req = urllib.request.Request(base + 'v1/auth/' + action, json.dumps(body).encode(), headers)
+        with http.open(req, timeout=30) as reply:
+            return json.load(reply)
+    with (Path(work) / 'measurement-service.log').open('wb') as log:
+        child = subprocess.Popen([binary, str(port), str(mailbox)], env=service_env,
+                                 stdout=log, stderr=log)
+        try:
+            for _ in range(300):
+                if child.poll() is not None:
+                    raise RuntimeError('standalone measurement service exited during startup')
+                try:
+                    with http.open(base + '.well-known/oauth-authorization-server', timeout=1) as reply:
+                        assert json.load(reply)['issuer'] == f'http://localhost:{port}/'
+                    break
+                except urllib.error.URLError:
+                    time.sleep(0.1)
+            else:
+                raise RuntimeError('standalone measurement service startup timeout')
+            cpu_before, idle_rss, _ = process_usage(child.pid)
+            started = time.monotonic()
+            email = 'resource-measurement@example.test'
+            password = 'synthetic resource measurement password'
+            assert request('register', {'email': email, 'password': password}) == {'status': 'accepted'}
+            mails = [json.loads(p.read_text()) for p in mailbox.glob('*.caidex-secret')
+                     if '.device-code-pepper.' not in p.name]
+            token = next(m['verification_token'] for m in mails
+                         if m['recipient'] == email and m['purpose'] == 'register')
+            verified = request('verify', {'purpose': 'register', 'token': token})
+            session = request('login', {'email': email, 'password': password})
+            me = request('me', {}, session['access_token'])
+            assert me['user_id'] == verified['user_id'] == session['user_id']
+            cpu_after, rss, peak = process_usage(child.pid)
+            elapsed = time.monotonic() - started
+            assert cpu_after > cpu_before and peak >= idle_rss > 0 and rss > 0
+            return {'kind': 'standalone_service_register_verify_login', 'instances': 1,
+                    'elapsed_seconds': round(elapsed, 3), 'cpu_seconds': round(cpu_after - cpu_before, 3),
+                    'cpu_percent_one_core': round(100 * (cpu_after - cpu_before) / elapsed, 2),
+                    'idle_rss_kib': idle_rss, 'rss_kib': rss, 'peak_rss_kib': peak,
+                    'rss_source': 'Linux /proc/PID/status VmRSS/VmHWM; peak includes service startup',
+                    'cpu_source': 'Linux /proc/PID/stat utime+stime delta during workload',
+                    'logical_cpus': os.cpu_count(),
+                    'host_memory_kib': int(Path('/proc/meminfo').read_text().split('MemTotal:')[1].split()[0]),
+                    'two_core_two_gib_load_test': False}
+        finally:
+            if child.poll() is None:
+                child.send_signal(signal.SIGINT)
+            try:
+                child.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait(timeout=10)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
+    if args.output and args.output.exists():
+        parser.error('output already exists')
+    env = os.environ.copy()
+    for key in ['DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_TLS_VERIFY', 'DOCKER_CERT_PATH']:
+        env.pop(key, None)
+    docker = ['docker', '--host=unix:///var/run/docker.sock']
+    name = 'caidex-i2-' + uuid.uuid4().hex
+    started = time.monotonic()
+    checks = []
+    def run(command, stdin=None):
+        result = subprocess.run(docker + command, input=stdin, text=True, capture_output=True, env=env, timeout=90)
+        if result.returncode:
+            raise RuntimeError(result.stderr)
+        return result.stdout.strip()
+    def sql(query):
+        return run(['exec', '-i', name, 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'], query)
+    def check(label, passed):
+        if not passed:
+            raise AssertionError(label)
+        item = {'name': label, 'passed': True}
+        checks.append(item)
+        print('I2_CHECK ' + json.dumps(item), flush=True)
+    with tempfile.TemporaryDirectory(prefix='caidex-i2-', dir=os.environ.get('CAIDEX_I2_TEST_TMP_PARENT', '/var/tmp')) as work:
+        socket = Path(work) / 'socket'
+        socket.mkdir(mode=0o777)
+        socket.chmod(0o777)  # Socket parent remains 0700, not reachable by other OS users.
+        try:
+            run(['run', '-d', '--name', name, '--network', 'none', '--memory', '512m', '--cpus', '2',
+                 '--tmpfs', '/var/lib/postgresql/data:rw,size=256m',
+                 '--mount', f'type=bind,src={socket},dst=/var/run/postgresql',
+                 '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', IMAGE])
+            for _ in range(120):
+                ready = subprocess.run(docker + ['exec', name, 'sh', '-c',
+                    'test "$(cat /proc/1/comm)" = postgres && pg_isready -U postgres'], capture_output=True, env=env)
+                if ready.returncode == 0:
+                    break
+                time.sleep(0.5)
+            else:
+                raise RuntimeError('isolated database startup timeout')
+            sql((ROOT / 'cloud/postgres/bootstrap.sql').read_text())
+            sql((ROOT / 'cloud/postgres/migrations/0001_account_scope.sql').read_text())
+            migration = (ROOT / 'cloud/postgres/migrations/0002_authentication.sql').read_text()
+            failure = subprocess.run(docker + ['exec', '-i', name, 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'],
+                                     input=migration.replace('INSERT INTO caidex.schema_migrations(version) VALUES (2);', 'SELECT 1/0;'),
+                                     text=True, capture_output=True, env=env)
+            check('v2_failed_migration_rolls_back_role_tables_and_columns', failure.returncode != 0 and sql(
+                "SELECT NOT EXISTS(SELECT FROM pg_roles WHERE rolname='caidex_auth') AND to_regclass('caidex.auth_grants') IS NULL AND NOT EXISTS(SELECT FROM information_schema.columns WHERE table_schema='caidex' AND table_name='auth_sessions' AND column_name='issuer')") == 't')
+            sql(migration)
+            check('v2_migration_applied_once', sql('SELECT string_agg(version::text,\',\' ORDER BY version) FROM caidex.schema_migrations') == '1,2')
+            check('all_23_private_tables_force_rls', sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='caidex' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity") == '23')
+            sql('CREATE ROLE caidex_auth_test LOGIN INHERIT; GRANT caidex_auth TO caidex_auth_test; CREATE ROLE caidex_data_test LOGIN INHERIT; GRANT caidex_app TO caidex_data_test;')
+            env.update({'CAIDEX_I2_AUTH_DB': f'host={socket} user=caidex_auth_test dbname=postgres',
+                        'CAIDEX_I2_DATA_DB': f'host={socket} user=caidex_data_test dbname=postgres',
+                        'CAIDEX_I2_ADMIN_DB': f'host={socket} user=postgres dbname=postgres',
+                        'TMPDIR': work})
+            source_paths = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + [ROOT / p for p in
+                ['cloud/auth/Cargo.toml', 'cloud/auth/src/account.js', 'cloud/core/src/lib.rs',
+                 'cloud/postgres/bootstrap.sql', 'cloud/postgres/migrations/0001_account_scope.sql',
+                 'cloud/postgres/migrations/0002_authentication.sql', 'cloud/auth/tests/account.rs',
+                 'scripts/i2-auth.py', 'Cargo.toml', 'Cargo.lock', '.github/workflows/ci.yml']]
+            fingerprints = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_paths}
+            result = subprocess.run(['cargo', 'test', '-p', 'caidex-auth', '--features', 'test-auth', '--locked',
+                                     '--test', 'account', '--', '--ignored', '--nocapture'], cwd=ROOT, env=env,
+                                    text=True, capture_output=True, timeout=600)
+            print(result.stdout, end='', flush=True)
+            print(result.stderr, end='', flush=True)
+            for line in result.stdout.splitlines():
+                if line.startswith('I2_CHECK '):
+                    checks.append(json.loads(line.removeprefix('I2_CHECK ')))
+            if result.returncode:
+                raise RuntimeError('I-2 account integration test failed')
+            sql("UPDATE caidex.auth_limits SET reset_at=now()-interval '1 second',last_at=now()-interval '1 hour'")
+            build = subprocess.run(['cargo', 'build', '-p', 'caidex-auth', '--features', 'test-auth',
+                                    '--bin', 'caidex-auth-local', '--locked', '--message-format=json'],
+                                   cwd=ROOT, env=env, text=True, capture_output=True, timeout=600)
+            print(build.stderr, end='', flush=True)
+            if build.returncode:
+                raise RuntimeError('standalone service build failed')
+            artifacts = [json.loads(line) for line in build.stdout.splitlines()]
+            binary = next(item['executable'] for item in artifacts if item.get('executable')
+                          and item.get('target', {}).get('name') == 'caidex-auth-local')
+            measured = measure_service(binary, work, env)
+            check('standalone_service_real_http_and_measured_rss_cpu', True)
+            print('I2_MEASUREMENT ' + json.dumps(measured), flush=True)
+            if any(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != digest for p, digest in fingerprints.items()):
+                raise RuntimeError('source changed during verification; retry with unchanged source')
+            check('rust_real_account_integration_completed', 'test result: ok. 1 passed' in result.stdout)
+            report = {'source_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+                      'postgres_version': sql('SHOW server_version'), 'pgvector_version': sql("SELECT extversion FROM pg_extension WHERE extname='vector'"),
+                      'image': IMAGE, 'elapsed_seconds': round(time.monotonic()-started, 3), 'checks': checks,
+                      'source_sha256': fingerprints,
+                      'measurements': [json.loads(line.removeprefix('I2_MEASUREMENT ')) for line in result.stdout.splitlines() if line.startswith('I2_MEASUREMENT ')] + [measured],
+                      'summary': {'passed': len(checks), 'failed': 0},
+                      'limits': ['synthetic accounts', 'process-private sandbox mail', 'software Passkey authenticator', 'no native GUI/CLI/production deployment']}
+            print(json.dumps(report, ensure_ascii=False), flush=True)
+            if args.output:
+                args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
+        finally:
+            subprocess.run(docker + ['rm', '-f', name], capture_output=True, env=env, timeout=30)
+
+
+if __name__ == '__main__':
+    main()

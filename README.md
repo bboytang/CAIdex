@@ -21,7 +21,7 @@ CLI规范已核对固定0.160.1的命令、配置与无头审批行为：普通e
 
 F/G-Offline已关闭，F/G-Live由用户全项目完成后验收。H-1/H-2/H-3已完成开发验证、精确三平台CI和证据封存，用户于2026-10-11确认H-3独立审计通过。固定Runtime与Provider证据仍有效，不因账户数据库改为云端Agent。
 
-当前已完成开发验证、待独立审计的[I-1账户/权限与数据库](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)：PostgreSQL+pgvector、17逻辑实体、项目ACL、RLS及共享DTO；提供隔离真实数据库运行检查。该工作不代表正式账户认证、Memory Engine、同步服务、GUI或完整CLI完成。I-2及后续/商业API/生产部署未授权。
+用户已确认独立审计通过的[I-1账户/权限与数据库](docs/CAIdex-I1-账户权限数据库-设计与验收-V1.md)：PostgreSQL+pgvector、17逻辑实体、项目ACL、RLS及共享DTO；提供隔离真实数据库运行检查。该工作不代表正式账户认证、Memory Engine、同步服务、GUI或完整CLI完成。本轮已批准[I-2认证/会话](docs/CAIdex-I2-认证会话-设计与验收-V1.md)，实现与部分验证已完成；上轮磁盘满导致最终复验缺失，现按用户要求在GitHub完成构建/真实DB复验/精确CI，仍待最终结果。I-3及后续/商业API/真实邮件/生产部署未授权。
 
 开发按[AGENTS](AGENTS.md)在已批准里程碑内自主实现/验证/push main，达到有限通过条件后封存源码/精确CI/可复现步骤，停止等待独立审计与下一里程碑批准。恢复事实与证据入口以[HANDOFF](HANDOFF.md)为准，保持[V3架构和A–R顺序](docs/CAIdex-实施计划-V3.md)。以下Provider子阶段记录保留为历史，不作为当前待办。
 
@@ -48,7 +48,7 @@ node scripts/codex-binary.mjs
 
 ## 工程位置
 
-- `cloud/core`、`cloud/postgres`：I-1共享ID/scope/同步控制DTO、PostgreSQL+pgvector版本化迁移、项目ACL/RLS及隔离数据库验证；认证和同步服务尚未实现。
+- `cloud/core`、`cloud/postgres`：I-1共享ID/scope/同步控制DTO、PostgreSQL+pgvector版本化迁移、项目ACL/RLS及隔离数据库验证；I-2认证本地服务位于`cloud/auth`，当前未提交/封存；同步服务未实现。
 - `runtime/bridge`：上游 stdio 边界、Runtime facade、方法清单、审批/用户输入与事件转交。
 - `model/core`：ModelProvider 六方法接口、模型能力/兼容性 Registry、经典/Lite 请求/完整回复/工具/usage 视图、增量 SSE 和流生命周期。
 - `model/providers/custom`：可独立调用的 Custom Responses 推理 client，供普通 Chat 与 Gateway 共用；配置模型列表、Broker 认证、显式 context headers、TLS 验证、取消/超时/背压与安全错误。

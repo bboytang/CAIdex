@@ -1,10 +1,12 @@
 //! Versioned cloud data contracts. Account identity never grants Host authority.
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 pub const PROTOCOL_VERSION: u32 = 1;
 pub const ACCOUNT_MIGRATION: &str =
     include_str!("../../postgres/migrations/0001_account_scope.sql");
+
+pub const AUTH_MIGRATION: &str = include_str!("../../postgres/migrations/0002_authentication.sql");
 
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid cloud identifier or version")]
@@ -129,7 +131,8 @@ mod tests {
         assert!(serde_json::from_value::<SyncControl>(control.clone()).is_ok());
         control["token"] = "secret".into();
         assert!(serde_json::from_value::<SyncControl>(control).is_err());
-        assert_eq!(SCHEMA_VERSION, 1);
+        assert_eq!(SCHEMA_VERSION, 2);
+        assert!(AUTH_MIGRATION.contains("VALUES (2)"));
         assert!(
             ACCOUNT_MIGRATION.contains("INSERT INTO caidex.schema_migrations(version) VALUES (1)")
         );

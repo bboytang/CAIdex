@@ -1,0 +1,94 @@
+{
+  "failures": {
+    "first": {
+      "log": "i2-failed-first.log.gz",
+      "reason": "zero-gap limiter concurrency",
+      "exit_code": 1,
+      "original_sha256": "082d4fe80369e4a10b158676d7d6515d4a794313cdc3d42af2d1582745d87a96",
+      "redacted_sha256": "082d4fe80369e4a10b158676d7d6515d4a794313cdc3d42af2d1582745d87a96",
+      "gzip_sha256": "8e0bc02ba642d436788c912c76cc83eb29139067aacbdb971a3dab220120d809",
+      "synthetic_fields_redacted": 0
+    },
+    "second": {
+      "log": "i2-failed-second.log.gz",
+      "reason": "diagnostic retry confirmed limiter issue",
+      "exit_code": 1,
+      "original_sha256": "d23aeb83aee1ec604b03cfc5fe4f841d0f435eb6a4ce6202c22b5108eb96bec3",
+      "redacted_sha256": "d23aeb83aee1ec604b03cfc5fe4f841d0f435eb6a4ce6202c22b5108eb96bec3",
+      "gzip_sha256": "a9ff2b55718c674b95d837c62261de9ac0d450c1fc4be3cb5cc85637bf16d576",
+      "synthetic_fields_redacted": 0
+    },
+    "third": {
+      "log": "i2-failed-third.log.gz",
+      "reason": "empty Passkey allow list accepted",
+      "exit_code": 1,
+      "original_sha256": "3fc0bf037e51efe9e42743d701cb4b10227c584b0bbf6489c1ee61899da3cebc",
+      "redacted_sha256": "3fc0bf037e51efe9e42743d701cb4b10227c584b0bbf6489c1ee61899da3cebc",
+      "gzip_sha256": "ce91d03525f1af98eee17ed5aa60264bcb48e4e3e79eff828842ec9150eab583",
+      "synthetic_fields_redacted": 0
+    },
+    "fourth": {
+      "log": "i2-failed-fourth.log.gz",
+      "reason": "invalid proof consumed email cooldown",
+      "exit_code": 1,
+      "original_sha256": "32eb30c013c70c4195528623abf9b35c659289041f318af491ace6fb4daed1d4",
+      "redacted_sha256": "32eb30c013c70c4195528623abf9b35c659289041f318af491ace6fb4daed1d4",
+      "gzip_sha256": "70a845dfad74121df253a8372a63b1c0bc9e2538dcfa527f8462a9087dd0c16b",
+      "synthetic_fields_redacted": 0
+    },
+    "fifth": {
+      "log": "i2-failed-fifth.log.gz",
+      "reason": "default CSRF length below server state bound",
+      "exit_code": 1,
+      "original_sha256": "222137bc446a1a2508688e3466208fcf53a47c44a6b465261f7bb765bb1f6cfa",
+      "redacted_sha256": "222137bc446a1a2508688e3466208fcf53a47c44a6b465261f7bb765bb1f6cfa",
+      "gzip_sha256": "d460d3f33d2a4af7fde3ac8c084d605363434aa2c38982be5d41d45127640428",
+      "synthetic_fields_redacted": 0
+    },
+    "clippy": {
+      "log": "i2-failed-clippy.log.gz",
+      "raw_sha256": "19e33f17f72370bd3ac91994aee08315d9281ee49a7b13978c569f07839c30bd",
+      "gzip_sha256": "dcab2358332f62c4c9defa81e686d625c712f8a66f2c79570cc0f14f0de5d97d",
+      "exit_code": 1
+    },
+    "shm_build": {
+      "log": "i2-failed-shm_build.log.gz",
+      "raw_sha256": "aa0d4280bea15fad0c3ba71dd27a568fdb6d00b0abe72dfabe0d7fed66558bbc",
+      "gzip_sha256": "d097973f21bd09e3f0b4a2bbbadee7beb6df6e93be97632de1f0f5cd691add6d",
+      "exit_code": 1
+    }
+  },
+  "limits": [
+    "All auth identities/tokens synthetic and isolated databases removed; diagnostic synthetic fields redacted before repository archival.",
+    "Default-feature build also failed ENOSPC; original output in session only, no captured log.",
+    "Intermediate sixth/105-check runs preceded final fixes. 105-check run changed source during execution; its post-run fingerprints are not final evidence. Final runner refuses source changes.",
+    "Later RSS/CPU measurement failed while writing persistent log (ENOSPC); no completed measurement result.",
+    "After adding a controlled password revocation race test, pre-fix reproduction could not start Docker snapshot due to ENOSPC. Code defect established by source ordering, not claimed runtime reproduction. Final user-lock-before-password fix requires real database rerun."
+  ],
+  "fixes": [
+    "Zero minimum gap bypasses elapsed check; concurrent refresh accepted once then family revoked.",
+    "No active Passkey means refusal.",
+    "Recipient send limit follows valid proof.",
+    "oauth2 CSRF uses 32 random bytes; callback consumed once.",
+    "Clippy collapsed nested cursor condition.",
+    "Private memory target AND TMPDIR; all valid caches preserved."
+  ],
+  "environment_logs": {
+    "i2-i1-recheck.log.gz": {
+      "raw_sha256": "36f7df35fb98c90a96e3155dac2bfd1d9026a09874d0dc9807a44a0298a3a301",
+      "gzip_sha256": "381cdd1f3678f11decacad50ed34b78f4e7ea5cff9a261daf80001a9761d8428"
+    },
+    "i2-failed-disk-measurement.log.gz": {
+      "raw_sha256": "fb82375b4c2f2a3a920708ea5d50753ff96b252cbaf9356236d32934405940d2",
+      "gzip_sha256": "7bd205faef874383349f0a1196ec6381b6ab876e9836873e26abeb3233369ab5"
+    },
+    "i2-intermediate-clippy.log.gz": {
+      "raw_sha256": "0df0883be725d2c28bb59ab2c75564691eb21e30cc151c2c081bdb3114275aa7",
+      "gzip_sha256": "832c163c7b52cb8d8d6eb42b1a103e8d7c0645c4585328b36c3ae27017548ad4"
+    },
+    "i2-memory-build.log.gz": {
+      "raw_sha256": "add466ffa2f4d6dda143cfdec04d4f0154702bc1699110799fdde639d7fc27c2",
+      "gzip_sha256": "322845d4545211104374dfd6f97dc5e5954feeb7124347ae9a8cb8ad42d02110"
+    }
+  }
+}
