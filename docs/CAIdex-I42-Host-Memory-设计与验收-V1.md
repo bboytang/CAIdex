@@ -16,7 +16,7 @@
 
 停止条件：通过后封存并停止功能开发，等待独立 I-4.2 审计及用户确认；不启动 I-5。阻断按当前通过条件最小修复；云观察器及生产传输未验如实记录。
 
-当前：实施中；未授任何验证通过。
+当前：开发通过条件已满足，源码/精确 CI/证据封存；停止等待 I-4.2 独立审计，不授独立审计通过，不启动 I-5。
 
 ## 实现边界与调用路径
 
@@ -57,9 +57,9 @@ cargo test -p caidex-chat -p caidex-host --locked
 python3 scripts/i42-host-memory.py --output i42-host-memory.json
 ```
 
-取得→启动→配置→操作→判定：checkout 最终功能 SHA；脚本构建两个内部例子并启动独立 Host/client、两个 loopback模型服务与可控丢回应代理；自动生成配对令牌、只在 Host 注入专用合成 Broker Key，客户端没有模型 Key；脚本操作默认关闭/明确开启、整合与Embedding、丢回应只查原操作、离线等待恢复、固定 Runtime审批/真实文件副作用/授权来源摘要、取消、杀 Host/重启 unknown、撤权；只有所有断言成功才输出 `status=ok`，并检查账本无 Key/正文、没有模型重播或云上传。失败输出原错误，不能用已推送或排队代通过。脚本清理自己的临时目录/进程，不清理用户缓存。内部例子不是正式 GUI/CLI；完整 CI 验证结果待最终封存填写。
+取得→启动→配置→操作→判定：checkout 最终功能 SHA；脚本构建两个内部例子并启动独立 Host/client、两个 loopback模型服务与可控丢回应代理；自动生成配对令牌、只在 Host 注入专用合成 Broker Key，客户端没有模型 Key；脚本操作默认关闭/明确开启、整合与Embedding、丢回应只查原操作、离线等待恢复、固定 Runtime审批/真实文件副作用/授权来源摘要、取消、杀 Host/重启 unknown、撤权；只有所有断言成功才输出 `status=ok`，并检查账本无 Key/正文、没有模型重播或云上传。失败输出原错误，不能用已推送或排队代通过。脚本清理自己的临时目录/进程，不清理用户缓存。内部例子不是正式 GUI/CLI；完整 CI 实际结果见下方封存证据。
 
-## 验收映射（结果待精确 CI）
+## 验收映射（精确 CI 验证通过，限下表边界）
 
 | 通过条件 | 实际验证入口 | 明确限制 |
 | --- | --- | --- |
@@ -70,3 +70,20 @@ python3 scripts/i42-host-memory.py --output i42-host-memory.json
 | Runtime来源/审批不提升 | 固定Runtime真实工具/审批、完成任务白名单摘要；Memory恶意工具输出拒绝 | 摘要不是完整 stdout/journal导入 |
 | 迁移/数据完整性 | 原DDL构造schema2缓存；v3 journal客户端/artifact保留及注入回滚；账本锁/未来版拒绝 | 不授物理VPS满盘/灾难恢复 |
 | MEM-10 Host执行端子项 | 实际离线/恢复/撤权/重启原操作链 | 云观察器与云作业协议尚归 I-5/I-6，未执行、同步关闭上传0 |
+
+## 不可变验收证据与停止点
+
+功能源码 [`6d4f79af39a75b5ab7b772f9ca4729cc96ff4a5b`](https://github.com/bboytang/CAIdex/commit/6d4f79af39a75b5ab7b772f9ca4729cc96ff4a5b)，[精确 CI38151897766](https://github.com/bboytang/CAIdex/actions/runs/38151897766) 四 job 均 completed/success；每份原始日志 checkout 完整 SHA 核对。封存仅文档/证据，不把封存 HEAD 代成功能 CI SHA。
+
+| 实际 job | workspace passed/failed/ignored | 固定 Runtime passed/failed | 其他结果 |
+| --- | --- | --- | --- |
+| Linux114506890169 | 719/0/83 | 81/0 | 原生凭据1/0；Host Memory演示成功 |
+| macOS114506890261 | 718/0/81 | 80/0 | Host Memory演示成功 |
+| Windows114506890218 | 712/0/81 | 80/0 | 附加Host lib4/0；Host Memory演示及进程/临时清理成功 |
+| 数据库114506890146 | 不混入workspace | 不执行Runtime | PG17.10/vector0.8.2，I-1 118/0，I-2 110具名组/0，认证lib5/0 |
+
+Host Memory6项、原schema2缓存/journal3迁移和原Chat/Memory回归已计入workspace，ignored不计通过。fmt/Clippy/JS/固定schema/doctor及I-3/I-4.1/H-1/2/3演示均成功。每平台实际I-4.2链：Memory HTTP8=整合6+Embedding2，Runtime HTTP2，原生批准后真实marker1行，原操作丢回应恢复、离线waiting明确恢复、取消/撤权拒绝、kill/restart unknown不重放（重播0）、上传0、首次自动关闭。合成端点/Key不授商业Live。
+
+[最终证据索引](evidence/i42-ci.json) 保存4个job/实际步骤/演示/数据库摘要、23个功能文件SHA256和4份完整原始日志；[开发证据](evidence/i42-development.json) 保存11轮/44份原始日志，包含Clippy/借用、清空引用JSON比较、旧迁移fixture、Windows取消时连接重置及自有临时目录子进程清理失败，均已修且不当通过。共48份日志压缩/原文SHA256与checkout核对，无ENOSPC；原225份证据未变。固定Runtime/bridge、云源码、旧DDL以及外部依赖版本/source/checksum/依赖元数据不变。仅Host/chat调用路径和本轮测试/脚本/CI必要改动；最终功能diff已检查。本地fmt/Python compile/文档链接/diff/源码指纹检查通过，完整Cargo构建回归由上述精确GitHub CI执行。
+
+没有独立审计结果由本实施会话授予。到此停止新增功能，等待独立I-4.2审计及用户确认/下一里程碑新授权；I-5/I-6观察器及同步、正式远端传输/GUI/CLI/iOS、商业模型与生产容量均未认领。

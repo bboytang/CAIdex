@@ -2,21 +2,25 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前批准：I-4.2 Host Memory 接入实施中
+## 当前停止：I-4.2 已封存，等待独立审计
 
 2026-10-11 用户明确确认 I-4.1 独立审计通过并批准继续下一阶段，按既定拆分续接 I-4.2；这是用户确认，不由实施会话自行授审计。main 起点 ca65343d31decb914d60fdd3d38e7af87742f713，工作区起点干净；当前实际 HEAD/未提交文件恢复时用 Git 核实。有限目标/非目标/通过/停止见 [I-4.2 设计与验收](docs/CAIdex-I42-Host-Memory-设计与验收-V1.md)。允许必要实现/修复/测试/文档/commit/push main/精确 CI；I-5 及后续仍未授权。自动记忆首次默认关闭；不读真实 Key/调用商业 API/邮件/部署；不使用 ponytail 技能。完整构建回归优先 GitHub；本地盘约3.6GiB可用，不清理有效缓存。
 
-已实现，未授通过：独立 Memory scope；Host 操作者显式配置 Broker/模型/owner、每客户端外发许可和完成任务证据白名单；Host 推理 DTO 不收 Key/端点/工具，账本只存 client/UUID/hash/state；客户端绑定 namespace/Host/完整目标/空间，离线 waiting、原操作 unknown 查询及 hash 重验、取消/撤权/迟到拒绝。完成结果有界临时留 Host，保存后释放/120秒过期/重启 unknown 不重放。同步、正式 SSH/Relay/GUI/CLI 均未实现。Host journal3→4 保留任务/事件/授权，本地 schema2→3 保留原 DDL/数据并保护新 job codec；旧版拒读新版。
+已实现且开发验证通过（不代独立审计）：独立 Memory scope；Host 操作者显式配置 Broker/模型/owner、每客户端外发许可和完成任务证据白名单；Host 推理 DTO 不收 Key/端点/工具，账本只存 client/UUID/hash/state；客户端绑定 namespace/Host/完整目标/空间，离线 waiting、原操作 unknown 查询及 hash 重验、取消/撤权/迟到拒绝。完成结果有界临时留 Host，保存后释放/120秒过期/重启 unknown 不重放。同步、正式 SSH/Relay/GUI/CLI 均未实现。Host journal3→4 保留任务/事件/授权，本地 schema2→3 保留原 DDL/数据并保护新 job codec；旧版拒读新版。
 
-开发提交 cff54b1→7512f64→093c073→020e00b→7831f21→1811e9e（精确 HEAD 以 Git 为准）；CI38148900024/38149115285/38149429466 的 Clippy/借用错误已修，38149600447 原 Memory 回归发现清空引用 JSON 比较错误，1811e9e已修；这些失败不授通过，原日志待全部归档。当前完整 GitHub CI/实际独立进程 Host+Broker HTTP+固定 Runtime 来源演示仍在验证；本地仅 fmt/Python compile/diff 检查，无完整 Cargo 构建。脚本 scripts/i42-host-memory.py 与 runtime/host/examples/memory_host.rs/memory_client.rs 是内部复现，不能冒充正式 CLI/GUI。
+不可变功能源码 [`6d4f79af39a75b5ab7b772f9ca4729cc96ff4a5b`](https://github.com/bboytang/CAIdex/commit/6d4f79af39a75b5ab7b772f9ca4729cc96ff4a5b)，[精确 CI38151897766](https://github.com/bboytang/CAIdex/actions/runs/38151897766) 四 job completed/success，原始 checkout 完整 SHA 均核对。Linux114506890169 workspace719/0/83、固定Runtime81/0；macOS114506890261 workspace718/0/81、Runtime80/0；Windows114506890218 workspace712/0/81、Runtime80/0。Host Memory6项、原缓存/journal迁移及Chat/Memory回归计入workspace，ignored不计通过；Linux原生凭据1/Windows附加Host lib4另记。数据库114506890146真实PG17.10/vector0.8.2，I-1 118/0、I-2 110具名组/0、认证lib5/0。三平台fmt/Clippy/JS/schema/doctor与I-3/I-4.1/H-1/2/3演示均成功。
 
-准确下一步：核验当前精确提交的各平台/数据库 job、修复实证阻断，归档最终及开发原始日志/哈希/源码指纹和试用限制；通过后封存，停止等待 I-4.2 独立审计，不启动 I-5。下列 I-4.1 封存时的历史等待状态由用户本次确认解除，原功能与证据保持。
+每平台 I-4.2 独立Host/client+Broker演示成功：Memory合成HTTP8（整合6/Embedding2）、固定Runtime HTTP2、真实工具审批/marker1行、丢回应原操作恢复、离线明确恢复、取消、kill/restart unknown不重放、撤权拒绝、上传0、自动首次关闭。内部例子/脚本不是正式CLI/GUI。验收/试用/边界见 [设计与验收](docs/CAIdex-I42-Host-Memory-设计与验收-V1.md)；[最终四job/23个源码指纹/原日志](docs/evidence/i42-ci.json)、[11轮开发/44份原日志](docs/evidence/i42-development.json)。共48份日志压缩/原文SHA256与checkout核对，无ENOSPC；原225份证据、外部依赖完整元数据、固定Runtime/bridge、云源码和旧DDL不变。本地仅fmt/Python compile/文档链接/diff/指纹检查，无完整Cargo构建。
+
+开发中的Clippy/借用、清空引用JSON比较及旧迁移fixture错误均已修；补齐重启后的配对令牌guard。最后两轮Windows失败为显式取消时HTTP连接重置和自有临时目录残留子进程，最终修复且整轮成功；失败原证据保留，不替最终通过。封存提交仅HANDOFF/验收文档/i42证据；实际封存HEAD由Git核实，不当功能CI SHA。AGENTS.md保持原文，本次用户授权记在本交接及验收文档。
+
+限制：仅loopback实际Host进程，不授生产SSH/Relay；Runtime来源仅精确授权的完成状态摘要，不代完整stdout/journal；同步/云观察器归I-5/I-6、未上传；正式GUI/CLI/iOS、真实模型及F/G-Live未验。来源同步RPC可能阻塞Memory锁，≤8暂存结果/4096操作/约4MiB账本，结果120秒过期或重启unknown不保证交付、不重放；不授生产容量/物理满盘/同OS用户隔离。
+
+准确下一步：用户或独立新会话只读审计上述不可变源码及实际原始证据。等待用户确认I-4.2审计通过并明确批准下一里程碑；实施会话不授独立审计，不启动I-5或跨阶段功能。I-4.1历史等待由用户本次确认解除，原证据保持。
 
 ## 已关闭 I-4.1（用户确认独立审计通过）
 
-用户确认 I-3 独立审计通过并批准 I-4，自动记忆首次默认关闭；随后明确拆为 I-4.1 本地核心 / I-4.2 Host 接入：先封存、独立审计 I-4.1，再另行批准 I-4.2，不改变 V3 正式 I 阶段。范围/通过/停止/试用见 [I-4.1 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。当前 I-4.1 开发通过条件已满足，停止新增功能。**独立审计未由本实施会话授予；I-4.2/I-5 及后续未授权**。不使用 ponytail 技能，不读真实用户 Key/调用商业 API/邮件/生产部署。
-
-用户最新指令再次确认先封存 I-4.1 后等待独立审计，不构成审计通过或 I-4.2 授权。本轮恢复时 main/origin/main/GitHub main 为5d0bb2a且工作区干净；只补充本交接与验收报告。GitHub API 复核 c17c5bd/38146076798 四 job completed/success，36个当前功能文件指纹及32份原始日志双SHA256一致，无ENOSPC；源码未变，复用既有完整CI。两个 Memory 模型配置入口对 Host owner 均通过共享校验明确返回 WrongCredentialOwner，本地没有 Host 任务调度入口，不回退客户端 Key、不借 Execute；共享边界测试与 Memory 入口源码检查有据，不冒充 Host Memory RPC 专项验证。
+I-4 拆为 I-4.1 本地核心 / I-4.2 Host 接入，不改变 V3 正式 I 阶段。I-4.1 的实施验证与封存已完成，用户本次确认独立审计通过，其历史等待状态解除；本节只保留不可变证据和限制，不把实施自查当独立审计。范围/通过/停止/试用见 [I-4.1 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。恢复时 ca65343 main/origin/main/GitHub main 一致且工作区干净；c17c5bd/38146076798 四 job completed/success、36个源码指纹及32份日志双SHA256均核对。I-4.1 对 Host owner 明确返回 WrongCredentialOwner，未实现 Host Memory RPC；本轮 I-4.2 的实际新入口/证据见当前节。
 
 不可变功能源码 [`c17c5bde51b79c2ec7e1ca5df9c5c3b584847b17`](https://github.com/bboytang/CAIdex/commit/c17c5bde51b79c2ec7e1ca5df9c5c3b584847b17)，[精确 CI38146076798](https://github.com/bboytang/CAIdex/actions/runs/38146076798) 四 job 全部成功，各原始 checkout 完整 SHA 已核对。实际 main 流程，起点67edfe8；封存提交只文档/证据，实际封存 HEAD 以 git rev-parse HEAD 为准，不当功能 CI SHA。封存内容：本 HANDOFF/AGENTS、I-4.1 设计验收与默认关闭对应 Account/UI 三行，以及 docs/evidence/i41-*；源码已在上述功能提交。恢复先核实 Git 状态，不假定以后工作区仍干净。
 
@@ -76,6 +80,6 @@ Windows11x64 Tauri2/React/Rust、iOS17 SwiftUI/UniFFI、Linux Host/英文CLI不�
 
 ## 恢复索引
 
-[AGENTS](AGENTS.md)、[V3](docs/CAIdex-实施计划-V3.md)、[UI](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)为既定边界，I-3本轮不得更改A–R顺序或整产品范围。
+[AGENTS](AGENTS.md)、[V3](docs/CAIdex-实施计划-V3.md)、[UI](docs/CAIdex-UI-规范-V1.md)、[Account/Memory/Cloud](docs/CAIdex-Account-Memory-Cloud-设计与验收-V1.md)、[CLI规范](docs/CAIdex-CLI-完整交互与验收规范-V1.md)为既定边界，当前 I-4.2 不得更改 A–R 顺序或整产品范围。
 
 源码：`chat/core`（内部演示`scripts/i3-chat.py`）；`cloud/core`、`cloud/postgres`、`cloud/auth`；认证复现`scripts/i2-auth.py`，I-1数据库`scripts/i1-database.py`。固定Runtime/Host在`runtime/bridge`/`runtime/host`，H-1/2/3演示`scripts/h1-demo.py`/`h2-demo.py`/`h3-demo.py`；既有凭据/Provider无需重建改写。未解生产吞吐/备份/边界以各验收报告为准；新有证据权限/隔离/完整性缺陷须按批准通过条件修复复验。
