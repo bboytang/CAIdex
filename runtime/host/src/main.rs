@@ -1,6 +1,6 @@
 use std::{path::PathBuf, time::Duration};
 
-use caidex_host::{Journal, private_directory, serve};
+use caidex_host::{HostPolicy, Journal, private_directory, serve};
 use caidex_runtime::{AppServer, CODEX_VERSION, ClientOptions, Runtime};
 use tokio::{net::TcpListener, process::Command};
 
@@ -35,7 +35,7 @@ async fn main() -> std::process::ExitCode {
     match run().await {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("CAIdex H-1 Host failed: {error}");
+            eprintln!("CAIdex Host failed: {error}");
             std::process::ExitCode::FAILURE
         }
     }
@@ -47,8 +47,21 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .ok_or("use caidex-host run|inspect <private-directory>")?;
     let directory = PathBuf::from(args.next().ok_or("missing private Host directory")?);
+    let endpoint = match args.next() {
+        Some(flag) if flag == "--offline-responses" && action == "run" => Some(
+            args.next()
+                .ok_or("missing offline Responses URL")?
+                .into_string()
+                .map_err(|_| "invalid URL")?,
+        ),
+        Some(_) => return Err("unexpected argument".into()),
+        None => None,
+    };
     if args.next().is_some() {
         return Err("unexpected argument".into());
+    }
+    if let Some(endpoint) = &endpoint {
+        validate_offline_endpoint(endpoint)?;
     }
     if action != "run" && action != "inspect" {
         return Err("use caidex-host run|inspect <private-directory>".into());
@@ -80,12 +93,23 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Host probe directory contains authentication data; no import/read".into());
     }
     let config = data.join("config.toml");
-    let expected = concat!(
+    let probe_config = concat!(
         "model = \"caidex-h1-probe\"\nmodel_provider = \"caidex_h1_probe\"\n",
         "[model_providers.caidex_h1_probe]\nname = \"CAIdex H-1 offline probe\"\n",
         "base_url = \"http://127.0.0.1:9/v1\"\nwire_api = \"responses\"\n",
         "requires_openai_auth = false\n[analytics]\nenabled = false\n",
     );
+    let expected = if let Some(endpoint) = &endpoint {
+        let mut config = String::from(
+            "model = \"gpt-5.5\"\nmodel_provider = \"caidex_h2_a\"\n[analytics]\nenabled = false\n",
+        );
+        for provider in ["caidex_h2_a", "caidex_h2_b"] {
+            config.push_str(&format!("[model_providers.{provider}]\nname = \"CAIdex H-2 offline fixture\"\nbase_url = \"{endpoint}\"\nwire_api = \"responses\"\nrequires_openai_auth = false\n"));
+        }
+        config
+    } else {
+        probe_config.into()
+    };
     match std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -124,8 +148,24 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         journal,
         token,
         project,
+        if endpoint.is_some() {
+            HostPolicy::offline()
+        } else {
+            HostPolicy::probe_only()
+        },
     )
     .await?;
+    Ok(())
+}
+
+fn validate_offline_endpoint(endpoint: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let port = endpoint
+        .strip_prefix("http://127.0.0.1:")
+        .and_then(|value| value.strip_suffix("/v1"))
+        .ok_or("offline endpoint must be numeric loopback http://127.0.0.1:<port>/v1")?;
+    if !port.bytes().all(|c| c.is_ascii_digit()) || port.parse::<u16>()? == 0 {
+        return Err("invalid loopback port".into());
+    }
     Ok(())
 }
 
@@ -153,6 +193,21 @@ mod tests {
             command.env(name, "synthetic-secret-not-a-user-credential");
         }
         command
+    }
+
+    #[test]
+    fn offline_endpoint_cannot_select_remote_credentials_or_inject_config() {
+        assert!(validate_offline_endpoint("http://127.0.0.1:1234/v1").is_ok());
+        for endpoint in [
+            "https://api.openai.com/v1",
+            "http://localhost:1234/v1",
+            "http://user:secret@127.0.0.1:1234/v1",
+            "http://127.0.0.1:0/v1",
+            "http://127.0.0.1:1234/v1\n[evil]",
+            "http://127.0.0.1:99999/v1",
+        ] {
+            assert!(validate_offline_endpoint(endpoint).is_err(), "{endpoint}");
+        }
     }
 
     #[tokio::test]

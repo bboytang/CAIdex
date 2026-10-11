@@ -11,7 +11,8 @@ use tokio::{
     task::JoinSet,
 };
 
-use crate::{Error, Event, Journal, Result, random_id};
+use crate::task::{self, Tasks};
+use crate::{Error, Event, HostPolicy, Journal, Result, Submission, random_id};
 
 const DEADLINE: Duration = Duration::from_secs(15);
 const WRITE_DEADLINE: Duration = Duration::from_secs(5);
@@ -41,6 +42,38 @@ enum Request {
     Detach { id: u64 },
     #[serde(rename = "probe")]
     Probe { id: u64 },
+    #[serde(rename = "task/submit")]
+    TaskSubmit {
+        id: u64,
+        operation_id: String,
+        submission: Submission,
+    },
+    #[serde(rename = "task/status")]
+    TaskStatus {
+        id: u64,
+        task_id: Option<String>,
+        operation_id: Option<String>,
+    },
+    #[serde(rename = "task/list")]
+    TaskList {
+        id: u64,
+        after: Option<String>,
+        limit: usize,
+    },
+    #[serde(rename = "task/cancel")]
+    TaskCancel {
+        id: u64,
+        task_id: String,
+        operation_id: String,
+    },
+    #[serde(rename = "task/approval")]
+    TaskApproval {
+        id: u64,
+        task_id: String,
+        operation_id: String,
+        request_id: caidex_runtime::RequestId,
+        decision: caidex_runtime::ApprovalDecision,
+    },
     #[serde(rename = "shutdown")]
     Shutdown { id: u64 },
 }
@@ -51,6 +84,7 @@ enum ClientCommand {
     Detach,
     Probe,
     Shutdown,
+    Task(task::Command),
 }
 
 impl Request {
@@ -61,6 +95,58 @@ impl Request {
             Self::Detach { id } => (id, ClientCommand::Detach),
             Self::Probe { id } => (id, ClientCommand::Probe),
             Self::Shutdown { id } => (id, ClientCommand::Shutdown),
+            Self::TaskSubmit {
+                id,
+                operation_id,
+                submission,
+            } => (
+                id,
+                ClientCommand::Task(task::Command::Submit {
+                    operation_id,
+                    submission,
+                }),
+            ),
+            Self::TaskStatus {
+                id,
+                task_id,
+                operation_id,
+            } => (
+                id,
+                ClientCommand::Task(task::Command::Status {
+                    task_id,
+                    operation_id,
+                }),
+            ),
+            Self::TaskList { id, after, limit } => (
+                id,
+                ClientCommand::Task(task::Command::List { after, limit }),
+            ),
+            Self::TaskCancel {
+                id,
+                task_id,
+                operation_id,
+            } => (
+                id,
+                ClientCommand::Task(task::Command::Cancel {
+                    task_id,
+                    operation_id,
+                }),
+            ),
+            Self::TaskApproval {
+                id,
+                task_id,
+                operation_id,
+                request_id,
+                decision,
+            } => (
+                id,
+                ClientCommand::Task(task::Command::Approval {
+                    task_id,
+                    operation_id,
+                    request_id,
+                    decision,
+                }),
+            ),
         }
     }
 }
@@ -100,6 +186,7 @@ pub async fn serve(
     mut journal: Journal,
     token: String,
     project: PathBuf,
+    policy: HostPolicy,
 ) -> Result<()> {
     if !listener.local_addr()?.ip().is_loopback()
         || token.len() != 64
@@ -114,11 +201,15 @@ pub async fn serve(
     let mut connections = JoinSet::new();
     let mut probes = JoinSet::new();
     let mut probe_pending = false;
+    let (task_send, mut completions) = mpsc::channel(MAX_CLIENTS);
+    let mut tasks = Tasks::new(task_send, runtime.client(), policy, project.clone());
+    let mut expiry = tokio::time::interval(Duration::from_secs(1));
     let result = async {
         publish(&mut journal, &events, "host/started", json!({"codex_version": caidex_runtime::CODEX_VERSION}))?;
         println!("{}", json!({"protocol": 1, "address": listener.local_addr()?, "host_id": journal.snapshot().host_id, "pid": std::process::id()}));
         loop {
             tokio::select! {
+                _ = expiry.tick() => tasks.expire(&mut journal, &events, task::now()?)?,
                 accepted = listener.accept() => {
                     let (socket, _) = accepted?;
                     if connections.len() < MAX_CLIENTS {
@@ -129,21 +220,37 @@ pub async fn serve(
                 }
                 _ = connections.join_next(), if !connections.is_empty() => (),
                 _ = probes.join_next(), if !probes.is_empty() => (),
+                _ = tasks.jobs.join_next(), if !tasks.jobs.is_empty() => (),
+                completion = completions.recv() => {
+                    if let Some(completion) = completion && let Err(error) = tasks.complete(&mut journal, &events, completion) {
+                        publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "task completion failed; no retry"}))?;
+                        return Err(error);
+                    }
+                }
                 event = runtime.next_event() => {
                     match event {
                         Some(RuntimeEvent::Notification(event)) => {
                             // H-1 has no account/auth entry points. Never journal
                             // authentication payloads, including future extensions.
+                            // Native turns emit rolling account rate-limit metadata.
+                            // Record receipt only; account payloads stay out of journal.
+                            if event.method == "account/rateLimits/updated" {
+                                publish(&mut journal, &events, "runtime/rateLimitsObserved", json!({"method": event.method, "payload_omitted": true}))?;
+                                continue;
+                            }
                             if event.method.starts_with("account/") {
                                 publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "authentication event outside H-1"}))?;
                                 return Err(Error::Refused("authentication event outside H-1"));
                             }
                             let event = journal.append_runtime(&event.method, event.raw)?;
                             let _ = events.send(event);
+                            tasks.after_event(&mut journal, &events)?;
                         }
-                        Some(RuntimeEvent::Interaction(_)) => {
-                            publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "interaction outside H-1"}))?;
-                            return Err(Error::Refused("Runtime interaction outside H-1; no automatic answer"));
+                        Some(RuntimeEvent::Interaction(request)) => {
+                            if let Err(error) = tasks.interaction(&mut journal, &events, request) {
+                                publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "interaction unsupported; no automatic answer"}))?;
+                                return Err(error);
+                            }
                         }
                         None => {
                             publish(&mut journal, &events, "host/runtimeUnavailable", json!({"reason": "Runtime disconnected or event queue failed"}))?;
@@ -153,6 +260,13 @@ pub async fn serve(
                 }
                 message = messages.recv() => {
                     match message.expect("service retains a sender") {
+                        Message::Client(ClientCommand::Task(command), reply) => {
+                            match tasks.command(&mut journal, &events, command) {
+                                Ok(value) => { let _ = reply.send(Ok(Reply::Json(value))); }
+                                Err(Error::Refused(reason)) => { let _ = reply.send(Err(reason)); }
+                                Err(error) => return Err(error),
+                            }
+                        }
                         Message::Client(ClientCommand::Snapshot, reply) => {
                             let _ = reply.send(Ok(Reply::Json(json!(journal.snapshot()))));
                         }
@@ -217,6 +331,7 @@ pub async fn serve(
         }
     }.await;
     probes.abort_all();
+    tasks.jobs.abort_all();
     drop(messages);
     // Closing the service senders makes idle client handlers finish as well.
     if result.is_ok() {
@@ -284,7 +399,7 @@ async fn connection(socket: TcpStream, token: String, send: mpsc::Sender<Message
                 let Some(bytes) = bytes? else { return Ok(()); };
                 let request: Request = match serde_json::from_slice(&bytes) {
                     Ok(value) => value,
-                    Err(_) => { write(&mut writer, json!({"error": "invalid or unavailable H-1 request"})).await?; continue; }
+                    Err(_) => { write(&mut writer, json!({"error": "invalid or unavailable Host request"})).await?; continue; }
                 };
                 let (id, command) = request.into_parts();
                 let detach = matches!(command, ClientCommand::Detach);

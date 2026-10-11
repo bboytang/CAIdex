@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tokio::{sync::mpsc, task::JoinHandle};
 
@@ -82,7 +82,7 @@ pub enum RuntimeEvent {
 }
 
 /// Common approval decisions. Policy amendments use the explicit raw reply path.
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ApprovalDecision {
     Accept,

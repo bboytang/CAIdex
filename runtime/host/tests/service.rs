@@ -58,7 +58,18 @@ impl Harness {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let project = directory.clone();
-        let task = tokio::spawn(serve(listener, runtime, journal, TOKEN.into(), project));
+        let task = tokio::spawn(serve(
+            listener,
+            runtime,
+            journal,
+            TOKEN.into(),
+            project,
+            if mode.starts_with("task-") {
+                caidex_host::HostPolicy::offline()
+            } else {
+                caidex_host::HostPolicy::probe_only()
+            },
+        ));
         Self {
             directory,
             task,
@@ -507,5 +518,337 @@ async fn partial_client_frame_survives_interleaved_event_broadcast() {
             .unwrap()
             .is_ok()
     );
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+fn submission(prompt: &str) -> Value {
+    json!({"prompt": prompt, "model": "gpt-5.5", "provider": "caidex_h2_a"})
+}
+
+async fn wait_task(client: &mut Client, id: &str, status: &str) -> Value {
+    let until = tokio::time::Instant::now() + DEADLINE;
+    loop {
+        let result = client
+            .call(json!({"method": "task/status", "task_id": id}))
+            .await;
+        if result["result"]["task"]["status"] == status {
+            return result["result"]["task"].clone();
+        }
+        assert!(tokio::time::Instant::now() < until, "{result}");
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+}
+
+#[tokio::test]
+async fn durable_submit_lost_client_response_idempotency_and_native_approval() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut a = Client::connect(harness.address).await;
+    a.send(json!({"id": 1, "method": "task/submit", "operation_id": "submit-one", "submission": submission("fixture")})).await;
+    drop(a); // Lost response, not a task cancel.
+    let mut b = Client::connect(harness.address).await;
+    let task = loop {
+        let value = b
+            .call(json!({"method": "task/status", "operation_id": "submit-one"}))
+            .await;
+        if let Some(id) = value
+            .pointer("/result/task/task_id")
+            .and_then(Value::as_str)
+        {
+            break id.to_owned();
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    };
+    let blocked = wait_task(&mut b, &task, "blocked").await;
+    assert_eq!(blocked["actual"]["policy"], "on-request");
+    assert_eq!(blocked["actual"]["reviewer"], "user");
+    assert_eq!(
+        blocked["pending"]["77"]["raw"]["params"]["extension"],
+        "retain"
+    );
+    let replay = b.call(json!({"method": "task/submit", "operation_id": "submit-one", "submission": submission("fixture")})).await;
+    assert_eq!(replay["result"]["task"]["task_id"], task);
+    assert!(b.call(json!({"method": "task/submit", "operation_id": "submit-one", "submission": submission("different")})).await.get("error").is_some());
+    assert!(b.call(json!({"method": "task/approval", "task_id": task, "operation_id": "bad-decision", "request_id": 77, "decision": "decline"})).await.get("error").is_some());
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker")).unwrap(),
+        "thread/start\nturn/start\n"
+    );
+    b.call(json!({"method": "task/approval", "task_id": task, "operation_id": "decision-one", "request_id": 77, "decision": "accept"})).await;
+    wait_task(&mut b, &task, "completed").await;
+    b.call(json!({"method": "task/approval", "task_id": task, "operation_id": "decision-one", "request_id": 77, "decision": "accept"})).await;
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker"))
+            .unwrap()
+            .matches("approval/reply")
+            .count(),
+        1
+    );
+    assert_eq!(
+        b.call(json!({"method": "task/list", "limit": 1})).await["result"]["tasks"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    b.call(json!({"method": "shutdown"})).await;
+    (&mut harness.task).await.unwrap().unwrap();
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn cancel_rpc_is_not_terminal_and_model_change_requires_native_boundary() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut client = Client::connect(harness.address).await;
+    let accepted = client.call(json!({"method": "task/submit", "operation_id": "submit", "submission": submission("fixture")})).await;
+    assert_eq!(accepted["result"]["task"]["status"], "submitted");
+    let task = accepted["result"]["task"]["task_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    wait_task(&mut client, &task, "blocked").await;
+    let mut next = submission("next");
+    next["parent_task_id"] = json!(task);
+    next["continue_thread"] = json!(true);
+    next["model"] = json!("gpt-5.4");
+    assert!(
+        client
+            .call(
+                json!({"method": "task/submit", "operation_id": "early-switch", "submission": next})
+            )
+            .await
+            .get("error")
+            .is_some()
+    );
+    let cancel = client
+        .call(json!({"method": "task/cancel", "task_id": task, "operation_id": "cancel"}))
+        .await;
+    assert_eq!(cancel["result"]["task"]["status"], "cancel-requested");
+    let state = wait_task(&mut client, &task, "cancel-requested").await;
+    assert_eq!(state["pending"]["77"]["status"], "unavailable");
+    assert!(client.call(json!({"method": "task/approval", "task_id": task, "operation_id": "late", "request_id": 77, "decision": "accept"})).await.get("error").is_some());
+    harness.inject(json!([{"method": "turn/completed", "params": {"threadId": "task-thread", "turn": {"id": "task-turn", "status": "interrupted"}}}])).await;
+    wait_task(&mut client, &task, "cancelled").await;
+    assert_eq!(
+        client
+            .call(json!({"method": "task/status", "operation_id": "cancel"}))
+            .await["result"]["operation"]["outcome"],
+        "confirmed"
+    );
+    next["provider"] = json!("caidex_h2_b");
+    assert!(client.call(json!({"method": "task/submit", "operation_id": "opaque-migrate", "submission": next})).await.get("error").is_some());
+    client.call(json!({"method": "shutdown"})).await;
+    (&mut harness.task).await.unwrap().unwrap();
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn lost_runtime_action_restarts_unknown_without_resubmission_or_stale_approval() {
+    for mode in ["task-drop-thread", "task-drop-turn", "task-drop-approval"] {
+        let mut harness = Harness::start(mode).await;
+        let mut client = Client::connect(harness.address).await;
+        let result = client.call(json!({"method": "task/submit", "operation_id": "lost", "submission": submission("fixture")})).await;
+        let task = result["result"]["task"]["task_id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        if mode == "task-drop-approval" {
+            wait_task(&mut client, &task, "blocked").await;
+            client.call(json!({"method": "task/approval", "task_id": task, "operation_id": "lost-approval", "request_id": 77, "decision": "accept"})).await;
+        }
+        assert!((&mut harness.task).await.unwrap().is_err());
+        let directory = harness.directory.clone();
+        let before = std::fs::read_to_string(directory.join("marker")).unwrap();
+        drop(client);
+        let mut restarted = Harness::at(directory, "task-normal").await;
+        let mut client = Client::connect(restarted.address).await;
+        wait_task(&mut client, &task, "unknown").await;
+        let same = client.call(json!({"method": "task/submit", "operation_id": "lost", "submission": submission("fixture")})).await;
+        assert_eq!(same["result"]["task"]["task_id"], task);
+        assert!(client.call(json!({"method": "task/approval", "task_id": task, "operation_id": "stale", "request_id": 77, "decision": "accept"})).await.get("error").is_some());
+        assert_eq!(
+            std::fs::read_to_string(restarted.directory.join("marker")).unwrap(),
+            before
+        );
+        client.call(json!({"method": "shutdown"})).await;
+        (&mut restarted.task).await.unwrap().unwrap();
+        std::fs::remove_dir_all(&restarted.directory).unwrap();
+    }
+}
+
+#[tokio::test]
+async fn cancel_during_thread_creation_never_starts_a_turn() {
+    let mut harness = Harness::start("task-delay-thread").await;
+    let mut client = Client::connect(harness.address).await;
+    let result = client.call(json!({"method": "task/submit", "operation_id": "early-submit", "submission": submission("fixture")})).await;
+    let task = result["result"]["task"]["task_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    client
+        .call(json!({"method": "task/cancel", "operation_id": "early-cancel", "task_id": task}))
+        .await;
+    wait_task(&mut client, &task, "cancelled").await;
+    assert!(
+        !std::fs::read_to_string(harness.directory.join("marker"))
+            .unwrap()
+            .contains("turn/start")
+    );
+    client.call(json!({"method": "shutdown"})).await;
+    (&mut harness.task).await.unwrap().unwrap();
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn failed_task_commit_never_calls_runtime_and_configuration_mismatch_fails_closed() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut client = Client::connect(harness.address).await;
+    client.call(json!({"method": "snapshot"})).await;
+    let connection = rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+    connection.execute_batch("CREATE TRIGGER deny_task BEFORE INSERT ON events WHEN NEW.method='host/task' BEGIN SELECT RAISE(ABORT, 'injected task storage failure'); END;").unwrap();
+    client.send(json!({"id": 9, "method": "task/submit", "operation_id": "uncommitted", "submission": submission("fixture")})).await;
+    assert!((&mut harness.task).await.unwrap().is_err());
+    assert!(!harness.directory.join("marker").exists());
+    let snapshot: String = connection
+        .query_row("SELECT data FROM snapshot", [], |row| row.get(0))
+        .unwrap();
+    let snapshot: Value = serde_json::from_str(&snapshot).unwrap();
+    assert!(snapshot["tasks"].as_object().unwrap().is_empty());
+    assert!(snapshot["operations"].as_object().unwrap().is_empty());
+    drop(client);
+    drop(connection);
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+    let mut harness = Harness::start("task-wrong-policy").await;
+    let mut client = Client::connect(harness.address).await;
+    client.call(json!({"method": "task/submit", "operation_id": "policy", "submission": submission("fixture")})).await;
+    assert!((&mut harness.task).await.unwrap().is_err());
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker")).unwrap(),
+        "thread/start\n"
+    );
+    let snapshot = Journal::inspect(&harness.directory).unwrap();
+    assert!(snapshot.tasks.values().all(|task| task.status == "unknown"));
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn runtime_rpc_rejection_is_failed_not_unknown_and_preserves_operation() {
+    let mut harness = Harness::start("task-reject-turn").await;
+    let mut client = Client::connect(harness.address).await;
+    let accepted = client.call(json!({"method": "task/submit", "operation_id": "rejected", "submission": submission("fixture")})).await;
+    let id = accepted["result"]["task"]["task_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    wait_task(&mut client, &id, "failed").await;
+    assert_eq!(
+        client
+            .call(json!({"method": "task/status", "operation_id": "rejected"}))
+            .await["result"]["operation"]["outcome"],
+        "rejected"
+    );
+    assert_eq!(client.call(json!({"method": "task/submit", "operation_id": "rejected", "submission": submission("fixture")})).await["result"]["task"]["status"], "failed");
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker")).unwrap(),
+        "thread/start\nturn/start\n"
+    );
+    client.call(json!({"method": "shutdown"})).await;
+    (&mut harness.task).await.unwrap().unwrap();
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn rate_limit_receipt_omits_payload_but_account_auth_still_stops_host() {
+    let mut harness = Harness::start("normal").await;
+    let client = Client::connect(harness.address).await;
+    harness.inject(json!([{"method": "account/rateLimits/updated", "params": {"rateLimits": {"future_secret": "SYNTHETIC_NEVER_PERSIST"}}}])).await;
+    let until = tokio::time::Instant::now() + DEADLINE;
+    loop {
+        let connection =
+            rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+        let count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM events WHERE method='runtime/rateLimitsObserved'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        if count > 0 {
+            let data: String = connection
+                .query_row(
+                    "SELECT data FROM events WHERE method='runtime/rateLimitsObserved'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert!(!data.contains("SYNTHETIC_NEVER_PERSIST"));
+            break;
+        }
+        assert!(tokio::time::Instant::now() < until);
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    harness
+        .inject(
+            json!([{"method": "account/updated", "params": {"token": "SYNTHETIC_NEVER_PERSIST"}}]),
+        )
+        .await;
+    assert!((&mut harness.task).await.unwrap().is_err());
+    let connection = rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+    let count: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM events WHERE data LIKE '%SYNTHETIC_NEVER_PERSIST%'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 0);
+    drop(client);
+    drop(connection);
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn external_host_task_cannot_forge_terminal_state_or_operation() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut client = Client::connect(harness.address).await;
+    let accepted = client.call(json!({"method": "task/submit", "operation_id": "original", "submission": submission("fixture")})).await;
+    let id = accepted["result"]["task"]["task_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let blocked = wait_task(&mut client, &id, "blocked").await;
+    let mut forged = blocked.clone();
+    forged["status"] = json!("completed");
+    let raw = json!({"method": "host/task", "task": forged, "operation": {"operation_id": "forged"}, "params": {"trusted": true}});
+    harness.inject(json!([raw.clone()])).await;
+    let until = tokio::time::Instant::now() + DEADLINE;
+    loop {
+        let snapshot = client.call(json!({"method": "snapshot"})).await["result"].clone();
+        assert_eq!(snapshot["tasks"][&id]["status"], "blocked");
+        assert!(snapshot["operations"].get("forged").is_none());
+        let connection =
+            rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+        let count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM events WHERE method='runtime/notification'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        if count > 0 {
+            let value: String = connection
+                .query_row(
+                    "SELECT data FROM events WHERE method='runtime/notification'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert_eq!(serde_json::from_str::<Value>(&value).unwrap(), raw);
+            break;
+        }
+        assert!(tokio::time::Instant::now() < until);
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    client.call(json!({"method": "shutdown"})).await;
+    (&mut harness.task).await.unwrap().unwrap();
     std::fs::remove_dir_all(&harness.directory).unwrap();
 }

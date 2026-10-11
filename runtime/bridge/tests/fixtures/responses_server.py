@@ -549,6 +549,24 @@ class Handler(BaseHTTPRequestHandler):
         if mode.startswith("wire-"):
             trace["gatewayCredentialMatched"] = self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
             trace.setdefault("wireRequests", []).append({"body": body, "liteHeader": self.headers.get("x-openai-internal-codex-responses-lite"), "accept": self.headers.get("Accept"), "organization": self.headers.get("OpenAI-Organization"), "project": self.headers.get("OpenAI-Project")})
+        if mode == "host-tasks":
+            trace.setdefault("hostRequests", []).append({"model": body["model"], "input": body.get("input", [])})
+            # Keep the actual tool side effect unconfirmed at the Host boundary.
+            if "H2_EXEC_LOST" in json.dumps(body.get("input", [])) and body.get("input", []) and body["input"][-1].get("type") == "function_call_output":
+                Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
+                Path(trace_path).with_name("h2-result-held").touch()
+                self.protocol_version = "HTTP/1.1"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Transfer-Encoding", "chunked")
+                self.end_headers()
+                self.wfile.flush()
+                try:
+                    self.connection.recv(1)
+                except OSError:
+                    pass
+                self.close_connection = True
+                return
         for item in body.get("input", []):
             if item.get("type") in ["function_call_output", "custom_tool_call_output"]:
                 trace["toolOutputs"].append(item.get("output"))
@@ -605,6 +623,13 @@ class Handler(BaseHTTPRequestHandler):
             patch = f"*** Begin Patch\n*** Add File: {marker.as_posix()}\n+CAIDEX_PATCH_APPLIED\n*** End Patch"
             trace["tool"] = "apply_patch"
             events.append(event("response.output_item.done", item={"type": "custom_tool_call", "call_id": "fixture-patch-1", "name": "apply_patch", "input": patch}))
+        elif mode == "host-tasks" and body.get("input", []) and body["input"][-1].get("role") == "user" and "H2_EXEC" in json.dumps(body["input"][-1]):
+            names = [tool.get("name") for tool in body.get("tools", [])]
+            name = "exec_command" if "exec_command" in names else "shell_command"
+            arguments = {"cmd" if name == "exec_command" else "command": "echo H2_EXECUTED >> h2-marker.txt", "sandbox_permissions": "require_escalated", "justification": "Only append an isolated H-2 fixture marker", "yield_time_ms" if name == "exec_command" else "timeout_ms": 1000}
+            trace.setdefault("hostModels", []).append(body["model"])
+            trace.setdefault("hostCommands", []).append(identity)
+            events.append(event("response.output_item.done", item={"type": "function_call", "call_id": identity + "-command", "name": name, "arguments": json.dumps(arguments)}))
         elif mode == "queue" or (mode in ["approval", "questions"] and trace["requests"] == 1):
             tools = body.get("tools", [])
             names = [tool.get("name") for tool in tools]

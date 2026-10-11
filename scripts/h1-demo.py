@@ -48,10 +48,13 @@ class Client:
         self.socket.close()
 
 
-def launch(binary, directory, token):
+def launch(binary, directory, token, offline_endpoint=None):
     environment = os.environ.copy()
     environment["CAIDEX_HOST_TOKEN"] = token
-    process = subprocess.Popen([binary, "run", str(directory)], env=environment,
+    arguments = [binary, "run", str(directory)]
+    if offline_endpoint is not None:
+        arguments += ["--offline-responses", offline_endpoint]
+    process = subprocess.Popen(arguments, env=environment,
                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, text=True)
     # Reading readiness in a child with communicate gives a finite launch deadline.

@@ -266,3 +266,83 @@ fn offline_inspection_never_migrates_or_creates_a_database() {
     assert!(Journal::inspect(&directory.0).is_err());
     assert_eq!(std::fs::read(&path).unwrap(), before);
 }
+
+#[test]
+fn validated_v1_migration_preserves_identity_events_and_read_only_inspection() {
+    let directory = Directory::new();
+    let mut journal = Journal::open(&directory.0).unwrap();
+    journal.append("host/started", json!({})).unwrap();
+    journal
+        .append(
+            "thread/started",
+            json!({"params": {"thread": {"id": "historical", "future": true}}}),
+        )
+        .unwrap();
+    let saved = journal.snapshot();
+    drop(journal);
+    let path = directory.0.join("journal.sqlite3");
+    let connection = Connection::open(&path).unwrap();
+    let mut old = serde_json::to_value(&saved).unwrap();
+    old["version"] = json!(1);
+    old.as_object_mut().unwrap().remove("tasks");
+    old.as_object_mut().unwrap().remove("operations");
+    connection
+        .execute("UPDATE snapshot SET data = ?1", [old.to_string()])
+        .unwrap();
+    connection.pragma_update(None, "user_version", 1).unwrap();
+    drop(connection);
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(Journal::inspect(&directory.0).unwrap().version, 1);
+    assert_eq!(
+        std::fs::read(&path).unwrap(),
+        bytes,
+        "inspect must not migrate"
+    );
+    let migrated = Journal::open(&directory.0).unwrap();
+    let actual = migrated.snapshot();
+    assert_eq!(actual.version, 2);
+    assert_eq!(actual.host_id, saved.host_id);
+    assert_eq!(actual.seq, saved.seq);
+    assert_eq!(actual.threads, saved.threads);
+    assert!(actual.tasks.is_empty() && actual.operations.is_empty());
+    drop(migrated);
+    let connection = Connection::open(&path).unwrap();
+    let version: i64 = connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, 2);
+    assert_eq!(
+        connection
+            .query_row("SELECT COUNT(*) FROM events", [], |row| row
+                .get::<_, i64>(0))
+            .unwrap(),
+        saved.seq
+    );
+}
+
+#[test]
+fn failed_v1_migration_rolls_back_snapshot_and_version() {
+    let directory = Directory::new();
+    let mut journal = Journal::open(&directory.0).unwrap();
+    journal.append("host/started", json!({})).unwrap();
+    let mut snapshot = serde_json::to_value(journal.snapshot()).unwrap();
+    snapshot["version"] = json!(1);
+    drop(journal);
+    let connection = Connection::open(directory.0.join("journal.sqlite3")).unwrap();
+    connection
+        .execute("UPDATE snapshot SET data=?1", [snapshot.to_string()])
+        .unwrap();
+    connection.pragma_update(None, "user_version", 1).unwrap();
+    connection.execute_batch("CREATE TRIGGER migration_failure BEFORE UPDATE ON snapshot BEGIN SELECT RAISE(ABORT, 'injected migration failure'); END;").unwrap();
+    assert!(Journal::open(&directory.0).is_err());
+    let actual: String = connection
+        .query_row("SELECT data FROM snapshot", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(actual, snapshot.to_string());
+    assert_eq!(
+        connection
+            .pragma_query_value(None, "user_version", |row| row.get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+}
