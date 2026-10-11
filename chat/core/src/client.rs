@@ -122,6 +122,9 @@ impl Chat {
     pub async fn send(&self, send: Send) -> Result<Message> {
         let (provider, request, cancel, generation) = {
             let mut state = self.state()?;
+            if state.pending.len() >= 16 {
+                return Err(Error::Invalid);
+            }
             let model = state.model.as_ref().ok_or(Error::ModelUnavailable)?;
             validate_model(model, state.cache.namespace())?;
             let provider = model.provider.clone();

@@ -19,6 +19,7 @@ pub struct Conversation {
 #[derive(Clone, Serialize)]
 pub struct Message {
     pub sequence: i64,
+    pub created_at_millis: i64,
     pub id: Uuid,
     pub conversation: Uuid,
     pub parent: Option<Uuid>,
@@ -142,7 +143,7 @@ impl Cache {
         let tx = self.db.transaction()?;
         tx.execute(
             "INSERT INTO conversations VALUES (?1,?2,?3)",
-            params![id.to_string(), project_id.as_ref().map(Id::as_str), title],
+            params![id.to_string(), project_id.map(String::from), title],
         )?;
         queue(&tx, id, "conversation")?;
         tx.commit()?;
@@ -154,7 +155,10 @@ impl Cache {
             "SELECT id,project_id,title FROM conversations WHERE id>?1 ORDER BY id LIMIT ?2",
         )?;
         let rows = q.query_map(
-            params![after.map(|v| v.to_string()).unwrap_or_default(), limit],
+            params![
+                after.map(|v| v.to_string()).unwrap_or_default(),
+                limit as i64
+            ],
             |r| {
                 Ok((
                     r.get::<_, String>(0)?,
@@ -168,7 +172,7 @@ impl Cache {
             Ok(Conversation {
                 id: uuid(&id)?,
                 project_id: project
-                    .map(Id::new)
+                    .map(Id::try_from)
                     .transpose()
                     .map_err(|_| Error::UnsafeStorage)?,
                 title,
@@ -249,21 +253,21 @@ impl Cache {
     pub fn messages(&self, conversation: Uuid, after: i64, limit: usize) -> Result<Vec<Message>> {
         self.conversation(conversation)?;
         page(limit)?;
-        let mut q=self.db.prepare("SELECT sequence,id,conversation,parent,role,content,ending FROM messages WHERE conversation=?1 AND sequence>?2 ORDER BY sequence LIMIT ?3")?;
+        let mut q=self.db.prepare("SELECT sequence,id,conversation,parent,role,content,ending,created_at_millis FROM messages WHERE conversation=?1 AND sequence>?2 ORDER BY sequence LIMIT ?3")?;
         let rows = q.query_map(
-            params![conversation.to_string(), after, limit],
+            params![conversation.to_string(), after, limit as i64],
             read_message,
         )?;
         rows.map(|r| decode_message(r?)).collect()
     }
     fn message(&self, conversation: Uuid, id: Uuid) -> Result<Message> {
-        let row=self.db.query_row("SELECT sequence,id,conversation,parent,role,content,ending FROM messages WHERE id=?1 AND conversation=?2",params![id.to_string(),conversation.to_string()],read_message).optional()?.ok_or(Error::NotFound)?;
+        let row=self.db.query_row("SELECT sequence,id,conversation,parent,role,content,ending,created_at_millis FROM messages WHERE id=?1 AND conversation=?2",params![id.to_string(),conversation.to_string()],read_message).optional()?.ok_or(Error::NotFound)?;
         decode_message(row)
     }
     pub fn outbox(&self, after: i64, limit: usize) -> Result<Vec<OutboxEntry>> {
         page(limit)?;
         let mut q=self.db.prepare("SELECT sequence,operation,entity,kind FROM outbox WHERE sequence>?1 ORDER BY sequence LIMIT ?2")?;
-        q.query_map(params![after, limit], |r| {
+        q.query_map(params![after, limit as i64], |r| {
             Ok((
                 r.get::<_, i64>(0)?,
                 r.get::<_, String>(1)?,
@@ -438,7 +442,16 @@ fn page(limit: usize) -> Result<()> {
 fn uuid(value: &str) -> Result<Uuid> {
     Uuid::parse_str(value).map_err(|_| Error::UnsafeStorage)
 }
-type StoredMessage = (i64, String, String, Option<String>, String, String, String);
+type StoredMessage = (
+    i64,
+    String,
+    String,
+    Option<String>,
+    String,
+    String,
+    String,
+    i64,
+);
 fn read_message(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredMessage> {
     Ok((
         r.get(0)?,
@@ -448,13 +461,15 @@ fn read_message(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredMessage> {
         r.get(4)?,
         r.get(5)?,
         r.get(6)?,
+        r.get(7)?,
     ))
 }
 fn decode_message(
-    (sequence, id, conversation, parent, role, content, end): StoredMessage,
+    (sequence, id, conversation, parent, role, content, end, created_at_millis): StoredMessage,
 ) -> Result<Message> {
     Ok(Message {
         sequence,
+        created_at_millis,
         id: uuid(&id)?,
         conversation: uuid(&conversation)?,
         parent: parent.map(|p| uuid(&p)).transpose()?,
@@ -481,7 +496,14 @@ fn insert_message(
 ) -> Result<()> {
     content.validate()?;
     let content = serde_json::to_string(content).map_err(|_| Error::Invalid)?;
-    tx.execute("INSERT INTO messages(id,conversation,parent,role,content,state,ending) VALUES (?1,?2,?3,?4,?5,?6,?7)",params![id.to_string(),conversation.to_string(),parent.map(|p|p.to_string()),role,content,end.state(),end.as_str()])?;
+    let created_at_millis = i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| Error::Storage)?
+            .as_millis(),
+    )
+    .map_err(|_| Error::Storage)?;
+    tx.execute("INSERT INTO messages(id,conversation,parent,role,content,state,ending,created_at_millis) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",params![id.to_string(),conversation.to_string(),parent.map(|p|p.to_string()),role,content,end.state(),end.as_str(),created_at_millis])?;
     queue(tx, id, "message")
 }
 

@@ -50,8 +50,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let guest = Namespace::guest();
     let trust = Trust::local_test("http://localhost:3333/")?;
-    let a = Namespace::offline_account(&trust, &Id::new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")?);
-    let b = Namespace::offline_account(&trust, &Id::new("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")?);
+    let a = Namespace::offline_account(
+        &trust,
+        &Id::try_from("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa".to_owned())?,
+    );
+    let b = Namespace::offline_account(
+        &trust,
+        &Id::try_from("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb".to_owned())?,
+    );
     let chat = Chat::open(&root, guest.clone())?;
     chat.configure(model(endpoint, &guest))?;
     let g = chat.create_conversation(None, "Guest local".into())?;

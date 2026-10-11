@@ -4,7 +4,7 @@
 
 ## 当前批准：I-3独立Chat与缓存，实施中
 
-2026-10-11用户纠正阶段编号，明确确认I-2独立审计通过并批准I-3。范围、验收与停止条件见[设计与验收](docs/CAIdex-I3-独立Chat缓存-设计与验收-V1.md)。基线main/HEAD 6176529dc8fca874db878a881028f1e49953881b，工作区原先干净；磁盘3.7GiB可用，完整构建/回归优先GitHub。本轮不使用ponytail技能，不启动I-4。已实现初版chat/core SQLite缓存/流收发、消息DAG/附件/outbox、账号切换取消与ModelProvider/Broker边界；新增合成HTTP内部演示及测试，复用共享私有目录。仅本地fmt/语法/差异检查，准备提交GitHub进行首次完整验证，未授通过。
+2026-10-11用户纠正阶段编号，明确确认I-2独立审计通过并批准I-3。范围、验收与停止条件见[设计与验收](docs/CAIdex-I3-独立Chat缓存-设计与验收-V1.md)。基线main/HEAD 6176529dc8fca874db878a881028f1e49953881b，工作区原先干净；磁盘3.7GiB可用，完整构建/回归优先GitHub。本轮不使用ponytail技能，不启动I-4。已实现初版chat/core SQLite缓存/流收发、消息DAG/附件/outbox、账号切换取消与ModelProvider/Broker边界；新增合成HTTP内部演示及测试，复用共享私有目录。仅本地fmt/语法/差异检查，首次CI38138193270在Chat编译失败（错误使用cloud Id API/usize SQL参数），原Linux日志/tmp/caidex-i3-first-linux.log；已按既有TryFrom/From及有符号分页参数修正，补消息时间戳/并发上限，准备重新提交。未授通过，最终封存须包含失败原日志与精确成功证据。
 
 ## 已关闭I-2（用户确认独立审计通过）
 

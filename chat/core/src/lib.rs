@@ -58,7 +58,7 @@ impl Namespace {
     }
     /// Explicit local offline selection; never resumes login or grants upload permission.
     pub fn offline_account(trust: &Trust, user: &Id) -> Self {
-        Self::key(trust.issuer(), user.as_str(), trust.is_test())
+        Self::key(trust.issuer(), &String::from(user.clone()), trust.is_test())
     }
     fn key(issuer: &str, user: &str, test: bool) -> Self {
         Self(format!(

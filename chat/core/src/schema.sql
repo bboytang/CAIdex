@@ -5,6 +5,7 @@ CREATE TABLE conversations (
 CREATE TABLE messages (
     sequence INTEGER PRIMARY KEY AUTOINCREMENT,
     id TEXT NOT NULL UNIQUE, conversation TEXT NOT NULL REFERENCES conversations(id),
+    created_at_millis INTEGER NOT NULL CHECK(created_at_millis >= 0),
     parent TEXT, role TEXT NOT NULL CHECK(role IN ('user','assistant')),
     content TEXT NOT NULL CHECK(length(CAST(content AS BLOB)) <= 1048576),
     state TEXT NOT NULL CHECK(state IN ('complete','interrupted')),

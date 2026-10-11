@@ -168,6 +168,7 @@ async fn immutable_branches_selected_history_attachments_and_outbox_survive_reop
     let first = chat.send(request).await.unwrap();
     assert_eq!(first.content.text, "hello");
     assert_eq!(first.end, End::Complete);
+    assert!(first.created_at_millis > 0);
     let (left, right) = tokio::join!(
         chat.send(send(c, Some(first.id), "left")),
         chat.send(send(c, Some(first.id), "right"))
@@ -190,21 +191,22 @@ async fn immutable_branches_selected_history_attachments_and_outbox_survive_reop
         Err(Error::AlreadySubmitted)
     ));
     assert_eq!(f.calls.load(Ordering::SeqCst), calls);
-    let requests = f.requests.lock().unwrap();
-    let last = requests.last().unwrap().to_string();
-    assert!(last.contains("left"));
-    assert!(!last.contains("right"));
-    assert!(!last.contains("PRIVATE-CARRIER"));
-    assert!(
-        requests[0]["input"][0]["content"][1]["file_data"]
-            .as_str()
-            .unwrap()
-            .starts_with("data:text/plain;base64,")
-    );
-    assert_eq!(requests[0]["tools"], json!([]));
-    assert_eq!(requests[0]["tool_choice"], "none");
-    assert_eq!(requests[0]["store"], false);
-    drop(requests);
+    {
+        let requests = f.requests.lock().unwrap();
+        let last = requests.last().unwrap().to_string();
+        assert!(last.contains("left"));
+        assert!(!last.contains("right"));
+        assert!(!last.contains("PRIVATE-CARRIER"));
+        assert!(
+            requests[0]["input"][0]["content"][1]["file_data"]
+                .as_str()
+                .unwrap()
+                .starts_with("data:text/plain;base64,")
+        );
+        assert_eq!(requests[0]["tools"], json!([]));
+        assert_eq!(requests[0]["tool_choice"], "none");
+        assert_eq!(requests[0]["store"], false);
+    }
     let c2 = chat.create_conversation(None, "other".into()).unwrap();
     assert!(matches!(chat.attachment(c2, a), Err(Error::NotFound)));
     let mut cross = send(c2, None, "cross");
@@ -280,7 +282,8 @@ async fn switch_logout_and_offline_reopen_never_adopt_foreign_data_or_model() {
     let trust = Trust::local_test("http://localhost:3333/").unwrap();
     let offline = Namespace::offline_account(
         &trust,
-        &caidex_cloud_core::Id::new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").unwrap(),
+        &caidex_cloud_core::Id::try_from("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa".to_owned())
+            .unwrap(),
     );
     assert!(offline == a);
     let reopened = Chat::open(&root.0, offline).unwrap();
