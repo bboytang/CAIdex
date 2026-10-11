@@ -133,6 +133,10 @@ def main():
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     assert os.environ.get("CAIDEX_CODEX_BIN"), "set the pinned Codex executable"
+    version = subprocess.run([os.environ["CAIDEX_CODEX_BIN"], "--version"], capture_output=True,
+                             text=True, timeout=15, env={name: os.environ[name] for name in
+                             ["PATH", "HOME", "SystemRoot", "USERPROFILE", "TEMP", "TMP"] if name in os.environ})
+    assert version.returncode == 0 and version.stdout.strip() == "codex-cli 0.160.1"
     binaries = {name: Path("target/debug/examples") / (name + (".exe" if os.name == "nt" else ""))
                 for name in ["memory_host", "memory_client"]}
     subprocess.run(["cargo", "build", "-p", "caidex-host", "--examples", "--locked"], check=True)

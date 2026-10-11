@@ -17,3 +17,56 @@
 停止条件：通过后封存并停止功能开发，等待独立 I-4.2 审计及用户确认；不启动 I-5。阻断按当前通过条件最小修复；云观察器及生产传输未验如实记录。
 
 当前：实施中；未授任何验证通过。
+
+## 实现边界与调用路径
+
+`runtime/host::serve_with_memory` 复用原 Host transport、配对与 Runtime 循环；原 `serve` 不隐式启用记忆。Host 操作者通过 `MemoryService::open` 提供 `MemoryProfile`（现有 LocalModel/ModelProvider/Router/Host Broker、独立整合/Embedding、完整空间）及 `MemoryGrant`（配对 client_id、逐范围/用途/类型/隐私外发许可、确切 task_id 来源白名单）。模型引用的 credential owner 必须是传入的 Host owner，带 Key 必须有 Broker guard；没有读取/导出 Key 的 RPC，也不接受客户端指定模型端点或认证参数。模型配置/策略在本次 Host 实例内，由应用启动端显式供应；不冒充生产配置页面或正式 CLI 已接好。
+
+新增 scope `memory` 独立于 observe/execute/approve。Memory 客户端不能 snapshot/attach 全 journal、submit Runtime task、probe、批准或给自己授权；其他三个 scope 均不隐授 Memory。owner 管理配对、撤销和完成任务白名单，普通账户令牌不能代配对。推理的 client_id 来自 Host 认证，不从正文读取账户或 owner。每个身份的操作键为 `(client_id, operation_id)`，其他客户端不能 status/cancel/release 其结果。Host 再按完整目标、用途、scope、kind、source type、local-only 许可检查，客户端自身的细许可独立存在。
+
+RPC：`memory/models` 仅返回该配对身份获准的模型描述；`memory/submit` 接收有界 `InferenceRequest`（固定 profile、完整目标、Draft、可选精确 Space）；`memory/status` 返回原状态/请求 SHA256/有界结果；`memory/cancel` 停止模型工作并清暂存结果；`memory/release` 释放已完成的结果，不重发/删除操作身份。`memory/evidence` 只读取被授权的完成任务摘要；`memory/evidence-grant` 是 owner-only 的精确白名单入口，不给 Memory 授 Runtime 工具权限。无云端 Agent 或模型后台代执行。
+
+共享 `chat/core/memory/inference.rs` 从原本地实现抽出有界、无工具的整合/Embedding 调用，客户端和 Host 共用严格候选/向量校验；工具/reasoning 不能伪装正文。Host 模型输出不会执行指令/提升审批权限。Key 和已知配对令牌的 guard 在请求、输出、描述和证据边界生效。只防已知值/认证结构，不声称能识别所有未知秘密。
+
+`MemoryEngine::configure_host_integration/configure_host_embedding/configure_host_resolver` 为显式应用接口；绑定 Namespace、Host ID、作用域、完整真实 Provider 端点/native model/Host profile 组合身份和空间。Host 身份作为目标 endpoint 的前缀，真实 Provider 端点仍完整可核对；别名/Host/端点/native model/空间改变不能继承旧许可。角色绑定只在当前会话，重启客户端必须重新配置；Host 模型完全替换对应本地角色，没有客户端 Key 回退路径。普通 Chat 仍只使用自己的本地角色。
+
+## 离线、持久化与结果交付
+
+本地等待作业经自动开关、来源新鲜度、项目许可和外发许可检查后才尝试 Host。连接前离线或只读预检不可达时恢复 waiting，未发模型请求；恢复由应用明确 run 原 waiting ID，重新核验全部边界。Host 受理前事务写 `memory-operations.sqlite3` 的 client/UUID/hash/state，数据库与 Runtime journal/客户端 cache 分开，不存正文、结果或 Key。相同操作/相同请求返回原状态；相同操作/不同请求拒绝，不启动第二次模型工作。
+
+开始发送提交后连接/响应丢失视为 unknown；客户端保留原引用和固定目标，`recover_host` 只查原 ID，不调用 submit。收到 done 结果还核验完整请求 hash，并再次校验来源/revision/空间/权限/epoch。客户端保存后显式 release；结果最多暂存120秒。过期、Host 重启或客户端落盘失败都不能承诺结果可交付，只允许 unknown/取消，不重播。没有“模型 POST/本地 SQLite/Host 账本跨进程恰好一次”承诺。
+
+Host 重启将 running/done 封存 unknown；旧 ID 重提也只返回原 unknown。取消/撤权先取消 token/清暂存结果，再拒迟到完成；本地关闭、删除、纠错、切账户、撤销外发/项目权限沿用 I-4.1 generation/epoch 与 Flight，同时通知 Host 取消。未知 POST 不能直接重发。账户切换清模型/来源绑定；旧 HostModel/HostConnection 不能配置到新 Namespace。丢失网络的撤销/取消不能收回第三方已收到的正文，但本地和 Host 均不提交迟到结果。
+
+现有 Host journal schema3→4 是事务版本升级，保留原 clients/任务/artifacts/操作/事件；新 Memory scope 不被旧二进制误读。客户端 schema2→3 保留原 schema1/schema2 DDL、Chat/Memory/许可/作业，升级版本保护新增固定 target 字段，旧版拒读新版，不提供数据降级。Host 操作账本 schema1 有独占锁、owner 文件/链接检查、未来版本拒绝与 SQLite容量上限。
+
+## 来源与有界限制
+
+执行来源的 reference 是 `host:<host_id>:<task_id>`。每次读取建立授权 RPC，核对 Memory scope 与 owner 配置的 task/scope 白名单，只有当前 journal 中 completed 的任务才能返回 Host/task/thread/turn/seq/Codex版本摘要。该摘要证明任务完成状态，**不证明完整命令 stdout、文件/Git事实或全部原始 Runtime journal 已导入**；后者继续使用实际对应来源及权限。撤权、离线、重启未重新供应证据白名单、摘要变化都使旧证据不可用/非当前，不能当已验证事实检索。
+
+可信 `EvidenceResolver` 仍是同步接口：Host resolver 用标准 TCP、每次超时5秒重新检查，不缓存“已验证”布尔值；应用应在有工作线程的环境调用，可能暂时阻塞本地 Memory 锁，不授 iOS/UI 响应性能通过。Host 对外仍是原 numeric loopback 协议，本轮独立进程验证真实 RPC；生产跨机器 SSH/Relay、安全隧道与实际公网网络故障归 L/Q/R。
+
+Host ≤16模型、≤64绑定、每绑定≤1024许可/来源，≤8未释放推理/结果，模型 deadline120秒；入站 frame≤64KiB，Memory 描述/结果 JSON≤60KiB，单正文≤16KiB，源/标签沿用 I-4.1 有界约束。Embedding维度仍1～16000，但大向量若 JSON 超过 frame 上限明确拒绝；本轮不证明所有维度/数字表示组合兼容。账本≤4096操作、约4MiB容量，容量达到后拒新操作，不删旧身份让操作复活；不授生产吞吐/长期运维。结果释放/过期不会删除最少操作身份。SQLite是 OS owner 保护的明文，不防同OS用户/管理员。
+
+## 可复现试用
+
+在有足够空间的独立 checkout 中安装固定 Codex0.160.1并设置 `CAIDEX_CODEX_BIN`；只需临时合成端点/Key，不配置真实账户或商业 Key：
+
+```sh
+cargo test -p caidex-chat -p caidex-host --locked
+python3 scripts/i42-host-memory.py --output i42-host-memory.json
+```
+
+取得→启动→配置→操作→判定：checkout 最终功能 SHA；脚本构建两个内部例子并启动独立 Host/client、两个 loopback模型服务与可控丢回应代理；自动生成配对令牌、只在 Host 注入专用合成 Broker Key，客户端没有模型 Key；脚本操作默认关闭/明确开启、整合与Embedding、丢回应只查原操作、离线等待恢复、固定 Runtime审批/真实文件副作用/授权来源摘要、取消、杀 Host/重启 unknown、撤权；只有所有断言成功才输出 `status=ok`，并检查账本无 Key/正文、没有模型重播或云上传。失败输出原错误，不能用已推送或排队代通过。脚本清理自己的临时目录/进程，不清理用户缓存。内部例子不是正式 GUI/CLI；完整 CI 验证结果待最终封存填写。
+
+## 验收映射（结果待精确 CI）
+
+| 通过条件 | 实际验证入口 | 明确限制 |
+| --- | --- | --- |
+| 独立授权/身份/隔离 | Host TCP scope/目标/范围/类型/local-only/空间/跨client/owner边界测试 | 不授账户认证或生产 SSH/Relay |
+| 默认关闭/无Key回退/离线恢复 | 共享 Memory waiting、离线恢复测试及独立进程脚本 | 模型质量/费用仍 F/G-Live 未验 |
+| 幂等/丢回应/unknown | 原操作 query+hash、实际代理丢回应、kill Host重启 | unknown不保证交付，不重发 POST |
+| 取消/撤权/删除/切账户 | Host待完成任务、共享epoch/Flight测试、真实HTTP取消 | 第三方已收到正文不可收回 |
+| Runtime来源/审批不提升 | 固定Runtime真实工具/审批、完成任务白名单摘要；Memory恶意工具输出拒绝 | 摘要不是完整 stdout/journal导入 |
+| 迁移/数据完整性 | 原DDL构造schema2缓存；v3 journal客户端/artifact保留及注入回滚；账本锁/未来版拒绝 | 不授物理VPS满盘/灾难恢复 |
+| MEM-10 Host执行端子项 | 实际离线/恢复/撤权/重启原操作链 | 云观察器与云作业协议尚归 I-5/I-6，未执行、同步关闭上传0 |

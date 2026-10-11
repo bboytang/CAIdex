@@ -335,7 +335,7 @@ impl MemoryService {
                         infos.push(info);
                     }
                 }
-                if !self.safe(&json!(infos)) {
+                if !self.safe(&json!(infos)) || serde_json::to_vec(&infos)?.len() > 60 * 1024 {
                     return Err(Error::Refused("unsafe Memory model descriptor"));
                 }
                 Ok(json!(infos))
@@ -472,7 +472,7 @@ impl MemoryService {
                     .filter(|t| t.status == "completed")
                     .ok_or(Error::Refused("Memory evidence unavailable"))?;
                 let value = json!({"host_id":snapshot.host_id,"task_id":task.task_id,"status":task.status,"thread_id":task.thread_id,"turn_id":task.turn_id,"last_seq":task.last_seq,"codex_version":caidex_runtime::CODEX_VERSION});
-                if !self.safe(&value) {
+                if !self.safe(&value) || serde_json::to_vec(&value)?.len() > 60 * 1024 {
                     return Err(Error::Refused("Memory evidence unsafe"));
                 }
                 Ok(value)
