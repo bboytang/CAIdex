@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use caidex_host::{Journal, private_directory};
 use rusqlite::Connection;
-use serde_json::json;
+use serde_json::{Value, json};
 
 struct Directory(PathBuf);
 impl Directory {
@@ -304,7 +304,7 @@ fn validated_v1_migration_preserves_identity_events_and_read_only_inspection() {
     );
     let migrated = Journal::open(&directory.0).unwrap();
     let actual = migrated.snapshot();
-    assert_eq!(actual.version, 2);
+    assert_eq!(actual.version, 3);
     assert_eq!(actual.host_id, saved.host_id);
     assert_eq!(actual.seq, saved.seq);
     assert_eq!(actual.threads, saved.threads);
@@ -314,7 +314,7 @@ fn validated_v1_migration_preserves_identity_events_and_read_only_inspection() {
     let version: i64 = connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 2);
+    assert_eq!(version, 3);
     assert_eq!(
         connection
             .query_row("SELECT COUNT(*) FROM events", [], |row| row
@@ -365,12 +365,14 @@ fn runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids() {
             provider: "caidex_h2_a".into(),
             parent_task_id: None,
             continue_thread: false,
+            review: false,
         },
         status: "submitted".into(),
         thread_id: None,
         turn_id: None,
         actual: serde_json::Value::Null,
         pending: Default::default(),
+        artifacts: Default::default(),
         last_seq: 0,
         stream: 1,
         expires_at: 9999999999,
@@ -414,4 +416,184 @@ fn runtime_turn_notifications_require_explicit_matching_thread_and_turn_ids() {
         Journal::inspect(&directory.0).unwrap().tasks["task"].status,
         "completed"
     );
+}
+
+fn h3_journal(directory: &Directory) -> Journal {
+    let mut journal = Journal::open(&directory.0).unwrap();
+    journal.append("host/started", json!({})).unwrap();
+    let task:caidex_host::Task=serde_json::from_value(json!({"task_id":"task","operation_id":"submit","submission":{"prompt":"fixture","model":"gpt-5.5","provider":"caidex_h2_a"},"status":"blocked","thread_id":"thread","turn_id":"turn","actual":null,"pending":{"77":{"request_id":77,"status":"pending","expires_at":9999999999u64}},"artifacts":{},"last_seq":0,"stream":1,"expires_at":9999999999u64})).unwrap();
+    let op = caidex_host::Operation {
+        operation_id: "submit".into(),
+        payload_hash: "a".repeat(64),
+        task_id: "task".into(),
+        action: "submit".into(),
+        outcome: "accepted".into(),
+        last_seq: 0,
+    };
+    journal
+        .append("host/task", json!({"task":task,"operation":op}))
+        .unwrap();
+    journal
+}
+
+#[test]
+fn diff_review_and_tool_artifacts_preserve_wire_ids_unknown_fields_and_restart() {
+    let directory = Directory::new();
+    let mut journal = h3_journal(&directory);
+    let raw = json!({"method":"turn/diff/updated","params":{"threadId":"thread","turnId":"turn","diff":"diff --git a/a b/a\n+native change","future":{"opaque":true}},"unknown":17});
+    journal
+        .append_runtime("turn/diff/updated", raw.clone())
+        .unwrap();
+    assert_eq!(journal.snapshot().tasks["task"].artifacts["diff"], raw);
+    for (thread, turn) in [("foreign", "turn"), ("thread", "foreign")] {
+        journal
+            .append_runtime(
+                "turn/diff/updated",
+                json!({"params":{"threadId":thread,"turnId":turn,"diff":"wrong"}}),
+            )
+            .unwrap();
+        assert_eq!(journal.snapshot().tasks["task"].artifacts["diff"], raw);
+    }
+    for (id, kind) in [
+        ("review-in", "enteredReviewMode"),
+        ("review-out", "exitedReviewMode"),
+        ("tool", "commandExecution"),
+    ] {
+        let item = json!({"method":"item/completed","params":{"threadId":"thread","turnId":"turn","item":{"id":id,"type":kind,"review":"native review","extension":true}}});
+        journal
+            .append_runtime("item/completed", item.clone())
+            .unwrap();
+        assert_eq!(
+            journal.snapshot().tasks["task"].artifacts[&format!("item:{id}")],
+            item
+        );
+    }
+    journal
+        .append_runtime(
+            "serverRequest/resolved",
+            json!({"params":{"threadId":"foreign","requestId":77}}),
+        )
+        .unwrap();
+    assert_eq!(
+        journal.snapshot().tasks["task"].pending["77"]["status"],
+        "pending"
+    );
+    journal
+        .append_runtime(
+            "serverRequest/resolved",
+            json!({"params":{"threadId":"thread","requestId":77}}),
+        )
+        .unwrap();
+    assert_eq!(
+        journal.snapshot().tasks["task"].pending["77"]["status"],
+        "resolved"
+    );
+    assert_eq!(journal.snapshot().tasks["task"].status, "running");
+    let before = journal.snapshot();
+    drop(journal);
+    let offline = Journal::inspect(&directory.0).unwrap();
+    assert_eq!(offline.tasks["task"].status, "unknown");
+    assert_eq!(
+        offline.tasks["task"].artifacts,
+        before.tasks["task"].artifacts
+    );
+    let mut journal = Journal::open(&directory.0).unwrap();
+    journal.append("host/started", json!({})).unwrap();
+    journal
+        .append_runtime(
+            "turn/diff/updated",
+            json!({"params":{"threadId":"thread","turnId":"turn","diff":"stale stream"}}),
+        )
+        .unwrap();
+    assert_eq!(
+        journal.snapshot().tasks["task"].artifacts,
+        before.tasks["task"].artifacts
+    );
+}
+
+#[test]
+fn artifact_capacity_failure_rolls_back_event_and_snapshot() {
+    let directory = Directory::new();
+    let mut journal = h3_journal(&directory);
+    for i in 0..64 {
+        journal.append_runtime("item/completed",json!({"params":{"threadId":"thread","turnId":"turn","item":{"id":i.to_string(),"type":"future"}}})).unwrap();
+    }
+    let before = journal.snapshot();
+    assert!(
+        journal
+            .append_runtime(
+                "turn/diff/updated",
+                json!({"params":{"threadId":"thread","turnId":"turn","diff":"overflow"}})
+            )
+            .is_err()
+    );
+    assert_eq!(journal.snapshot(), before);
+    let connection = Connection::open(directory.0.join("journal.sqlite3")).unwrap();
+    let count: i64 = connection
+        .query_row("SELECT COUNT(*) FROM events", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(count, before.seq);
+    let byte_directory = Directory::new();
+    let mut journal = h3_journal(&byte_directory);
+    journal
+        .append_runtime(
+            "turn/diff/updated",
+            json!({"params":{"threadId":"thread","turnId":"turn","diff":"x".repeat(600*1024)}}),
+        )
+        .unwrap();
+    let before = journal.snapshot();
+    assert!(journal.append_runtime("item/completed", json!({"params":{"threadId":"thread","turnId":"turn","item":{"id":"too-large","type":"agentMessage","text":"y".repeat(600*1024)}}})).is_err());
+    assert_eq!(
+        journal.snapshot(),
+        before,
+        "total byte limit rolls back, not just item count"
+    );
+}
+
+#[test]
+fn v2_upgrade_preserves_operation_hash_and_identity_without_inspect_writes() {
+    let directory = Directory::new();
+    let journal = h3_journal(&directory);
+    let saved = journal.snapshot();
+    drop(journal);
+    let connection = Connection::open(directory.0.join("journal.sqlite3")).unwrap();
+    let mut wire = serde_json::to_value(&saved).unwrap();
+    wire["version"] = json!(2);
+    wire.as_object_mut().unwrap().remove("clients");
+    wire["tasks"]["task"]
+        .as_object_mut()
+        .unwrap()
+        .remove("artifacts");
+    connection
+        .execute("UPDATE snapshot SET data=?1", [wire.to_string()])
+        .unwrap();
+    connection.pragma_update(None, "user_version", 2).unwrap();
+    drop(connection);
+    let bytes = std::fs::read(directory.0.join("journal.sqlite3")).unwrap();
+    let inspected = Journal::inspect(&directory.0).unwrap();
+    assert_eq!(inspected.version, 2);
+    assert_eq!(
+        bytes,
+        std::fs::read(directory.0.join("journal.sqlite3")).unwrap()
+    );
+    let connection = Connection::open(directory.0.join("journal.sqlite3")).unwrap();
+    connection.execute_batch("CREATE TRIGGER fail_v2 BEFORE UPDATE ON snapshot BEGIN SELECT RAISE(ABORT,'injected v2 migration failure'); END;").unwrap();
+    assert!(Journal::open(&directory.0).is_err());
+    let version: i64 = connection
+        .pragma_query_value(None, "user_version", |r| r.get(0))
+        .unwrap();
+    assert_eq!(version, 2);
+    let unchanged: String = connection
+        .query_row("SELECT data FROM snapshot", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(serde_json::from_str::<Value>(&unchanged).unwrap(), wire);
+    connection.execute_batch("DROP TRIGGER fail_v2").unwrap();
+    drop(connection);
+    let journal = Journal::open(&directory.0).unwrap();
+    let upgraded = journal.snapshot();
+    assert_eq!(upgraded.version, 3);
+    assert_eq!(upgraded.host_id, saved.host_id);
+    assert_eq!(upgraded.seq, saved.seq);
+    assert_eq!(upgraded.operations, saved.operations);
+    assert!(upgraded.clients.is_empty() && upgraded.tasks["task"].artifacts.is_empty());
 }

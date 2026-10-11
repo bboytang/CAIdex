@@ -103,6 +103,9 @@ struct Client {
 }
 impl Client {
     async fn connect(address: std::net::SocketAddr) -> Self {
+        Self::with_token(address, TOKEN).await
+    }
+    async fn with_token(address: std::net::SocketAddr, token: &str) -> Self {
         let (read, write) = TcpStream::connect(address).await.unwrap().into_split();
         let mut client = Self {
             lines: BufReader::new(read).lines(),
@@ -110,7 +113,7 @@ impl Client {
             id: 0,
             events: Vec::new(),
         };
-        client.send(json!({"protocol": 1, "token": TOKEN})).await;
+        client.send(json!({"protocol": 1, "token": token})).await;
         assert_eq!(client.next().await["authorized"], true);
         client
     }
@@ -857,5 +860,347 @@ async fn external_host_task_cannot_forge_terminal_state_or_operation() {
     }
     client.call(json!({"method": "shutdown"})).await;
     (&mut harness.task).await.unwrap().unwrap();
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn delegated_approval_race_is_one_durable_winner_and_retries_do_not_write_again() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut owner = Client::connect(harness.address).await;
+    let mut tokens = Vec::new();
+    for id in ["device-a", "device-b"] {
+        let grant = owner
+            .call(json!({"method":"client/grant", "client_id":id, "scopes":["observe","approve"]}))
+            .await;
+        tokens.push(
+            grant["result"]["token"]
+                .as_str()
+                .expect("delegated Host token")
+                .to_owned(),
+        );
+    }
+    let mut a = Client::with_token(harness.address, &tokens[0]).await;
+    let mut b = Client::with_token(harness.address, &tokens[1]).await;
+    let accepted = owner.call(json!({"method":"task/submit","operation_id":"race-submit","submission":submission("fixture")})).await;
+    let id = accepted["result"]["task"]["task_id"].as_str().unwrap();
+    let task = wait_task(&mut owner, id, "blocked").await;
+    let request = task["pending"]["77"]["request_id"].clone();
+    let ca = json!({"method":"task/approval","task_id":id,"operation_id":"race-a","request_id":request,"decision":"accept"});
+    let cb = json!({"method":"task/approval","task_id":id,"operation_id":"race-b","request_id":request,"decision":"accept"});
+    let (ra, rb) = tokio::join!(a.call(ca.clone()), b.call(cb.clone()));
+    assert_eq!(
+        usize::from(ra.get("result").is_some()) + usize::from(rb.get("result").is_some()),
+        1
+    );
+    let winner = if ra.get("result").is_some() {
+        "race-a"
+    } else {
+        "race-b"
+    };
+    let done = wait_task(&mut owner, id, "completed").await;
+    assert_eq!(done["pending"]["77"]["operation_id"], winner);
+    assert_eq!(
+        done["pending"]["77"]["client_id"],
+        if winner == "race-a" {
+            "device-a"
+        } else {
+            "device-b"
+        }
+    );
+    let retry = if winner == "race-a" {
+        a.call(ca).await
+    } else {
+        b.call(cb).await
+    };
+    assert_eq!(retry["result"]["operation"]["operation_id"], winner);
+    let marker = std::fs::read_to_string(harness.directory.join("marker")).unwrap();
+    assert_eq!(
+        marker
+            .lines()
+            .filter(|line| *line == "approval/reply")
+            .count(),
+        1
+    );
+    let connection = rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+    for token in tokens {
+        let count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM events WHERE instr(data,?1)>0",
+                [token],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            count, 0,
+            "delegated plaintext token must never be journaled"
+        );
+    }
+    drop(connection);
+    owner.call(json!({"method":"shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn delegated_scope_and_revocation_reject_existing_connections_and_reconnect() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut owner = Client::connect(harness.address).await;
+    let grant = owner
+        .call(json!({"method":"client/grant","client_id":"observer","scopes":["observe"]}))
+        .await;
+    let token = grant["result"]["token"].as_str().expect("delegated token");
+    let mut observer = Client::with_token(harness.address, token).await;
+    assert!(
+        observer
+            .call(json!({"method":"snapshot"}))
+            .await
+            .get("result")
+            .is_some()
+    );
+    for value in [
+        json!({"method":"task/submit","operation_id":"forbidden","submission":submission("fixture")}),
+        json!({"method":"client/grant","client_id":"escalate","scopes":["approve"]}),
+        json!({"method":"shutdown"}),
+    ] {
+        assert!(observer.call(value).await.get("error").is_some());
+    }
+    assert!(!harness.directory.join("marker").exists());
+    observer
+        .call(json!({"method":"attach","host_id":harness.host}))
+        .await;
+    let before = owner.call(json!({"method":"snapshot"})).await["result"].clone();
+    harness
+        .inject(json!([{"method":"host/access","grant":{"client_id":"observer","revoked":true}}]))
+        .await;
+    let current = owner.call(json!({"method":"snapshot"})).await["result"].clone();
+    assert_eq!(
+        current["clients"], before["clients"],
+        "Runtime cannot forge authorization control"
+    );
+    owner
+        .call(json!({"method":"client/revoke","client_id":"observer"}))
+        .await;
+    // Revocation closes a live subscription without delivering later protected data.
+    loop {
+        let line = tokio::time::timeout(DEADLINE, observer.lines.next_line())
+            .await
+            .unwrap()
+            .unwrap();
+        if line.is_none() {
+            break;
+        }
+        let value: Value = serde_json::from_str(&line.unwrap()).unwrap();
+        assert_ne!(
+            value.pointer("/event/method").and_then(Value::as_str),
+            Some("host/access")
+        );
+    }
+    let (read, mut write) = TcpStream::connect(harness.address)
+        .await
+        .unwrap()
+        .into_split();
+    write
+        .write_all(format!("{}\n", json!({"protocol":1,"token":token})).as_bytes())
+        .await
+        .unwrap();
+    let line = BufReader::new(read)
+        .lines()
+        .next_line()
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(line.contains("rejected"));
+    assert!(
+        owner
+            .call(json!({"method":"client/grant","client_id":"observer","scopes":["approve"]}))
+            .await
+            .get("error")
+            .is_some(),
+        "revoked client IDs cannot be reused"
+    );
+    owner.call(json!({"method":"shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn explicit_request_revocation_interrupts_without_approval_and_late_response_is_rejected() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut client = Client::connect(harness.address).await;
+    let accepted=client.call(json!({"method":"task/submit","operation_id":"revoke-submit","submission":submission("fixture")})).await;
+    let id = accepted["result"]["task"]["task_id"].as_str().unwrap();
+    let task = wait_task(&mut client, id, "blocked").await;
+    let request = task["pending"]["77"]["request_id"].clone();
+    let value=client.call(json!({"method":"task/approval-revoke","task_id":id,"operation_id":"revoke-one","request_id":request})).await;
+    assert_eq!(
+        value["result"]["task"]["pending"]["77"]["status"],
+        "revoked"
+    );
+    assert_eq!(value["result"]["task"]["status"], "cancel-requested");
+    assert!(client.call(json!({"method":"task/approval","task_id":id,"operation_id":"late","request_id":request,"decision":"accept"})).await.get("error").is_some());
+    let until = tokio::time::Instant::now() + DEADLINE;
+    loop {
+        let marker = std::fs::read_to_string(harness.directory.join("marker")).unwrap();
+        assert!(!marker.contains("approval/reply"));
+        if marker.contains("turn/interrupt") {
+            break;
+        }
+        assert!(tokio::time::Instant::now() < until);
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    client.call(json!({"method":"shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn approval_commit_failure_does_not_send_a_decision_or_record_a_winner() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut client = Client::connect(harness.address).await;
+    let accepted=client.call(json!({"method":"task/submit","operation_id":"claim-submit","submission":submission("fixture")})).await;
+    let id = accepted["result"]["task"]["task_id"].as_str().unwrap();
+    wait_task(&mut client, id, "blocked").await;
+    let db = rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+    db.execute_batch("CREATE TRIGGER claim_failure BEFORE INSERT ON events WHEN NEW.method='host/task' AND json_extract(NEW.data,'$.operation.action')='approval' BEGIN SELECT RAISE(ABORT,'injected approval commit failure'); END;").unwrap();
+    client.send(json!({"id":42,"method":"task/approval","task_id":id,"operation_id":"uncommitted-claim","request_id":77,"decision":"accept"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_err()
+    );
+    assert!(
+        !std::fs::read_to_string(harness.directory.join("marker"))
+            .unwrap()
+            .contains("approval/reply")
+    );
+    let snapshot: String = db
+        .query_row("SELECT data FROM snapshot WHERE id=1", [], |r| r.get(0))
+        .unwrap();
+    let value: Value = serde_json::from_str(&snapshot).unwrap();
+    assert!(value["operations"].get("uncommitted-claim").is_none());
+    assert!(
+        value["tasks"][id]["pending"]["77"]
+            .get("operation_id")
+            .is_none()
+    );
+    assert_eq!(
+        value["tasks"][id]["status"], "blocked",
+        "failed transaction leaves last committed state intact"
+    );
+    drop(db);
+    assert_eq!(
+        Journal::inspect(&harness.directory).unwrap().tasks[id].status,
+        "unknown"
+    );
+    let mut restarted = Harness::at(harness.directory.clone(), "task-normal").await;
+    let mut observer = Client::connect(restarted.address).await;
+    assert_eq!(
+        observer
+            .call(json!({"method":"task/status","task_id":id}))
+            .await["result"]["task"]["status"],
+        "unknown"
+    );
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker")).unwrap(),
+        "thread/start\nturn/start\n"
+    );
+    observer.call(json!({"method":"shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut restarted.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn failed_grant_commit_cannot_authorize_a_client_or_publish_a_secret() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut owner = Client::connect(harness.address).await;
+    let db = rusqlite::Connection::open(harness.directory.join("journal.sqlite3")).unwrap();
+    db.execute_batch("CREATE TRIGGER grant_failure BEFORE INSERT ON events WHEN NEW.method='host/access' BEGIN SELECT RAISE(ABORT,'injected grant commit failure'); END;").unwrap();
+    owner.send(json!({"id":2,"method":"client/grant","client_id":"not-issued","scopes":["observe","approve"]})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_err()
+    );
+    assert!(owner.lines.next_line().await.unwrap().is_none());
+    let snapshot: String = db
+        .query_row("SELECT data FROM snapshot WHERE id=1", [], |r| r.get(0))
+        .unwrap();
+    let value: Value = serde_json::from_str(&snapshot).unwrap();
+    assert!(value["clients"].get("not-issued").is_none());
+    drop(db);
+    std::fs::remove_dir_all(&harness.directory).unwrap();
+}
+
+#[tokio::test]
+async fn native_resolved_request_and_thread_close_are_barriers_to_late_approval() {
+    let mut harness = Harness::start("task-normal").await;
+    let mut client = Client::connect(harness.address).await;
+    let accepted=client.call(json!({"method":"task/submit","operation_id":"resolved-submit","submission":submission("fixture")})).await;
+    let id = accepted["result"]["task"]["task_id"].as_str().unwrap();
+    wait_task(&mut client, id, "blocked").await;
+    harness.inject(json!([{"method":"serverRequest/resolved","params":{"threadId":"task-thread","requestId":77}}])).await;
+    let until = tokio::time::Instant::now() + DEADLINE;
+    loop {
+        let task = client
+            .call(json!({"method":"task/status","task_id":id}))
+            .await["result"]["task"]
+            .clone();
+        if task["pending"]["77"]["status"] == "resolved" {
+            break;
+        }
+        assert!(tokio::time::Instant::now() < until);
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert!(client.call(json!({"method":"task/approval","task_id":id,"operation_id":"after-resolution","request_id":77,"decision":"accept"})).await.get("error").is_some());
+    harness
+        .inject(json!([{"method":"thread/closed","params":{"threadId":"task-thread"}}]))
+        .await;
+    wait_task(&mut client, id, "unknown").await;
+    assert_eq!(
+        client
+            .call(json!({"method":"task/cancel","task_id":id,"operation_id":"after-close"}))
+            .await["result"]["operation"]["outcome"],
+        "unknown"
+    );
+    assert_eq!(
+        std::fs::read_to_string(harness.directory.join("marker")).unwrap(),
+        "thread/start\nturn/start\n"
+    );
+    client.call(json!({"method":"shutdown"})).await;
+    assert!(
+        tokio::time::timeout(DEADLINE, &mut harness.task)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_ok()
+    );
     std::fs::remove_dir_all(&harness.directory).unwrap();
 }

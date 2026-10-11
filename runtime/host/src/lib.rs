@@ -1,9 +1,11 @@
 //! Local Host lifecycle and persistent tasks. Execution and approvals remain in Codex.
+mod access;
 mod journal;
 mod security;
 mod service;
 mod task;
 
+pub use access::{Grant, Scope};
 pub use journal::{Event, Journal, Snapshot};
 pub use security::private_directory;
 pub use service::serve;

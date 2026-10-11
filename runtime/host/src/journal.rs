@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use crate::{Error, Result, random_id};
 
 const APPLICATION_ID: i64 = 0x43414948; // CAIH: distinct from Chat/Memory databases.
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 pub(crate) const REPLAY_LIMIT: i64 = 128;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -33,6 +33,7 @@ pub struct Snapshot {
     pub unresolved_probes: BTreeMap<String, Value>,
     pub tasks: BTreeMap<String, crate::Task>,
     pub operations: BTreeMap<String, crate::Operation>,
+    pub clients: BTreeMap<String, crate::Grant>,
 }
 
 impl Snapshot {
@@ -57,7 +58,7 @@ impl Snapshot {
         }
     }
 
-    fn apply(&mut self, method: &str, data: &Value) {
+    fn apply(&mut self, method: &str, data: &Value) -> Result<()> {
         match method {
             "host/started" => {
                 self.invalidate_runtime();
@@ -72,6 +73,84 @@ impl Snapshot {
                     "unavailable"
                 }
                 .into();
+            }
+            "host/access" => {
+                let grant: crate::Grant = serde_json::from_value(data["grant"].clone())?;
+                self.clients.insert(grant.client_id.clone(), grant);
+            }
+            "serverRequest/resolved" => {
+                if let (Some(thread), Some(id)) = (
+                    data.pointer("/params/threadId").and_then(Value::as_str),
+                    data.pointer("/params/requestId"),
+                ) && let Ok(id) = serde_json::from_value::<caidex_runtime::RequestId>(id.clone())
+                {
+                    let key = serde_json::to_string(&id)?;
+                    for task in self.tasks.values_mut().filter(|task| {
+                        task.stream == self.stream
+                            && task.thread_id.as_deref() == Some(thread)
+                            && !task.terminal()
+                            && task.status != "unknown"
+                    }) {
+                        if let Some(request) = task.pending.get_mut(&key)
+                            && matches!(
+                                request["status"].as_str(),
+                                Some("pending" | "sending" | "sent")
+                            )
+                        {
+                            request["status"] = json!("resolved");
+                            task.last_seq = self.seq;
+                            if task.status == "blocked"
+                                && !task.pending.values().any(|r| {
+                                    matches!(r["status"].as_str(), Some("pending" | "sending"))
+                                })
+                            {
+                                task.status = "running".into();
+                            }
+                        }
+                    }
+                }
+            }
+            "turn/diff/updated"
+            | "item/fileChange/patchUpdated"
+            | "item/started"
+            | "item/completed" => {
+                if let (Some(thread), Some(turn)) = (
+                    data.pointer("/params/threadId").and_then(Value::as_str),
+                    data.pointer("/params/turnId").and_then(Value::as_str),
+                ) {
+                    for task in self.tasks.values_mut().filter(|task| {
+                        task.stream == self.stream
+                            && task.thread_id.as_deref() == Some(thread)
+                            && task.turn_id.as_deref() == Some(turn)
+                            && task.status != "unknown"
+                    }) {
+                        let key = if method == "turn/diff/updated" {
+                            if !data["params"]["diff"].is_string() {
+                                continue;
+                            }
+                            "diff".to_owned()
+                        } else if method == "item/fileChange/patchUpdated" {
+                            let Some(id) = data["params"]["itemId"].as_str() else {
+                                continue;
+                            };
+                            format!("patch:{id}")
+                        } else {
+                            let Some(id) = data["params"]["item"]["id"].as_str() else {
+                                continue;
+                            };
+                            format!("item:{id}")
+                        };
+                        task.artifacts.insert(key, data.clone());
+                        if task.artifacts.len() > 64
+                            || serde_json::to_vec(&task.artifacts)?.len() > 1024 * 1024
+                        {
+                            return Err(Error::Refused(
+                                "task artifact capacity exceeded; no incomplete snapshot",
+                            ));
+                        }
+                        task.last_seq = self.seq;
+                    }
+                }
             }
             "host/task" => {
                 if let Ok(mut task) = serde_json::from_value::<crate::Task>(data["task"].clone()) {
@@ -104,7 +183,7 @@ impl Snapshot {
                 let thread = data.pointer("/params/threadId").and_then(Value::as_str);
                 let turn = data.pointer("/params/turn/id").and_then(Value::as_str);
                 if thread.is_none() || turn.is_none() {
-                    return;
+                    return Ok(());
                 }
                 for task in self.tasks.values_mut().filter(|task| {
                     task.stream == self.stream
@@ -128,7 +207,10 @@ impl Snapshot {
                             }
                             .into();
                             for pending in task.pending.values_mut() {
-                                pending["status"] = json!("unavailable");
+                                if matches!(pending["status"].as_str(), Some("pending" | "sending"))
+                                {
+                                    pending["status"] = json!("unavailable");
+                                }
                             }
                             for operation in self.operations.values_mut().filter(|operation| {
                                 operation.task_id == task.task_id
@@ -172,10 +254,19 @@ impl Snapshot {
                     && let Some(thread) = self.threads.get_mut(id)
                 {
                     thread["runtime_state"] = json!("unloaded");
+                    for task in self.tasks.values_mut().filter(|task| {
+                        task.stream == self.stream
+                            && task.thread_id.as_deref() == Some(id)
+                            && !task.terminal()
+                    }) {
+                        task.invalidate();
+                        task.last_seq = self.seq;
+                    }
                 }
             }
             _ => (),
         }
+        Ok(())
     }
 
     /// Offline inspection must not present a cached running flag as a live Host.
@@ -270,6 +361,7 @@ impl Journal {
                 unresolved_probes: BTreeMap::new(),
                 tasks: BTreeMap::new(),
                 operations: BTreeMap::new(),
+                clients: BTreeMap::new(),
             };
             let transaction = connection.transaction()?;
             transaction.execute_batch("CREATE TABLE events (seq INTEGER PRIMARY KEY CHECK(seq > 0), stream INTEGER NOT NULL CHECK(stream > 0), stream_seq INTEGER NOT NULL CHECK(stream_seq > 0), method TEXT NOT NULL, data TEXT NOT NULL, UNIQUE(stream, stream_seq)); CREATE TABLE snapshot (id INTEGER PRIMARY KEY CHECK(id = 1), data TEXT NOT NULL);")?;
@@ -283,7 +375,7 @@ impl Journal {
             initial
         } else {
             let mut snapshot = Self::load_snapshot(&connection)?;
-            if version == 1 {
+            if version < SCHEMA_VERSION {
                 snapshot.version = SCHEMA_VERSION;
                 let transaction = connection.transaction()?;
                 transaction.execute(
@@ -311,7 +403,7 @@ impl Journal {
         let version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
         let application: i64 =
             connection.pragma_query_value(None, "application_id", |row| row.get(0))?;
-        if !matches!(version, 1 | SCHEMA_VERSION) || application != APPLICATION_ID {
+        if !matches!(version, 1 | 2 | SCHEMA_VERSION) || application != APPLICATION_ID {
             return Err(Error::Refused(
                 "unsupported journal schema/application; no downgrade or repair",
             ));
@@ -332,6 +424,20 @@ impl Journal {
             object.entry("tasks").or_insert_with(|| json!({}));
             object.entry("operations").or_insert_with(|| json!({}));
         }
+        if version < SCHEMA_VERSION {
+            wire.as_object_mut()
+                .ok_or(Error::Refused("invalid legacy snapshot"))?
+                .insert("clients".into(), json!({}));
+            for task in wire["tasks"]
+                .as_object_mut()
+                .ok_or(Error::Refused("invalid legacy task map"))?
+                .values_mut()
+            {
+                task.as_object_mut()
+                    .ok_or(Error::Refused("invalid legacy task"))?
+                    .insert("artifacts".into(), json!({}));
+            }
+        }
         let snapshot: Snapshot = serde_json::from_value(wire)?;
         let (count, seq): (i64, i64) = connection.query_row(
             "SELECT COUNT(*), COALESCE(MAX(seq), 0) FROM events",
@@ -349,8 +455,22 @@ impl Journal {
         {
             return Err(Error::Refused("journal/snapshot watermark mismatch"));
         }
+        if snapshot.clients.len() > 64
+            || snapshot.clients.iter().any(|(id, grant)| {
+                id != &grant.client_id
+                    || id == crate::access::OWNER
+                    || grant.digest.len() != 64
+                    || !grant.digest.bytes().all(|b| b.is_ascii_hexdigit())
+                    || grant.scopes.is_empty()
+                    || grant.scopes.len() > 3
+            })
+        {
+            return Err(Error::Refused("invalid Host authorization projection"));
+        }
         if snapshot.tasks.iter().any(|(id, task)| {
             task.task_id != *id
+                || task.artifacts.len() > 64
+                || serde_json::to_vec(&task.artifacts).map_or(true, |data| data.len() > 1024 * 1024)
                 || task.last_seq <= 0
                 || task.last_seq > seq
                 || task.stream <= 0
@@ -450,7 +570,7 @@ impl Journal {
             .stream_seq
             .checked_add(1)
             .ok_or(Error::Refused("stream sequence exhausted"))?;
-        snapshot.apply(method, &data);
+        snapshot.apply(method, &data)?;
         let event = Event {
             host_id: snapshot.host_id.clone(),
             seq: snapshot.seq,

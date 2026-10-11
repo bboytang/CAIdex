@@ -3,16 +3,17 @@ use std::{path::PathBuf, time::Duration};
 use caidex_runtime::{Runtime, RuntimeEvent};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use subtle::ConstantTimeEq;
 use tokio::{
     io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
     net::{TcpListener, TcpStream},
-    sync::{broadcast, mpsc, oneshot},
+    sync::{broadcast, mpsc, oneshot, watch},
     task::JoinSet,
 };
 
+use crate::access::{self, OWNER};
 use crate::task::{self, Tasks};
 use crate::{Error, Event, HostPolicy, Journal, Result, Submission, random_id};
+use crate::{Grant, Scope};
 
 const DEADLINE: Duration = Duration::from_secs(15);
 const WRITE_DEADLINE: Duration = Duration::from_secs(5);
@@ -74,17 +75,63 @@ enum Request {
         request_id: caidex_runtime::RequestId,
         decision: caidex_runtime::ApprovalDecision,
     },
+    #[serde(rename = "task/approval-revoke")]
+    ApprovalRevoke {
+        id: u64,
+        task_id: String,
+        operation_id: String,
+        request_id: caidex_runtime::RequestId,
+    },
+    #[serde(rename = "client/grant")]
+    ClientGrant {
+        id: u64,
+        client_id: String,
+        scopes: Vec<Scope>,
+    },
+    #[serde(rename = "client/revoke")]
+    ClientRevoke { id: u64, client_id: String },
     #[serde(rename = "shutdown")]
     Shutdown { id: u64 },
 }
 
 enum ClientCommand {
     Snapshot,
-    Attach { host_id: String, after: Option<i64> },
+    Attach {
+        host_id: String,
+        after: Option<i64>,
+    },
     Detach,
     Probe,
     Shutdown,
     Task(task::Command),
+    Grant {
+        client_id: String,
+        scopes: Vec<Scope>,
+    },
+    Revoke {
+        client_id: String,
+    },
+}
+
+impl ClientCommand {
+    fn scope(&self) -> Option<Scope> {
+        match self {
+            Self::Snapshot
+            | Self::Attach { .. }
+            | Self::Detach
+            | Self::Task(task::Command::Status { .. } | task::Command::List { .. }) => {
+                Some(Scope::Observe)
+            }
+            Self::Probe
+            | Self::Task(task::Command::Submit { .. } | task::Command::Cancel { .. }) => {
+                Some(Scope::Execute)
+            }
+            Self::Task(task::Command::Approval { .. } | task::Command::Revoke { .. }) => {
+                Some(Scope::Approve)
+            }
+            Self::Shutdown | Self::Grant { .. } | Self::Revoke { .. } => None,
+        }
+    }
 }
 
 impl Request {
@@ -95,6 +142,25 @@ impl Request {
             Self::Detach { id } => (id, ClientCommand::Detach),
             Self::Probe { id } => (id, ClientCommand::Probe),
             Self::Shutdown { id } => (id, ClientCommand::Shutdown),
+            Self::ClientGrant {
+                id,
+                client_id,
+                scopes,
+            } => (id, ClientCommand::Grant { client_id, scopes }),
+            Self::ClientRevoke { id, client_id } => (id, ClientCommand::Revoke { client_id }),
+            Self::ApprovalRevoke {
+                id,
+                task_id,
+                operation_id,
+                request_id,
+            } => (
+                id,
+                ClientCommand::Task(task::Command::Revoke {
+                    task_id,
+                    operation_id,
+                    request_id,
+                }),
+            ),
             Self::TaskSubmit {
                 id,
                 operation_id,
@@ -159,7 +225,7 @@ enum Reply {
 type ReplySender = oneshot::Sender<std::result::Result<Reply, &'static str>>;
 
 enum Message {
-    Client(ClientCommand, ReplySender),
+    Client(ClientCommand, String, ReplySender),
     ProbeResult(
         String,
         std::result::Result<Value, caidex_runtime::Error>,
@@ -197,6 +263,7 @@ pub async fn serve(
         ));
     }
     let (events, _) = broadcast::channel(EVENT_CAPACITY);
+    let (access_send, access_receive) = watch::channel(journal.snapshot().clients);
     let (send, mut messages) = mpsc::channel(MAX_CLIENTS);
     let mut connections = JoinSet::new();
     let mut probes = JoinSet::new();
@@ -215,7 +282,8 @@ pub async fn serve(
                     if connections.len() < MAX_CLIENTS {
                         let send = send.clone();
                         let token = token.clone();
-                        connections.spawn(async move { let _ = connection(socket, token, send).await; });
+                        let access = access_receive.clone();
+                        connections.spawn(async move { let _ = connection(socket, token, send, access).await; });
                     }
                 }
                 _ = connections.join_next(), if !connections.is_empty() => (),
@@ -259,18 +327,51 @@ pub async fn serve(
                     }
                 }
                 message = messages.recv() => {
-                    match message.expect("service retains a sender") {
-                        Message::Client(ClientCommand::Task(command), reply) => {
-                            match tasks.command(&mut journal, &events, command) {
+                    let message = message.expect("service retains a sender");
+                    if let Message::Client(ref command, ref client, _) = message
+                        && !access::permits(&journal.snapshot().clients, client, command.scope()) {
+                        if let Message::Client(_, _, reply) = message { let _ = reply.send(Err("Host authorization revoked or scope denied")); }
+                        continue;
+                    }
+                    match message {
+                        Message::Client(ClientCommand::Grant { client_id, scopes }, _, reply) => {
+                            if journal.snapshot().clients.len() >= 64 || journal.snapshot().clients.contains_key(&client_id) {
+                                let _ = reply.send(Err("Host client capacity reached or ID already issued"));
+                                continue;
+                            }
+                            let (grant, secret) = match Grant::issue(client_id, scopes) {
+                                Ok(value) => value,
+                                Err(Error::Refused(reason)) => { let _ = reply.send(Err(reason)); continue; }
+                                Err(error) => return Err(error),
+                            };
+                            let event = journal.append("host/access", json!({"grant": grant}))?;
+                            access_send.send_replace(journal.snapshot().clients);
+                            let _ = events.send(event);
+                            let _ = reply.send(Ok(Reply::Json(json!({"grant": grant, "token": secret}))));
+                        }
+                        Message::Client(ClientCommand::Revoke { client_id }, _, reply) => {
+                            let Some(mut grant) = journal.snapshot().clients.get(&client_id).cloned() else {
+                                let _ = reply.send(Err("Host client not found")); continue;
+                            };
+                            if !grant.revoked {
+                                grant.revoked = true;
+                                let event = journal.append("host/access", json!({"grant": grant}))?;
+                                access_send.send_replace(journal.snapshot().clients);
+                                let _ = events.send(event);
+                            }
+                            let _ = reply.send(Ok(Reply::Json(json!({"grant": grant}))));
+                        }
+                        Message::Client(ClientCommand::Task(command), client, reply) => {
+                            match tasks.command(&mut journal, &events, command, &client) {
                                 Ok(value) => { let _ = reply.send(Ok(Reply::Json(value))); }
                                 Err(Error::Refused(reason)) => { let _ = reply.send(Err(reason)); }
                                 Err(error) => return Err(error),
                             }
                         }
-                        Message::Client(ClientCommand::Snapshot, reply) => {
+                        Message::Client(ClientCommand::Snapshot, _, reply) => {
                             let _ = reply.send(Ok(Reply::Json(json!(journal.snapshot()))));
                         }
-                        Message::Client(ClientCommand::Attach { host_id, after }, reply) => {
+                        Message::Client(ClientCommand::Attach { host_id, after }, _, reply) => {
                             // No await between subscribe and watermark/replay: the
                             // service is the sole journal writer, so there is no gap.
                             let receiver = events.subscribe();
@@ -281,10 +382,10 @@ pub async fn serve(
                             };
                             let _ = reply.send(recovery);
                         }
-                        Message::Client(ClientCommand::Detach, reply) => {
+                        Message::Client(ClientCommand::Detach, _, reply) => {
                             let _ = reply.send(Ok(Reply::Json(json!({"detached": true}))));
                         }
-                        Message::Client(ClientCommand::Probe, reply) => {
+                        Message::Client(ClientCommand::Probe, _, reply) => {
                             if probe_pending {
                                 let _ = reply.send(Err("probe already in flight"));
                                 continue;
@@ -317,7 +418,7 @@ pub async fn serve(
                             publish(&mut journal, &events, "host/probeResult", data.clone())?;
                             let _ = reply.send(Ok(Reply::Json(data)));
                         }
-                        Message::Client(ClientCommand::Shutdown, reply) => {
+                        Message::Client(ClientCommand::Shutdown, _, reply) => {
                             publish(&mut journal, &events, "host/stopping", json!({"reason": "explicit owner shutdown"}))?;
                             runtime.shutdown().await?;
                             publish(&mut journal, &events, "host/stopped", json!({"reason": "explicit owner shutdown"}))?;
@@ -372,7 +473,12 @@ async fn write(writer: &mut tokio::net::tcp::OwnedWriteHalf, value: Value) -> Re
     Ok(())
 }
 
-async fn connection(socket: TcpStream, token: String, send: mpsc::Sender<Message>) -> Result<()> {
+async fn connection(
+    socket: TcpStream,
+    token: String,
+    send: mpsc::Sender<Message>,
+    mut access: watch::Receiver<std::collections::BTreeMap<String, Grant>>,
+) -> Result<()> {
     let (read, mut writer) = socket.into_split();
     let mut reader = BufReader::new(read);
     let mut buffer = Vec::new();
@@ -381,7 +487,8 @@ async fn connection(socket: TcpStream, token: String, send: mpsc::Sender<Message
         .map_err(|_| Error::Refused("authorization timed out"))??
         .ok_or(Error::Refused("missing authorization"))?;
     let auth: Auth = serde_json::from_slice(&bytes)?;
-    if auth.protocol != 1 || !bool::from(auth.token.as_bytes().ct_eq(token.as_bytes())) {
+    let client_id = access::authenticate(&auth.token, &token, &access.borrow());
+    if auth.protocol != 1 || client_id.is_none() {
         write(
             &mut writer,
             json!({"error": "authorization/protocol rejected"}),
@@ -389,11 +496,21 @@ async fn connection(socket: TcpStream, token: String, send: mpsc::Sender<Message
         .await?;
         return Ok(());
     }
+    let client_id = client_id.expect("authenticated principal");
     write(&mut writer, json!({"authorized": true, "protocol": 1})).await?;
     let mut subscriber: Option<broadcast::Receiver<Event>> = None;
     let mut last_seq = 0;
     loop {
+        if client_id != OWNER
+            && access
+                .borrow()
+                .get(&client_id)
+                .is_none_or(|grant| grant.revoked)
+        {
+            return Ok(());
+        }
         tokio::select! {
+            _ = access.changed() => (),
             _ = send.closed() => return Ok(()),
             bytes = frame(&mut reader, &mut buffer) => {
                 let Some(bytes) = bytes? else { return Ok(()); };
@@ -405,8 +522,9 @@ async fn connection(socket: TcpStream, token: String, send: mpsc::Sender<Message
                 let detach = matches!(command, ClientCommand::Detach);
                 let shutdown = matches!(command, ClientCommand::Shutdown);
                 let (reply, receive) = oneshot::channel();
-                send.send(Message::Client(command, reply)).await.map_err(|_| Error::Refused("Host stopped"))?;
+                send.send(Message::Client(command, client_id.clone(), reply)).await.map_err(|_| Error::Refused("Host stopped"))?;
                 let response = receive.await.map_err(|_| Error::Refused("Host stopped; response outcome unknown"))?;
+                if client_id != OWNER && access.borrow().get(&client_id).is_none_or(|grant| grant.revoked) { return Ok(()); }
                 match response {
                     Ok(Reply::Json(value)) => {
                         if detach { subscriber = None; }
@@ -424,6 +542,7 @@ async fn connection(socket: TcpStream, token: String, send: mpsc::Sender<Message
             event = async { subscriber.as_mut().expect("guarded subscription").recv().await }, if subscriber.is_some() => {
                 match event {
                     Ok(event) => {
+                        if client_id != OWNER && access.borrow().get(&client_id).is_none_or(|grant| grant.revoked) { return Ok(()); }
                         last_seq = event.seq;
                         write(&mut writer, json!({"event": event})).await?;
                     }
@@ -459,7 +578,8 @@ mod tests {
             .await
             .unwrap();
         let (server, _) = listener.accept().await.unwrap();
-        let task = tokio::spawn(connection(server, "f".repeat(64), send));
+        let (_access, receive) = watch::channel(Default::default());
+        let task = tokio::spawn(connection(server, "f".repeat(64), send, receive));
         let (read, mut write) = socket.into_split();
         let mut lines = BufReader::new(read).lines();
         write
@@ -477,7 +597,7 @@ mod tests {
             )
             .await
             .unwrap();
-        let Message::Client(_, reply) = messages.recv().await.unwrap() else {
+        let Message::Client(_, _, reply) = messages.recv().await.unwrap() else {
             panic!("attach")
         };
         reply
@@ -494,7 +614,7 @@ mod tests {
             .write_all(b"{\"id\":2,\"method\":\"snapshot\"}\n")
             .await
             .unwrap();
-        let Message::Client(_, reply) = messages.recv().await.unwrap() else {
+        let Message::Client(_, _, reply) = messages.recv().await.unwrap() else {
             panic!("snapshot")
         };
         for index in 0..=EVENT_CAPACITY {

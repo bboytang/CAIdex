@@ -101,5 +101,7 @@ jobs:
           ${{ matrix.python }} scripts/h1-demo.py
       - name: H-2 persistent tasks and real native execution (local synthetic model)
         run: ${{ matrix.python }} scripts/h2-demo.py
+      - name: H-3 delegated approvals, native Diff/Review and recovery (local synthetic model)
+        run: ${{ matrix.python }} scripts/h3-demo.py
       - name: Real Runtime with local Responses fixtures
         run: cargo test -p caidex-runtime --test real_runtime --locked -- --ignored

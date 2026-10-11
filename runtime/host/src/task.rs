@@ -13,6 +13,11 @@ const MAX_TASKS: usize = 1024;
 const MAX_OPERATIONS: usize = 4096;
 const MAX_PENDING: usize = 32;
 const TASK_LIFETIME: u64 = 300;
+const APPROVAL_LIFETIME: u64 = 120;
+
+fn is_false(value: &bool) -> bool {
+    !value
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -24,6 +29,8 @@ pub struct Submission {
     pub parent_task_id: Option<String>,
     #[serde(default)]
     pub continue_thread: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub review: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -36,6 +43,7 @@ pub struct Task {
     pub turn_id: Option<String>,
     pub actual: Value,
     pub pending: BTreeMap<String, Value>,
+    pub artifacts: BTreeMap<String, Value>,
     pub last_seq: i64,
     pub stream: i64,
     pub expires_at: u64,
@@ -51,7 +59,9 @@ impl Task {
             self.status = "unknown".into();
         }
         for pending in self.pending.values_mut() {
-            pending["status"] = json!("unavailable");
+            if matches!(pending["status"].as_str(), Some("pending" | "sending")) {
+                pending["status"] = json!("unavailable");
+            }
         }
     }
 }
@@ -106,6 +116,11 @@ pub(crate) enum Command {
         task_id: String,
         operation_id: String,
     },
+    Revoke {
+        task_id: String,
+        operation_id: String,
+        request_id: RequestId,
+    },
     Approval {
         task_id: String,
         operation_id: String,
@@ -136,6 +151,8 @@ pub(crate) struct Tasks {
     client: RuntimeClient,
     policy: HostPolicy,
     project: std::path::PathBuf,
+    task_started: BTreeMap<String, tokio::time::Instant>,
+    approval_started: BTreeMap<(String, String), tokio::time::Instant>,
 }
 
 impl Tasks {
@@ -151,7 +168,27 @@ impl Tasks {
             client,
             policy,
             project,
+            task_started: BTreeMap::new(),
+            approval_started: BTreeMap::new(),
         }
+    }
+
+    fn task_expired(&self, task: &Task, timestamp: u64) -> bool {
+        task.expires_at <= timestamp
+            || self
+                .task_started
+                .get(&task.task_id)
+                .is_some_and(|start| start.elapsed() >= Duration::from_secs(TASK_LIFETIME))
+    }
+
+    fn request_expired(&self, task: &Task, key: &str, timestamp: u64) -> bool {
+        task.pending[key]["expires_at"]
+            .as_u64()
+            .is_none_or(|expiry| expiry <= timestamp)
+            || self
+                .approval_started
+                .get(&(task.task_id.clone(), key.into()))
+                .is_some_and(|start| start.elapsed() >= Duration::from_secs(APPROVAL_LIFETIME))
     }
 
     fn launch(
@@ -169,6 +206,7 @@ impl Tasks {
             let request_id = request.as_ref().map(|(id, _)| id.clone());
             let result = match stage {
                 Stage::Thread => client.start_thread(json!({"cwd": project, "model": task.submission.model, "modelProvider": task.submission.provider, "approvalPolicy": "on-request", "approvalsReviewer": "user", "sandbox": "read-only"}), DEADLINE).await,
+                Stage::Turn if task.submission.review => client.call("review/start", Some(json!({"threadId": task.thread_id, "target": {"type": "uncommittedChanges"}, "delivery": "inline"})), DEADLINE).await,
                 Stage::Turn => client.start_turn(task.thread_id.as_deref().expect("confirmed thread"), vec![json!({"type": "text", "text": task.submission.prompt})], json!({"model": task.submission.model}), DEADLINE).await,
                 Stage::Cancel => client.interrupt_turn(task.thread_id.as_deref().expect("known thread"), task.turn_id.as_deref().expect("known turn"), DEADLINE).await,
                 Stage::Approval => {
@@ -223,6 +261,7 @@ impl Tasks {
         journal: &mut Journal,
         events: &tokio::sync::broadcast::Sender<Event>,
         command: Command,
+        client_id: &str,
     ) -> Result<Value> {
         let snapshot = journal.snapshot();
         match command {
@@ -246,6 +285,7 @@ impl Tasks {
                 if submission.prompt.trim().is_empty() || submission.prompt.len() > 32 * 1024 || !self.policy.models.get(&submission.provider).is_some_and(|models| models.contains(&submission.model)) {
                     return Err(Error::Refused("prompt/model/provider outside Host policy"));
                 }
+                if submission.review && submission.continue_thread { return Err(Error::Refused("review requires an explicit new thread")); }
                 if snapshot.tasks.len() >= MAX_TASKS || snapshot.tasks.values().any(|task| !task.terminal() && task.status != "unknown") {
                     return Err(Error::Refused("Host task capacity/busy"));
                 }
@@ -264,8 +304,9 @@ impl Tasks {
                         actual = parent.actual.clone();
                     }
                 } else if submission.continue_thread { return Err(Error::Refused("continuation requires parent task")); }
-                let task = Task { task_id: id, operation_id: operation_id.clone(), submission, status: "submitted".into(), thread_id, turn_id: None, actual, pending: BTreeMap::new(), last_seq: 0, stream: snapshot.stream, expires_at: now()?.checked_add(TASK_LIFETIME).ok_or(Error::Refused("task deadline exhausted"))? };
+                let task = Task { task_id: id, operation_id: operation_id.clone(), submission, status: "submitted".into(), thread_id, turn_id: None, actual, pending: BTreeMap::new(), artifacts: BTreeMap::new(), last_seq: 0, stream: snapshot.stream, expires_at: now()?.checked_add(TASK_LIFETIME).ok_or(Error::Refused("task deadline exhausted"))? };
                 persist(journal, events, &task, Some(&operation))?;
+                self.task_started.insert(task.task_id.clone(), tokio::time::Instant::now());
                 self.launch(&task, operation_id.clone(), if task.submission.continue_thread { Stage::Turn } else { Stage::Thread }, None);
                 Ok(json!({"operation": journal.snapshot().operations[&operation_id], "task": journal.snapshot().tasks[&task.task_id], "accepted": true}))
             }
@@ -276,9 +317,27 @@ impl Tasks {
                 if task.terminal() { operation.outcome = "confirmed".into(); }
                 else if task.status == "unknown" { operation.outcome = "unknown".into(); }
                 else { task.status = "cancel-requested".into(); }
-                for pending in task.pending.values_mut() { pending["status"] = json!("unavailable"); }
+                for pending in task.pending.values_mut() { if matches!(pending["status"].as_str(), Some("pending" | "sending")) { pending["status"] = json!("unavailable"); } }
                 persist(journal, events, &task, Some(&operation))?;
                 self.after_event(journal, events)?;
+                Ok(json!({"operation": journal.snapshot().operations[&operation_id], "task": journal.snapshot().tasks[&task_id]}))
+            }
+            Command::Revoke { task_id, operation_id, request_id } => {
+                let operation = match Self::operation(journal, &operation_id, &task_id, "approval-revoke", &json!({"task_id": task_id, "request_id": request_id}))? { Ok(value) => value, Err(previous) => return Ok(previous) };
+                let mut task = snapshot.tasks.get(&task_id).cloned().ok_or(Error::Refused("task not found"))?;
+                let key = serde_json::to_string(&request_id)?;
+                let request = task.pending.get(&key).ok_or(Error::Refused("request not found"))?;
+                if task.stream != snapshot.stream || task.status != "blocked" || request["status"] != "pending" { return Err(Error::Refused("request handled or unavailable")); }
+                let timestamp = now()?;
+                if self.task_expired(&task, timestamp) || self.request_expired(&task, &key, timestamp) { return Err(Error::Refused("request expired")); }
+                let request = task.pending.get_mut(&key).expect("checked request");
+                request["status"] = json!("revoked");
+                request["client_id"] = json!(client_id);
+                request["operation_id"] = json!(operation_id);
+                let mut operation = operation;
+                operation.outcome = "revoked".into();
+                persist(journal, events, &task, Some(&operation))?;
+                self.command(journal, events, Command::Cancel { task_id: task_id.clone(), operation_id: format!("host-revoke-{:x}", Sha256::digest(operation_id.as_bytes())) }, crate::access::OWNER)?;
                 Ok(json!({"operation": journal.snapshot().operations[&operation_id], "task": journal.snapshot().tasks[&task_id]}))
             }
             Command::Approval { task_id, operation_id, request_id, decision } => {
@@ -286,11 +345,17 @@ impl Tasks {
                 let payload = json!({"task_id": task_id, "request_id": request_id, "decision": decision});
                 let operation = match Self::operation(journal, &operation_id, &task_id, "approval", &payload)? { Ok(value) => value, Err(previous) => return Ok(previous) };
                 let mut task = snapshot.tasks.get(&task_id).cloned().ok_or(Error::Refused("task not found"))?;
-                if task.stream != snapshot.stream || task.status != "blocked" || task.expires_at <= now()? { return Err(Error::Refused("approval is unavailable")); }
-                let request = task.pending.get_mut(&key).ok_or(Error::Refused("request not found"))?;
-                if request["status"] != "pending" { return Err(Error::Refused("request is no longer pending")); }
+                if task.stream != snapshot.stream || task.status != "blocked" { return Err(Error::Refused("approval is unavailable")); }
+                let request = task.pending.get(&key).ok_or(Error::Refused("request not found"))?;
+                if request["status"] != "pending" { return Err(Error::Refused("request handled or unavailable")); }
+                let timestamp = now()?;
+                if self.task_expired(&task, timestamp) || self.request_expired(&task, &key, timestamp) { return Err(Error::Refused("request expired")); }
+                let request = task.pending.get_mut(&key).expect("checked request");
                 if let Some(allowed) = request.pointer("/raw/params/availableDecisions").and_then(Value::as_array) && !allowed.contains(&json!(decision)) { return Err(Error::Refused("decision not offered by Runtime")); }
                 request["status"] = json!("sending");
+                request["client_id"] = json!(client_id);
+                request["operation_id"] = json!(operation_id);
+                request["decision"] = json!(decision);
                 let mut operation = operation;
                 operation.outcome = "sending".into();
                 persist(journal, events, &task, Some(&operation))?;
@@ -337,13 +402,15 @@ impl Tasks {
             return Err(Error::Refused("duplicate Runtime request ID"));
         }
         task.pending.insert(
-            key,
-            json!({"request_id": request.id, "status": "pending", "raw": request.event.raw}),
+            key.clone(),
+            json!({"request_id": request.id, "status": if task.status == "cancel-requested" { "unavailable" } else { "pending" }, "raw": request.event.raw, "stream": task.stream, "thread_id": task.thread_id, "turn_id": task.turn_id, "expires_at": task.expires_at.min(now()?.checked_add(APPROVAL_LIFETIME).ok_or(Error::Refused("approval deadline exhausted"))?)}),
         );
         if task.status != "cancel-requested" {
             task.status = "blocked".into();
         }
         persist(journal, events, &task, None)?;
+        self.approval_started
+            .insert((task.task_id.clone(), key), tokio::time::Instant::now());
         Ok(())
     }
 
@@ -433,6 +500,17 @@ impl Tasks {
                     }
                 }
             },
+            Err(caidex_runtime::Error::NotPending)
+                if matches!(completion.stage, Stage::Approval) =>
+            {
+                operation.outcome = "invalid".into();
+                if let Some(request) = task.pending.get_mut(&serde_json::to_string(
+                    &completion.request_id.expect("approval request"),
+                )?) && request["status"] == "sending"
+                {
+                    request["status"] = json!("unavailable");
+                }
+            }
             Err(caidex_runtime::Error::Rpc(_, _, _)) => {
                 operation.outcome = "rejected".into();
                 if matches!(completion.stage, Stage::Thread | Stage::Turn) && !task.terminal() {
@@ -460,11 +538,33 @@ impl Tasks {
         timestamp: u64,
     ) -> Result<()> {
         let snapshot = journal.snapshot();
-        for task in snapshot.tasks.values().filter(|task| {
-            !task.terminal()
-                && !matches!(task.status.as_str(), "unknown" | "cancel-requested")
-                && task.expires_at <= timestamp
-        }) {
+        let due: Vec<_> = snapshot
+            .tasks
+            .values()
+            .filter(|task| {
+                !task.terminal()
+                    && !matches!(task.status.as_str(), "unknown" | "cancel-requested")
+                    && (self.task_expired(task, timestamp)
+                        || task.pending.iter().any(|(key, request)| {
+                            request["status"] == "pending"
+                                && self.request_expired(task, key, timestamp)
+                        }))
+            })
+            .cloned()
+            .collect();
+        for mut task in due {
+            let expired: Vec<_> = task
+                .pending
+                .iter()
+                .filter(|(key, request)| {
+                    request["status"] == "pending" && self.request_expired(&task, key, timestamp)
+                })
+                .map(|(key, _)| key.clone())
+                .collect();
+            for key in expired {
+                task.pending.get_mut(&key).expect("known request")["status"] = json!("expired");
+            }
+            persist(journal, events, &task, None)?;
             self.command(
                 journal,
                 events,
@@ -472,6 +572,7 @@ impl Tasks {
                     task_id: task.task_id.clone(),
                     operation_id: format!("host-expiry-{}", task.task_id),
                 },
+                crate::access::OWNER,
             )?;
         }
         Ok(())
@@ -483,6 +584,19 @@ impl Tasks {
         events: &tokio::sync::broadcast::Sender<Event>,
     ) -> Result<()> {
         let snapshot = journal.snapshot();
+        self.task_started.retain(|id, _| {
+            snapshot
+                .tasks
+                .get(id)
+                .is_some_and(|task| !task.terminal() && task.status != "unknown")
+        });
+        self.approval_started.retain(|(id, key), _| {
+            snapshot.tasks.get(id).is_some_and(|task| {
+                task.pending
+                    .get(key)
+                    .is_some_and(|request| request["status"] == "pending")
+            })
+        });
         for task in snapshot
             .tasks
             .values()
@@ -505,7 +619,10 @@ impl Tasks {
             .cloned()
         {
             let task = &snapshot.tasks[&operation.task_id];
-            if task.terminal() {
+            if task.status == "unknown" {
+                operation.outcome = "unknown".into();
+                persist(journal, events, task, Some(&operation))?;
+            } else if task.terminal() {
                 operation.outcome = "confirmed".into();
                 persist(journal, events, task, Some(&operation))?;
             } else if task.turn_id.is_some() {
@@ -583,12 +700,14 @@ mod tests {
                 provider: "caidex_h2_a".into(),
                 parent_task_id: None,
                 continue_thread: false,
+                review: false,
             },
             status: "blocked".into(),
             thread_id: Some("task-thread".into()),
             turn_id: Some("task-turn".into()),
             actual: Value::Null,
-            pending: [("77".into(), json!({"status": "pending"}))].into(),
+            pending: [("77".into(), json!({"status": "pending", "expires_at": 100}))].into(),
+            artifacts: BTreeMap::new(),
             last_seq: 0,
             stream: 1,
             expires_at: 100,
@@ -647,11 +766,88 @@ mod tests {
         assert_eq!(journal.snapshot().tasks["task"].status, "cancel-requested");
         assert_eq!(
             journal.snapshot().tasks["task"].pending["77"]["status"],
-            "unavailable"
+            "expired"
         );
         assert_eq!(
             std::fs::read_to_string(directory.join("marker")).unwrap(),
             "turn/interrupt\n"
+        );
+        let mut timed = task.clone();
+        timed.task_id = "monotonic".into();
+        timed.operation_id = "monotonic-submit".into();
+        timed.expires_at = now().unwrap() + 300;
+        timed.pending.get_mut("77").unwrap()["expires_at"] = json!(now().unwrap() + 120);
+        let mut op = operation.clone();
+        op.task_id = timed.task_id.clone();
+        op.operation_id = timed.operation_id.clone();
+        persist(&mut journal, &events, &timed, Some(&op)).unwrap();
+        tasks.approval_started.insert(
+            (timed.task_id.clone(), "77".into()),
+            tokio::time::Instant::now() - Duration::from_secs(APPROVAL_LIFETIME),
+        );
+        let seq = journal.snapshot().seq;
+        assert!(
+            tasks
+                .command(
+                    &mut journal,
+                    &events,
+                    Command::Approval {
+                        task_id: timed.task_id.clone(),
+                        operation_id: "too-late".into(),
+                        request_id: RequestId::Integer(77),
+                        decision: ApprovalDecision::Accept
+                    },
+                    crate::access::OWNER
+                )
+                .is_err()
+        );
+        assert_eq!(
+            journal.snapshot().seq,
+            seq,
+            "expired claim cannot persist or launch"
+        );
+        tasks
+            .expire(&mut journal, &events, now().unwrap() - 60)
+            .unwrap();
+        assert_eq!(
+            journal.snapshot().tasks["monotonic"].pending["77"]["status"],
+            "expired"
+        );
+        let completion = tokio::time::timeout(DEADLINE, completions.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        tasks.complete(&mut journal, &events, completion).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(directory.join("marker")).unwrap(),
+            "turn/interrupt\nturn/interrupt\n"
+        );
+        timed.task_id = "monotonic-task".into();
+        timed.operation_id = "monotonic-task-submit".into();
+        timed.pending.clear();
+        timed.status = "running".into();
+        op.task_id = timed.task_id.clone();
+        op.operation_id = timed.operation_id.clone();
+        persist(&mut journal, &events, &timed, Some(&op)).unwrap();
+        tasks.task_started.insert(
+            timed.task_id.clone(),
+            tokio::time::Instant::now() - Duration::from_secs(TASK_LIFETIME),
+        );
+        tasks
+            .expire(&mut journal, &events, now().unwrap() - 60)
+            .unwrap();
+        assert_eq!(
+            journal.snapshot().tasks["monotonic-task"].status,
+            "cancel-requested"
+        );
+        let completion = tokio::time::timeout(DEADLINE, completions.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        tasks.complete(&mut journal, &events, completion).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(directory.join("marker")).unwrap(),
+            "turn/interrupt\nturn/interrupt\nturn/interrupt\n"
         );
         runtime.shutdown().await.unwrap();
         drop(tasks);

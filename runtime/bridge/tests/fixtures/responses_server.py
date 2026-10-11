@@ -549,7 +549,7 @@ class Handler(BaseHTTPRequestHandler):
         if mode.startswith("wire-"):
             trace["gatewayCredentialMatched"] = self.headers.get("Authorization") == "Bearer CAIDEX_GATEWAY_PROVIDER_TEST_KEY"
             trace.setdefault("wireRequests", []).append({"body": body, "liteHeader": self.headers.get("x-openai-internal-codex-responses-lite"), "accept": self.headers.get("Accept"), "organization": self.headers.get("OpenAI-Organization"), "project": self.headers.get("OpenAI-Project")})
-        if mode == "host-tasks":
+        if mode in ["host-tasks", "host-h3"]:
             trace.setdefault("hostRequests", []).append({"model": body["model"], "input": body.get("input", [])})
             # Keep the actual tool side effect unconfirmed at the Host boundary.
             if "H2_EXEC_LOST" in json.dumps(body.get("input", [])) and body.get("input", []) and body["input"][-1].get("type") == "function_call_output":
@@ -613,6 +613,20 @@ class Handler(BaseHTTPRequestHandler):
             events.append(event("response.failed", response={"id": identity, "status": "failed", "error": {"code": "server_error", "message": "Synthetic compaction failure"}}))
         elif remote_compact:
             events.append(event("response.output_item.done", item={"type": "compaction", "encrypted_content": "CAIDEX_REMOTE_COMPACT+/=="}))
+        elif mode == "host-h3" and body.get("input", []) and body["input"][-1].get("role") == "user" and "H3_REQUEST_" in json.dumps(body["input"][-1]):
+            if not any(tool.get("name") == "apply_patch" for tool in body.get("tools", [])):
+                self.send_error(500, "expected native freeform apply_patch")
+                return
+            prompt = json.dumps(body["input"][-1])
+            name = "h3-revoked.txt" if "H3_REQUEST_REVOKE" in prompt else "h3-unanswered.txt" if "H3_REQUEST_PENDING" in prompt else "h3-change.txt"
+            target = Path(trace_path).parent / "host" / "probe-project" / name
+            patch = f"*** Begin Patch\n*** Add File: {target.as_posix()}\n+CAIDEX_H3_PATCH\n*** End Patch"
+            trace.setdefault("h3Patches", []).append({"target": str(target), "response": identity})
+            message = {"type": "message", "role": "assistant", "id": f"message-{identity}", "phase": "commentary", "content": [{"type": "output_text", "text": "Planning an isolated native patch"}]}
+            events.append(event("response.output_item.added", item={**message, "content": []}))
+            events.append(event("response.output_text.delta", delta="Planning an isolated native patch"))
+            events.append(event("response.output_item.done", item=message))
+            events.append(event("response.output_item.done", item={"type": "custom_tool_call", "call_id": identity + "-patch", "name": "apply_patch", "input": patch}))
         elif mode == "patch" and trace["requests"] == 1:
             trace["offeredTools"] = [{"name": tool.get("name"), "type": tool.get("type"), "nestedNames": [nested.get("name") for nested in tool.get("tools", [])]} for tool in body.get("tools", [])]
             Path(trace_path).write_text(json.dumps(trace), encoding="utf-8")
@@ -652,6 +666,8 @@ class Handler(BaseHTTPRequestHandler):
             events.append(event("response.output_item.done", item={"type": "function_call", "call_id": "fixture-command-1", "name": name, "arguments": json.dumps(arguments)}))
         else:
             text = "CAIDEX_AUTO_COMPACT_SUMMARY" if mode == "wire-local-compact-auto" and trace["requests"] == 2 else "" if mode == "goal-empty" else "CAIDEX_COMPACT_SUMMARY" if mode in ["compact", "compact-lite"] and trace["requests"] == 2 else "CAIdex local fixture complete"
+            if mode == "host-h3" and body.get("text", {}).get("format", {}).get("type") == "json_schema":
+                text = json.dumps({"findings": [], "overall_correctness": "patch is correct", "overall_explanation": "Synthetic review of the isolated fixture patch", "overall_confidence_score": 1.0})
             item = {"type": "message", "role": "assistant", "id": f"message-{identity}", "content": [{"type": "output_text", "text": text}]}
             if mode.startswith("goal-") or mode.startswith("wire-") or mode == "compact-lite":
                 item["phase"] = "final_answer"
