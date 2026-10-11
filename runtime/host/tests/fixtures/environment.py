@@ -6,6 +6,12 @@ mode = sys.argv[1]
 allowed = {"PATH", "HOME", "SYSTEMROOT", "USERPROFILE", "TEMP", "TMP"}
 # Python can coerce the Unix C locale before this script executes.
 allowed.add("LC_CTYPE")
+# CoreFoundation creates this after launch; inherited synthetic content must fail.
+if sys.platform == "darwin" and "__CF_USER_TEXT_ENCODING" in os.environ:
+    encoding = os.environ["__CF_USER_TEXT_ENCODING"].strip().split(":")
+    assert len(encoding) == 3 and int(encoding[0], 0) == os.getuid()
+    assert all(int(part, 0) >= 0 for part in encoding[1:])
+    allowed.add("__CF_USER_TEXT_ENCODING")
 if mode == "runtime":
     allowed.add("CODEX_HOME")
     assert os.environ.get("CODEX_HOME") == "synthetic-owned-runtime-home"

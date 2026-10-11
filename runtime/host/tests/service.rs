@@ -23,12 +23,16 @@ struct Harness {
 
 impl Harness {
     async fn start(mode: &str) -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let sequence = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let unique = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let directory =
-            std::env::temp_dir().join(format!("caidex-h1-service-{}-{unique}", std::process::id()));
+        let directory = std::env::temp_dir().join(format!(
+            "caidex-h1-service-{}-{unique}-{sequence}",
+            std::process::id()
+        ));
         Self::at(directory, mode).await
     }
     async fn at(directory: PathBuf, mode: &str) -> Self {

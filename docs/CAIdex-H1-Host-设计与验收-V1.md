@@ -6,7 +6,7 @@
 
 用户仅授权本轮H-1审计阻断最小修复，不扩大里程碑。审计基线`b516dbae41b252d365d8fad8848c197f2f6ccd51`、旧已验源码`dec3a374228a75b9a6600715b0d56bf5047b12b0`。本轮开发验证进行中，尚未重新独立审计；下文原交付SHA/CI均为历史，不代本轮修复验证。
 
-- **AUD-001根因/修复**：原版本Command直接继承Host环境，正式Runtime则已env_clear。入口现在共用`isolate_environment`，只保留原PATH/HOME/SystemRoot/USERPROFILE/TEMP/TMP；版本探测不继承CODEX_HOME或任何Host/API/Account变量，Runtime额外赋本次私有CODEX_HOME。严格0.160.1、15秒timeout、kill_on_drop及非零退出拒绝保持。新增[入口单元测试](../runtime/host/src/main.rs)和[合成环境替身](../runtime/host/tests/fixtures/environment.py)实际启动子进程，断言只有白名单（Python自身可增加LC_CTYPE），覆盖合成敏感变量、错误版本和正确输出但非零退出；不读取真实凭据。
+- **AUD-001根因/修复**：原版本Command直接继承Host环境，正式Runtime则已env_clear。入口现在共用`isolate_environment`，只保留原PATH/HOME/SystemRoot/USERPROFILE/TEMP/TMP；版本探测不继承CODEX_HOME或任何Host/API/Account变量，Runtime额外赋本次私有CODEX_HOME。严格0.160.1、15秒timeout、kill_on_drop及非零退出拒绝保持。新增[入口单元测试](../runtime/host/src/main.rs)和[合成环境替身](../runtime/host/tests/fixtures/environment.py)实际启动子进程，断言只有白名单（Python自身可增加LC_CTYPE，macOS CoreFoundation可生成经过UID/数值格式验证的编码元数据），覆盖合成敏感变量、错误版本和正确输出但非零退出；不读取真实凭据。
 - **AUD-002根因/设计**：外部Notification曾经走可信append，方法名即可驱动Host状态。现由`Journal::append_runtime`隔离完整host/命名空间：事件顶层method=`runtime/notification`，data保留完整原始JSON（原method及未知字段），不能从载荷source/trusted字段获得控制权。其他Runtime方法保持原method，包括合法thread/started及future/event；Host内部常量方法仍使用可信append。SQLite V1 schema/事件结构不变，事务提交/广播/replay/snapshot逻辑保持。新增[journal](../runtime/host/tests/journal.rs)及[service](../runtime/host/tests/service.rs)回归覆盖started/stopped/stopping/runtimeUnavailable/probeStarted/probeResult/未知host事件、转义名称、未知intent、广播和回放原文、合法线程缓存与重启unknown/不重发。
 - **AUD-003最小调整**：演示restart_resubmissions改为SQLite探针intent计数差；新增evidence_basis明确区分该计数测量、进程/连接/快照的代码断言、model_turns/commercial_calls/user_keys_read固定场景声明。后者没有独立网络/凭据访问遥测，不能称为独立实测。历史报告中同名常量也按场景声明解释。
 
@@ -14,7 +14,9 @@
 
 ### 本轮验证与停止
 
-新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。修复后Linux H-1定向19/0/0、workspace659/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor和真实双端强杀重启演示全部通过；最终源码三平台CI待提交核验。最终源码/CI/归档证据待完成后填写，不沿用旧SHA成功。
+新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。修复后Linux H-1定向19/0/0、workspace659/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor和真实双端强杀重启演示全部通过；本轮功能源码`c4741682117f31a7fe5897338bf283564686e10c`已提交push main，[精确CI38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)进行中，尚不能认领三平台通过。完整归档证据待最终核验后封存，不沿用旧SHA成功。
+
+CI失败处理：首轮[38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)macOS环境替身失败；诊断提交`a2e2d5a9c32cc29475189c45ca7580fd988c32ad`/[38097401140](https://github.com/bboytang/CAIdex/actions/runs/38097401140)仅输出意外变量名称，定位__CF_USER_TEXT_ENCODING。[Apple CoreFoundation初始化](https://github.com/apple-oss-distributions/CF/blob/main/CFRuntime.c)调用用户编码初始化，[编码实现](https://github.com/apple-oss-distributions/CF/blob/main/CFStringEncodings.c)会在启动后setenv。测试改为核验OS生成UID/编码/区域数值，并在父Command预置同名合成变量、检查启动配置仍只有六项OS白名单；生产继承范围完全不扩展。诊断轮Windows另在New-Item创建测试目录步骤失败（WindowsAcl(16)），原时间戳命名不保证并行唯一，测试夹具增加原子计数排除碰撞；此为可能原因的最小排除修正，不把未捕获的PowerShell错误详情当作已证实，不重试或降低ACL断言。须由最终源码完整三平台CI复验。
 
 两个阻断的开发验证和最终源码三平台CI全部完成、证据封存后立即停止；用户重新发起独立审计前不声明H-1独立审计通过，不启动H-2/H-3/I。
 

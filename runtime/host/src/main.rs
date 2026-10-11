@@ -148,6 +148,7 @@ mod tests {
             "CAIDEX_ACCOUNT_TOKEN",
             "UNKNOWN_FUTURE_SECRET",
             "CODEX_HOME",
+            "__CF_USER_TEXT_ENCODING",
         ] {
             command.env(name, "synthetic-secret-not-a-user-credential");
         }
@@ -173,6 +174,13 @@ mod tests {
     async fn runtime_environment_uses_same_os_allowlist_and_owned_codex_home() {
         let mut command = environment_peer("runtime");
         isolate_environment(&mut command);
+        for (name, value) in command.as_std().get_envs() {
+            assert!(value.is_some());
+            assert!(
+                ["PATH", "HOME", "SYSTEMROOT", "USERPROFILE", "TEMP", "TMP"]
+                    .contains(&name.to_str().unwrap().to_uppercase().as_str())
+            );
+        }
         let output = command
             .env("CODEX_HOME", "synthetic-owned-runtime-home")
             .output()
