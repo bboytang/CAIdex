@@ -2,6 +2,8 @@
 //! and configuration status; secret resolution stays inside the executing process.
 
 mod environment;
+mod private_directory;
+pub use private_directory::{PrivateDirectoryError, private_directory};
 #[cfg(unix)]
 mod protected_file;
 mod redaction;

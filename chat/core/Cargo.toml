@@ -1,0 +1,26 @@
+[package]
+name = "caidex-chat"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+caidex-auth = { path = "../../cloud/auth" }
+caidex-cloud-core = { path = "../../cloud/core" }
+caidex-credentials = { path = "../../credentials/core", default-features = false }
+caidex-model-core = { path = "../../model/core" }
+base64 = "=0.22.1"
+futures-util = "=0.3.34"
+rusqlite = { version = "=0.38.0", default-features = false, features = ["bundled"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "=0.10.9"
+thiserror.workspace = true
+tokio.workspace = true
+uuid = { version = "=1.23.0", features = ["v4", "serde"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.190"
+
+[dev-dependencies]
+caidex-provider-custom = { path = "../../model/providers/custom" }

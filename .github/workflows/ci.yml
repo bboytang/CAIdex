@@ -12,6 +12,7 @@ on:
       - credentials/**
       - model/**
       - cloud/**
+      - chat/**
       - apps/**
       - scripts/**
       - upstream/codex/**
@@ -77,7 +78,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $source = Get-Content runtime/host/src/security.rs -Raw
+          $source = Get-Content credentials/core/src/private_directory.rs -Raw
           $script = [regex]::Match($source, '(?s)r#"(.*?)"#').Groups[1].Value
           if (!$script) { throw 'Missing production ACL script' }
           $env:CAIDEX_PRIVATE_DIRECTORY = Join-Path $env:TEMP ('caidex-h1-acl-' + [guid]::NewGuid())
@@ -109,6 +110,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Protocol tests
         run: cargo test --workspace --locked
+      - name: I-3 local Chat, attachments, branches and account isolation (synthetic HTTP)
+        run: ${{ matrix.python }} scripts/i3-chat.py --output i3-chat.json
       - name: Install Linux native credential test service
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gnome-keyring dbus-x11 libglib2.0-bin

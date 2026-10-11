@@ -534,6 +534,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "caidex-chat"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "caidex-auth",
+ "caidex-cloud-core",
+ "caidex-credentials",
+ "caidex-model-core",
+ "caidex-provider-custom",
+ "futures-util",
+ "libc",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.21",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "caidex-cli"
 version = "0.1.0"
 dependencies = [
@@ -569,6 +590,7 @@ dependencies = [
 name = "caidex-host"
 version = "0.1.0"
 dependencies = [
+ "caidex-credentials",
  "caidex-runtime",
  "getrandom 0.4.3",
  "libc",

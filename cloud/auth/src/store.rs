@@ -53,6 +53,15 @@ impl ConfirmedSession {
             test: trust.is_test(),
         })
     }
+    pub fn user_id(&self) -> &str {
+        &self.tokens.user_id
+    }
+    pub fn issuer(&self) -> &str {
+        &self.tokens.issuer
+    }
+    pub fn is_test(&self) -> bool {
+        self.test
+    }
     pub fn session_id(&self) -> &str {
         &self.tokens.session_id
     }

@@ -2,9 +2,13 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI。历史见下列验收/证据，不依赖聊天或/tmp。
 
-## 当前批准：I-2认证/会话，开发验证封存，停止待独立审计
+## 当前批准：I-3独立Chat与缓存，实施中
 
-用户已确认I-1独立审计通过并明确批准I-2；范围/通过与停止条件见[设计与验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)。不使用ponytail技能。用户最新要求后续构建和测试尽量在GitHub，已写入AGENTS；本地只做必要静态/语法/差异/证据检查，完整构建/真实数据库/三平台回归在GitHub执行。本会话不授独立审计通过。I-3及后续/商业API/真实用户Key/真实邮件/生产部署未授权。
+2026-10-11用户纠正阶段编号，明确确认I-2独立审计通过并批准I-3。范围、验收与停止条件见[设计与验收](docs/CAIdex-I3-独立Chat缓存-设计与验收-V1.md)。基线main/HEAD 6176529dc8fca874db878a881028f1e49953881b，工作区原先干净；磁盘3.7GiB可用，完整构建/回归优先GitHub。本轮不使用ponytail技能，不启动I-4。已实现初版chat/core SQLite缓存/流收发、消息DAG/附件/outbox、账号切换取消与ModelProvider/Broker边界；新增合成HTTP内部演示及测试，复用共享私有目录。仅本地fmt/语法/差异检查，准备提交GitHub进行首次完整验证，未授通过。
+
+## 已关闭I-2（用户确认独立审计通过）
+
+用户已确认I-1独立审计通过并明确批准I-2；范围/通过与停止条件见[设计与验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)。不使用ponytail技能。用户最新要求后续构建和测试尽量在GitHub，已写入AGENTS；本地只做必要静态/语法/差异/证据检查，完整构建/真实数据库/三平台回归在GitHub执行。本会话不授独立审计通过。I-3现已获批；I-4及后续/商业API/真实用户Key/真实邮件/生产部署未授权。
 
 不可变功能源码[`951f92e092aec87b25838daf00959c8520588701`](https://github.com/bboytang/CAIdex/commit/951f92e092aec87b25838daf00959c8520588701)，[精确CI38135955674](https://github.com/bboytang/CAIdex/actions/runs/38135955674)四job全部成功；各job原始checkout均完整功能SHA，I-1/I-2源码SHA256逐文件与该提交核对一致。实现提交1a57cf9，随后951f92e仅修正测量启动/自身fixture清理。封存提交只追加证据/文档，功能/测试/依赖/脚本/workflow保持上述CI源码；封存HEAD按`git rev-parse HEAD`查询，不当功能CI SHA。保持main流程，完成封存push后核对实际HEAD/main/origin/main/GitHub main与工作区，不改历史。
 
@@ -22,7 +26,7 @@
 
 证据：[最终精确四job/逐步骤/原日志及指纹](docs/evidence/i2-ci.json)、[最终真实认证110组/逐文件SHA256/资源测量](docs/evidence/i2-database-ci.json)、[首轮GitHub失败与修正](docs/evidence/i2-ci-first-failed.json)、[历史中间成功/待验索引](docs/evidence/i2-intermediate.json)、[历史开发失败与ENOSPC](docs/evidence/i2-local-failed.json)。原日志gzip及SHA256已核对，试用/独立复现/证据检查见设计与验收。测试身份、邮件和认证器均为隔离合成fixture，无真实邮件、用户Key或商业API调用。
 
-当前无已知未解决的I-2开发通过条件阻断；独立审计尚未执行。准确下一步：由独立新会话/其他模型只读审计上述不可变源码与实际证据；如有阻断在已批准I-2范围内最小修复并复验。用户确认I-2通过且明确批准下一里程碑后，才可启动I-3。等待期间停止新增功能/跨里程碑开发。F/G-Live继续待用户全项目完成后真实验收。
+用户已确认I-2独立审计通过，本会话保留原不可变证据，不重授审计结论；下一步实施已批准I-3。F/G-Live继续待用户全项目完成后真实验收。
 
 ## 已关闭I-1（用户确认独立审计通过）
 
