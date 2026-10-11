@@ -766,6 +766,10 @@ mod tests {
             .await
             .unwrap();
         lines.next_line().await.unwrap().unwrap();
+        let Message::Authenticated(secret) = messages.recv().await.unwrap() else {
+            panic!("authenticated token guard");
+        };
+        assert_eq!(secret.expose(), "f".repeat(64));
         write
             .write_all(
                 format!(
