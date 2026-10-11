@@ -30,7 +30,7 @@ pub struct Send {
 }
 pub(crate) struct State {
     pub(crate) cache: Cache,
-    model: Option<LocalModel>,
+    pub(crate) model: Option<LocalModel>,
     pub(crate) generation: u64,
     pub(crate) memory: crate::memory::Session,
     pending: BTreeMap<Uuid, CancellationToken>,
@@ -42,6 +42,7 @@ pub struct Chat {
 }
 impl Chat {
     pub fn open(root: &Path, namespace: Namespace) -> Result<Self> {
+        let memory = crate::memory::Session::for_namespace(&namespace);
         Ok(Self {
             root: root.to_owned(),
             state: Mutex::new(State {
@@ -49,7 +50,7 @@ impl Chat {
                 model: None,
                 generation: 0,
                 pending: BTreeMap::new(),
-                memory: crate::memory::Session::default(),
+                memory,
             }),
         })
     }
@@ -72,6 +73,10 @@ impl Chat {
     pub fn switch(&self, namespace: Namespace) -> Result<()> {
         let mut state = self.state()?;
         if state.cache.namespace() == &namespace {
+            if let Some(guard) = namespace.2 {
+                state.memory.cancel_all();
+                state.memory.guards.push(guard);
+            }
             return Ok(());
         }
         let next = Cache::open(&self.root, namespace)?;
@@ -80,7 +85,7 @@ impl Chat {
         }
         state.cache.interrupt_pending(End::Cancelled)?;
         state.memory.cancel_all();
-        state.memory = crate::memory::Session::default();
+        state.memory = crate::memory::Session::for_namespace(next.namespace());
         state.pending.clear();
         state.model = None;
         state.generation += 1;

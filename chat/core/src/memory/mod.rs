@@ -205,6 +205,12 @@ pub(crate) struct Session {
     pub epoch: u64,
 }
 impl Session {
+    pub(crate) fn for_namespace(namespace: &crate::Namespace) -> Self {
+        Self {
+            guards: namespace.2.iter().cloned().collect(),
+            ..Self::default()
+        }
+    }
     pub(crate) fn cancel_all(&mut self) {
         for token in self.pending.values() {
             token.cancel();

@@ -48,14 +48,26 @@ impl From<std::io::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Local partition identity is not a cloud authorization token.
-#[derive(Clone, PartialEq, Eq)]
-pub struct Namespace(String, Option<Id>);
+#[derive(Clone)]
+pub struct Namespace(
+    String,
+    Option<Id>,
+    Option<std::sync::Arc<caidex_credentials::Redactor>>,
+);
+impl PartialEq for Namespace {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0 && self.1 == other.1
+    }
+}
+impl Eq for Namespace {}
 impl Namespace {
     pub fn guest() -> Self {
-        Self("guest".into(), None)
+        Self("guest".into(), None, None)
     }
     pub fn account(session: &ConfirmedSession) -> Self {
-        Self::key(session.issuer(), session.user_id(), session.is_test())
+        let mut namespace = Self::key(session.issuer(), session.user_id(), session.is_test());
+        namespace.2 = Some(session.credential_guard());
+        namespace
     }
     /// Explicit local offline selection; never resumes login or grants upload permission.
     pub fn offline_account(trust: &Trust, user: &Id) -> Self {
@@ -65,6 +77,7 @@ impl Namespace {
         Self(
             format!("{:x}", Sha256::digest(format!("{test}\0{issuer}\0{user}"))),
             Id::try_from(user.to_owned()).ok(),
+            None,
         )
     }
     pub fn owner_user_id(&self) -> Option<&Id> {

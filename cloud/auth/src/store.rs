@@ -53,6 +53,16 @@ impl ConfirmedSession {
             test: trust.is_test(),
         })
     }
+    /// Read-only guard for local data boundaries; opaque credentials never become source identity.
+    pub fn credential_guard(&self) -> std::sync::Arc<caidex_credentials::Redactor> {
+        let guard = std::sync::Arc::new(caidex_credentials::Redactor::default());
+        for token in [&self.tokens.access_token, &self.tokens.refresh_token] {
+            guard
+                .register(&Secret::new(token.clone()).expect("validated account token"))
+                .expect("new guard mutex");
+        }
+        guard
+    }
     pub fn user_id(&self) -> &str {
         &self.tokens.user_id
     }

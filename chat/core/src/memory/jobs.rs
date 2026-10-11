@@ -48,6 +48,29 @@ fn read_job(s: &State, id: Uuid) -> Result<(Job, Reference)> {
         },
     ))
 }
+struct Flight<'a> {
+    chat: &'a Chat,
+    id: Uuid,
+    generation: u64,
+    cancel: CancellationToken,
+    job: bool,
+}
+impl Drop for Flight<'_> {
+    fn drop(&mut self) {
+        self.cancel.cancel();
+        if let Ok(mut s) = self.chat.state()
+            && s.generation == self.generation
+        {
+            s.memory.pending.remove(&self.id);
+            if self.job {
+                let _ = s.cache.db.execute(
+                    "UPDATE memory_jobs SET state='unknown' WHERE id=?1 AND state='running'",
+                    [self.id.to_string()],
+                );
+            }
+        }
+    }
+}
 fn context(cancel: CancellationToken) -> RequestContext {
     RequestContext {
         cancellation: cancel,
@@ -263,6 +286,13 @@ impl MemoryEngine<'_> {
             s.memory.pending.insert(id, cancel.clone());
             (job, reference, model, cancel, generation, epoch)
         };
+        let _flight = Flight {
+            chat: self.chat,
+            id,
+            generation,
+            cancel: cancel.clone(),
+            job: true,
+        };
         let work = self.perform(&reference, &model, cancel.clone());
         let result = tokio::select! {biased;_=cancel.cancelled()=>Err(Error::Cancelled),_=tokio::time::sleep(Duration::from_secs(120))=>Err(Error::Cancelled),r=work=>r};
         cancel.cancel();
@@ -419,6 +449,9 @@ impl MemoryEngine<'_> {
                 return search(&s, scope, query, None, None, limit);
             }
             let cancel = CancellationToken::new();
+            if s.memory.pending.len() >= 8 {
+                return Err(Error::Invalid);
+            }
             let operation = Uuid::new_v4();
             s.memory.pending.insert(operation, cancel.clone());
             (
@@ -430,6 +463,13 @@ impl MemoryEngine<'_> {
                 s.memory.epoch,
                 operation,
             )
+        };
+        let _flight = Flight {
+            chat: self.chat,
+            id: operation,
+            generation,
+            cancel: cancel.clone(),
+            job: false,
         };
         let request = EmbeddingRequest {
             model: model.model.clone(),
@@ -447,7 +487,11 @@ impl MemoryEngine<'_> {
             return Err(Error::Cancelled);
         }
         authorize(&s, scope)?;
-        let response = result?;
+        let response = match result {
+            Ok(response) => response,
+            Err(Error::ModelUnavailable) => return search(&s, scope, query, None, None, limit),
+            Err(error) => return Err(error),
+        };
         response
             .validate(1, space.dimensions)
             .map_err(|_| Error::Invalid)?;
@@ -488,13 +532,15 @@ impl MemoryEngine<'_> {
         Ok(scored.into_iter().take(limit).map(|(_, m)| m).collect())
     }
 }
-fn enqueue(s: &State, scope: &Scope, kind: &str, reference: String) -> Result<Uuid> {
-    let count: i64 = s.cache.db.query_row(
+fn queued(s: &State) -> Result<i64> {
+    Ok(s.cache.db.query_row(
         "SELECT count(*) FROM memory_jobs WHERE state IN('waiting','running')",
         [],
         |r| r.get(0),
-    )?;
-    if count >= 1024 {
+    )?)
+}
+fn enqueue(s: &State, scope: &Scope, kind: &str, reference: String) -> Result<Uuid> {
+    if queued(s)? >= 1024 {
         return Err(Error::Invalid);
     }
     let id = Uuid::new_v4();
@@ -678,6 +724,9 @@ pub(crate) fn automatic_chat_sources(s: &mut State, message: &crate::Message) ->
         return Ok(());
     }
     for id in [message.parent, Some(message.id)].into_iter().flatten() {
+        if queued(s)? >= 1024 {
+            break;
+        }
         let raw = s.cache.message(message.conversation, id)?;
         if raw.content.text.is_empty()
             || raw.content.text.len() > 16384

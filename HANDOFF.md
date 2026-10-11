@@ -2,11 +2,13 @@
 
 更新：2026-10-11。正式目录 `/root/projects/CAIdex-v1.0`；恢复依据为不可变源码、验收文档及精确CI，不依赖聊天或/tmp。
 
-## 当前批准：I-4 Memory Engine，实施中
+## 当前批准：I-4.1 本地 Memory Engine，实施收尾
 
-用户已确认 I-3 独立审计通过并批准下一阶段 I-4，自动记忆首次默认关闭。范围/通过/停止见 [I-4 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。允许必要源码、迁移、测试、文档、commit/push main 与精确 CI；构建测试优先 GitHub，不使用 ponytail 技能。I-5 及后续未授权。起点 main/origin/main/GitHub main 为 67edfe8b8031a1329f7af0a68737318b12284322，工作区干净，盘可用 3.7GiB。当前 I-4 源码与测试已提交 a868a8e；首轮 CI38143641399 因 Memory scope 校验的一处 Clippy 嵌套条件失败，无 ENOSPC。补充提交 97f50d6 加入九原生/Custom Provider 目标与保护、来源类型授权，CI38143844052 运行中；当前仍有定向边界修复未提交（Memory 终态空输入、无 Embedding 配置等待、完整范围语义检索、恶意来源测试），尚无最终通过证据。
+用户已确认 I-3 独立审计通过并批准下一阶段 I-4，自动记忆首次默认关闭。范围/通过/停止见 [I-4 设计与验收](docs/CAIdex-I4-Memory-设计与验收-V1.md)。允许必要源码、迁移、测试、文档、commit/push main 与精确 CI；构建测试优先 GitHub，不使用 ponytail 技能。用户进一步明确拆为 I-4.1 本地核心 / I-4.2 Host 接入；当前只授权 I-4.1，独立审计后再批准 I-4.2，不改变 V3 I 阶段。I-4.2、I-5 及后续未授权。起点 main/origin/main/GitHub main 为 67edfe8b8031a1329f7af0a68737318b12284322，工作区干净，盘可用 3.7GiB。当前 I-4 源码与测试已提交 a868a8e；首轮 CI38143641399 因 Memory scope 校验的一处 Clippy 嵌套条件失败，无 ENOSPC。补充提交 97f50d6 加入九原生/Custom Provider 目标与保护、来源类型授权，CI38143844052 运行中；第二轮 Memory 6/7，通过前六组但终态不可重播错误分类测试失败。修复 c32c23b 已推送 CI38144172373（运行中），补全终态空输入、无 Embedding 配置等待、范围内全部精确向量检索/无向量不外发、恶意来源。第三轮四 job 已全部成功，含合成 HTTP 演示，但不能为后续源码授最终通过。当前未提交：ConfirmedSession 只读凭据 guard 接入 namespace；真实 Git 来源变更/满库纠错回滚/任务丢弃后 unknown/离线语义回退定向测试；I-4.1 / I-4.2 用户确认拆分与范围。尚无最终源码通过证据。
 
-准确下一步：实施 I-4 有限任务，完成相关验证与精确 CI，封存后停止等待独立审计。
+最新收尾：确认会话凭据 guard 自动随 Namespace 接入；任务 Future 丢弃封存 unknown，离线语义检索回退基础检索；新增真实 Git 来源变更、SQLite 满库纠错事务回滚及自动队列满不影响已完成 Chat 的测试。许可目标核对真实已配置 Provider 端点/native model；导出覆盖与创建相同的 4096 条范围上限，许可写入上限与读取一致。本地 fmt、Python compile、git diff --check 已通过，未运行本地完整构建；尚需最终提交四 job 精确 CI，不以 c32c23b 中间成功代授。
+
+准确下一步：提交上述 I-4.1 收尾并 push main，核验最终源码的四 job 实际 CI，保存原始日志/复现/限制并封存后停止等待独立审计。I-4.2 的 Host 记忆 RPC/Memory 授权不在本次范围内。
 
 ## 已关闭 I-3（用户确认独立审计通过）
 

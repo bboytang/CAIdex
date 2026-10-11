@@ -96,7 +96,7 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
         model: &str,
         streaming: bool,
     ) -> ProviderResult<caidex_model_core::ProviderTarget> {
-        let url = self
+        let mut url = self
             .config
             .base
             .join(&format!(
@@ -108,6 +108,9 @@ impl<S: SecretStore + 'static> GeminiClient<S> {
                 }
             ))
             .map_err(|_| ProviderError::new(400, "invalid_memory_target"))?;
+        if streaming {
+            url.query_pairs_mut().append_pair("alt", "sse");
+        }
         Ok(caidex_model_core::ProviderTarget {
             endpoint: url.to_string(),
             native_model: model.into(),

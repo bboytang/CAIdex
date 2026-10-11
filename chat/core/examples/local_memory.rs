@@ -168,7 +168,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(chat.memory().get(id)?.state, "deleted");
     println!(
         "{}",
-        json!({"milestone":"I-4","synthetic_only":true,"automatic_default":false,"manual_without_models":true,"waiting_without_model_and_permission":true,"integration_candidates":1,"embedding_space_version_isolated":true,"cas_conflict_revisions":3,"transient_chat_injection":true,"export_provenance":true,"delete_and_reopen":true,"uploads":0})
+        json!({"milestone":"I-4.1","synthetic_only":true,"automatic_default":false,"manual_without_models":true,"waiting_without_model_and_permission":true,"integration_candidates":1,"embedding_space_version_isolated":true,"cas_conflict_revisions":3,"transient_chat_injection":true,"export_provenance":true,"delete_and_reopen":true,"uploads":0})
     );
     Ok(())
 }

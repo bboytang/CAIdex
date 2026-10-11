@@ -76,6 +76,7 @@ struct Mock {
     release: tokio::sync::Notify,
     slow: bool,
     malicious: AtomicBool,
+    unavailable: AtomicBool,
 }
 impl Mock {
     fn new(slow: bool) -> Arc<Self> {
@@ -86,6 +87,7 @@ impl Mock {
             release: tokio::sync::Notify::new(),
             slow,
             malicious: AtomicBool::new(false),
+            unavailable: AtomicBool::new(false),
         })
     }
 }
@@ -166,6 +168,9 @@ impl ModelProvider for Mock {
         Box::pin(async move {
             assert!(c.memory_request);
             r.validate()?;
+            if self.unavailable.load(Ordering::SeqCst) {
+                return Err(ProviderError::new(503, "offline_fixture"));
+            }
             self.calls.fetch_add(1, Ordering::SeqCst);
             self.started.notify_one();
             if self.slow {
@@ -248,9 +253,18 @@ struct Files;
 impl EvidenceResolver for Files {
     fn read(&self, _: &Scope, o: &Origin) -> Option<Vec<u8>> {
         match o {
-            Origin::File { reference }
-            | Origin::Git { reference }
-            | Origin::Execution { reference } => std::fs::read(reference).ok(),
+            Origin::File { reference } | Origin::Execution { reference } => {
+                std::fs::read(reference).ok()
+            }
+            Origin::Git { reference } => {
+                let output = std::process::Command::new("git")
+                    .arg("-C")
+                    .arg(reference)
+                    .args(["show", "HEAD:evidence.txt"])
+                    .output()
+                    .ok()?;
+                output.status.success().then_some(output.stdout)
+            }
             _ => None,
         }
     }
@@ -269,12 +283,33 @@ fn scoped_fresh_file_git_runtime_sources_and_known_credentials() {
     e.grant_project(&project).unwrap();
     let path = root.0.join("evidence.txt");
     std::fs::write(&path, b"real version one").unwrap();
+    let repo = root.0.join("source-repo");
+    std::fs::create_dir(&repo).unwrap();
+    std::fs::write(repo.join("evidence.txt"), b"real version one").unwrap();
+    let git = |args: &[&str]| {
+        assert!(
+            std::process::Command::new("git")
+                .arg("-C")
+                .arg(&repo)
+                .args(args)
+                .output()
+                .unwrap()
+                .status
+                .success()
+        );
+    };
+    git(&["init"]);
+    git(&["config", "user.name", "I4 fixture"]);
+    git(&["config", "user.email", "fixture@example.invalid"]);
+    git(&["config", "commit.gpgsign", "false"]);
+    git(&["add", "evidence.txt"]);
+    git(&["commit", "-m", "initial synthetic source"]);
     for origin in [
         Origin::File {
             reference: path.to_str().unwrap().into(),
         },
         Origin::Git {
-            reference: path.to_str().unwrap().into(),
+            reference: repo.to_str().unwrap().into(),
         },
         Origin::Execution {
             reference: path.to_str().unwrap().into(),
@@ -299,7 +334,16 @@ fn scoped_fresh_file_git_runtime_sources_and_known_credentials() {
         3
     );
     std::fs::write(&path, b"real version two").unwrap();
+    std::fs::write(repo.join("evidence.txt"), b"real version two").unwrap();
+    git(&["add", "evidence.txt"]);
+    git(&["commit", "-m", "source revision"]);
     assert!(e.search(&scope, "", None, None, 10).unwrap().is_empty());
+    assert!(
+        e.list(&scope, None, 100)
+            .unwrap()
+            .iter()
+            .all(|m| m.revisions.iter().all(|r| !r.source_current))
+    );
     e.revoke_project(&project).unwrap();
     assert!(e.export(&scope).is_err());
     let guard = Arc::new(Redactor::default());
@@ -478,6 +522,17 @@ async fn automatic_chat_injection_is_explicit_transient_and_independent() {
     let e = chat.memory();
     e.create(draft(Scope::Personal, "editor memory")).unwrap();
     permit(&e, target("chat-a"), Purpose::Chat);
+    assert!(
+        e.allow(Permission {
+            target: target("another-endpoint"),
+            purpose: Purpose::Chat,
+            scope: Scope::Personal,
+            kinds: vec![Kind::Preference],
+            source_types: vec![SourceType::User],
+            allow_local_only: true,
+        })
+        .is_err()
+    );
     let conv = chat.create_conversation(None, "fixture".into()).unwrap();
     let send = || Send {
         operation: Uuid::new_v4(),
@@ -526,6 +581,45 @@ async fn automatic_chat_injection_is_explicit_transient_and_independent() {
         !p.inputs.lock().unwrap()[4]
             .to_string()
             .contains("editor memory")
+    );
+}
+
+#[tokio::test]
+async fn automatic_queue_capacity_does_not_fail_completed_chat() {
+    let root = Root::new();
+    let chat = Chat::open(&root.0, Namespace::guest()).unwrap();
+    let p = Mock::new(false);
+    chat.configure(model(p.clone(), "chat")).unwrap();
+    let e = chat.memory();
+    e.set_automatic(true).unwrap();
+    for _ in 0..1024 {
+        e.queue_integration(
+            Source::user(Scope::Personal, "waiting without integrator".into()),
+            Privacy::LocalOnly,
+        )
+        .unwrap();
+    }
+    let conversation = chat
+        .create_conversation(None, "full memory queue".into())
+        .unwrap();
+    let reply = chat
+        .send(Send {
+            operation: Uuid::new_v4(),
+            conversation,
+            parent: None,
+            content: Content::text("ordinary chat still succeeds"),
+        })
+        .await
+        .unwrap();
+    assert_eq!(reply.end, caidex_chat::End::Complete);
+    assert_eq!(chat.messages(conversation, 0, 10).unwrap().len(), 2);
+    assert_eq!(p.calls.load(Ordering::SeqCst), 1);
+    let db = rusqlite::Connection::open(root.0.join("guest/cache.sqlite3")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM memory_jobs", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        1024
     );
 }
 #[test]
@@ -613,4 +707,82 @@ async fn malicious_sources_and_model_tools_cannot_grant_execution_or_memory_appr
     assert_eq!(input["tools"], json!([]));
     assert_eq!(input["tool_choice"], "none");
     assert_eq!(input["input"][1]["role"], "user");
+}
+
+#[test]
+fn confirmed_account_credentials_are_blocked_without_caller_registration() {
+    let root = Root::new();
+    let trust = Trust::local_test("http://localhost:3333/").unwrap();
+    let access = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE";
+    let refresh = "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI";
+    let reply = json!({"access_token":access,"refresh_token":refresh,"token_type":"Bearer","expires_in":600,"issuer":trust.issuer(),"client_id":caidex_auth::CLI_CLIENT,"audience":caidex_auth::AUDIENCE,"user_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","session_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"});
+    let session = caidex_auth::ConfirmedSession::confirm(
+        &trust,
+        caidex_auth::CLI_CLIENT,
+        reply.clone(),
+        &reply,
+    )
+    .unwrap();
+    let chat = Chat::open(&root.0, Namespace::account(&session)).unwrap();
+    assert!(
+        chat.memory()
+            .create(draft(Scope::Personal, access))
+            .is_err()
+    );
+    assert!(
+        chat.memory()
+            .create(draft(Scope::Personal, refresh))
+            .is_err()
+    );
+    chat.memory()
+        .create(draft(Scope::Personal, "account preference"))
+        .unwrap();
+    assert!(
+        !chat
+            .memory()
+            .export(&Scope::Personal)
+            .unwrap()
+            .contains(access)
+    );
+}
+
+#[tokio::test]
+async fn aborted_model_post_becomes_unknown_and_offline_semantic_search_keeps_basic_search() {
+    let root = Root::new();
+    let chat = Arc::new(Chat::open(&root.0, Namespace::guest()).unwrap());
+    let e = chat.memory();
+    e.set_automatic(true).unwrap();
+    let p = Mock::new(true);
+    e.configure_integration(model(p.clone(), "integrator"))
+        .unwrap();
+    permit(&e, target("integrator"), Purpose::Integration);
+    let job = e
+        .queue_integration(
+            Source::user(Scope::Personal, "editor".into()),
+            Privacy::LocalOnly,
+        )
+        .unwrap();
+    let c = chat.clone();
+    let task = tokio::spawn(async move { c.memory().run(job).await });
+    p.started.notified().await;
+    task.abort();
+    assert!(task.await.unwrap_err().is_cancelled());
+    assert_eq!(e.jobs(&Scope::Personal, 10).unwrap()[0].state, "unknown");
+    assert!(matches!(e.run(job).await, Err(Error::AlreadySubmitted)));
+    assert_eq!(p.calls.load(Ordering::SeqCst), 1);
+    let p = Mock::new(false);
+    e.configure_embedding(model(p.clone(), "embedder"), space("v1"))
+        .unwrap();
+    permit(&e, target("embedding"), Purpose::Embedding);
+    let id = e.create(draft(Scope::Personal, "vim offline")).unwrap();
+    let job = e.queue_embedding(id).unwrap();
+    e.run(job).await.unwrap();
+    p.unavailable.store(true, Ordering::SeqCst);
+    assert_eq!(
+        e.semantic_search(&Scope::Personal, "vim", 10)
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
 }

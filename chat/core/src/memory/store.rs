@@ -405,6 +405,35 @@ impl MemoryEngine<'_> {
         {
             return Err(Error::Invalid);
         }
+        let actual = match permission.purpose {
+            Purpose::Chat => {
+                let m = s.model.as_ref().ok_or(Error::ModelUnavailable)?;
+                m.provider.memory_stream_target(&m.model)
+            }
+            Purpose::Integration => {
+                let m = s
+                    .memory
+                    .integration
+                    .as_ref()
+                    .ok_or(Error::ModelUnavailable)?;
+                m.provider.memory_target(&m.model, false)
+            }
+            Purpose::Embedding => {
+                let (m, _) = s.memory.embedding.as_ref().ok_or(Error::ModelUnavailable)?;
+                m.provider.memory_target(&m.model, true)
+            }
+        }
+        .map_err(|_| Error::ModelUnavailable)?;
+        if actual != permission.target {
+            return Err(Error::Invalid);
+        }
+        let count: i64 =
+            s.cache
+                .db
+                .query_row("SELECT count(*) FROM memory_permissions", [], |r| r.get(0))?;
+        if count >= 1024 {
+            return Err(Error::Invalid);
+        }
         let id = Uuid::new_v4();
         s.cache.db.execute(
             "INSERT INTO memory_permissions VALUES(?1,?2)",
@@ -564,12 +593,12 @@ impl MemoryEngine<'_> {
         let s = self.chat.state()?;
         authorize(&s, scope)?;
         let mut stmt = s.cache.db.prepare(
-            "SELECT id FROM memories WHERE scope=?1 AND state!='deleted' ORDER BY id LIMIT 1001",
+            "SELECT id FROM memories WHERE scope=?1 AND state!='deleted' ORDER BY id LIMIT 4097",
         )?;
         let ids = stmt
             .query_map([scope.key()], |r| r.get::<_, String>(0))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        if ids.len() > 1000 {
+        if ids.len() > 4096 {
             return Err(Error::Invalid);
         }
         let mut rows = Vec::new();
@@ -640,5 +669,65 @@ impl MemoryEngine<'_> {
         );
         source_bytes(&s, &source)?;
         Ok(source)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn memory_full_database_correction_rolls_back_head_payload_and_outbox() {
+        let root = std::env::temp_dir().join(format!("caidex-i4-full-{}", Uuid::new_v4()));
+        let chat = Chat::open(&root, crate::Namespace::guest()).unwrap();
+        let make = |text: String| Draft {
+            scope: Scope::Personal,
+            text: text.clone(),
+            kind: Kind::Preference,
+            privacy: Privacy::LocalOnly,
+            tags: vec![],
+            sources: vec![Source::user(Scope::Personal, text)],
+            valid_until_millis: None,
+        };
+        let id = chat.memory().create(make("preserved".into())).unwrap();
+        let original = chat.memory().get(id).unwrap();
+        let queued = {
+            let s = chat.state().unwrap();
+            let pages: i64 = s
+                .cache
+                .db
+                .pragma_query_value(None, "page_count", |r| r.get(0))
+                .unwrap();
+            s.cache
+                .db
+                .pragma_update(None, "max_page_count", pages)
+                .unwrap();
+            s.cache
+                .db
+                .query_row("SELECT count(*) FROM memory_outbox", [], |r| {
+                    r.get::<_, i64>(0)
+                })
+                .unwrap()
+        };
+        assert!(matches!(
+            chat.memory()
+                .correct(id, original.head, make("x".repeat(16000))),
+            Err(Error::Storage)
+        ));
+        let preserved = chat.memory().get(id).unwrap();
+        assert_eq!(preserved.head, original.head);
+        assert_eq!(preserved.revisions.len(), 1);
+        assert_eq!(preserved.revisions[0].draft.text, "preserved");
+        assert_eq!(
+            chat.state()
+                .unwrap()
+                .cache
+                .db
+                .query_row("SELECT count(*) FROM memory_outbox", [], |r| r
+                    .get::<_, i64>(0))
+                .unwrap(),
+            queued
+        );
+        drop(chat);
+        std::fs::remove_dir_all(root).unwrap();
     }
 }
