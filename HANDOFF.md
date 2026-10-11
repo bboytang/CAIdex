@@ -8,7 +8,7 @@
 
 有限计划：①复现两阻断并明确共享边界；②版本与Runtime共用原OS白名单，外部host/*安全记录；③合成凭据/伪造事件回归、合法恢复/完整workspace/固定Runtime/schema/doctor/真实双端演示；④最小diff/提交push main/最终源码精确三平台CI/证据封存。非目标：H-2/H-3/I、商业调用/真实Key、全量journal重构或协议改版。通过条件：原路径不再泄漏敏感环境、不接受外部Host控制事件，原契约无回归，新增回归及最终源码三平台全部通过。停止条件：封存证据后停止，等待用户重新发起H-1独立审计；开发验证不授独立审计通过。
 
-当前进度：AUD-001/AUD-002生产修复已提交`c4741682117f31a7fe5897338bf283564686e10c`，后续`a2e2d5a9c32cc29475189c45ca7580fd988c32ad`仅补安全的环境名称诊断。首轮/诊断CI分别[38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)、[38097401140](https://github.com/bboytang/CAIdex/actions/runs/38097401140)，不得认领通过：macOS Python启动时CoreFoundation生成__CF_USER_TEXT_ENCODING，替身误判；诊断轮Windows还在New-Item创建测试目录步骤失败。候选修正仅涉及测试：macOS验证该OS生成值的UID及数值格式，同时合成同名父变量、检查Rust Command只配置原六项白名单；测试目录加进程内原子计数保证并行唯一，不放宽ACL/生产白名单。新候选H-1定向19/0/0及全仓Clippy/fmt已通过，固定Runtime81/0/0、schema/doctor及真实双端强杀重启演示已通过；完整workspace使用新建Git外`/var/tmp/caidex-h1-audit-final-ryIGdl`复验已通过659/0/83（原可视化临时根存在.git，既有凭据保护正确拒绝，不清理或修改保护），需提交后新源码精确三平台CI再封存。工作区仅本轮测试、证据/文档修改。生产实现及范围不增加功能。
+当前进度：候选源码`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`/[CI38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)未通过：macOS环境测试已成功，新增服务测试在重启时拒绝旧锁；Linux/Windows成功。复制句柄故障注入在Linux稳定复现journal关闭后锁仍存活，现做H-1必要最小兼容修复：锁守卫在SQLite先关闭后显式unlock，原独占/文件保护不变，并验证旧复制句柄关闭不影响新所有者。新候选H-1定向20/0/0已通过；完整workspace660/0/83、固定Runtime81/0/0、Clippy/fmt和真实演示复验已通过。工作区仅本轮journal必要修正及证据/文档，尚需提交新SHA并重新完整三平台CI，不能沿用ebb或更早成功平台。无新功能/阶段。
 
 开发验证使用fix-finding只读边界调查/候选审查，不冒充H-1独立验收；用户已提供独立发现，尚未重新审计修复结果。AUD-003：model_turns/commercial_calls/user_keys_read为固定场景声明，非独立遥测；新演示以evidence_basis区分声明、代码断言和SQLite计数测量。旧归档保留历史，不作为这些指标的独立测量证明。
 

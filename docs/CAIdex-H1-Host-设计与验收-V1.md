@@ -14,9 +14,11 @@
 
 ### 本轮验证与停止
 
-新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。修复后Linux H-1定向19/0/0、workspace659/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor和真实双端强杀重启演示全部通过；本轮功能源码`c4741682117f31a7fe5897338bf283564686e10c`已提交push main，[精确CI38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)进行中，尚不能认领三平台通过。完整归档证据待最终核验后封存，不沿用旧SHA成功。
+新增回归在修复前失败：环境替身拒绝继承非白名单；service注入后快照为unavailable而非running。服务测试初稿的订阅顺序先造成等待超时，改为先attach再probe后得到明确生命周期失败；没有重试/忽略。修复后最终候选Linux H-1定向19/0/0、workspace659/0/83、固定Runtime81/0/0、全仓Clippy/fmt、stable/experimental schema、doctor和真实双端强杀重启演示全部通过；最终候选功能源码`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`已提交push main，[精确CI38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)排队/运行中，尚不能认领三平台通过。完整归档证据待最终核验后封存，不沿用旧SHA成功。
 
 CI失败处理：首轮[38097119061](https://github.com/bboytang/CAIdex/actions/runs/38097119061)macOS环境替身失败；诊断提交`a2e2d5a9c32cc29475189c45ca7580fd988c32ad`/[38097401140](https://github.com/bboytang/CAIdex/actions/runs/38097401140)仅输出意外变量名称，定位__CF_USER_TEXT_ENCODING。[Apple CoreFoundation初始化](https://github.com/apple-oss-distributions/CF/blob/main/CFRuntime.c)调用用户编码初始化，[编码实现](https://github.com/apple-oss-distributions/CF/blob/main/CFStringEncodings.c)会在启动后setenv。测试改为核验OS生成UID/编码/区域数值，并在父Command预置同名合成变量、检查启动配置仍只有六项OS白名单；生产继承范围完全不扩展。诊断轮Windows另在New-Item创建测试目录步骤失败（WindowsAcl(16)），原时间戳命名不保证并行唯一，测试夹具增加原子计数排除碰撞；此为可能原因的最小排除修正，不把未捕获的PowerShell错误详情当作已证实，不重试或降低ACL断言。须由最终源码完整三平台CI复验。
+
+随后`ebb21349f6575d3f6c55ea5f2adf3463fbdad10b`/[38097953967](https://github.com/bboytang/CAIdex/actions/runs/38097953967)macOS环境测试通过，但服务重启仍遭旧journal锁拒绝。生产代码已有显式drop(journal)，并未因任务完成漏drop；[Apple flock语义](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/flock.2.html)与[Rust锁实现](https://github.com/rust-lang/rust/blob/1.99.0/library/std/src/sys/fs/unix.rs)表明fork/dup引用共享锁。未捕获当时的具体持有进程，不能把fork来源当作直接观测；新增复制句柄故障测试在Linux稳定复现同样的关闭后无法重开。最小H-1兼容修复为StorageLock守卫显式unlock，Journal字段顺序保证SQLite先关闭，再释放锁；inspect/失败路径也复用该守卫，不修改schema/事务/重试策略。新增测试还验证活动所有者排他、旧复制句柄关闭不释放新所有者锁、再次正常重开。当前候选定向20/0/0、workspace660/0/83、固定Runtime81/0/0、Clippy/fmt和真实演示均通过；新SHA精确三平台CI待完成。
 
 两个阻断的开发验证和最终源码三平台CI全部完成、证据封存后立即停止；用户重新发起独立审计前不声明H-1独立审计通过，不启动H-2/H-3/I。
 

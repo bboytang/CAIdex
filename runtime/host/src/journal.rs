@@ -94,14 +94,24 @@ impl Snapshot {
     }
 }
 
+struct StorageLock(File);
+
+impl Drop for StorageLock {
+    fn drop(&mut self) {
+        // A fork/duplicate may keep the open file description alive after close.
+        let _ = self.0.unlock();
+    }
+}
+
 pub struct Journal {
     connection: Connection,
     snapshot: Snapshot,
-    _lock: File,
+    // Fields drop in declaration order: close SQLite before releasing ownership.
+    _lock: StorageLock,
 }
 
 impl Journal {
-    fn lock_storage(directory: &Path) -> Result<File> {
+    fn lock_storage(directory: &Path) -> Result<StorageLock> {
         crate::private_directory(directory)?;
         // Existing links/files are never replaced. The private directory is the
         // OS-user trust boundary; another process as that user already has access.
@@ -136,7 +146,7 @@ impl Journal {
             .open(directory.join("host.lock"))?;
         lock.try_lock()
             .map_err(|_| Error::Refused("Host directory is already in use"))?;
-        Ok(lock)
+        Ok(StorageLock(lock))
     }
 
     pub fn open(directory: &Path) -> Result<Self> {
@@ -366,6 +376,25 @@ impl Journal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn journal_close_releases_lock_even_when_a_duplicate_handle_survives() {
+        let directory = std::env::temp_dir().join(format!(
+            "caidex-h1-lock-{}-{}",
+            std::process::id(),
+            random_id().unwrap()
+        ));
+        let journal = Journal::open(&directory).unwrap();
+        let duplicate = journal._lock.0.try_clone().unwrap();
+        assert!(Journal::open(&directory).is_err());
+        drop(journal);
+        let replacement = Journal::open(&directory).unwrap();
+        drop(duplicate);
+        assert!(Journal::open(&directory).is_err());
+        drop(replacement);
+        drop(Journal::open(&directory).unwrap());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
 
     #[test]
     fn actual_sqlite_full_rolls_back_event_and_snapshot() {
