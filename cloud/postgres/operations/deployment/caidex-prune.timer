@@ -1,0 +1,10 @@
+[Unit]
+Description=CAIdex hourly backup expiry check
+
+[Timer]
+OnCalendar=*-*-* *:30:00 UTC
+Persistent=yes
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

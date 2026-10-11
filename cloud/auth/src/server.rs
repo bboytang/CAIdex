@@ -104,6 +104,9 @@ pub struct Mail {
     pub verification_token: Option<String>,
 }
 pub trait EmailSender: Send + Sync + 'static {
+    fn enabled(&self) -> bool {
+        true
+    }
     fn send(&self, mail: Mail) -> impl Future<Output = Result<()>> + Send;
     fn callback(
         &self,
@@ -369,6 +372,10 @@ impl<S: EmailSender> Service<S> {
         bearer: Option<&str>,
         body: Value,
     ) -> Result<Value> {
+        // Reject before identity lookup so a configured mail shutdown does not reveal account existence.
+        if !self.sender.enabled() && matches!(action, "register" | "recover" | "change-email") {
+            return Err(Error::Unavailable);
+        }
         match action {
             _ if action.starts_with("chat-") => self.chat(tx, action, bearer, body).await,
             _ if action.starts_with("memory-") => self.memory(tx, action, bearer, body).await,

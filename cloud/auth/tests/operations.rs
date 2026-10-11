@@ -660,7 +660,26 @@ async fn production_entry(dsn: &str) {
         command
     };
     let http = reqwest::Client::builder().no_proxy().build().unwrap();
-    for _ in 0..2 {
+    let admin = connection(&std::env::var("CAIDEX_I7_ADMIN_DB").unwrap()).await;
+    for mail_disabled in [false, false, true] {
+        if mail_disabled {
+            for (profile, kind) in [
+                ("mail-api", SecretKind::ApiKey),
+                ("mail-webhook", SecretKind::ClientSecret),
+            ] {
+                broker
+                    .remove(&CredentialRef {
+                        owner: owner.clone(),
+                        provider: Id::new("account-service").unwrap(),
+                        profile: Id::new(profile).unwrap(),
+                        kind,
+                    })
+                    .unwrap();
+            }
+            let mut disabled = config.clone();
+            disabled["mail_disabled"] = json!(true);
+            std::fs::write(&path, disabled.to_string()).unwrap();
+        }
         let mut child = command().spawn().unwrap();
         let mut ready = false;
         for _ in 0..100 {
@@ -681,6 +700,48 @@ async fn production_entry(dsn: &str) {
                 break;
             }
             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+        if ready && mail_disabled {
+            admin.execute("INSERT INTO caidex.user_identities(user_id,kind,issuer,subject,state) VALUES('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','email','email','service-existing@example.test','verified')", &[]).await.unwrap();
+            let before = admin.query_one("SELECT (SELECT count(*) FROM caidex.users),(SELECT count(*) FROM caidex.auth_challenges),(SELECT count(*) FROM caidex.mail_tasks)", &[]).await.unwrap();
+            for (action, body) in [
+                (
+                    "register",
+                    json!({"email":"disabled@example.test","password":"synthetic-disabled-password"}),
+                ),
+                ("recover", json!({"email":"disabled-recover@example.test"})),
+                ("recover", json!({"email":"service-existing@example.test"})),
+                (
+                    "change-email",
+                    json!({"email":"disabled@example.test","proof":"synthetic-proof"}),
+                ),
+            ] {
+                let response = http
+                    .post(format!("http://127.0.0.1:{port}/v1/auth/{action}"))
+                    .header("content-type", "application/json")
+                    .body(body.to_string())
+                    .send()
+                    .await
+                    .unwrap();
+                assert_eq!(response.status(), 503);
+            }
+            let callback = http
+                .post(format!("http://127.0.0.1:{port}/v1/mail/events"))
+                .headers(brevo_headers())
+                .body("{}")
+                .send()
+                .await
+                .unwrap();
+            check(
+                "mail_disabled_entry_without_mail_secrets_denies_verification_and_callbacks",
+                callback.status() == 401,
+            );
+            let after = admin.query_one("SELECT (SELECT count(*) FROM caidex.users),(SELECT count(*) FROM caidex.auth_challenges),(SELECT count(*) FROM caidex.mail_tasks)", &[]).await.unwrap();
+            check(
+                "mail_disabled_creates_no_account_challenge_or_send",
+                (0..3).all(|i| before.get::<_, i64>(i) == after.get::<_, i64>(i)),
+            );
+            admin.execute("DELETE FROM caidex.user_identities WHERE subject='service-existing@example.test'", &[]).await.unwrap();
         }
         if child.try_wait().unwrap().is_none() {
             child.kill().unwrap();

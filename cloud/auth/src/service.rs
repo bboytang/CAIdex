@@ -22,6 +22,8 @@ struct Config {
     data_db: String,
     secrets: PathBuf,
     provider: Provider,
+    #[serde(default)]
+    mail_disabled: bool,
     from: String,
     daily_budget: i64,
     monthly_budget: i64,
@@ -101,18 +103,23 @@ async fn run() -> Result<(), Error> {
         .map_err(|_| Error::Invalid)?
         .try_into()
         .map_err(|_| Error::Invalid)?;
-    let api_key = get("mail-api", SecretKind::ApiKey)?;
-    let webhook_key = get("mail-webhook", SecretKind::ClientSecret)?;
-    let mail = ProviderEmail::connect(
-        &config.auth_db,
-        config.provider,
-        config.from,
-        api_key,
-        webhook_key,
-        config.daily_budget,
-        config.monthly_budget,
-    )
-    .await?;
+    let mail = if config.mail_disabled {
+        eprintln!("Account mail is disabled; email verification and callbacks are unavailable");
+        None
+    } else {
+        Some(
+            ProviderEmail::connect(
+                &config.auth_db,
+                config.provider,
+                config.from,
+                get("mail-api", SecretKind::ApiKey)?,
+                get("mail-webhook", SecretKind::ClientSecret)?,
+                config.daily_budget,
+                config.monthly_budget,
+            )
+            .await?,
+        )
+    };
     let service = Service::connect(
         &config.auth_db,
         &config.data_db,

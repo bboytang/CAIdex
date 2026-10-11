@@ -1,0 +1,10 @@
+[Unit]
+Description=CAIdex daily backup schedule
+
+[Timer]
+OnCalendar=*-*-* 19:00:00 UTC
+Persistent=yes
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

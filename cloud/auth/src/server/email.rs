@@ -45,6 +45,23 @@ pub struct ProviderEmail {
     daily_budget: i64,
     monthly_budget: i64,
 }
+impl super::EmailSender for Option<ProviderEmail> {
+    fn enabled(&self) -> bool {
+        self.is_some()
+    }
+    async fn send(&self, mail: Mail) -> Result<()> {
+        match self {
+            Some(sender) => sender.send(mail).await,
+            None => Err(Error::Unavailable),
+        }
+    }
+    async fn callback(&self, headers: &HeaderMap, body: &[u8]) -> Result<()> {
+        match self {
+            Some(sender) => sender.callback(headers, body).await,
+            None => Err(Error::Denied),
+        }
+    }
+}
 impl ProviderEmail {
     pub async fn connect(
         dsn: &str,

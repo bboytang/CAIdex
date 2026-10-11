@@ -1,6 +1,6 @@
 # I-7 本机运行与恢复操作说明
 
-这是隔离开发验证的操作接口；未安装服务/定时任务，未部署VPS，也未发送真实邮件。授权、证据与未验边界见 [I-7验收](../../../docs/CAIdex-I7-运行与恢复-设计与验收-V1.md)。
+I-7隔离验证的历史证据见 [I-7验收](../../../docs/CAIdex-I7-运行与恢复-设计与验收-V1.md)。2026-10-11用户另行授权正式部署；目标配置与实际状态见 [部署记录](../../../docs/CAIdex-云服务部署-20261011.md)，不能将配置文件存在当作已部署或真实邮件已验。
 
 ## 独立复现
 
@@ -41,6 +41,8 @@ cargo build --release -p caidex-auth --features server --locked
 ```
 
 额度仅示例，不是供应商免费额度承诺；上线前从官方核对并配置实际预算。服务仅绑定127.0.0.1，issuer/RP必须是同一HTTPS域名。两个数据库登录角色分别只继承既有 `caidex_auth` / `caidex_app`，无owner/SUPERUSER/BYPASSRLS/建库建角色/schema CREATE，使用本机Unix socket；配置拒绝数据库密码。应由数据库管理员预先安装bootstrap与0001～0005事务迁移，配置本机peer/受限认证。不得把postgres管理员给HTTP服务。
+
+未配置邮件时，必须显式设置 `"mail_disabled": true`；此时仅需 device-code-pepper，from可为空，邮件API/回调秘密不读取、不模拟发送或保存验证码沙箱。注册、找回、邮箱变更在身份查询前返回503（既有输入/额度限制仍适用），回调拒绝；不生成账户/验证挑战或绕过邮箱验证。安全通知依赖邮件的操作也可能暂不可用。默认false与旧配置一致：缺少有效邮件凭据则启动失败，不能因秘密缺失静默降级。后续只有实际配置并验证供应商、发信邮箱/域名、预算和回调后才关闭此开关。
 
 用既有 `caidex credentials set --owner caidex-service --provider account-service --profile PROFILE --store file --directory /absolute/private/service-secrets --kind KIND --stdin` 从标准输入提供以下三项，不能把秘密放命令参数、JSON、日志、源码或聊天：
 

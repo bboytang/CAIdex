@@ -1,0 +1,18 @@
+[Unit]
+Description=CAIdex daily finite local backup
+After=postgresql@17-main.service
+Requires=postgresql@17-main.service
+OnFailure=caidex-alert@%n.service
+
+[Service]
+Type=oneshot
+User=postgres
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+Environment=PATH=/usr/lib/postgresql/17/bin:/usr/bin:/bin
+ExecStartPre=/usr/bin/python3 /opt/caidex/current/cloud/postgres/operations/backup.py --socket /var/run/postgresql --database caidex prune /var/lib/caidex-backups
+ExecStart=/usr/bin/python3 /opt/caidex/current/cloud/postgres/operations/backup.py --socket /var/run/postgresql --database caidex backup /var/lib/caidex-backups
+TimeoutStartSec=6min
+ReadWritePaths=/var/lib/caidex-backups

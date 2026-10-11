@@ -1,0 +1,31 @@
+[Unit]
+Description=CAIdex account and data service
+After=network-online.target postgresql@17-main.service
+Requires=postgresql@17-main.service
+PartOf=postgresql@17-main.service
+OnFailure=caidex-alert@%n.service
+
+[Service]
+User=caidex
+Group=caidex
+WorkingDirectory=/opt/caidex/current
+ExecStart=/opt/caidex/current/bin/caidex-auth-service /var/lib/caidex/config
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=20
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/caidex/secrets
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+MemoryHigh=512M
+MemoryMax=768M
+TasksMax=64
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

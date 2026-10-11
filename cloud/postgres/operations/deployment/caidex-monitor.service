@@ -1,0 +1,12 @@
+[Unit]
+Description=CAIdex disk and backup age monitor
+OnFailure=caidex-alert@%n.service
+
+[Service]
+Type=oneshot
+User=postgres
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ExecStart=/usr/bin/python3 /opt/caidex/current/cloud/postgres/operations/deployment/monitor.py

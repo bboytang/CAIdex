@@ -1,0 +1,13 @@
+[Unit]
+Description=CAIdex backup expiry independent of new backup success
+OnFailure=caidex-alert@%n.service
+
+[Service]
+Type=oneshot
+User=postgres
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ExecStart=/usr/bin/python3 -c "import sys,time,json; sys.path.insert(0,'/opt/caidex/current/cloud/postgres/operations'); import backup; print(json.dumps({'removed':backup.prune(backup.private_directory('/var/lib/caidex-backups'),now=time.time()+7200)}))"
+ReadWritePaths=/var/lib/caidex-backups

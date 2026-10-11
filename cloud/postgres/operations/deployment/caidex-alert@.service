@@ -1,0 +1,6 @@
+[Unit]
+Description=CAIdex local operator alert for %i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger -p daemon.err -t caidex-alert "CAIdex unit %i failed; inspect systemctl and journalctl. External mail alerts are not configured."
