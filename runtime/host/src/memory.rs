@@ -27,13 +27,19 @@ pub struct MemoryGrant {
     pub evidence: BTreeMap<String, Scope>,
 }
 pub(crate) enum Command {
+    GrantEvidence {
+        host_id: String,
+        client_id: String,
+        scope: Scope,
+        task_id: String,
+    },
     Models {
         host_id: String,
     },
     Submit {
         host_id: String,
         operation_id: String,
-        request: InferenceRequest,
+        request: Box<InferenceRequest>,
     },
     Release {
         host_id: String,
@@ -252,7 +258,8 @@ impl MemoryService {
             .ok_or(Error::Refused("Memory profile denied"))?;
         check_owner(&profile.model, &self.owner)?;
         let info = self.info(snapshot, profile)?;
-        if request.purpose() != info.purpose
+        if request.target != info.target
+            || request.purpose() != info.purpose
             || request.space != info.space
             || !self.grants.get(client).is_some_and(|g| {
                 g.permissions
@@ -272,7 +279,8 @@ impl MemoryService {
         command: Command,
     ) -> Result<Value> {
         let host = match &command {
-            Command::Models { host_id }
+            Command::GrantEvidence { host_id, .. }
+            | Command::Models { host_id }
             | Command::Submit { host_id, .. }
             | Command::Release { host_id, .. }
             | Command::Status { host_id, .. }
@@ -283,6 +291,32 @@ impl MemoryService {
             return Err(Error::Refused("Memory Host identity mismatch"));
         }
         match command {
+            Command::GrantEvidence {
+                client_id,
+                scope,
+                task_id,
+                ..
+            } => {
+                if client != crate::access::OWNER
+                    || !snapshot
+                        .tasks
+                        .get(&task_id)
+                        .is_some_and(|t| t.status == "completed")
+                {
+                    return Err(Error::Refused(
+                        "completed Memory evidence requires Host owner grant",
+                    ));
+                }
+                let grant = self
+                    .grants
+                    .get_mut(&client_id)
+                    .ok_or(Error::Refused("Memory client binding not configured"))?;
+                if grant.evidence.len() >= 1024 {
+                    return Err(Error::Refused("Memory evidence capacity reached"));
+                }
+                grant.evidence.insert(task_id, scope);
+                Ok(json!({"granted":true}))
+            }
             Command::Models { .. } => {
                 let mut infos = vec![];
                 for p in self.profiles.values() {
@@ -294,6 +328,9 @@ impl MemoryService {
                     }) {
                         infos.push(info);
                     }
+                }
+                if !self.safe(&json!(infos)) {
+                    return Err(Error::Refused("unsafe Memory model descriptor"));
                 }
                 Ok(json!(infos))
             }
@@ -342,7 +379,7 @@ impl MemoryService {
                     (client.into(), operation_id.clone()),
                     Running {
                         cancel: cancel.clone(),
-                        request: request.clone(),
+                        request: (*request).clone(),
                         output: None,
                     },
                 );
@@ -350,7 +387,11 @@ impl MemoryService {
                 let client = client.to_owned();
                 let id = operation_id.clone();
                 // Host's actual embedding target differs from its composite client-facing identity.
-                let mut local = request;
+                let mut local = *request;
+                local.target = model
+                    .provider
+                    .memory_target(&model.model, local.space.is_some())
+                    .map_err(|_| Error::Refused("Memory target unavailable"))?;
                 if let Some(space) = &mut local.space {
                     space.target = model
                         .provider

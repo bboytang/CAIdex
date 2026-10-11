@@ -215,6 +215,7 @@ impl HostModel {
         if request.draft.scope != self.scope
             || request.purpose() != self.info.purpose
             || request.profile != self.info.profile
+            || request.target != self.info.target
             || request.space != self.info.space
         {
             return Err(Error::HostDenied);
@@ -272,7 +273,7 @@ impl HostModel {
 #[derive(Clone)]
 pub(crate) enum Executor {
     Local(LocalModel),
-    Host(HostModel),
+    Host(Box<HostModel>),
 }
 impl Executor {
     pub(crate) fn target(&self, embedding: bool) -> Result<ProviderTarget> {
@@ -328,7 +329,7 @@ impl MemoryEngine<'_> {
         store::authorize(&s, &model.scope)?;
         s.memory.guards.push(model.connection.guard.clone());
         s.memory.cancel_all();
-        s.memory.integration = Some(Executor::Host(model));
+        s.memory.integration = Some(Executor::Host(Box::new(model)));
         Ok(())
     }
     pub fn configure_host_embedding(&self, model: HostModel) -> Result<()> {
@@ -342,7 +343,7 @@ impl MemoryEngine<'_> {
         store::authorize(&s, &model.scope)?;
         s.memory.guards.push(model.connection.guard.clone());
         s.memory.cancel_all();
-        s.memory.embedding = Some((Executor::Host(model), space));
+        s.memory.embedding = Some((Executor::Host(Box::new(model)), space));
         Ok(())
     }
 }

@@ -10,13 +10,18 @@ use std::time::{Duration, Instant};
 #[serde(deny_unknown_fields)]
 pub struct InferenceRequest {
     pub profile: String,
+    pub target: ProviderTarget,
     pub draft: Draft,
     pub space: Option<Space>,
 }
 impl InferenceRequest {
     pub fn validate(&self) -> Result<()> {
         let d = &self.draft;
-        if self.profile.is_empty()
+        if self.target.endpoint.is_empty()
+            || self.target.endpoint.len() > 2048
+            || self.target.native_model.is_empty()
+            || self.target.native_model.len() > 256
+            || self.profile.is_empty()
             || self.profile.len() > 256
             || d.text.is_empty()
             || d.text.len() > 16384
@@ -78,10 +83,7 @@ impl InferenceOutput {
                 }
             }
             (Self::Vector(v), Some(s))
-                if v.len() == s.dimensions && v.iter().all(|x| x.is_finite()) =>
-            {
-                ()
-            }
+                if v.len() == s.dimensions && v.iter().all(|x| x.is_finite()) => {}
             _ => return Err(Error::Invalid),
         }
         Ok(())

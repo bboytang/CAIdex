@@ -284,6 +284,22 @@ impl Client {
         .unwrap()
     }
     async fn call(&mut self, mut value: Value) -> Value {
+        if value["method"] == "memory/submit" {
+            let p = value["request"]["profile"]
+                .as_str()
+                .unwrap_or("integration");
+            if value["request"]["target"]["endpoint"]
+                .as_str()
+                .is_some_and(|e| e.starts_with("https://fixture.invalid/"))
+            {
+                value["request"]["target"]["endpoint"] = json!(format!(
+                    "caidex-host:{}:{}:{}",
+                    value["host_id"].as_str().unwrap(),
+                    p,
+                    value["request"]["target"]["endpoint"].as_str().unwrap()
+                ));
+            }
+        }
         self.id += 1;
         value["id"] = json!(self.id);
         self.write
@@ -303,6 +319,7 @@ impl Client {
 fn request(text: &str) -> InferenceRequest {
     InferenceRequest {
         profile: "integration".into(),
+        target: Provider::new().memory_target("integration", false).unwrap(),
         draft: Draft {
             scope: Scope::Personal,
             text: text.into(),
@@ -566,7 +583,10 @@ async fn client_cancellation_disable_delete_and_switch_reject_late_results_on_ho
             "delete" => chat.memory().delete(memory).unwrap(),
             "switch" => {
                 let trust = caidex_auth::Trust::local_test("http://localhost:3333/").unwrap();
-                let user = caidex_cloud_core::Id::try_from("other".to_string()).unwrap();
+                let user = caidex_cloud_core::Id::try_from(
+                    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa".to_string(),
+                )
+                .unwrap();
                 chat.switch(Namespace::offline_account(&trust, &user))
                     .unwrap();
                 assert!(matches!(

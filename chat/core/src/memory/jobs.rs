@@ -317,50 +317,52 @@ impl MemoryEngine<'_> {
         };
         let result = tokio::select! {biased;_=cancel.cancelled()=>Err(Error::Cancelled),_=tokio::time::sleep(Duration::from_secs(120))=>Err(Error::Cancelled),r=work=>r};
         cancel.cancel();
-        let mut s = self.chat.state()?;
-        if s.generation != generation {
-            return Err(Error::Cancelled);
-        }
-        s.memory.pending.remove(&id);
-        if s.memory.epoch != epoch || !automatic(&s)? || authorize(&s, &job.scope).is_err() {
-            s.cache.db.execute(
-                "UPDATE memory_jobs SET state='cancelled',reference='' WHERE id=?1",
-                [id.to_string()],
-            )?;
-            return Err(Error::Cancelled);
-        }
-        let output = match result {
-            Ok(output) => output,
-            Err(error) => {
-                s.cache.db.execute(
-                    "UPDATE memory_jobs SET state=?1 WHERE id=?2",
-                    params![
-                        match error {
-                            Error::HostOffline if !recover => "waiting",
-                            Error::HostOffline | Error::HostUnknown => "unknown",
-                            Error::Cancelled => "cancelled",
-                            _ => "failed",
-                        },
-                        id.to_string()
-                    ],
-                )?;
-                return if matches!(error, Error::HostOffline) {
-                    Ok(vec![])
-                } else {
-                    Err(error)
-                };
+        let commit = {
+            let mut s = self.chat.state()?;
+            if s.generation != generation {
+                return Err(Error::Cancelled);
             }
+            s.memory.pending.remove(&id);
+            if s.memory.epoch != epoch || !automatic(&s)? || authorize(&s, &job.scope).is_err() {
+                s.cache.db.execute(
+                    "UPDATE memory_jobs SET state='cancelled',reference='' WHERE id=?1",
+                    [id.to_string()],
+                )?;
+                return Err(Error::Cancelled);
+            }
+            let output = match result {
+                Ok(output) => output,
+                Err(error) => {
+                    s.cache.db.execute(
+                        "UPDATE memory_jobs SET state=?1 WHERE id=?2",
+                        params![
+                            match error {
+                                Error::HostOffline if !recover => "waiting",
+                                Error::HostOffline | Error::HostUnknown => "unknown",
+                                Error::Cancelled => "cancelled",
+                                _ => "failed",
+                            },
+                            id.to_string()
+                        ],
+                    )?;
+                    return if matches!(error, Error::HostOffline) {
+                        Ok(vec![])
+                    } else {
+                        Err(error)
+                    };
+                }
+            };
+            // The same checks are repeated after I/O; provider results cannot revive stale/deleted sources.
+            let commit = commit(&mut s, &reference, &model, output);
+            s.cache.db.execute(
+                "UPDATE memory_jobs SET state=?1,reference='' WHERE id=?2",
+                params![
+                    if commit.is_ok() { "done" } else { "failed" },
+                    id.to_string()
+                ],
+            )?;
+            commit
         };
-        // The same checks are repeated after I/O; provider results cannot revive stale/deleted sources.
-        let commit = commit(&mut s, &reference, &model, output);
-        s.cache.db.execute(
-            "UPDATE memory_jobs SET state=?1,reference='' WHERE id=?2",
-            params![
-                if commit.is_ok() { "done" } else { "failed" },
-                id.to_string()
-            ],
-        )?;
-        drop(s);
         model.release(id).await;
         commit
     }
@@ -378,6 +380,7 @@ impl MemoryEngine<'_> {
                 source, privacy, ..
             } => InferenceRequest {
                 profile: model.profile(),
+                target: model.target(false)?,
                 draft: placeholder(source, *privacy),
                 space: None,
             },
@@ -397,6 +400,7 @@ impl MemoryEngine<'_> {
                     .clone();
                 InferenceRequest {
                     profile: model.profile(),
+                    target: model.target(true)?,
                     draft,
                     space: Some(space.clone().ok_or(Error::Invalid)?),
                 }
@@ -489,6 +493,7 @@ impl MemoryEngine<'_> {
         draft.text = query.to_owned();
         let request = InferenceRequest {
             profile: model.profile(),
+            target: model.target(true)?,
             draft,
             space: Some(space.clone()),
         };

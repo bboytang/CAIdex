@@ -99,7 +99,7 @@ enum Request {
         id: u64,
         host_id: String,
         operation_id: String,
-        request: InferenceRequest,
+        request: Box<InferenceRequest>,
     },
     #[serde(rename = "memory/release")]
     MemoryRelease {
@@ -118,6 +118,14 @@ enum Request {
         id: u64,
         host_id: String,
         operation_id: String,
+    },
+    #[serde(rename = "memory/evidence-grant")]
+    MemoryEvidenceGrant {
+        id: u64,
+        host_id: String,
+        client_id: String,
+        scope: MemoryScope,
+        task_id: String,
     },
     #[serde(rename = "memory/evidence")]
     MemoryEvidence {
@@ -166,6 +174,7 @@ impl ClientCommand {
             Self::Task(task::Command::Approval { .. } | task::Command::Revoke { .. }) => {
                 Some(Scope::Approve)
             }
+            Self::Memory(memory::Command::GrantEvidence { .. }) => None,
             Self::Memory(_) => Some(Scope::Memory),
             Self::Shutdown | Self::Grant { .. } | Self::Revoke { .. } => None,
         }
@@ -223,6 +232,21 @@ impl Request {
                 ClientCommand::Memory(memory::Command::Cancel {
                     host_id,
                     operation_id,
+                }),
+            ),
+            Self::MemoryEvidenceGrant {
+                id,
+                host_id,
+                client_id,
+                scope,
+                task_id,
+            } => (
+                id,
+                ClientCommand::Memory(memory::Command::GrantEvidence {
+                    host_id,
+                    client_id,
+                    scope,
+                    task_id,
                 }),
             ),
             Self::MemoryEvidence {
