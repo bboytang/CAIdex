@@ -1,0 +1,15 @@
+{
+  "run_id": 38135539590,
+  "source_sha": "1a57cf9265ff3743b70f5dc4d216d239c028cf59",
+  "job_id": 114458521518,
+  "log": "i2-ci-first-failed-database.log.gz",
+  "raw_sha256": "0c0efa4d0807100fab23ab3361c6a29e459cfb7b202850082be1a02649322edc",
+  "gzip_sha256": "6d6cb90d976f7c13d42839b95b2ce2385a6585426bfa0c1e6726b8fb6025a4b2",
+  "auth_rust_assertion_groups": 105,
+  "auth_rust_failed": 0,
+  "password_revocation_assertion": "passed",
+  "failure": "Standalone measurement readiness request timed out during startup; unhandled TimeoutError. Cleanup also failed because the image made the private socket mount postgres-owned/sticky.",
+  "fix": "Retry TimeoutError within the existing startup bound; restore mode 0777 only on this container private socket bind mount before removing this container.",
+  "disk_full_log_matches": 0,
+  "final_verification": "pending exact new SHA CI"
+}

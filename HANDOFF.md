@@ -6,7 +6,9 @@
 
 用户已确认I-1独立审计通过并明确批准I-2；结论来自用户，本会话不冒充独立审计。范围与通过/停止条件见[设计与验收](docs/CAIdex-I2-认证会话-设计与验收-V1.md)。不使用ponytail技能。已批准范围内允许必要源码/迁移/测试/脚本/文档/commit/push main及精确CI，不需要重新批准小步骤。I-3及后续/商业API/真实用户Key/真实邮件/生产部署未授权。
 
-用户最新要求：后续构建/测试尽量在GitHub，并继续当前I-2。本轮已核对GitHub main仍d007，CI API可访问；默认沙箱DNS不可用，实际GitHub命令使用已授权require_escalated通道。将完整构建/真实DB/三平台回归放到GitHub，准备commit/push；尚未有本轮最终CI。已补脚本独立服务进程的实际RSS/CPU测量（合成账户/私有测试邮箱），workflow补授权页JS语法检查。本地Python语法、实测/proc解析自检、JS语法、fmt、差异空白和既有锁文件版本/source/checksum不变检查通过；不在本机重建Rust/Docker或清理缓存。
+用户最新要求：后续构建/测试尽量在GitHub，并继续当前I-2。已提交并push功能SHA `1a57cf9265ff3743b70f5dc4d216d239c028cf59`，[精确CI38135539590](https://github.com/bboytang/CAIdex/actions/runs/38135539590)正在运行四job，尚未取得最终结论。默认沙箱DNS不可用、.git只读，GitHub/提交命令使用已授权require_escalated通道。已补脚本独立服务进程的实际RSS/CPU测量（合成账户/私有测试邮箱），workflow补授权页JS语法检查。本地Python语法、实测/proc解析自检、JS语法、fmt、差异空白和既有锁文件版本/source/checksum不变检查通过；不在本机重建Rust/Docker或清理缓存。下方d007/未提交/ENOSPC段落为此前核查事实，最终封存时更新。
+
+首轮CI认证Rust联合105组全通过，新增密码撤销并发断言实际通过；认证job随后在独立测量启动probe发生未捕获TimeoutError，清理时PG镜像把本次私有socket目录改为postgres-owned/sticky导致非root runner不能删除。Linux/macOS Runtime job已成功；不能以部分结果代四job通过。已最小修正启动probe在既有30秒循环内重试TimeoutError，容器删除前仅用自身容器root恢复本次socket bind mount的0777，保留0700父目录与无网络隔离。失败原日志/指纹见[首轮GitHub失败](docs/evidence/i2-ci-first-failed.json)，无ENOSPC；待提交修正并验新精确SHA。
 
 上轮以git rev-parse/git ls-remote核对main/HEAD/origin/main/GitHub main均`d0075114aef5b2761c4c94c07c7edc0853087984`；本轮诊断复核本地main/HEAD/origin/main仍相同，未联网复核远端。I-2实施起点工作区干净，现保留未提交实现及证据；没有commit/push或I-2最终CI，不授开发验收或独立审计通过。
 

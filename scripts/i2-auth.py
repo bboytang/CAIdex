@@ -54,7 +54,7 @@ def measure_service(binary, work, env):
                     with http.open(base + '.well-known/oauth-authorization-server', timeout=1) as reply:
                         assert json.load(reply)['issuer'] == f'http://localhost:{port}/'
                     break
-                except urllib.error.URLError:
+                except (urllib.error.URLError, TimeoutError):
                     time.sleep(0.1)
             else:
                 raise RuntimeError('standalone measurement service startup timeout')
@@ -195,6 +195,9 @@ def main():
             if args.output:
                 args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
         finally:
+            # The image changes this private bind mount to a postgres-owned sticky directory.
+            subprocess.run(docker + ['exec', '--user', '0', name, 'chmod', '0777', '/var/run/postgresql'],
+                           capture_output=True, env=env, timeout=30)
             subprocess.run(docker + ['rm', '-f', name], capture_output=True, env=env, timeout=30)
 
 
