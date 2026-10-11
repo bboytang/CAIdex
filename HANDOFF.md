@@ -4,9 +4,13 @@
 
 ## 当前批准：I-4.2 Host Memory 接入实施中
 
-2026-10-11 用户明确确认 I-4.1 独立审计通过并批准继续下一阶段，按既定拆分续接 I-4.2；这是用户确认，不由实施会话自行授审计。当前 main 起点 ca65343d31decb914d60fdd3d38e7af87742f713，工作区起点干净，origin/main 同步。有限目标/非目标/通过/停止见 [I-4.2 设计与验收](docs/CAIdex-I42-Host-Memory-设计与验收-V1.md)。允许必要实现/修复/测试/文档/commit/push main/精确 CI；I-5 及后续仍未授权。自动记忆首次默认关闭；不读真实 Key/调用商业 API/邮件/部署。完整构建回归优先 GitHub；本地盘约3.6GiB可用，不清理有效缓存。
+2026-10-11 用户明确确认 I-4.1 独立审计通过并批准继续下一阶段，按既定拆分续接 I-4.2；这是用户确认，不由实施会话自行授审计。main 起点 ca65343d31decb914d60fdd3d38e7af87742f713，工作区起点干净；当前实际 HEAD/未提交文件恢复时用 Git 核实。有限目标/非目标/通过/停止见 [I-4.2 设计与验收](docs/CAIdex-I42-Host-Memory-设计与验收-V1.md)。允许必要实现/修复/测试/文档/commit/push main/精确 CI；I-5 及后续仍未授权。自动记忆首次默认关闭；不读真实 Key/调用商业 API/邮件/部署；不使用 ponytail 技能。完整构建回归优先 GitHub；本地盘约3.6GiB可用，不清理有效缓存。
 
-准确下一步：补独立 Memory 权限、Host 自有 Broker 推理 RPC/来源摘要与离线/恢复/撤权测试；完成精确 CI/原日志后封存，停止等待 I-4.2 独立审计。下列 I-4.1 历史等待状态由本次用户确认解除，原功能与证据保持。
+已实现，未授通过：独立 Memory scope；Host 操作者显式配置 Broker/模型/owner、每客户端外发许可和完成任务证据白名单；Host 推理 DTO 不收 Key/端点/工具，账本只存 client/UUID/hash/state；客户端绑定 namespace/Host/完整目标/空间，离线 waiting、原操作 unknown 查询及 hash 重验、取消/撤权/迟到拒绝。完成结果有界临时留 Host，保存后释放/120秒过期/重启 unknown 不重放。同步、正式 SSH/Relay/GUI/CLI 均未实现。Host journal3→4 保留任务/事件/授权，本地 schema2→3 保留原 DDL/数据并保护新 job codec；旧版拒读新版。
+
+开发提交 cff54b1→7512f64→093c073→020e00b→7831f21→1811e9e（精确 HEAD 以 Git 为准）；CI38148900024/38149115285/38149429466 的 Clippy/借用错误已修，38149600447 原 Memory 回归发现清空引用 JSON 比较错误，1811e9e已修；这些失败不授通过，原日志待全部归档。当前完整 GitHub CI/实际独立进程 Host+Broker HTTP+固定 Runtime 来源演示仍在验证；本地仅 fmt/Python compile/diff 检查，无完整 Cargo 构建。脚本 scripts/i42-host-memory.py 与 runtime/host/examples/memory_host.rs/memory_client.rs 是内部复现，不能冒充正式 CLI/GUI。
+
+准确下一步：核验当前精确提交的各平台/数据库 job、修复实证阻断，归档最终及开发原始日志/哈希/源码指纹和试用限制；通过后封存，停止等待 I-4.2 独立审计，不启动 I-5。下列 I-4.1 封存时的历史等待状态由用户本次确认解除，原功能与证据保持。
 
 ## 已关闭 I-4.1（用户确认独立审计通过）
 

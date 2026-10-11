@@ -845,8 +845,10 @@ async fn schema_two_upgrade_preserves_chat_memory_permissions_and_unsubmitted_jo
     )
     .unwrap();
     let source = Source::user(Scope::Personal, "legacy waiting".into());
-    let reference =
-        json!({"type":"integration","source":source,"privacy":"local_only"}).to_string();
+    let reference = format!(
+        "{{\"type\":\"integration\",\"source\":{},\"privacy\":\"local_only\"}}",
+        serde_json::to_string(&source).unwrap()
+    );
     db.execute(
         "INSERT INTO memory_jobs VALUES(?1,'personal','integration','waiting',?2)",
         rusqlite::params![job.to_string(), reference],

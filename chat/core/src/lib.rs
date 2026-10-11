@@ -1,4 +1,4 @@
-//! Ordinary Chat: local account cache and inference only. No Runtime/Host capability.
+//! Ordinary Chat and scoped Memory inference. Host Memory is explicit; no Runtime tools or approvals.
 mod cache;
 mod client;
 pub mod memory;
