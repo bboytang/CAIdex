@@ -73,7 +73,7 @@ B 必须提供 I-2 新鲜会话绑定重认证proof，proof仅用于请求，不
 
 ## 当前实际验证
 
-功能已实现，最终本机PG/HTTP为56具名检查/0失败，cached单元7/0（2项数据库ignored用独立入口），Clippy sync-test全targets通过；精确提交CI待执行。早期54具名检查不替最终源码；补充跨epoch收据负例失败已最小修复并重跑通过。原始开发日志位于 `/tmp/caidex-i6-verification`，封存时归档到evidence并绑定完整功能SHA。
+功能已实现，最终本机PG/HTTP为56具名检查/0失败，cached单元7/0（2项数据库ignored用独立入口），Clippy sync-test全targets通过；首轮精确CI已执行，旧未来schema5及auth不可更新Memory开关断言过时，测试已最小修正，本机真实账户114具名检查/0失败、Chat存储6/0；首轮不授通过，下一精确提交CI仍待核验。早期54具名检查不替最终源码；补充跨epoch收据负例失败已最小修复并重跑通过。原始开发日志位于 `/tmp/caidex-i6-verification`，封存时归档到evidence并绑定完整功能SHA。
 
 本机盘起点39GiB/余1.1GiB/98%，RAM1.9GiB、Swap4GiB；当前余约0.7GiB，保留Rust/PG缓存。按用户要求完成可行的cached Clippy/单元/真实PG检查，完整workspace及跨平台由GitHub验证。默认/tmp有.git保护标记，使用Git外私有TMPDIR，不放宽目录安全规则。云环境状态工具及策略文件未提供，不宣称就绪；Git/Docker经执行沙箱提升实际访问。
 

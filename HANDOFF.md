@@ -6,13 +6,17 @@
 
 2026-10-11 用户明确“确认I-5独立审计通过，启动 I-6”。这是用户审计确认，解除 I-5 的历史等待；本会话不自行授独立审计。I-6 有限目标/任务/非目标/依赖/验收/通过/停止见 [I-6设计验收](docs/CAIdex-I6-Memory同步-设计与验收-V1.md)。允许必要源码/迁移/测试/文档/commit/push main/精确CI；I-7及后续、商业API/真实Key/邮件/部署未授权。不使用ponytail技能。
 
-启动起点 main `56ff013bee88b1183865d6af5f702c467fa6783d`，文档启动提交 `2a0645568d36f3318db27e98bbff0b1da7a1f129`；当前功能实现尚未提交，实际 Git 状态恢复时核实。用户确认的七条规则已落实到新 PG schema4 / SQLite5、Memory 控制与数据 API、双方 enabled/范围/ACL 的 RLS、持久意图/精确上传许可/独立队列及 cursor、多 revision 冲突、A/B 和删除屏障。B 先独立提交关闭/epoch/pending，后每次最多32条清理，清理失败保持屏障；ACL保留。
+启动起点 main `56ff013bee88b1183865d6af5f702c467fa6783d`，文档启动提交 `2a0645568d36f3318db27e98bbff0b1da7a1f129`。功能源码已提交/push main `cfbf5404a1150f1ac56f1f2a83ba397c263d6a3d`。精确 [CI38162746881](https://github.com/bboytang/CAIdex/actions/runs/38162746881) 数据库/Linux/macOS已因旧测试假设失败，Windows仍执行中；不授通过。已最小更新未来schema测试为6、认证角色受信任Memory控制权限断言，保留不能改user_id/不能读正文的负例，本机真实账户114具名检查/0失败、Chat6测试/0失败，修正后提交新SHA/精确CI。
 
-本机真实 PG17.10/vector0.8.2 + HTTP 第六轮54具名检查通过（含双服务 worker 的成员写入/所有者关闭锁竞争），记录 `/tmp/caidex-i6-verification/sixth.json` / `.log`。第七轮新负例发现跨 epoch 旧操作收据误确认，正文未复活；已补 epoch 校验，最终重跑中，不能将旧通过当最终源码通过。另补分批清理进度及迁移/导入容量回滚测试。最终本机PG/HTTP为56具名检查/0失败，cached单元7/0（2项数据库ignored另有专用入口），Clippy sync-test 全 targets 已通过；未完成精确 CI，最终证据尚未归档；不清理有效缓存。
+已实现用户确认的七条规则：PG schema4/SQLite5、控制与数据API、双方active/enabled/范围/ACL的RLS、独立持久intent/精确本机上传许可/队列/cursor、多revision冲突、A/B和永久删除屏障。所有者关闭保留ACL，成员访问暂停，恢复须当前范围及双方开启。B先独立提交关闭/epoch/pending，后每次最多32条清理，失败保持屏障，完整清理才清pending；不会误删成员独立Memory/其他owner项目/本地Chat。
 
-当前未提交路径：cloud/core Memory DTO/常量/内部依赖，cloud/postgres 新迁移4，cloud/auth Memory service/router/transport，chat/core Cache/Memory sync/store/reexport/测试，scripts i2装配/I6入口，CI，本设计及HANDOFF。固定Runtime/Provider/Host/旧DDL/旧证据未改。准确下一步：完成最终定向验证和差异核对，提交/push main，核验精确提交四job CI、归档原始日志与限制，封存后等待I-6独立审计；不启动I-7。
+不可变功能本机真实PG17.10/vector0.8.2+HTTP为56具名检查/0失败，44源码指纹与git show精确一致；cached单元7/0（2数据库ignored由独立入口），Clippy sync-test全targets/locked/offline/-D warnings及fmt/Python/链接/diff通过。41本地链接，499旧证据/Runtime/Provider/upstream/旧DDL文件逐字保留，外部依赖版本/source/checksum不变。证据 [i6-local](docs/evidence/i6-local.json) 含最终/开发失败/26原始压缩日志及两层SHA256；当前仅新证据和交接/验收文档未提交，实际状态恢复时核实。
 
-验证偏好本机满足条件优先，否则GitHub。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前盘余约0.7GiB；完整workspace及跨平台转GitHub，保留有效缓存。单元测试不匹配缓存特性的额外编译已主动中断，改既有sync-test组合；不是测试失败/通过。Git外私有TMPDIR避免/tmp/.git安全保护，未削弱目录检查。cloud状态工具/策略文件缺失，不宣称就绪；Docker/GitHub经沙箱提升真实访问，无商业API/真实Key/邮件/部署。
+开发负例：第七轮发现删除后重开跨epoch旧收据误确认（正文未复活），已校验epoch并精确复验通过。早期fixture私有root/granted_by和SQL infinity显式类型失败均有原日志；第三轮注入清理检查实际42804，不能当触发器回滚证据，最终为P0001故障后保持屏障且重试清理通过。未匹配缓存feature的单元额外编译主动中断，改既有sync-test，不授中断通过。
+
+验证本机条件满足优先，否则GitHub。起点盘余1.1GiB/98%、RAM1.9GiB/Swap4GiB，当前余约0.6GiB/99%；完整workspace及跨平台转GitHub，不清理有效缓存。Git外私有TMPDIR保留/tmp/.git安全保护；cloud状态工具/策略文件缺失不宣称就绪，GitHub/Docker经沙箱提升实际访问。未读真实Key/调用商业API/邮件/部署。
+
+准确下一步：核验精确功能CI四job实际完成/原始checkoutSHA/源码指纹与必要回归计数，归档原始日志与限制，更新本节并仅文档/证据封存commit/push main。完成后停止等待I-6独立审计及用户确认，不启动I-7。
 
 ## 已关闭 I-5（用户确认独立审计通过）
 

@@ -442,11 +442,12 @@ async fn account_http_database_security_and_public_clients() {
             && authdb.batch_execute("SET ROLE caidex_owner").await.is_err(),
     );
     check(
-        "auth_role_cannot_enable_memory_sync_or_rewrite_user_id",
+        "auth_role_controls_memory_sync_but_cannot_rewrite_user_id",
         authdb
-            .execute("UPDATE caidex.users SET memory_enabled=true", &[])
+            .query_one("SELECT has_column_privilege(current_user,'caidex.users','memory_enabled','UPDATE')", &[])
             .await
-            .is_err()
+            .unwrap()
+            .get::<_, bool>(0)
             && authdb
                 .execute("UPDATE caidex.users SET user_id=gen_random_uuid()", &[])
                 .await
