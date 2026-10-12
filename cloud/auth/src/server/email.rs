@@ -82,7 +82,14 @@ impl ProviderEmail {
             return Err(Error::Invalid);
         }
         super::email(&json!({"email":from}))?;
-        let ledger = MailLedger::connect(dsn, provider, daily_budget, monthly_budget).await?;
+        let ledger = MailLedger::connect(
+            dsn,
+            provider,
+            daily_budget,
+            monthly_budget,
+            api_key.expose(),
+        )
+        .await?;
         let http = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(1))
@@ -119,18 +126,18 @@ impl ProviderEmail {
             .map_err(|_| Error::Unavailable)?;
         Ok(())
     }
-    async fn deliver(&self, mail: &Mail, subject: &str, text: &str) -> Result<String> {
+    async fn deliver(&self, mail: &Mail, subject: &str, text: &str, html: &str) -> Result<String> {
         let id = mail.id.to_string();
         let (body, request) = match self.provider {
             Provider::Brevo => (
-                json!({"sender":{"email":self.from,"name":"CAIdex"},"to":[{"email":mail.recipient}],"subject":subject,"textContent":text,"headers":{"Idempotency-Key":id},"tags":[id]}),
+                json!({"sender":{"email":self.from,"name":"CAIdex"},"to":[{"email":mail.recipient}],"subject":subject,"textContent":text,"htmlContent":html,"headers":{"Idempotency-Key":id},"tags":[id]}),
                 self.http
                     .post(&self.endpoint)
                     .header("api-key", self.api_key.expose()),
             ),
             Provider::AliyunDirectMail => return Err(Error::Invalid),
             Provider::Resend => (
-                json!({"from":self.from,"to":[mail.recipient],"subject":subject,"text":text,"tags":[{"name":"caidex_task","value":id}]}),
+                json!({"from":self.from,"to":[mail.recipient],"subject":subject,"text":text,"html":html,"tags":[{"name":"caidex_task","value":id}]}),
                 self.http
                     .post(&self.endpoint)
                     .bearer_auth(self.api_key.expose())
@@ -239,12 +246,12 @@ impl ProviderEmail {
 }
 impl EmailSender for ProviderEmail {
     async fn send(&self, mail: Mail) -> Result<()> {
-        let (subject, text) = template(&mail)?;
+        let (subject, text, html) = template(&mail)?;
         if !self.ledger.reserve(&mail).await? {
             return Ok(());
         }
         // Durable unknown is committed before HTTP; cancellation/crash can never justify another send.
-        let result = self.deliver(&mail, &subject, &text).await.map(Some);
+        let result = self.deliver(&mail, &subject, &text, &html).await.map(Some);
         self.ledger.complete(&mail.id, &result).await?;
         result.map(|_| ())
     }
@@ -285,6 +292,7 @@ struct MailLedger {
     provider: Provider,
     daily_budget: i64,
     monthly_budget: i64,
+    payload_mac: Hmac<Sha256>,
 }
 impl MailLedger {
     async fn connect(
@@ -292,6 +300,7 @@ impl MailLedger {
         provider: Provider,
         daily_budget: i64,
         monthly_budget: i64,
+        payload_key: &str,
     ) -> Result<Self> {
         if !(1..=10000).contains(&daily_budget)
             || !(1..=100000).contains(&monthly_budget)
@@ -322,10 +331,12 @@ impl MailLedger {
             provider,
             daily_budget,
             monthly_budget,
+            payload_mac: Hmac::<Sha256>::new_from_slice(payload_key.as_bytes())
+                .map_err(|_| Error::Invalid)?,
         })
     }
     async fn reserve(&self, mail: &Mail) -> Result<bool> {
-        let hash = digest(&json!({"recipient":mail.recipient,"purpose":mail.purpose,"language":mail.language,"expires_in":mail.expires_in,"token":mail.verification_token}).to_string());
+        let hash = payload_hash(mail, &self.payload_mac);
         let mut db = self.db.lock().await;
         let tx = db.transaction().await?;
         // All service instances/providers share one budget; reservations count even after a timeout.
@@ -387,6 +398,23 @@ impl MailLedger {
     }
 }
 
+fn payload_hash(mail: &Mail, mac: &Hmac<Sha256>) -> Vec<u8> {
+    let payload = json!({"recipient":mail.recipient,"purpose":mail.purpose,"language":mail.language,"expires_in":mail.expires_in,"token":mail.verification_token}).to_string();
+    if mail
+        .verification_token
+        .as_deref()
+        .is_some_and(super::is_email_code)
+    {
+        // Six-digit codes must not be recoverable by enumerating an unkeyed ledger fingerprint.
+        let mut mac = mac.clone();
+        mac.update(b"caidex-mail-payload-v1\0");
+        mac.update(payload.as_bytes());
+        mac.finalize().into_bytes().to_vec()
+    } else {
+        digest(&payload)
+    }
+}
+
 pub enum Sender {
     Http(ProviderEmail),
     Aliyun(AliyunSmtpEmail),
@@ -406,7 +434,7 @@ impl EmailSender for Sender {
     }
 }
 
-fn template(mail: &Mail) -> Result<(String, String)> {
+fn template(mail: &Mail) -> Result<(String, String, String)> {
     super::email(&json!({"email":mail.recipient}))?;
     if !matches!(mail.language, "zh-CN" | "en")
         || mail.purpose.is_empty()
@@ -439,7 +467,7 @@ fn template(mail: &Mail) -> Result<(String, String)> {
         }
     );
     let text = if let Some(token) = &mail.verification_token {
-        if token.len() != 43
+        if !(super::is_email_code(token) || token.len() == 43)
             || mail.expires_in == 0
             || !matches!(mail.purpose.as_str(), "register" | "recover" | "email")
             || !token
@@ -469,5 +497,141 @@ fn template(mail: &Mail) -> Result<(String, String)> {
             "您的 CAIdex 账户安全设置有变更，请在 CAIdex 的账户与安全中核对。本邮件不含密码或会话令牌。".into()
         }
     };
-    Ok((subject, text))
+    let chinese = mail.language == "zh-CN";
+    let intro = if mail.verification_token.is_some() {
+        match (mail.purpose.as_str(), chinese) {
+            ("register", true) => "欢迎使用 CAIDEX。请输入下方验证码，确认你的邮箱。",
+            ("recover", true) => "我们收到了账户密码找回请求。请使用下方验证码完成密码重设。",
+            (_, true) => "请使用下方验证码确认新的邮箱地址。",
+            ("register", false) => {
+                "Welcome to CAIDEX. Enter the code below to verify your email address."
+            }
+            ("recover", false) => {
+                "We received a password recovery request. Use the code below to reset your password."
+            }
+            (_, false) => "Use the code below to confirm your new email address.",
+        }
+    } else if chinese {
+        "你的账户安全设置发生了变更。请在 CAIDEX 的账户与安全中查看；本邮件不含密码或会话令牌。"
+    } else {
+        "Your account security settings changed. Review Account and Security in CAIDEX. No password or session token is included."
+    };
+    let code_block = if let Some(code) = &mail.verification_token {
+        let size = if code.len() == 6 { "36px" } else { "18px" };
+        let expiry = if chinese {
+            format!(
+                "有效期 {} 分钟 · 仅可使用一次",
+                mail.expires_in.div_ceil(60)
+            )
+        } else {
+            format!(
+                "Valid for {} minutes · Single use",
+                mail.expires_in.div_ceil(60)
+            )
+        };
+        format!(
+            "<div style=\"background:#f5f6fc;border:1px solid #e7eafa;border-radius:10px;padding:24px 12px;text-align:center\"><div style=\"color:#3549bc;font-size:{size};font-family:Consolas,Menlo,monospace;font-weight:700;letter-spacing:5px;word-break:break-all\">{code}</div><div style=\"margin-top:12px;color:#8b92a6;font-size:12px\">{expiry}</div></div>"
+        )
+    } else {
+        String::new()
+    };
+    let notice = match (mail.verification_token.is_some(), chinese) {
+        (true, true) => "如非本人操作，请忽略此邮件。请勿向他人提供验证码。",
+        (true, false) => {
+            "If you did not request this, ignore this email. Never share your verification code."
+        }
+        (false, true) => "如非本人操作，请立即检查账户安全设置。",
+        (false, false) => {
+            "If you did not make this change, review your account security immediately."
+        }
+    };
+    let html = include_str!("email.html")
+        .replace("{{language}}", mail.language)
+        .replace("{{subject}}", &subject)
+        .replace(
+            "{{eyebrow}}",
+            if chinese {
+                "账户与安全"
+            } else {
+                "ACCOUNT SECURITY"
+            },
+        )
+        .replace("{{headline}}", if chinese { title.0 } else { title.1 })
+        .replace("{{intro}}", intro)
+        .replace("{{code_block}}", &code_block)
+        .replace("{{notice}}", notice)
+        .replace(
+            "{{footer}}",
+            if chinese {
+                "此邮件由 CAIDEX 自动发送，请勿回复。"
+            } else {
+                "This is an automated CAIDEX message. Please do not reply."
+            },
+        );
+    Ok((subject, text, html))
+}
+
+#[cfg(test)]
+mod template_tests {
+    use super::*;
+
+    #[test]
+    fn localized_html_and_plain_text_preserve_codes_and_security_notices() {
+        for language in ["zh-CN", "en"] {
+            for purpose in ["register", "recover", "email", "security"] {
+                let mail = Mail {
+                    id: Uuid::new_v4(),
+                    recipient: "preview@example.test".into(),
+                    purpose: purpose.into(),
+                    language,
+                    verification_token: (purpose != "security").then(|| "012345".into()),
+                    expires_in: if purpose == "security" { 0 } else { 600 },
+                };
+                let (_, text, html) = template(&mail).unwrap();
+                if purpose != "security" {
+                    let key = Hmac::<Sha256>::new_from_slice(b"synthetic-provider-key").unwrap();
+                    let other = Hmac::<Sha256>::new_from_slice(b"different-provider-key").unwrap();
+                    assert_eq!(payload_hash(&mail, &key), payload_hash(&mail, &key));
+                    assert_ne!(payload_hash(&mail, &key), payload_hash(&mail, &other));
+                    let mut changed = Mail {
+                        id: mail.id,
+                        recipient: mail.recipient.clone(),
+                        purpose: mail.purpose.clone(),
+                        language,
+                        expires_in: 600,
+                        verification_token: Some("012346".into()),
+                    };
+                    assert_ne!(payload_hash(&mail, &key), payload_hash(&changed, &key));
+                    changed.verification_token = Some("L".repeat(43));
+                    assert_eq!(payload_hash(&changed, &key), payload_hash(&changed, &other));
+                }
+                assert!(html.contains("CAIDEX"));
+                assert!(
+                    !html.contains("{{") && !html.contains("<script") && !html.contains("<img")
+                );
+                if purpose == "security" {
+                    assert!(!html.contains("012345"));
+                    assert!(html.contains(if language == "en" {
+                        "immediately"
+                    } else {
+                        "立即"
+                    }));
+                } else {
+                    assert!(text.contains("012345") && html.contains("012345"));
+                    assert!(html.contains(if language == "en" {
+                        "10 minutes"
+                    } else {
+                        "10 分钟"
+                    }));
+                    if language == "zh-CN" && purpose == "register" {
+                        std::fs::write(
+                            std::env::temp_dir().join("caidex-email-preview.html"),
+                            &html,
+                        )
+                        .unwrap();
+                    }
+                }
+            }
+        }
+    }
 }

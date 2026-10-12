@@ -144,6 +144,10 @@ async fn real_mail_operations() {
                 .unwrap()
                 .contains(&"A".repeat(43))
             && wire["brevo_key"] == true
+            && wire["body"]["htmlContent"]
+                .as_str()
+                .unwrap()
+                .contains("CAIDEX")
             && wire["body"].get("bcc").is_none(),
     );
     let mut changed = mail(id);
@@ -205,6 +209,10 @@ async fn real_mail_operations() {
         "resend_explicit_provider_english_and_stable_header",
         wire["idempotency"] == id.to_string()
             && wire["resend_key"] == true
+            && wire["body"]["html"]
+                .as_str()
+                .unwrap()
+                .contains("ACCOUNT SECURITY")
             && wire["body"]["text"]
                 .as_str()
                 .unwrap()
@@ -360,7 +368,7 @@ async fn resource_workload(admin: &Client, dsn: &str) {
     let reply = http
         .post(format!("{url}verify"))
         .header("content-type", "application/json")
-        .body(json!({"purpose":"register","token":token}).to_string())
+        .body(json!({"email":"load@example.test","purpose":"register","token":token}).to_string())
         .send()
         .await
         .unwrap();

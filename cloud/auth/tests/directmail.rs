@@ -308,8 +308,23 @@ impl Fixture {
         self.messages.lock().unwrap().len()
     }
     fn body(&self, index: usize) -> String {
+        self.part(index, "text/plain")
+    }
+    fn part(&self, index: usize, kind: &str) -> String {
         let message = self.messages.lock().unwrap()[index].clone();
-        let (headers, body) = message.split_once("\r\n\r\n").unwrap();
+        let boundary = message
+            .split("boundary=\"")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap();
+        let delimiter = format!("--{boundary}");
+        let part = message
+            .split(&delimiter)
+            .find(|part| part.contains(&format!("Content-Type: {kind}")))
+            .unwrap();
+        let (headers, body) = part.split_once("\r\n\r\n").unwrap();
         if headers
             .to_lowercase()
             .contains("content-transfer-encoding: base64")
@@ -325,8 +340,11 @@ impl Fixture {
             .contains("content-transfer-encoding: quoted-printable")
         {
             String::from_utf8(
-                quoted_printable::decode(body.as_bytes(), quoted_printable::ParseMode::Strict)
-                    .unwrap(),
+                quoted_printable::decode(
+                    body.trim_end().as_bytes(),
+                    quoted_printable::ParseMode::Strict,
+                )
+                .unwrap(),
             )
             .unwrap()
         } else {
@@ -403,6 +421,12 @@ async fn directmail_tls_ledger_and_account_flow() {
     check(
         "smtp_stable_message_id",
         fixture.messages.lock().unwrap()[0].contains(&format!("<{id}@caidex.cn>")),
+    );
+    check(
+        "smtp_multipart_html_and_plain_content_match",
+        fixture.messages.lock().unwrap()[0].contains("multipart/alternative")
+            && fixture.part(0, "text/html").contains(&"A".repeat(43))
+            && fixture.part(0, "text/html").contains("CAIDEX"),
     );
     let mut changed = mail(id);
     changed.recipient = "changed@example.test".into();
@@ -612,8 +636,20 @@ async fn flow(admin: &Client, dsn: &str, fixture: &Fixture) {
             .body(body.to_string())
     };
     let email = "smtp-flow@example.test";
-    let password = "synthetic original account password";
-    let updated = "synthetic recovered account password";
+    let password = "Oldpwd12";
+    let updated = "Newpwd34";
+    check(
+        "smtp_api_seven_character_password_refused_without_mail",
+        call(
+            "register",
+            json!({"email":"short-smtp@example.test","password":"1234567"}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
+            == 400,
+    );
     let before = fixture.count();
     check(
         "smtp_api_registration_accepts_once",
@@ -644,10 +680,23 @@ async fn flow(admin: &Client, dsn: &str, fixture: &Fixture) {
         .next()
         .unwrap();
     check(
-        "smtp_api_bad_verification_code_refused",
+        "smtp_api_code_is_six_ascii_digits",
+        token.len() == 6 && token.bytes().all(|c| c.is_ascii_digit()),
+    );
+    check(
+        "smtp_api_code_requires_mailbox_context",
+        call("verify", json!({"purpose":"register","token":token}))
+            .send()
+            .await
+            .unwrap()
+            .status()
+            == 400,
+    );
+    check(
+        "smtp_api_code_cannot_cross_mailbox",
         call(
             "verify",
-            json!({"purpose":"register","token":"Z".repeat(43)}),
+            json!({"email":"other-smtp@example.test","purpose":"register","token":token}),
         )
         .send()
         .await
@@ -655,33 +704,71 @@ async fn flow(admin: &Client, dsn: &str, fixture: &Fixture) {
         .status()
             == 400,
     );
-    admin.execute("UPDATE caidex.auth_challenges SET expires_at=now()-interval '1 second' WHERE challenge_hash=digest($1::text,'sha256')", &[&token]).await.unwrap();
+    check(
+        "smtp_api_code_cannot_cross_purpose",
+        call(
+            "verify",
+            json!({"email":email,"purpose":"recover","token":token,"password":updated}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
+            == 400,
+    );
+    let wrong = if token == "000000" {
+        "111111"
+    } else {
+        "000000"
+    };
+    check(
+        "smtp_api_bad_verification_code_refused",
+        call(
+            "verify",
+            json!({"email":email,"purpose":"register","token":wrong}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
+            == 400,
+    );
+    admin.execute("UPDATE caidex.auth_challenges SET expires_at=now()-interval '1 second' WHERE purpose='register' AND target=$1", &[&email]).await.unwrap();
     check(
         "smtp_api_expired_verification_code_refused",
-        call("verify", json!({"purpose":"register","token":token}))
-            .send()
-            .await
-            .unwrap()
-            .status()
+        call(
+            "verify",
+            json!({"email":email,"purpose":"register","token":token}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
             == 400,
     );
     // Restore only this synthetic challenge's clock to finish the success path without an extra send.
-    admin.execute("UPDATE caidex.auth_challenges SET expires_at=now()+interval '10 minutes' WHERE challenge_hash=digest($1::text,'sha256')", &[&token]).await.unwrap();
-    let verified = call("verify", json!({"purpose":"register","token":token}))
-        .send()
-        .await
-        .unwrap();
+    admin.execute("UPDATE caidex.auth_challenges SET expires_at=now()+interval '10 minutes' WHERE purpose='register' AND target=$1", &[&email]).await.unwrap();
+    let verified = call(
+        "verify",
+        json!({"email":email,"purpose":"register","token":token}),
+    )
+    .send()
+    .await
+    .unwrap();
     check(
         "smtp_api_email_verification_succeeds",
         verified.status() == 200,
     );
     check(
         "smtp_api_verification_replay_refused",
-        call("verify", json!({"purpose":"register","token":token}))
-            .send()
-            .await
-            .unwrap()
-            .status()
+        call(
+            "verify",
+            json!({"email":email,"purpose":"register","token":token}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
             == 400,
     );
     let logged = call("login", json!({"email":email,"password":password}))
@@ -728,7 +815,7 @@ async fn flow(admin: &Client, dsn: &str, fixture: &Fixture) {
         "smtp_api_recovery_new_password_verified",
         call(
             "verify",
-            json!({"purpose":"recover","token":token,"password":updated}),
+            json!({"email":email,"purpose":"recover","token":token,"password":updated}),
         )
         .send()
         .await
@@ -768,7 +855,7 @@ async fn flow(admin: &Client, dsn: &str, fixture: &Fixture) {
         "smtp_api_recovery_code_replay_refused",
         call(
             "verify",
-            json!({"purpose":"recover","token":token,"password":updated}),
+            json!({"email":email,"purpose":"recover","token":token,"password":updated}),
         )
         .send()
         .await
@@ -785,6 +872,83 @@ async fn flow(admin: &Client, dsn: &str, fixture: &Fixture) {
     check(
         "smtp_http_webhook_never_grants_delivery",
         callback.status() == 401,
+    );
+    let legacy = "L".repeat(43);
+    admin.execute("INSERT INTO caidex.auth_challenges(challenge_hash,purpose,target,state,expires_at) SELECT digest($1::text,'sha256'),'register','legacy-smtp@example.test',jsonb_build_object('password_hash',password_hash),now()+interval '10 minutes' FROM caidex.auth_credentials WHERE kind='password' AND revoked_at IS NULL LIMIT 1", &[&legacy]).await.unwrap();
+    check(
+        "legacy_already_issued_high_entropy_mail_code_still_verifies",
+        call("verify", json!({"purpose":"register","token":legacy}))
+            .send()
+            .await
+            .unwrap()
+            .status()
+            == 200,
+    );
+    admin.batch_execute("UPDATE caidex.auth_limits SET reset_at=now()-interval '1 second',last_at=now()-interval '2 hours';").await.unwrap();
+    let before = fixture.count();
+    check(
+        "numeric_code_lockout_fixture_registration",
+        call(
+            "register",
+            json!({"email":"locked-smtp@example.test","password":password}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
+            == 200,
+    );
+    let body = fixture.body(before);
+    let locked = body
+        .split("验证码：")
+        .nth(1)
+        .unwrap()
+        .split_whitespace()
+        .next()
+        .unwrap();
+    let wrong = if locked == "000000" {
+        "111111"
+    } else {
+        "000000"
+    };
+    for _ in 0..5 {
+        assert_eq!(
+            call(
+                "verify",
+                json!({"email":"locked-smtp@example.test","purpose":"register","token":wrong})
+            )
+            .send()
+            .await
+            .unwrap()
+            .status(),
+            400
+        );
+    }
+    check("five_wrong_codes_persistently_lock_challenge",admin.query_one("SELECT attempts=5 AND state ? 'email_code_mac' AND NOT (state ? 'verification_token') FROM caidex.auth_challenges WHERE purpose='register' AND target='locked-smtp@example.test'", &[]).await.unwrap().get::<_,bool>(0));
+    check(
+        "locked_code_and_sixth_guess_refused",
+        call(
+            "verify",
+            json!({"email":"locked-smtp@example.test","purpose":"register","token":locked}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
+            == 429,
+    );
+    admin.batch_execute("UPDATE caidex.auth_limits SET reset_at=now()-interval '1 second',last_at=now()-interval '2 hours';").await.unwrap();
+    check(
+        "challenge_lock_survives_rate_window_reset",
+        call(
+            "verify",
+            json!({"email":"locked-smtp@example.test","purpose":"register","token":locked}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .status()
+            == 400,
     );
     task.abort();
     let _ = task.await;

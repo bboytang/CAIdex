@@ -3,7 +3,7 @@ use super::{EmailSender, Error, Mail, MailLedger, Provider, Result, template};
 use caidex_credentials::Secret;
 use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
-    message::header::ContentType,
+    message::{MultiPart, SinglePart, header::ContentType},
     transport::smtp::{
         authentication::{Credentials, Mechanism},
         client::{Tls, TlsParameters, TlsVersion},
@@ -34,8 +34,15 @@ impl AliyunSmtpEmail {
             .set_min_tls_version(TlsVersion::Tlsv12)
             .build()
             .map_err(|_| Error::Unavailable)?;
+        let ledger = MailLedger::connect(
+            dsn,
+            Provider::AliyunDirectMail,
+            daily,
+            monthly,
+            password.expose(),
+        )
+        .await?;
         let transport = Self::transport(HOST, 465, tls, password)?;
-        let ledger = MailLedger::connect(dsn, Provider::AliyunDirectMail, daily, monthly).await?;
         Ok(Self { ledger, transport })
     }
     fn transport(
@@ -80,14 +87,25 @@ impl AliyunSmtpEmail {
 }
 impl EmailSender for AliyunSmtpEmail {
     async fn send(&self, mail: Mail) -> Result<()> {
-        let (subject, text) = template(&mail)?;
+        let (subject, text, html) = template(&mail)?;
         let message = Message::builder()
             .from(FROM.parse().map_err(|_| Error::Invalid)?)
             .to(mail.recipient.parse().map_err(|_| Error::Invalid)?)
             .message_id(Some(format!("<{}@caidex.cn>", mail.id)))
             .subject(subject)
-            .header(ContentType::TEXT_PLAIN)
-            .body(text)
+            .multipart(
+                MultiPart::alternative()
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(ContentType::TEXT_PLAIN)
+                            .body(text),
+                    )
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(ContentType::TEXT_HTML)
+                            .body(html),
+                    ),
+            )
             .map_err(|_| Error::Invalid)?;
         if !self.ledger.reserve(&mail).await? {
             return Ok(());

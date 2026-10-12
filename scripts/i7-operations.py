@@ -46,7 +46,7 @@ def main():
             raise AssertionError(label)
         checks.append({'name': label, 'passed': True})
         print('I7_CHECK ' + json.dumps(checks[-1]), flush=True)
-    sources = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.rs')) + [ROOT / 'chat/core/tests/chat.rs', ROOT / 'chat/core/Cargo.toml'] + [ROOT / 'cloud/auth/tests/operations.rs', ROOT / 'cloud/auth/tests/directmail.rs', ROOT / 'cloud/auth/Cargo.toml', ROOT / 'cloud/core/src/lib.rs', ROOT / 'Cargo.lock', ROOT / 'cloud/postgres/operations/backup.py', ROOT / 'cloud/postgres/operations/quarantine.sql', Path(__file__).resolve(), ROOT / '.github/workflows/ci.yml'] + sorted(ROOT.glob('cloud/postgres/migrations/*.sql'))
+    sources = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + sorted(ROOT.glob('chat/core/src/**/*.rs')) + [ROOT / 'chat/core/tests/chat.rs', ROOT / 'chat/core/Cargo.toml'] + [ROOT / 'cloud/auth/src/server/email.html', ROOT / 'cloud/auth/tests/operations.rs', ROOT / 'cloud/auth/tests/directmail.rs', ROOT / 'cloud/auth/Cargo.toml', ROOT / 'cloud/core/src/lib.rs', ROOT / 'Cargo.lock', ROOT / 'cloud/postgres/operations/backup.py', ROOT / 'cloud/postgres/operations/quarantine.sql', Path(__file__).resolve(), ROOT / '.github/workflows/ci.yml'] + sorted(ROOT.glob('cloud/postgres/migrations/*.sql'))
     fingerprints = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     with tempfile.TemporaryDirectory(prefix='caidex-i7-', dir='/var/tmp') as work:
         directory = Path(work) / 'backups'

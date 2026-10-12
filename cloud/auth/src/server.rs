@@ -19,6 +19,7 @@ use axum::{
     routing::{get, post},
 };
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use hmac::{Hmac, Mac};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{future::Future, net::SocketAddr, sync::Arc};
@@ -180,7 +181,7 @@ fn email(body: &Value) -> Result<String> {
 }
 fn password(body: &Value) -> Result<String> {
     let password = text(body, "password", 1024)?;
-    if password.chars().count() < 15 {
+    if password.chars().count() < 8 {
         return Err(Error::Invalid);
     }
     Ok(password.to_owned())
@@ -344,6 +345,25 @@ impl<S: EmailSender> Service<S> {
         if sensitive && !target.is_empty() {
             blocked |= !limit(&rate, &format!("mail:{}", email(&body)?), 5, 3600, 60).await?;
         }
+        if action == "verify"
+            && body
+                .get("token")
+                .and_then(Value::as_str)
+                .is_some_and(is_email_code)
+        {
+            blocked |= !limit(
+                &rate,
+                &format!(
+                    "email-code:{}:{}",
+                    text(&body, "purpose", 16)?,
+                    email(&body)?
+                ),
+                5,
+                600,
+                0,
+            )
+            .await?;
+        }
         if matches!(action, "login" | "passkey-login" | "reauth") && !target.is_empty() {
             blocked |= !limit(&rate, &format!("login:{}", email(&body)?), 10, 600, 0).await?;
         }
@@ -396,7 +416,9 @@ impl<S: EmailSender> Service<S> {
                     json!({})
                 };
                 let user = existing.as_ref().map(|r| r.get::<_, Uuid>("user_id"));
-                let token = challenge(tx, action, user, None, &address, state, 600).await?;
+                let token = self
+                    .email_challenge(tx, action, user, None, &address, state)
+                    .await?;
                 if (action == "register" && user.is_none())
                     || (action == "recover" && user.is_some())
                 {
@@ -405,7 +427,7 @@ impl<S: EmailSender> Service<S> {
                 Ok(json!({"status":"accepted"}))
             }
             "verify" => {
-                fields(&body, &["token", "purpose", "password"])?;
+                fields(&body, &["token", "purpose", "password", "email"])?;
                 let purpose = text(&body, "purpose", 16)?;
                 if !matches!(purpose, "register" | "recover" | "email") {
                     return Err(Error::Invalid);
@@ -415,7 +437,14 @@ impl<S: EmailSender> Service<S> {
                 } else {
                     None
                 };
-                let row = consume(tx, text(&body, "token", 128)?, purpose, None).await?;
+                let token = text(&body, "token", 128)?;
+                let row = if is_email_code(token) {
+                    let address = email(&body)?;
+                    let key = tx.query_opt("SELECT challenge_hash FROM caidex.auth_challenges WHERE purpose=$1 AND target=$2 AND state ? 'email_code_mac' ORDER BY created_at DESC LIMIT 1", &[&purpose,&address]).await?.ok_or(Error::Grant)?.get::<_,Vec<u8>>(0);
+                    consume_key(tx, &key, purpose, None, Some((&self.code_key, token))).await?
+                } else {
+                    consume(tx, token, purpose, None).await?
+                };
                 let address: String = row.get("target");
                 let user = if purpose == "register" {
                     // Serialize identity creation and email replacement on the same namespace.
@@ -603,16 +632,16 @@ impl<S: EmailSender> Service<S> {
                     return Err(Error::Limited);
                 }
                 let user: Uuid = session.get("user_id");
-                let token = challenge(
-                    tx,
-                    "email",
-                    Some(user),
-                    Some(session.get("session_id")),
-                    &address,
-                    json!({}),
-                    600,
-                )
-                .await?;
+                let token = self
+                    .email_challenge(
+                        tx,
+                        "email",
+                        Some(user),
+                        Some(session.get("session_id")),
+                        &address,
+                        json!({}),
+                    )
+                    .await?;
                 if identity(tx, &address).await?.is_none() {
                     self.send(&address, "email", Some(token), 600).await?;
                 }
@@ -842,6 +871,27 @@ impl<S: EmailSender> Service<S> {
         tx.execute("INSERT INTO caidex.security_events(user_id,session_id,kind,outcome) VALUES($1,$2,$3,'success')",&[&user,&session,&kind]).await?;
         Ok(())
     }
+    async fn email_challenge(
+        &self,
+        tx: &Transaction<'_>,
+        purpose: &str,
+        user: Option<Uuid>,
+        session: Option<Uuid>,
+        address: &str,
+        state: Value,
+    ) -> Result<String> {
+        let nonce = challenge(tx, purpose, user, session, address, state, 600).await?;
+        let key = digest(&nonce);
+        let code = email_code()?;
+        let mac = URL_SAFE_NO_PAD.encode(
+            email_code_mac(&self.code_key, &key, purpose, address, &code)
+                .finalize()
+                .into_bytes(),
+        );
+        tx.execute("UPDATE caidex.auth_challenges SET state=state||jsonb_build_object('email_code_mac',$2::text) WHERE challenge_hash=$1", &[&key,&mac]).await?;
+        Ok(code)
+    }
+
     async fn send(
         &self,
         address: &str,
@@ -985,10 +1035,49 @@ async fn consume(
     purpose: &str,
     session: Option<Uuid>,
 ) -> Result<Row> {
+    consume_key(tx, &digest(token), purpose, session, None).await
+}
+
+fn is_email_code(value: &str) -> bool {
+    value.len() == 6 && value.bytes().all(|b| b.is_ascii_digit())
+}
+fn email_code() -> Result<String> {
+    loop {
+        let mut bytes = [0u8; 4];
+        getrandom::fill(&mut bytes).map_err(|_| Error::Unavailable)?;
+        let value = u32::from_le_bytes(bytes);
+        if value < 4_294_000_000 {
+            return Ok(format!("{:06}", value % 1_000_000));
+        }
+    }
+}
+fn email_code_mac(
+    key: &[u8; 32],
+    challenge: &[u8],
+    purpose: &str,
+    address: &str,
+    code: &str,
+) -> Hmac<Sha256> {
+    let mut mac = Hmac::<Sha256>::new_from_slice(key).expect("HMAC accepts a 32-byte key");
+    mac.update(b"caidex-email-code-v1\0");
+    mac.update(
+        json!([challenge, purpose, address, code])
+            .to_string()
+            .as_bytes(),
+    );
+    mac
+}
+async fn consume_key(
+    tx: &Transaction<'_>,
+    key: &[u8],
+    purpose: &str,
+    session: Option<Uuid>,
+    code: Option<(&[u8; 32], &str)>,
+) -> Result<Row> {
     let pending = tx
         .query_opt(
             "SELECT user_id,target,purpose FROM caidex.auth_challenges WHERE challenge_hash=$1",
-            &[&digest(token)],
+            &[&key],
         )
         .await?
         .ok_or(Error::Grant)?;
@@ -1001,7 +1090,20 @@ async fn consume(
     ) {
         identity_lock(tx, &pending.get::<_, String>("target")).await?;
     }
-    let row=tx.query_opt("SELECT *,expires_at>statement_timestamp() AS valid FROM caidex.auth_challenges WHERE challenge_hash=$1 FOR UPDATE",&[&digest(token)]).await?.ok_or(Error::Grant)?;
+    let row=tx.query_opt("SELECT *,expires_at>statement_timestamp() AS valid FROM caidex.auth_challenges WHERE challenge_hash=$1 FOR UPDATE",&[&key]).await?.ok_or(Error::Grant)?;
+    let code_valid = if let Some((pepper, value)) = code {
+        let state: Value = row.get("state");
+        let expected = state["email_code_mac"]
+            .as_str()
+            .and_then(|s| URL_SAFE_NO_PAD.decode(s).ok());
+        expected.is_some_and(|expected| {
+            email_code_mac(pepper, key, purpose, &row.get::<_, String>("target"), value)
+                .verify_slice(&expected)
+                .is_ok()
+        })
+    } else {
+        true
+    };
     if row.get::<_, String>("purpose") != purpose
         || (session.is_some() && row.get::<_, Option<Uuid>>("session_id") != session)
         || !row.get::<_, bool>("valid")
@@ -1009,13 +1111,14 @@ async fn consume(
         || row
             .get::<_, Option<std::time::SystemTime>>("consumed_at")
             .is_some()
+        || !code_valid
     {
-        tx.execute("UPDATE caidex.auth_challenges SET attempts=least(5,attempts+1) WHERE challenge_hash=$1",&[&digest(token)]).await?;
+        tx.execute("UPDATE caidex.auth_challenges SET attempts=least(5,attempts+1) WHERE challenge_hash=$1",&[&key]).await?;
         return Err(Error::Grant);
     }
     tx.execute(
         "UPDATE caidex.auth_challenges SET consumed_at=now() WHERE challenge_hash=$1",
-        &[&digest(token)],
+        &[&key],
     )
     .await?;
     Ok(row)
@@ -1198,4 +1301,45 @@ async fn mail_callback<S: EmailSender>(
     .map_err(|_| Error::Invalid)?;
     service.sender.callback(&headers, &body).await?;
     Ok(Json(json!({"status":"accepted"})))
+}
+
+#[cfg(test)]
+mod email_code_tests {
+    use super::*;
+    #[test]
+    fn numeric_code_and_mac_are_bound_to_challenge_mailbox_purpose_and_key() {
+        assert!(is_email_code("000007"));
+        assert!(!is_email_code("12345"));
+        assert!(!is_email_code("12345x"));
+        for _ in 0..32 {
+            assert!(is_email_code(&email_code().unwrap()));
+        }
+        let key = [7; 32];
+        let challenge = [9; 32];
+        let value = email_code_mac(&key, &challenge, "register", "a@example.test", "000007")
+            .finalize()
+            .into_bytes();
+        assert!(
+            email_code_mac(&key, &challenge, "register", "a@example.test", "000007")
+                .verify_slice(&value)
+                .is_ok()
+        );
+        for mac in [
+            email_code_mac(&key, &[8; 32], "register", "a@example.test", "000007"),
+            email_code_mac(&key, &challenge, "recover", "a@example.test", "000007"),
+            email_code_mac(&key, &challenge, "register", "b@example.test", "000007"),
+            email_code_mac(&[6; 32], &challenge, "register", "a@example.test", "000007"),
+            email_code_mac(&key, &challenge, "register", "a@example.test", "000008"),
+        ] {
+            assert!(mac.verify_slice(&value).is_err());
+        }
+    }
+    #[test]
+    fn new_password_bounds_are_eight_characters_and_existing_input_cap() {
+        assert!(password(&json!({"password":"12345678"})).is_ok());
+        assert!(password(&json!({"password":"1234567"})).is_err());
+        assert!(password(&json!({"password":""})).is_err());
+        assert!(password(&json!({"password":"x".repeat(1024)})).is_ok());
+        assert!(password(&json!({"password":"x".repeat(1025)})).is_err());
+    }
 }

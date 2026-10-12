@@ -235,7 +235,7 @@ async fn account_http_database_security_and_public_clients() {
             base,
             "verify",
             None,
-            json!({"token":token,"purpose":"recover","password":RECOVERED}),
+            json!({"email":A,"token":token,"purpose":"recover","password":RECOVERED}),
         )
         .await
         .0 == 400
@@ -254,13 +254,13 @@ async fn account_http_database_security_and_public_clients() {
             "verify",
             None,
             "verify-a",
-            json!({"token":token,"purpose":"register"})
+            json!({"email":A,"token":token,"purpose":"register"})
         ),
         other.request(
             "verify",
             None,
             "verify-b",
-            json!({"token":token,"purpose":"register"})
+            json!({"email":A,"token":token,"purpose":"register"})
         )
     );
     check(
@@ -274,7 +274,7 @@ async fn account_http_database_security_and_public_clients() {
             base,
             "verify",
             None,
-            json!({"token":token,"purpose":"register"}),
+            json!({"email":A,"token":token,"purpose":"register"}),
         )
         .await
         .0 == 400,
@@ -400,7 +400,7 @@ async fn account_http_database_security_and_public_clients() {
             base,
             "verify",
             None,
-            json!({"token":bcode,"purpose":"register"}),
+            json!({"email":B,"token":bcode,"purpose":"register"}),
         )
         .await
         .0 == 200,
@@ -1326,7 +1326,7 @@ async fn account_http_database_security_and_public_clients() {
             base,
             "verify",
             None,
-            json!({"token":email_code,"purpose":"email"}),
+            json!({"email":"new@example.test","token":email_code,"purpose":"email"}),
         )
         .await
         .1["user_id"]
@@ -1383,7 +1383,7 @@ async fn account_http_database_security_and_public_clients() {
             base,
             "verify",
             None,
-            json!({"token":recovery,"purpose":"recover","password":RECOVERED}),
+            json!({"email":"new@example.test","token":recovery,"purpose":"recover","password":RECOVERED}),
         )
         .await
         .1["user_id"]
@@ -1393,7 +1393,7 @@ async fn account_http_database_security_and_public_clients() {
                 base,
                 "verify",
                 None,
-                json!({"token":recovery,"purpose":"recover","password":RECOVERED}),
+                json!({"email":"new@example.test","token":recovery,"purpose":"recover","password":RECOVERED}),
             )
             .await
             .0 == 400,

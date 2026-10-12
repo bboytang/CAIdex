@@ -67,7 +67,7 @@ def measure_service(binary, work, env):
                      if '.device-code-pepper.' not in p.name]
             token = next(m['verification_token'] for m in mails
                          if m['recipient'] == email and m['purpose'] == 'register')
-            verified = request('verify', {'purpose': 'register', 'token': token})
+            verified = request('verify', {'email': email, 'purpose': 'register', 'token': token})
             session = request('login', {'email': email, 'password': password})
             me = request('me', {}, session['access_token'])
             assert me['user_id'] == verified['user_id'] == session['user_id']
@@ -192,7 +192,7 @@ def main():
             if sync:
                 env.update({k.replace('I2', 'I6' if args.memory_sync else 'I5'): v for k, v in list(env.items()) if k.startswith('CAIDEX_I2_') and k.endswith('_DB')})
             source_paths = sorted(ROOT.glob('cloud/auth/src/**/*.rs')) + [ROOT / p for p in
-                ['cloud/auth/Cargo.toml', 'cloud/auth/src/account.js', 'cloud/core/src/lib.rs',
+                ['cloud/auth/Cargo.toml', 'cloud/auth/src/account.js', 'cloud/auth/src/server/email.html', 'cloud/core/src/lib.rs',
                  'cloud/postgres/bootstrap.sql', 'cloud/postgres/migrations/0001_account_scope.sql',
                  'cloud/postgres/migrations/0002_authentication.sql', 'cloud/postgres/migrations/0003_chat_sync.sql', 'cloud/postgres/migrations/0004_memory_sync.sql', 'cloud/postgres/migrations/0005_operations.sql', 'cloud/postgres/migrations/0006_aliyun_directmail.sql', 'cloud/core/src/memory.rs', 'cloud/core/Cargo.toml', 'cloud/auth/tests/account.rs',
                  'scripts/i2-auth.py', 'Cargo.toml', 'Cargo.lock', '.github/workflows/ci.yml']]
