@@ -1,0 +1,35 @@
+{
+  "source_sha": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+  "windows_run_id": 38239803102,
+  "foundation_run_id": 38239803128,
+  "frontend_tests": {
+    "passed": 5,
+    "failed": 0,
+    "bridge": "mocked IPC"
+  },
+  "native_backend_tests": {
+    "passed": 9,
+    "failed": 0,
+    "platform": "actual Windows"
+  },
+  "native_webview_checks": {
+    "passed": 20,
+    "failed": 0,
+    "model_posts": 3,
+    "provider": "synthetic literal loopback; no commercial model"
+  },
+  "shared_lock_records": 305,
+  "shared_registry_records_with_checksums": 291,
+  "root_lock": "unchanged from milestone baseline",
+  "logs": {
+    "windows": {
+      "compressed_sha256": "6bc4ac5f1c279e683a81fd70fa1689c3c978d19876f5390d972bb46d3c288c5e",
+      "raw_sha256": "d30880eed29d71b58326efdd6fc9c1ea323ef8bb3de33c61f2f522c0661e8f16"
+    },
+    "frontend": {
+      "compressed_sha256": "33cd608be1e08bf31f21c35a14970a81a2eab3543eb43f62c3a709a7b67b2589",
+      "raw_sha256": "3d2b99ba2197d723c6ffbd49cb31467f708a141061f059571d1f77270106993a"
+    }
+  },
+  "audit": "Independent audit pending; implementation self-check is not independent audit."
+}

@@ -1,0 +1,56 @@
+{
+  "source_sha": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+  "environment": "managed Linux; Rust 1.99.0, Node 22.23.3",
+  "passed": [
+    {
+      "command": "npm ci --no-audit --no-fund",
+      "result": "118 locked packages installed"
+    },
+    {
+      "command": "npm run build",
+      "result": "TypeScript noEmit and Vite 8.3.4 production build; 2071 modules transformed"
+    },
+    {
+      "command": "cargo fmt --manifest-path apps/windows/src-tauri/Cargo.toml --check",
+      "result": "exit 0"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "result": "exit 0"
+    },
+    {
+      "command": "python3 -m py_compile scripts/j1-windows.py",
+      "result": "exit 0"
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit 0"
+    }
+  ],
+  "not_run": [
+    "Native Windows build/install on Linux",
+    "Local Playwright: no installed browser, CI renderer tests reused"
+  ],
+  "earlier_failures": [
+    "npm install ENOSPC before interruption",
+    "offline npm ci ENOTCACHED; resolved by pinned online install"
+  ],
+  "dist_files": {
+    "dist/index.html": {
+      "bytes": 355,
+      "sha256": "b1890e1a368731cac7040c36be7758602378474228465b55a9477770349941d9"
+    },
+    "dist/caidex-symbol.png": {
+      "bytes": 255582,
+      "sha256": "a6192a5a5c2f26f2607ae72a1bf8b0553760cfa7cf2ea8dbed14e838c6fb8f48"
+    },
+    "dist/assets/index-DJJkw3yV.css": {
+      "bytes": 18196,
+      "sha256": "d2f582356731717bd660e74f76fd0da20c99cc655eadedb3e95c327ca1577696"
+    },
+    "dist/assets/index-CHcFXkRC.js": {
+      "bytes": 377826,
+      "sha256": "48a7b4ee130cf0107e9c30156d1ee5c73d7b6fd4457c165b1de2d1cfa6d711c2"
+    }
+  }
+}

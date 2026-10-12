@@ -1,0 +1,353 @@
+{
+  "config": {
+    "argv": [
+      "/opt/hostedtoolcache/node/22.23.3/x64/bin/node",
+      "/home/runner/work/CAIdex/CAIdex/apps/windows/node_modules/.bin/playwright",
+      "test"
+    ],
+    "configFile": "/home/runner/work/CAIdex/CAIdex/apps/windows/playwright.config.ts",
+    "rootDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/bboytang/CAIdex/commit/ea0cdda82f92c85f033471d48d961d0fa71fb810",
+        "commitHash": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+        "buildHref": "https://github.com/bboytang/CAIdex/actions/runs/38239803102"
+      },
+      "gitCommit": {
+        "shortHash": "ea0cdda",
+        "hash": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+        "subject": "fix(windows): preserve tested release bytes in preview installers",
+        "body": "fix(windows): preserve tested release bytes in preview installers\n",
+        "author": {
+          "name": "bboytang",
+          "email": "332090464+bboytang@users.noreply.github.com",
+          "time": 1791802788000
+        },
+        "committer": {
+          "name": "bboytang",
+          "email": "332090464+bboytang@users.noreply.github.com",
+          "time": 1791802788000
+        },
+        "branch": "main"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/bboytang/CAIdex/commit/ea0cdda82f92c85f033471d48d961d0fa71fb810",
+            "commitHash": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+            "buildHref": "https://github.com/bboytang/CAIdex/actions/runs/38239803102"
+          },
+          "gitCommit": {
+            "shortHash": "ea0cdda",
+            "hash": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+            "subject": "fix(windows): preserve tested release bytes in preview installers",
+            "body": "fix(windows): preserve tested release bytes in preview installers\n",
+            "author": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791802788000
+            },
+            "committer": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791802788000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/bboytang/CAIdex/commit/ea0cdda82f92c85f033471d48d961d0fa71fb810",
+            "commitHash": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+            "buildHref": "https://github.com/bboytang/CAIdex/actions/runs/38239803102"
+          },
+          "gitCommit": {
+            "shortHash": "ea0cdda",
+            "hash": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+            "subject": "fix(windows): preserve tested release bytes in preview installers",
+            "body": "fix(windows): preserve tested release bytes in preview installers\n",
+            "author": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791802788000
+            },
+            "committer": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791802788000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+        "snapshotDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 30000,
+        "use": {
+          "baseURL": "http://127.0.0.1:1420",
+          "viewport": {
+            "width": 1180,
+            "height": 800
+          }
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/frontend.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.0",
+    "workers": 2,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://127.0.0.1:1420",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "ui.spec.ts",
+      "file": "ui.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "professional shell, persisted appearance/language and modal keyboard focus",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1283,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T11:00:33.338Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-cb6ac129ff12aac0aa49",
+          "file": "ui.spec.ts",
+          "line": 87,
+          "column": 1
+        },
+        {
+          "title": "model/key form is masked, IME does not submit, ordinary Chat does",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 735,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T11:00:34.825Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-fb21024e5593967d6efb",
+          "file": "ui.spec.ts",
+          "line": 134,
+          "column": 1
+        },
+        {
+          "title": "selecting an earlier reply creates a branch and switching shows its complete history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 768,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T11:00:35.577Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-1feeaedb7eb992140983",
+          "file": "ui.spec.ts",
+          "line": 185,
+          "column": 1
+        },
+        {
+          "title": "new-chat navigation retains drafts, search and Codex boundary are explicit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 537,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T11:00:36.354Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-4d3f91ff77859c61ccfd",
+          "file": "ui.spec.ts",
+          "line": 234,
+          "column": 1
+        },
+        {
+          "title": "unavailable native bridge shows a safe recoverable startup error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 262,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T11:00:36.903Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-ad9bac6b2cb76a1bd2c3",
+          "file": "ui.spec.ts",
+          "line": 258,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-12T11:00:32.453Z",
+    "duration": 4783.674,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

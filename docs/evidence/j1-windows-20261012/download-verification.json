@@ -1,0 +1,19 @@
+{
+  "source_sha": "ea0cdda82f92c85f033471d48d961d0fa71fb810",
+  "artifact_id": 11742842954,
+  "files": [
+    {
+      "file": "CAIdex_0.1.0_x64_en-US.msi",
+      "bytes": 9486336,
+      "sha256": "0f972818a9418cbb8ac7695012f6ff74bceb78e72ea2860396acec91090b81c5",
+      "verified": true
+    },
+    {
+      "file": "CAIdex_0.1.0_x64-setup.exe",
+      "bytes": 6597183,
+      "sha256": "a828a9dafd5e60effbc7cdeb3aee60c56b4688184e358a8bdf69b01d157401ea",
+      "verified": true
+    }
+  ],
+  "note": "Actual downloaded artifact bytes checked on Linux; Windows lifecycle verified separately by native.json."
+}

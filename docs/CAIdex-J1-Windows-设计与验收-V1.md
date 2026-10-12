@@ -40,9 +40,20 @@
 
 ## 构建与验证
 
-当前仍在开发验证，以下为验证入口，最终精确通过结果封存后补入本节；未运行或失败的检查不算通过。
+开发验证于 2026-10-12 封存，功能/构建源码为 `ea0cdda82f92c85f033471d48d961d0fa71fb810`，基线 `ae26c9bde0b679667964afe755ccdb0189514574`。后续证据封存提交只改文档/证据，不混称为重新构建过的功能 SHA。独立审计尚未完成，不授 J-1 或整体项目验收通过。
 
-- 本机：源/接口/依赖检查、Rust fmt、Python 语法、文档链接和 diff。启动盘余227MB；实际 npm 安装触发 ENOSPC，只删除本轮未完成 `apps/windows/node_modules`，原有效缓存不清。完整本机前端/Rust/Windows 构建未完成。
+| 实际检查 | 结果 | 精确证据 |
+| --- | --- | --- |
+| 本机 npm 锁定安装、TypeScript/Vite 生产构建、Rust fmt、Python 语法、diff | 通过；此前 ENOSPC 与离线缺缓存失败明确保留 | [本机记录](evidence/j1-windows-20261012/local-verification.json) |
+| 前端 IPC 模拟交互/主题/语言/历史/最小窗口/异常及截图 | 5通过/0失败；不算原生验证 | [最终 Windows CI](https://github.com/bboytang/CAIdex/actions/runs/38239803102)、[原日志](evidence/j1-windows-20261012/frontend.log.gz) |
+| Windows fmt、Clippy `-D warnings`、后端真实 Windows SystemStore/Chat/边界 | 9通过/0失败；九Adapter仅构造，不代表商业模型可用 | [原日志](evidence/j1-windows-20261012/windows.log.gz) |
+| release WebView/IPC/流式/Key/主题语言/草稿/停止/强杀恢复/NSIS安装启动卸载 | 20项通过/0失败，3次回环合成模型 POST；安装exe与测试release完整SHA256一致 | [原生结果](evidence/j1-windows-20261012/native/native.json) |
+| NSIS EXE、MSI 构建及实际下载字节核对 | 两包生成，大小与hash均匹配；MSI安装未测 | [构建清单](evidence/j1-windows-20261012/native/build-manifest.json)、[下载复核](evidence/j1-windows-20261012/download-verification.json) |
+| Foundation Linux/macOS/Windows Runtime及数据库/认证/合成邮件 | 4个job成功，四checkout SHA及GUI两checkout SHA核对一致 | [精确回归](https://github.com/bboytang/CAIdex/actions/runs/38239803128)、[索引](evidence/j1-windows-20261012/foundation-index.json) |
+
+[验证索引](evidence/j1-windows-20261012/verification-index.json)、[32项源码指纹](evidence/j1-windows-20261012/source-fingerprints.json)和[审计入口](evidence/j1-windows-20261012/README.md)固定本次证据。根Cargo.lock不变；独立锁与根锁305条共用记录匹配，其中291条registry source/checksum、14条路径包。生产/cloud/邮件/账户源码及既有Foundation工作流未改，不部署生产或发真实邮件。Foundation原日志仅存本机Git忽略私有目录，未随公开GUI证据导出。
+
+- 本机：源/接口/依赖检查、Rust fmt、Python 语法、文档链接和 diff。启动盘余227MB；实际 npm 安装触发 ENOSPC，只删除本轮未完成 `apps/windows/node_modules`，原有效缓存不清。恢复后磁盘已有余量，本机 `npm ci` 与正式前端构建成功；本机原生Windows构建/安装及Playwright浏览器未运行，以精确CI为证据。
 - `.github/workflows/windows.yml` 前端 job：锁定 npm 安装、TypeScript/Vite 构建、Playwright IPC 模拟交互及截图；模拟 IPC 不计为原生 Windows 验证。
 - Windows job：锁定工具链/Rust依赖、严格 Clippy、后端测试（含实际 Windows SystemStore 合成 Key）、Tauri release/NSIS/MSI，原生 WebDriver/真实共享核心/合成 HTTP 流、停止/重启/强杀 unknown 不重发、NSIS 安装/启动/卸载及产物 hash。
 - 既有 Foundation：共享 Chat 改动相关的三平台/数据库/认证/邮件合成回归；不连生产、不发真实邮件、不读取商业 Key。
@@ -51,11 +62,18 @@
 
 ## 取得与五步试用
 
-精确下载链接待最终成功 CI 后填入；不得以构建计划代替实际可下载产物。
+[下载实际 Windows x64 安装包](https://github.com/bboytang/CAIdex/actions/runs/38239803102/artifacts/11742842954)，artifact `CAIdex-Windows-x64-ea0cdda82f92c85f033471d48d961d0fa71fb810`。实际有效期至 `2026-11-11T11:08:32Z`，通常需要GitHub登录；不是签名正式发行版。
+
+| 文件 | 字节数 | SHA256 |
+| --- | ---: | --- |
+| 推荐：`CAIdex_0.1.0_x64-setup.exe`，NSIS已实际安装/启动/卸载 | 6597183 | `a828a9dafd5e60effbc7cdeb3aee60c56b4688184e358a8bdf69b01d157401ea` |
+| 备用：`CAIdex_0.1.0_x64_en-US.msi`，构建与下载核对通过、安装未验 | 9486336 | `0f972818a9418cbb8ac7695012f6ff74bceb78e72ea2860396acec91090b81c5` |
+
+视觉证据：[浅色欢迎页](evidence/j1-windows-20261012/renderer/reference-4-zh-light.png)、[浅色设置](evidence/j1-windows-20261012/renderer/en-light-settings.png)、[最小窗口](evidence/j1-windows-20261012/renderer/minimum-window-zh-light.png)、[真实Windows浅色Chat](evidence/j1-windows-20261012/native/native-en-light-chat.png)、[真实Windows深色](evidence/j1-windows-20261012/native/native-zh-dark.png)。前3项是Chromium模拟IPC截图，后2项为release真实WebView截图；均为合成状态，不是商业模型演示。
 
 1. **取得**：从精确 Windows CI 的 `CAIdex-Windows-x64-<完整SHA>` artifact 下载，按 `build-manifest.json` 核对 NSIS/MSI 的 SHA256。Actions 产物保留30天，下载通常需要 GitHub 登录；不是已发布/签名正式版。
 2. **安装/启动**：Windows 11 x64 运行 NSIS `.exe`，按安装向导启动 CAIdex。Windows WebView2 若缺失，安装器使用官方 bootstrapper，需要联网。未签名安装包可能触发 SmartScreen；按组织策略处理，不关闭系统保护。MSI 为备用包，其具体安装证据以最终结果为准。
-3. **配置**：设置→模型与提供商→添加模型；选择协议/提供商、填真实可用 model ID 与正确 API 地址，保存此设备 Key（Ollama可无Key）。从顶部模型菜单选择配置。Key 默认遮蔽，保存后不回显。
+3. **配置**：设置→模型与提供商→添加模型；选择协议/提供商、填真实可用 model ID 与正确 API 地址，保存此设备 Key（Ollama可无Key）。从输入框右侧模型菜单选择配置。Key 默认遮蔽，保存后不回显。
 4. **操作**：新建 Chat，输入/换行/发送，观察输出；生成中停止；查阅/搜索历史，保留未发送草稿；设置中切换主题/语言，退出并重新启动。附件功能受模型能力约束，不以本轮合成文本测试授真实视觉/文件通过。
 5. **通过判定**：新消息与实际模型输出出现、停止后不自动重发、重启后已保存历史/草稿/外观恢复、Key只显示配置状态；网络/认证/格式错误必须明确显示未完成。实际商业模型由用户后续自行验证，测试夹具响应不当真实模型输出。
 
@@ -67,9 +85,9 @@
 - 模型手动配置；高级推理/附件/能力/真实目录及各模型版本兼容性仍按 F/G-Live 保留未验，不把九Adapter构造测试当九商业模型通过。
 - 草稿自动保存有400ms节流，强杀可能丢失尚未落库的末尾输入；未发送附件的UI选择在重启后不自动恢复，原BLOB可随选定会话导出。模型输出的中断/未知终态不会盲目重放。
 - API Key的临时输入会经本地 Tauri IPC 交给 Broker；已保存 Key 无读出接口。系统凭据与本机SQLite不防同一OS用户/管理员，非云端或历史 E2EE。
-- 导出、复制、模型附件兼容性及 MSI 安装是否实测，按最终结果单独列出，不用仅有入口声称通过。
+- 共享核心附件/导出边界已有回归，GUI实际下载文件、剪贴板、原生菜单点击、真实模型附件与MSI安装未实际验证；相关入口已实现，不宣称这些操作通过。
 
-完成开发验证后提交本文件、精确证据与下载入口，进入独立只读审计。实施会话的 diff 检查和测试均不代替独立审计。
+已提供本文件、精确源码/CI/可下载安装产物与证据，停止新增功能，等待独立新会话或其他模型只读审计。实施会话的 diff 检查和测试均不代替独立审计；用户确认J-1审计通过并另行批准后才可启动后续里程碑。
 
 2026-10-12 用户补充浅色主题采用简约毛玻璃渐变：冰蓝/淡紫/薄荷色背景、半透明面板/输入框/菜单/设置、低强度阴影；深色布局保留。玻璃效果在 WebView 内实现，不依赖系统 Acrylic，也不新增权限。
 
