@@ -1,0 +1,2 @@
+# Preserve Windows-produced evidence bytes and accept its original CRLF endings.
+native/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
