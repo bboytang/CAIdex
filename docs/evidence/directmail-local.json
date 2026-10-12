@@ -1,0 +1,166 @@
+{
+  "scope": "Aliyun DirectMail SMTP approved development verification; not production or independent audit",
+  "base_sha": "25334961bb770f19b10c90583faca1b3eb0d08c9",
+  "source_sha": "5b826f43709f6942b074d96f20588e050e9cfb8b",
+  "basis": "Local reports retain base HEAD plus working-tree fingerprints. Final I7 and account fingerprints compared to immutable source commit; first pass superseded by additional tests. Full/cross-platform verification delegated to exact GitHub CI due less than 1GiB disk; no valid caches removed.",
+  "reports": [
+    {
+      "report": "caidex-directmail-local-first.json.gz",
+      "reported_head": "25334961bb770f19b10c90583faca1b3eb0d08c9",
+      "checks": 109,
+      "all_checks_passed": true,
+      "fingerprint_count": 42,
+      "fingerprints_match_source_sha": false,
+      "final_evidence": false,
+      "summary": null
+    },
+    {
+      "report": "caidex-directmail-local-final.json.gz",
+      "reported_head": "25334961bb770f19b10c90583faca1b3eb0d08c9",
+      "checks": 116,
+      "all_checks_passed": true,
+      "fingerprint_count": 42,
+      "fingerprints_match_source_sha": true,
+      "final_evidence": true,
+      "summary": null
+    },
+    {
+      "report": "caidex-directmail-local-account.json.gz",
+      "reported_head": "25334961bb770f19b10c90583faca1b3eb0d08c9",
+      "checks": 118,
+      "all_checks_passed": true,
+      "fingerprint_count": 30,
+      "fingerprints_match_source_sha": true,
+      "final_evidence": true,
+      "summary": {
+        "passed": 118,
+        "failed": 0
+      }
+    }
+  ],
+  "logs": [
+    {
+      "file": "caidex-directmail-local-account.json.gz",
+      "raw_bytes": 15637,
+      "raw_sha256": "5d9003e2bda20ef7d81adcb1cfbec8205f0bc522fce766e97d8f98fa44ac2e98",
+      "gzip_sha256": "6b47d68be8b26c480aa7b6f52721a31cbefe08207e7bc2fa603b9181b8900ae7"
+    },
+    {
+      "file": "caidex-directmail-local-account.log.gz",
+      "raw_bytes": 23551,
+      "raw_sha256": "4a225691e3aab152f67859e982ebc7f1f6cdccddf49dcdd692302d5a10009403",
+      "gzip_sha256": "b7a59891c574e50f670169166466e96ce5f476658768c14979effcc22b93eeca"
+    },
+    {
+      "file": "caidex-directmail-local-auth-lib.log.gz",
+      "raw_bytes": 647,
+      "raw_sha256": "177bf5df0596700a67319cf73dd1af056e06919f6fbda62cd1d7d81cb1ffc9b0",
+      "gzip_sha256": "24d40028fb51e94c252879f0115899559447ad4b65cf158192ff2a29297ba6f3"
+    },
+    {
+      "file": "caidex-directmail-local-clippy-final.log.gz",
+      "raw_bytes": 144,
+      "raw_sha256": "c7695b0c62fd925119ce83136f8f1a982baf10927e2e240afe4c56551d1e5b43",
+      "gzip_sha256": "af80c2a87023c2b1f68e37bccbeda79ede0d26d9dcdb8063e18afea207674c7f"
+    },
+    {
+      "file": "caidex-directmail-local-clippy-seal.log.gz",
+      "raw_bytes": 144,
+      "raw_sha256": "4e4cb19fbd07edd698b1933c2aa6cbf422c9d4102cafe81f3ef99419970e7fa6",
+      "gzip_sha256": "60add22d1dfb0ea3ad785ee43dc055858883dacf247197352c738c273a1202f7"
+    },
+    {
+      "file": "caidex-directmail-local-cloud-lib.log.gz",
+      "raw_bytes": 416,
+      "raw_sha256": "7f5341b41a61052c4d700146041931580f5fa32d772e4f3476709a80ae9e48f3",
+      "gzip_sha256": "0df0f61350aaf68babe71ab683e9f38ada1c99b6adb751475e4fcb0a47b0eda8"
+    },
+    {
+      "file": "caidex-directmail-local-final.json.gz",
+      "raw_bytes": 50978,
+      "raw_sha256": "78db85de8c4b16fcc7b6ab3e22ea80728a2a098f250194feaf9cb132eedba04d",
+      "gzip_sha256": "812be35ea5910a9ca99bc807f9b6fc8e27208effcd85b043aef6c341322fc8fa"
+    },
+    {
+      "file": "caidex-directmail-local-final.log.gz",
+      "raw_bytes": 49862,
+      "raw_sha256": "b62d586a3a1305a80a0bf585aeb45245ae5b99884d62d8b7b3e351e6996c1b2f",
+      "gzip_sha256": "1e6a92464d3242ef2b749fb88b883f5dbc8cefbc28aad8e2ff8d3b121ba640d1"
+    },
+    {
+      "file": "caidex-directmail-local-first.json.gz",
+      "raw_bytes": 49080,
+      "raw_sha256": "a309990a6fb77c517be0af402ef69459ffa5dd2bcb104ecf17e2f21952583ca0",
+      "gzip_sha256": "ed1ed09689f3da55e5a64e39ade84ecb3bb72dc49771a97af44a6db5c3be5e3a"
+    },
+    {
+      "file": "caidex-directmail-local-first.log.gz",
+      "raw_bytes": 49845,
+      "raw_sha256": "64c6eb383da71b1830c990d5a878d016f69b3c81710696dd1d15012bd71ac643",
+      "gzip_sha256": "9c50d23e268e0ed0e65660a4d610da8cc05ee40df0617b581def1c79dfd9263a"
+    },
+    {
+      "file": "caidex-directmail-local-fmt.log.gz",
+      "raw_bytes": 0,
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+    },
+    {
+      "file": "caidex-directmail-default-deps.txt.gz",
+      "raw_bytes": 18001,
+      "raw_sha256": "27d462b4262f7c1b4cc6be334a8632d7de65dae226e994dbba339d5e5ac19e1e",
+      "gzip_sha256": "abc00d54d04abb92b114d154af44b67104b1faebdaffe602b005134f48eba9a3"
+    }
+  ],
+  "rust_tests": {
+    "auth_lib": {
+      "passed": 5,
+      "failed": 0
+    },
+    "cloud_lib": {
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "checks": {
+    "auth_all_targets_clippy": true,
+    "workspace_fmt": true,
+    "python_compile": true,
+    "documentation_links": true,
+    "git_diff_check": true,
+    "baseline_package_versions_sources_checksums_preserved": true,
+    "unrelated_source_unchanged": true,
+    "default_auth_client_has_no_smtp_or_synthetic_certificate_dependencies": true
+  },
+  "new_packages": [
+    [
+      "email-encoding",
+      "0.4.2"
+    ],
+    [
+      "lettre",
+      "0.11.23"
+    ],
+    [
+      "nom",
+      "8.0.0"
+    ],
+    [
+      "quoted_printable",
+      "0.5.2"
+    ]
+  ],
+  "limits": [
+    "No production connection, real SMTP password or real email; production remains prior recorded schema5/mail_disabled=true.",
+    "SMTP accepted does not prove inbox delivery; no Aliyun trusted callback or automatic new bounce suppression.",
+    "I7/deployment independent audit status unchanged; J not started."
+  ],
+  "final_source_sha": "c1f6cf45f82173f33b3281d14c410663105d44c2",
+  "later_changes": {
+    "files": [
+      ".github/workflows/ci.yml",
+      "cloud/auth/Cargo.toml"
+    ],
+    "reason": "Fixture-only dependencies gated by test-auth and production server-only release CI step; runtime/SMTP/DDL/backup/test sources identical. Local fingerprint maps validate 5b826f4, final exact CI validates c1f6cf4; local full tests not repeated for CI/feature-declaration-only edits because disk below 1GiB."
+  }
+}

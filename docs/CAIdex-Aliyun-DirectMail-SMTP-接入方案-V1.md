@@ -1,4 +1,4 @@
-# Aliyun DirectMail SMTP 接入方案 V1（开发验证已批准）
+# Aliyun DirectMail SMTP 接入方案 V1（开发验证完成，生产切换待确认）
 
 ## 授权、基线和停止条件
 
@@ -59,7 +59,7 @@ Aliyun当前无可信退信事件接入，callback默认拒绝；/v1/mail/events
 | scripts/i2-auth.py、scripts/i7-operations.py | 新迁移与断言、SMTP测试入口/源码指纹/报告；复用现有CI job |
 | 操作说明、本方案、HANDOFF及新的证据文件 | 安全配置、切换/回滚、实际验证与限制；旧证据不重写 |
 
-预计不需改变.github/workflows/ci.yml：既有数据库job已执行上述脚本；若需调整，只登记为新增SMTP检查所必需的入口，不更改其他job。账户流程源码、账户权限DDL、Chat/Memory/Host源码不在预计修改名单；发现明确相关依赖后须先报告。
+原提案预计复用既有CI；实施时只在数据库job追加正式server-only release构建，确保关闭test-auth后的生产入口可编译，其他job保持。账户流程源码、账户权限DDL、Chat/Memory/Host源码不在预计修改名单；发现明确相关依赖后须先报告。
 
 ## 自动化测试与通过条件
 
@@ -90,10 +90,14 @@ Aliyun当前无可信退信事件接入，callback默认拒绝；/v1/mail/events
 
 确认点：批准以上邮件相关源码、最小schema/备份兼容配套、模拟SMTP/Rust测试和精确CI；这次确认不自动批准生产迁移/改凭据/启邮件/真实发信，生产切换仍另行等待用户明确确认。
 
-## 已实施与验证进度
+## 已实施与验证结果（2026-10-12）
 
-已按文件清单实现独立SMTP与共用账本、Broker按供应商取凭据、邮件约束迁移和备份前向兼容，未修改账户流程/权限、Chat/Memory、Host或旧DDL。锁定lettre0.11.23；新增email-encoding0.4.2、nom8.0.0、quoted_printable0.5.2，原锁定包版本/source/checksum全部保持。TLS fixture使用运行时生成的合成CA和合成密码，不涉及真实秘密。
+已按有限清单实现独立SMTP与共用账本、Broker按供应商取凭据、邮件约束迁移和备份前向兼容，未修改账户流程/权限、Chat/Memory、Host或旧DDL。锁定lettre0.11.23；新增email-encoding0.4.2、nom8.0.0、quoted_printable0.5.2，原锁定包版本/source/checksum全部保持。TLS fixture使用运行时生成的合成CA和合成密码；证书/解码测试依赖只在test-auth启用，普通账户客户端没有SMTP或合成证书依赖。
 
-本机最终隔离I-7增量116项/0失败、42源码指纹匹配工作区，覆盖原Brevo/Resend回调/关闭状态/预算与恢复、SMTP TLS/负答复/丢失答复/取消/并发幂等/落库失败、Broker缺失或错误类型、注册/验证/登录/找回/密码与会话撤销/重放/过期/限流，以及旧schema4/5恢复到6和B/ACL/认证隔离屏障。auth lib5/0、cloud lib2/0、fmt/Clippy/Python语法及文档链接/差异检查通过。报告HEAD仍是基线2533496加工作区改动，账户回归118项全通过；最终精确提交CI完成后另记，不能用此代替CI或生产送达。
+不可变功能源码 [c1f6cf45f82173f33b3281d14c410663105d44c2](https://github.com/bboytang/CAIdex/commit/c1f6cf45f82173f33b3281d14c410663105d44c2)，[精确CI38186470278](https://github.com/bboytang/CAIdex/actions/runs/38186470278) 四job成功，包含正式server-only release构建。原始checkout四SHA核对；DB I-1 118、账户118、Chat52、Memory60、I-7增量116项/0失败，五份源指纹全部匹配该提交。Linux workspace725/0/84与Runtime81/0、macOS724/0/81与Runtime80/0、Windows718/0/81与Runtime80/0，ignored不计通过；Linux原生凭据1、Windows Host lib4另记。fmt/Clippy/协议/JavaScript及既有演示步骤实际成功。
 
-本机完整/跨平台回归因磁盘已不足1GiB转GitHub，不清有效缓存。生产运行仍以原部署记录为准，本轮没有连接服务器、配置真实SMTP凭据、迁移生产数据库或发真实邮件；I-7及部署独立审计状态保持。
+本机最终隔离I-7增量116项/0失败，包含DirectMail46项/Broker3项以及原Brevo/Resend回调/关闭状态/预算与恢复、schema4/5前向6与B/ACL/认证隔离屏障。模拟邮件经真实HTTP完成注册→验证→登录→找回→重设→新密码登录；错误/过期/重放验证码、旧密码/会话、发送限流、TLS/明文拒绝、明确负答复与未知结果、取消/并发/落库失败均验证。账户118项、auth lib5/0、cloud lib2/0及fmt/Clippy/Python语法/链接/diff通过。本机报告HEAD仍是基线2533496加工作区，最终42/30指纹匹配已提交5b826f4；后续c1f6仅限定测试依赖feature并补正式构建CI，不重跑未改运行源码的本机完整回归。收尾盘余不足1GiB，完整/跨平台转GitHub，不清有效缓存。
+
+[最终CI证据](evidence/directmail-ci.json)、[本机证据](evidence/directmail-local.json)、[被替代CI](evidence/directmail-ci-initial.json)保存26份压缩原日志/报告和双重SHA256。首次本机109项为补充检查前的通过，已被116替代；首次CI38186287434因补充正式构建检查主动取消，不计通过。代码开发验证不等于独立审计或生产送达。
+
+生产仍以原部署记录为准，本轮没有连接服务器、配置真实SMTP密码、迁移生产数据库或发真实邮件。SMTP受理不等于收件箱送达；无可信退信回调/新退信自动抑制，实际注册与找回送达须按上方步骤另行批准后验证。I-7及部署独立审计状态保持，未启动J；本有限增量完成并停止等待生产切换确认。

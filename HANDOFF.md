@@ -1,12 +1,18 @@
-# 当前交接：Aliyun DirectMail SMTP 开发验证已批准，生产保持不变
+# 当前交接：DirectMail SMTP 开发验证封存，等待生产切换确认
 
-2026-10-11用户明确“确认方案”，批准本方案有限源码/迁移/备份兼容、模拟SMTP/隔离PG/Rust测试、main提交/push与精确CI；基线main 25334961bb770f19b10c90583faca1b3eb0d08c9，本地/origin/GitHub一致、工作区干净。先实现共用安全账本与独立TLS SMTP，再验证迁移/恢复、SMTP和账户流程，最后精确CI/证据封存并停止。生产迁移/改凭据/启邮件/额外真实发信仍未授权，不连接生产、不读取真实SMTP密码，不改审计状态、不启动J。本机盘余2.6GB/94%、RAM约1.9GiB+4GiB swap，可行定向优先本机，不清有效缓存。
+2026-10-11用户回复“确认方案”，批准独立Aliyun SMTP、共用既有邮件账本、最小schema/备份兼容、合成SMTP/隔离PG/Rust验证、main提交/push与精确CI；2026-10-12完成此有限范围。生产迁移/改真实凭据/启邮件/额外真实发信仍未授权，本轮没有生产连接或读取真实密码。I-7及部署独立审计状态保持，不自行授通过、不启动J。
 
-2026-10-11用户报告官方发信地址no-reply@caidex.cn及DirectMail SMTP密码已设置、实际发信成功，要求基于GitHub最新main先提交独立SMTP接入方案、文件清单、测试与生产切换步骤，等待确认；禁止本轮修改生产或发送额外真实邮件。只读核实GitHub/main与本地HEAD均955085db636f9509da16f941d2d65bbfea1e7ff5，起点工作区干净；现有生产记录运行源码仍c522a57/schema5/mail_disabled=true。用户的供应商测试不冒充本会话账户流程验收，不读取真实密码。
+起点main 25334961bb770f19b10c90583faca1b3eb0d08c9，本地/origin/GitHub一致、工作区干净。最终不可变功能源码 [c1f6cf45f82173f33b3281d14c410663105d44c2](https://github.com/bboytang/CAIdex/commit/c1f6cf45f82173f33b3281d14c410663105d44c2)，[精确CI38186470278](https://github.com/bboytang/CAIdex/actions/runs/38186470278) 四job completed/success，四份原始checkout SHA逐份核对。最后封存只改本HANDOFF、方案及新增directmail证据，不变功能源码；实际Git HEAD/工作区/远端恢复时核实，不把docs-only封存HEAD替代功能CI SHA。
 
-具体提案见 [DirectMail SMTP接入方案](docs/CAIdex-Aliyun-DirectMail-SMTP-接入方案-V1.md)：独立EmailSender SMTP适配+共用既有预算/幂等账本，固定smtpdm.aliyun.com:465隐式TLS，Broker独立aliyun-smtp/client-secret，保留Brevo/Resend，无可信回调则拒绝、仅SMTP受理不标delivered。当前provider CHECK只有两值，计划新增0006邮件约束迁移及云schema6/备份4-5-6前向兼容，不改权限/同步/Host；旧c522只接受schema5，迁移后回滚邮件须使用新兼容构建关闭邮件，不直接回旧二进制或覆盖在线库。
+实现与切换/回滚步骤见 [DirectMail方案](docs/CAIdex-Aliyun-DirectMail-SMTP-接入方案-V1.md)、[操作说明](cloud/postgres/operations/README.md)。独立EmailSender适配固定smtpdm.aliyun.com:465隐式TLS、系统信任链/主机名/TLS1.2以上，认证/信封/From固定no-reply@caidex.cn；Broker仅取aliyun-smtp/client-secret，不要求HTTP秘密，保留Brevo/Resend。共用原全局预算/限流/持久unknown/幂等/抑制，无自动重发或切供应商；SMTP受理只accepted、provider_id=NULL，无可信回调则401、不伪造delivered。0006只扩展邮件provider CHECK并登记云schema6；备份4/5/6及旧4/5前向恢复6，原隔离/B/ACL/认证屏障保持。账户流程/权限、Chat/Memory/Host/Runtime/模型、旧DDL与quarantine.sql未改；protocol1/本地SQLite5保持。原依赖版本/source/checksum均保持，仅四个SMTP所需新包；合成证书依赖限定test-auth，普通账户客户端不带SMTP/合成证书依赖。
 
-前次方案交付只改方案/HANDOFF文档；当前新确认已批准有限编码、合成SMTP/隔离PG/Rust验证、提交/push与精确CI。已实现独立TLS SMTP/Broker引用、共用原预算幂等账本与0006/schema6/旧4-5备份前向兼容；本机最终I-7增量116项/0失败（含原HTTP/恢复回归、SMTP/API与Broker拒绝检查），源码指纹均匹配当前工作区，报告HEAD仍是基线2533496，不能冒充精确提交CI。账户回归118项全通过、auth lib5/0、cloud lib2/0、fmt/Clippy/Python语法/链接/diff通过；完整/跨平台由GitHub核验后再封存。盘余已降约963MB，不清有效缓存、不再启动本机完整构建。生产迁移/配置/启邮件和指定邮箱真实注册-验证-登录及找回流程仍另待生产切换确认。I-7与部署独立审计状态不变，不自行授通过、不启动J。历史部署记录与全部证据保持。
+本机最终I-7增量116项/0失败、账户118项全通过、auth lib5/0、cloud lib2/0及fmt/Clippy/Python语法/链接/diff通过。本机报告保留基线HEAD+工作区，最终42/30指纹分别全部匹配已提交5b826f4；c1f6仅测试依赖feature限定与正式server-only构建CI步骤不同，运行/DDL/恢复/测试源码一致，不虚构本机精确c1f6重跑。起点盘余2.6GB/RAM1.9GiB+4GiB swap，定向优先本机，收尾余约686MB；不足完整/跨平台转GitHub，不清有效缓存。
+
+最终CI：DB I-1 118、账户118、Chat52、Memory60、I-7增量116具名检查/0失败（其中DirectMail46项、Broker3项），5份报告全部指纹匹配c1f6（5/30/50/50/42）；正式server-only release构建成功、无测试SMTP入口。Linux workspace725/0/84和Runtime81/0，macOS724/0/81和Runtime80/0，Windows718/0/81和Runtime80/0；ignored不算通过，Linux原生凭据1/Windows Host lib4另记。合成PG/服务2CPU/2GiB，1000条3维向量/3附件，CI登录p95约104.6ms、检索约4.08ms、峰值约156MiB、OOM0，不外推生产容量。SMTP包含TLS拒绝/明文拒绝/负答复/超时/取消/断线/并发/落库失败、API注册验证登录及找回重设/旧密码会话撤销/过期重放/原限流；真实收件箱未验。
+
+证据：[最终CI](docs/evidence/directmail-ci.json)、[本机](docs/evidence/directmail-local.json)、[被替代CI](docs/evidence/directmail-ci-initial.json)。26份压缩原日志/报告与原文SHA256逐份核验。首次本机109项是补充测试前的通过、已被116替代；首次5b826f4/CI38186287434为补充正式构建检查而主动取消，四job cancelled、不计通过；原日志保留。没有把推送、排队、取消或实施自查当独立审计通过。
+
+准确下一步：停止新增功能，等待用户另行确认生产切换并指定自己控制的测试收件邮箱/实际邮件预算；按方案用服务器Broker私有标准输入配置真实SMTP密码，迁移前备份、升级兼容release与备份工具、应用0006、先关闭模式核验再启邮件，最小真实注册/验证/登录与找回流程另验。原生产记录仍c522a57/schema5/mail_disabled=true，本轮不改该记录的历史事实。迁移6后不能直接回旧c522二进制；关闭邮件须用新兼容release的mail_disabled=true，不降级/覆盖在线库，不重发unknown。无可信退信自动抑制、国内外实际送达/长周期运营与F/G-Live仍未验；I-7和部署独立审计仍由独立会话处理，J未授权。
 
 ---
 
