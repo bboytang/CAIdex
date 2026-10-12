@@ -1,0 +1,17 @@
+{
+  "source_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+  "signed": false,
+  "runner": "windows-2022",
+  "files": [
+    {
+      "bytes": 9539584,
+      "sha256": "dbca0159a81db112f818795cf14a5af342f373bc4bcd8629e517742d34eeaba3",
+      "name": "CAIdex_0.1.1_x64_en-US.msi"
+    },
+    {
+      "bytes": 6634181,
+      "sha256": "9e90c28843a805f88b49657c1ccc600884c8d0093a94c91b09e38800dfe3fd70",
+      "name": "CAIdex_0.1.1_x64-setup.exe"
+    }
+  ]
+}

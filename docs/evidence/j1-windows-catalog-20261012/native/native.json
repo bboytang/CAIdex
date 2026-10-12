@@ -1,0 +1,43 @@
+{
+  "source_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+  "passed": 24,
+  "failed": 0,
+  "checks": [
+    "release_binary_exists",
+    "real_release_webview_started",
+    "native_preferences_saved_and_rendered",
+    "key_input_masked",
+    "native_system_key_saved_without_echo",
+    "real_ipc_provider_sse_chat_completed",
+    "actual_process_restart_preserves_chat_draft_theme_language",
+    "native_stop_preserves_partial_output",
+    "restart_never_replays_cancelled_model_post",
+    "actual_process_killed_during_stream",
+    "crash_restart_seals_unknown_turn_without_replay",
+    "native_provider_key_discovers_catalog_without_manual_model_id",
+    "native_deepseek-flash_composer_effort_reaches_real_provider",
+    "native_deepseek-v4-pro_composer_effort_reaches_real_provider",
+    "native_http_authentication_failure_is_visible_without_secret_echo",
+    "real_nsis_installer_exists",
+    "nsis_installer_completed",
+    "nsis_installed_real_executable",
+    "installed_binary_matches_release",
+    "installed_application_webview_starts_with_preserved_history",
+    "nsis_uninstaller_exists",
+    "nsis_uninstaller_completed",
+    "nsis_uninstaller_removed_installed_executable",
+    "synthetic_requests_only"
+  ],
+  "synthetic_model_posts": 6,
+  "installers": {
+    "nsis_install_exit": 0,
+    "nsis_uninstall_exit": 0,
+    "msi": "built; interactive installation not exercised"
+  },
+  "environment": "GitHub windows-2022 / real WebView2 / real native Broker and SQLite",
+  "limits": [
+    "Not Windows 11 human interaction or UAC/SmartScreen acceptance",
+    "Unsigned installers",
+    "No commercial model or production account traffic"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "run_id": 38256864514,
+  "source_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+  "conclusion": "success",
+  "raw_logs": "Only locally in ignored private evidence; not exported. Use exact GitHub jobs or authorized local audit.",
+  "jobs": [
+    {
+      "id": 114837057744,
+      "name": "I-1/I-2 database and authentication (Linux)",
+      "conclusion": "success",
+      "checkout_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38256864514/job/114837057744",
+      "raw_sha256": "f484dee45d0076b3c98fa4635f1e6a230aac5cf4e5914cb06de1054ffc5b2052"
+    },
+    {
+      "id": 114837058003,
+      "name": "Runtime (macos-15)",
+      "conclusion": "success",
+      "checkout_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38256864514/job/114837058003",
+      "raw_sha256": "b7af4042b2e8f817336e3cf486931984924ef756a3d2cfeab5c0483d4b3bea74"
+    },
+    {
+      "id": 114837058148,
+      "name": "Runtime (windows-2022)",
+      "conclusion": "success",
+      "checkout_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38256864514/job/114837058148",
+      "raw_sha256": "dd5dfd6bf9ea20d31109790fe5e8935c944f457f3fbd7d441164f6b3451b9663"
+    },
+    {
+      "id": 114837058206,
+      "name": "Runtime (ubuntu-24.04)",
+      "conclusion": "success",
+      "checkout_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+      "url": "https://github.com/bboytang/CAIdex/actions/runs/38256864514/job/114837058206",
+      "raw_sha256": "67b580e43ee188675ac5da4204bdef26e1c8a405d40d3fbad45cdfa7e22abd08"
+    }
+  ]
+}

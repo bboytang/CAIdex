@@ -1,0 +1,25 @@
+{
+  "source_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+  "frontend": "npm run build: TypeScript/Vite production passed locally",
+  "backend_check": "cargo check --manifest-path apps/windows/src-tauri/Cargo.toml --no-default-features --locked passed",
+  "backend_tests": {
+    "passed": 12,
+    "failed": 0,
+    "evidence": "local-backend.log",
+    "build": "existing cache, cargo rustc --no-default-features --locked --offline --test desktop -- -C strip=debuginfo; CARGO_INCREMENTAL=0"
+  },
+  "static": [
+    "root and standalone cargo fmt --check",
+    "python3 -m py_compile scripts/j1-windows.py",
+    "git diff --check",
+    "14 explicit IPC commands and unchanged event permissions"
+  ],
+  "shared_lock_records": 305,
+  "shared_registry_records": 291,
+  "limits": [
+    "Local Windows compilation unavailable on Linux",
+    "Local Playwright browsers unavailable; executed in GitHub",
+    "No commercial provider requests or real user keys",
+    "No valid caches deleted"
+  ]
+}

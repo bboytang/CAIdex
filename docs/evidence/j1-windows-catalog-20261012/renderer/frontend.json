@@ -1,0 +1,421 @@
+{
+  "config": {
+    "argv": [
+      "/opt/hostedtoolcache/node/22.23.3/x64/bin/node",
+      "/home/runner/work/CAIdex/CAIdex/apps/windows/node_modules/.bin/playwright",
+      "test"
+    ],
+    "configFile": "/home/runner/work/CAIdex/CAIdex/apps/windows/playwright.config.ts",
+    "rootDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/bboytang/CAIdex/commit/41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+        "commitHash": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+        "buildHref": "https://github.com/bboytang/CAIdex/actions/runs/38256864545"
+      },
+      "gitCommit": {
+        "shortHash": "41db64d",
+        "hash": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+        "subject": "test(windows): verify priority processing parameter and composer selection",
+        "body": "test(windows): verify priority processing parameter and composer selection\n",
+        "author": {
+          "name": "bboytang",
+          "email": "332090464+bboytang@users.noreply.github.com",
+          "time": 1791812184000
+        },
+        "committer": {
+          "name": "bboytang",
+          "email": "332090464+bboytang@users.noreply.github.com",
+          "time": 1791812184000
+        },
+        "branch": "main"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/bboytang/CAIdex/commit/41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+            "commitHash": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+            "buildHref": "https://github.com/bboytang/CAIdex/actions/runs/38256864545"
+          },
+          "gitCommit": {
+            "shortHash": "41db64d",
+            "hash": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+            "subject": "test(windows): verify priority processing parameter and composer selection",
+            "body": "test(windows): verify priority processing parameter and composer selection\n",
+            "author": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791812184000
+            },
+            "committer": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791812184000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/bboytang/CAIdex/commit/41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+            "commitHash": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+            "buildHref": "https://github.com/bboytang/CAIdex/actions/runs/38256864545"
+          },
+          "gitCommit": {
+            "shortHash": "41db64d",
+            "hash": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+            "subject": "test(windows): verify priority processing parameter and composer selection",
+            "body": "test(windows): verify priority processing parameter and composer selection\n",
+            "author": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791812184000
+            },
+            "committer": {
+              "name": "bboytang",
+              "email": "332090464+bboytang@users.noreply.github.com",
+              "time": 1791812184000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+        "snapshotDir": "/home/runner/work/CAIdex/CAIdex/apps/windows/tests",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 30000,
+        "use": {
+          "baseURL": "http://127.0.0.1:1420",
+          "viewport": {
+            "width": 1180,
+            "height": 800
+          }
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/frontend.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.0",
+    "workers": 2,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://127.0.0.1:1420",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "ui.spec.ts",
+      "file": "ui.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "professional shell, persisted appearance/language and modal keyboard focus",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1627,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:04.050Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-cb6ac129ff12aac0aa49",
+          "file": "ui.spec.ts",
+          "line": 119,
+          "column": 1
+        },
+        {
+          "title": "model/key form is masked, IME does not submit, ordinary Chat does",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 881,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:07.114Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-fb21024e5593967d6efb",
+          "file": "ui.spec.ts",
+          "line": 166,
+          "column": 1
+        },
+        {
+          "title": "selecting an earlier reply creates a branch and switching shows its complete history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 858,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:08.011Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-1feeaedb7eb992140983",
+          "file": "ui.spec.ts",
+          "line": 224,
+          "column": 1
+        },
+        {
+          "title": "new-chat navigation retains drafts, search and Codex boundary are explicit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 582,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:08.883Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-4d3f91ff77859c61ccfd",
+          "file": "ui.spec.ts",
+          "line": 276,
+          "column": 1
+        },
+        {
+          "title": "unavailable native bridge shows a safe recoverable startup error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 322,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:09.479Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-ad9bac6b2cb76a1bd2c3",
+          "file": "ui.spec.ts",
+          "line": 300,
+          "column": 1
+        },
+        {
+          "title": "provider key loads the catalog, composer selects models and effort without entering IDs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 814,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:09.813Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-4a17a25f587b3d7fc7f7",
+          "file": "ui.spec.ts",
+          "line": 312,
+          "column": 1
+        },
+        {
+          "title": "priority speed is selected through declared composer options",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 618,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-12T13:37:10.640Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d425444c687fa36b5882-226012130af3ed26a4cd",
+          "file": "ui.spec.ts",
+          "line": 349,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-12T13:37:02.917Z",
+    "duration": 8413.62,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

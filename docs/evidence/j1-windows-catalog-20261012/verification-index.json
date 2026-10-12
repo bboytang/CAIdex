@@ -1,0 +1,43 @@
+{
+  "source_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18",
+  "baseline_sha": "850e12c85c056a43700f17058cdeb6d8fc04f81e",
+  "windows_run_id": 38256864545,
+  "foundation_run_id": 38256864514,
+  "frontend_tests": {
+    "passed": 7,
+    "failed": 0,
+    "bridge": "mocked IPC"
+  },
+  "native_backend_tests": {
+    "passed": 14,
+    "failed": 0,
+    "platform": "actual Windows; includes SystemStore"
+  },
+  "native_webview_checks": {
+    "passed": 24,
+    "failed": 0,
+    "model_posts": 6,
+    "provider": "synthetic literal loopback HTTP; no commercial model"
+  },
+  "local_backend_tests": {
+    "passed": 12,
+    "failed": 0,
+    "platform": "Linux; no Windows SystemStore"
+  },
+  "logs": {
+    "frontend": {
+      "raw_sha256": "1934a8793bbbe2f9f0e6b7ec09a07dcd387486e61039cf6c6eade1aab25f8bce",
+      "compressed_sha256": "f53accb5903d685ffcd49e96a68418ce8444f24d45098a0e9f07451c36e1b7c5"
+    },
+    "windows": {
+      "raw_sha256": "43aa0c74a8e4d0f7812aa2930c4c0f9685945c968b5517771411f29057ba3d89",
+      "compressed_sha256": "12cd89ed0530be1d7ca9e5bfe46b7587bf1d485163b7fe95feaa82d9ed300d34"
+    }
+  },
+  "audit": "Independent audit pending; implementation self-check does not grant audit.",
+  "foundation_jobs": {
+    "passed": 4,
+    "failed": 0,
+    "checkout_sha": "41db64dc66c31d2c29fb01f797a90ceb333a8a18"
+  }
+}
