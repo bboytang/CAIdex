@@ -380,6 +380,21 @@ async fn harmless_credential_configuration_prose_is_still_valid_chat() {
 }
 #[cfg(windows)]
 #[test]
+fn inherited_webview_directory_is_refused_but_private_child_opens() {
+    let root = Root::new();
+    std::fs::create_dir(&root.0).unwrap();
+    assert_eq!(
+        Desktop::open(&root.0, Store::default()).err(),
+        Some("unsafe_storage")
+    );
+    let child = root.0.join("local-v1");
+    let app = Desktop::open(&child, Store::default()).unwrap();
+    assert!(app.bootstrap().unwrap().conversations.is_empty());
+    assert!(child.join("desktop.sqlite3").is_file());
+    assert!(!root.0.join("desktop.sqlite3").exists());
+}
+#[cfg(windows)]
+#[test]
 fn windows_native_store_roundtrip_remove_and_no_secret_in_bootstrap() {
     let root = Root::new();
     let app = Desktop::open(&root.0, caidex_credentials::SystemStore).unwrap();

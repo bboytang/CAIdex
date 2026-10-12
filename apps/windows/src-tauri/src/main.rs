@@ -133,7 +133,8 @@ mod native {
     pub fn run() {
         let result = tauri::Builder::default()
             .setup(|app| {
-                let root = app.path().app_local_data_dir()?;
+                // WebView pre-creates its own inherited directory; application data needs a separate private child.
+                let root = app.path().app_local_data_dir()?.join("local-v1");
                 let service = App::open(&root, SystemStore).map_err(std::io::Error::other)?;
                 appearance(
                     app.handle(),

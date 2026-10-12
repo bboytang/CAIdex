@@ -88,6 +88,11 @@ class Driver:
             except Exception:
                 pass
             time.sleep(0.1)
+        try:
+            diagnostic = self.execute("return {ready:document.readyState,title:document.title,text:document.body.innerText.slice(0,1200),textareas:document.querySelectorAll('textarea').length}")
+            print("Native condition diagnostic: " + json.dumps(diagnostic, ensure_ascii=True).replace(SECRET, "[REDACTED]"), flush=True)
+        except Exception:
+            print("Native condition diagnostic unavailable", flush=True)
         raise TimeoutError("native UI condition did not become true")
 
     def click(self, css):

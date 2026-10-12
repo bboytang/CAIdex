@@ -23,7 +23,7 @@
 | 外观/语言 | 系统/浅色/深色、默认简中/可选英文、设置和配置本机持久化 | 不存浏览器 localStorage 或云；IME 组合输入不提交，Enter 提交/Shift+Enter 换行 |
 | 输入与异常 | 活动生成不允许换模型/改 Key；单活动本地 turn；错误不回显原平台/服务载荷；跨会话查阅保留生成归属 | 本机数据、Key 和网络状态不冒充云同步/Host 权限；生产服务无请求或变更 |
 
-本地根为 Windows `AppLocalData/org.caidex.desktop`（实际路径由 Tauri 解析）；`desktop.sqlite3` 只保存非秘密模型配置、外观/语言和输入草稿，`chat/guest` 复用 Chat 私有目录与独占锁。凭据保存到 Windows Credential Manager 服务 `org.caidex.credentials.v1`，owner=`chat-guest`、每个模型 profile 为独立 UUID；不进入两个 SQLite 库、日志或导出。本机数据明文，由 OS 用户目录权限保护，不能防同一 OS 用户或管理员读取。
+本地根为 Windows `AppLocalData/org.caidex.desktop/local-v1`（实际路径由 Tauri 解析）；`desktop.sqlite3` 只保存非秘密模型配置、外观/语言和输入草稿，`chat/guest` 复用 Chat 私有目录与独占锁。WebView自身目录与受保护应用数据分开：Tauri默认预创建WebView目录，不能把其继承ACL当作Chat存储，也不修复/放宽已有目录ACL。凭据保存到 Windows Credential Manager 服务 `org.caidex.credentials.v1`，owner=`chat-guest`、每个模型 profile 为独立 UUID；不进入两个 SQLite 库、日志或导出。本机数据明文，由 OS 用户目录权限保护，不能防同一 OS 用户或管理员读取。
 
 共享 Chat 仅增加 `draft(operation)` 只读接口供 UI 观察，以及持久化前拒绝当前 Broker 已登记的凭据输出；不新增 HTTP/认证/邮件接口，不改云 schema/生产迁移或 Runtime。应用 IPC 13项逐命令 allow、仅开放原生菜单事件的listen/unlisten，仅本地 main 窗口；CSP 阻止任意页面网络、脚本/远程 frame，模型网络在 Rust Adapter 内完成，HTTPS/回环 HTTP、无嵌入凭据/查询参数、无隐式环境 Key。Markdown 不执行原始 HTML，不加载模型给出的远程图片；外链只显示文本与地址，不在 WebView 导航。
 
