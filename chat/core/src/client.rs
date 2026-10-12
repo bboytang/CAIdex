@@ -364,7 +364,12 @@ impl Chat {
             return Err(Error::Cancelled);
         }
         // Provider output cannot persist credentials registered by this local Broker.
-        if !state.memory.safe(text) {
+        if state
+            .memory
+            .guards
+            .iter()
+            .any(|guard| guard.contains_registered_secret(text))
+        {
             return Err(Error::Invalid);
         }
         state.cache.checkpoint(operation, text)

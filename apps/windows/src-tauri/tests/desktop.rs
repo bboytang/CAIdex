@@ -244,7 +244,8 @@ fn invalid_endpoints_and_each_existing_adapter_constructs_without_network() {
         if kind == ProviderKind::Google {
             p.model = "models/synthetic".into();
         }
-        app.save_profile(p, None, false).unwrap();
+        app.save_profile(p, None, false)
+            .unwrap_or_else(|error| panic!("{kind:?}: {error}"));
     }
     assert_eq!(app.bootstrap().unwrap().profiles.len(), 9);
     assert!(
@@ -352,6 +353,30 @@ async fn provider_key_echo_is_rejected_before_cache_checkpoint() {
     assert_eq!(reply.end, End::Invalid);
     server.await.unwrap();
     assert!(!app.export(id).unwrap().contains("synthetic-j1-secret"));
+}
+#[tokio::test]
+async fn harmless_credential_configuration_prose_is_still_valid_chat() {
+    let root = Root::new();
+    let app = Desktop::open(&root.0, Store::default()).unwrap();
+    let (endpoint, server) = fixture("API Key: configured locally", Duration::ZERO).await;
+    let p = profile(&endpoint);
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
+        .unwrap();
+    app.select_profile(p.id).unwrap();
+    let id = app.create("Configuration help".into()).unwrap();
+    let reply = app
+        .send(request(
+            Uuid::new_v4(),
+            id,
+            None,
+            "How is it configured?".into(),
+            vec![],
+        ))
+        .await
+        .unwrap();
+    assert_eq!(reply.end, End::Complete);
+    assert_eq!(reply.content.text, "API Key: configured locally");
+    server.await.unwrap();
 }
 #[cfg(windows)]
 #[test]

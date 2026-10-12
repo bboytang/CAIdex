@@ -34,6 +34,12 @@ pub struct Redactor {
     values: Mutex<Vec<Secret>>,
 }
 impl Redactor {
+    /// Exact registered values only, for ordinary Chat output rather than Memory ingestion policy.
+    pub fn contains_registered_secret(&self, text: &str) -> bool {
+        self.values.lock().map_or(true, |values| {
+            values.iter().any(|value| text.contains(value.expose()))
+        })
+    }
     pub fn register(&self, value: &Secret) -> Result<()> {
         let mut values = self.values.lock().map_err(|_| Error::BackendUnavailable)?;
         if !values.iter().any(|old| old.expose() == value.expose()) {

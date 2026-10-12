@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderKind {
     Openai,
@@ -175,7 +175,7 @@ pub fn model<S: SecretStore + 'static>(
             Arc::new(config!(caidex_provider_anthropic::AnthropicProvider::new(
                 client,
                 vec![caidex_provider_anthropic::AnthropicModel::new(
-                    metadata, 4096, 0
+                    metadata, 4096, 1
                 )],
                 64
             )))
@@ -190,7 +190,7 @@ pub fn model<S: SecretStore + 'static>(
             ));
             Arc::new(config!(caidex_provider_google::GeminiProvider::new(
                 client,
-                vec![caidex_provider_google::GeminiModel::new(metadata, 4096, 0)],
+                vec![caidex_provider_google::GeminiModel::new(metadata, 4096, 1)],
                 64
             )))
         }
