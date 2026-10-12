@@ -291,7 +291,7 @@ async fn account_http_database_security_and_public_clients() {
         "argon2id_salt_and_versioned_64mib_parameters_no_plaintext",
         stored.starts_with("$argon2id$v=19$m=65536,t=3,p=1$") && !stored.contains(PASSWORD),
     );
-    let challenge_row=admin.query_one("SELECT state::text,octet_length(challenge_hash) FROM caidex.auth_challenges WHERE challenge_hash=$1",&[&digest(&token)]).await.unwrap();
+    let challenge_row=admin.query_one("SELECT state::text,octet_length(challenge_hash) FROM caidex.auth_challenges WHERE purpose='register' AND target=$1 ORDER BY created_at DESC LIMIT 1",&[&A]).await.unwrap();
     check(
         "verification_material_digest_not_raw_password_or_token",
         challenge_row.get::<_, i32>(1) == 32
