@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | 启动/应用壳 | Tauri 2.12.3 + React 19.3.0/TypeScript；窄侧栏、顶部上下文、独立滚动对话与 Composer、设置弹窗、启动失败/界面错误恢复 | Windows 原生工程，不提供 Web 客户端；本轮 Codex 只显示未接入状态，无执行入口 |
 | 本地 Chat | 创建会话、完整分页历史/搜索、增量 SSE、停止、输入草稿、消息 DAG/选择分支、附件入口、复制、选定会话 JSON 导出 | 复用 Chat/Core；本机 guest 隔离区；不创建账户、不上传云；未知或中断 POST 不自动重发 |
-| 模型/Key | 每个配置分别指定提供商、native model ID、API 地址；添加/修改、选择、Key 保存/替换/移除 | 复用 Broker/SystemStore；无 Key 读出 IPC；界面只返回配置状态；更换带 Key 的地址需要显式确认或新 Key |
+| 模型/Key | 每个配置分别指定提供商、native model ID、API 地址；添加/修改、选择、Key 保存/替换/移除 | 复用 Broker/SystemStore；无 Key 读出 IPC；界面只返回配置状态；配置的提供商/API 地址固定；更换目标须新建配置，避免跨 SQLite/SystemStore 写入失败把 Key 绑定到旧目标；拒绝无 Key 隐式认领孤立凭据 |
 | Provider | OpenAI、Anthropic、Google、DeepSeek、Qwen、OpenRouter、Ollama、Custom Responses、Custom Chat Completions | 复用九个既有 Adapter 与 ModelRouter，不推测 Live/Full；模型 ID 手动配置，不以名称推断能力；模型列表不是商业调用验证 |
 | 外观/语言 | 系统/浅色/深色、默认简中/可选英文、设置和配置本机持久化 | 不存浏览器 localStorage 或云；IME 组合输入不提交，Enter 提交/Shift+Enter 换行 |
 | 输入与异常 | 活动生成不允许换模型/改 Key；单活动本地 turn；错误不回显原平台/服务载荷；跨会话查阅保留生成归属 | 本机数据、Key 和网络状态不冒充云同步/Host 权限；生产服务无请求或变更 |
@@ -70,3 +70,5 @@
 - 导出、复制、模型附件兼容性及 MSI 安装是否实测，按最终结果单独列出，不用仅有入口声称通过。
 
 完成开发验证后提交本文件、精确证据与下载入口，进入独立只读审计。实施会话的 diff 检查和测试均不代替独立审计。
+
+2026-10-12 用户补充浅色主题采用简约毛玻璃渐变：冰蓝/淡紫/薄荷色背景、半透明面板/输入框/菜单/设置、低强度阴影；深色布局保留。玻璃效果在 WebView 内实现，不依赖系统 Acrylic，也不新增权限。

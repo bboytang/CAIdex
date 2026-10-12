@@ -213,12 +213,7 @@ impl<S: SecretStore + 'static> Desktop<S> {
         ))?;
         Ok(())
     }
-    pub fn save_profile(
-        &self,
-        profile: Profile,
-        key: Option<String>,
-        reuse_key: bool,
-    ) -> Result<()> {
+    pub fn save_profile(&self, profile: Profile, key: Option<String>) -> Result<()> {
         let active = lock(&self.active)?;
         if active.is_some() {
             return Err("turn_active");
@@ -248,20 +243,18 @@ impl<S: SecretStore + 'static> Desktop<S> {
         )?;
         if let Some(old) = old.as_deref() {
             let old: Profile = serde_json::from_str(old).map_err(|_| "invalid_configuration")?;
-            if old.kind != profile.kind {
+            // Keep the credential destination immutable across the SQLite/SystemStore boundary.
+            if old.kind != profile.kind || old.endpoint != profile.endpoint {
                 return Err("new_profile_required");
             }
-            if old.endpoint != profile.endpoint
-                && key.is_none()
-                && !reuse_key
-                && self
-                    .broker
-                    .status(&profile.reference())
-                    .map_err(|_| "credential_unavailable")?
-                    .configured
-            {
-                return Err("key_destination_changed");
-            }
+        } else if key.is_none()
+            && self
+                .broker
+                .status(&profile.reference())
+                .map_err(|_| "credential_unavailable")?
+                .configured
+        {
+            return Err("new_profile_required");
         } else if storage(
             db.query_row("SELECT COUNT(*) FROM profiles", [], |r| r.get::<_, i64>(0)),
         )? >= 64

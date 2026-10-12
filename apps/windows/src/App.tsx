@@ -72,6 +72,17 @@ export function App() {
   const [settingsTab, setSettingsTab] = useState("general");
   const [mode, setMode] = useState<"chat" | "codex">("chat");
   const [modelMenu, setModelMenu] = useState(false);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      if (
+        !(event.target instanceof Element) ||
+        !event.target.closest(".model-menu")
+      )
+        setModelMenu(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, []);
   const [atBottom, setAtBottom] = useState(true);
   const scroll = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -333,13 +344,19 @@ export function App() {
       fail(reason);
     }
   };
+  const preferenceWrites = useRef<Promise<void>>(Promise.resolve());
   const changePreferences = async (next: Preferences) => {
+    setPreferences(next);
+    const save = preferenceWrites.current
+      .catch(() => {})
+      .then(() => api.preferences(next));
+    preferenceWrites.current = save;
     try {
-      await api.preferences(next);
-      setPreferences(next);
+      await save;
       setBoot((old) => old && { ...old, preferences: next });
     } catch (reason) {
       fail(reason);
+      if (preferenceWrites.current === save) await refresh().catch(fail);
     }
   };
   const menuActions = useRef({
@@ -833,6 +850,17 @@ function ProductSwitcher({
 }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      if (
+        !(event.target instanceof Element) ||
+        !event.target.closest(".product-selector")
+      )
+        setOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, []);
+  useEffect(() => {
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
@@ -1097,16 +1125,10 @@ function SettingsDialog({
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!editing || busy) return;
-    const original = profiles.find((row) => row.profile.id === editing.id);
-    const reuse =
-      !!original?.configured &&
-      !key &&
-      original.profile.endpoint !== editing.endpoint;
-    if (reuse && !window.confirm(t.reuseKeyConfirm)) return;
     setBusy(true);
     setDialogError("");
     try {
-      await api.saveProfile(editing, key || null, reuse);
+      await api.saveProfile(editing, key || null);
       setKey("");
       await refresh();
       setEditing(null);
@@ -1312,6 +1334,9 @@ function SettingsDialog({
                       required
                       maxLength={2048}
                       placeholder="https://…"
+                      readOnly={profiles.some(
+                        (row) => row.profile.id === editing.id,
+                      )}
                       value={editing.endpoint}
                       onChange={(event) =>
                         setEditing({ ...editing, endpoint: event.target.value })
@@ -1334,6 +1359,7 @@ function SettingsDialog({
                     <KeyRound size={14} />
                     {t.keyHelp}
                   </p>
+                  <p className="field-help">{t.endpointHelp}</p>
                   <p className="field-help">{t.basicOnly}</p>
                   <div className="form-actions">
                     <button

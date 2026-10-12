@@ -145,6 +145,7 @@ def run(args):
         driver.screenshot(output.parent / "native-zh-dark.png")
         driver.click("button[aria-label='设置']")
         driver.select("select[aria-label='主题']", "light")
+        driver.wait("return document.documentElement.dataset.theme==='light'")
         driver.select("select[aria-label='语言']", "en")
         driver.wait("return document.documentElement.lang==='en' && document.documentElement.dataset.theme==='light'")
         check("native_preferences_saved_and_rendered", True)

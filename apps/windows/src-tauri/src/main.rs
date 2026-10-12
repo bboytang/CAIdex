@@ -21,13 +21,8 @@ mod native {
         appearance(&handle, &preferences).map_err(|_| "desktop_unavailable")
     }
     #[tauri::command]
-    fn save_profile(
-        app: State<App>,
-        profile: Profile,
-        key: Option<String>,
-        reuse_key: bool,
-    ) -> Reply<()> {
-        app.save_profile(profile, key, reuse_key)
+    fn save_profile(app: State<App>, profile: Profile, key: Option<String>) -> Reply<()> {
+        app.save_profile(profile, key)
     }
     #[tauri::command]
     fn select_profile(app: State<App>, id: Uuid) -> Reply<()> {

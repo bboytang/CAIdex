@@ -54,7 +54,7 @@ const zh = {
   noKey: "无需密钥",
   removeKey: "移除密钥",
   removeKeyConfirm: "移除此模型的 API Key？已保存的聊天会保留。",
-  reuseKeyConfirm: "API 地址已改变。确认将原有密钥发送到新地址？",
+  endpointHelp: "更换提供商或 API 地址时，请添加新模型配置。",
   saved: "配置已保存",
   basicOnly: "文本聊天 · 其他能力尚未验证",
   codex: "Codex 将在后续阶段接入",
@@ -141,8 +141,7 @@ const en: typeof zh = {
   noKey: "No key required",
   removeKey: "Remove key",
   removeKeyConfirm: "Remove this model’s API key? Saved chats will remain.",
-  reuseKeyConfirm:
-    "The API endpoint has changed. Send the existing key to the new endpoint?",
+  endpointHelp: "Add a new profile to change providers or API endpoints.",
   saved: "Configuration saved",
   basicOnly: "Text chat · other capabilities unverified",
   codex: "Codex will be connected in a later milestone",
@@ -210,10 +209,6 @@ const errors: Record<string, [string, string]> = {
     "仅允许 HTTPS 或本机回环 HTTP 地址，不允许内嵌密钥。",
     "Use HTTPS or literal loopback HTTP, without embedded credentials.",
   ],
-  key_destination_changed: [
-    "地址已改变，请确认密钥目标或输入新的密钥。",
-    "Confirm the changed key destination or enter a new key.",
-  ],
   storage_unavailable: [
     "本地存储不可用，已有内容不会自动删除。",
     "Local storage is unavailable. Existing data will not be deleted.",
@@ -224,8 +219,8 @@ const errors: Record<string, [string, string]> = {
     "This message was already submitted and was not resent.",
   ],
   new_profile_required: [
-    "更换提供商时请添加新模型配置。",
-    "Add a new profile to change providers.",
+    "更换提供商或 API 地址时请添加新模型配置。",
+    "Add a new profile to change providers or API endpoints.",
   ],
 };
 export function errorText(error: unknown, language: "zh" | "en") {

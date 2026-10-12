@@ -50,8 +50,8 @@ export const api = {
   bootstrap: () => invoke<Bootstrap>("bootstrap"),
   preferences: (preferences: Preferences) =>
     invoke<void>("preferences", { preferences }),
-  saveProfile: (profile: Profile, key: string | null, reuseKey = false) =>
-    invoke<void>("save_profile", { profile, key, reuseKey }),
+  saveProfile: (profile: Profile, key: string | null) =>
+    invoke<void>("save_profile", { profile, key }),
   selectProfile: (id: string) => invoke<void>("select_profile", { id }),
   removeKey: (id: string) => invoke<void>("remove_key", { id }),
   create: (title: string) => invoke<string>("create", { title }),

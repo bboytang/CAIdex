@@ -116,7 +116,7 @@ async fn fixture(text: &str, delay: Duration) -> (String, tokio::task::JoinHandl
     (endpoint, task)
 }
 #[test]
-fn settings_key_boundary_restart_and_endpoint_consent() {
+fn settings_key_boundary_restart_and_immutable_endpoint() {
     let root = Root::new();
     let store = Store::default();
     let app = Desktop::open(&root.0, store.clone()).unwrap();
@@ -124,10 +124,10 @@ fn settings_key_boundary_restart_and_endpoint_consent() {
     let mut accidental = p.clone();
     accidental.name = "synthetic-j1-secret".into();
     assert_eq!(
-        app.save_profile(accidental, Some("synthetic-j1-secret".into()), false),
+        app.save_profile(accidental, Some("synthetic-j1-secret".into())),
         Err("invalid_or_sensitive_input")
     );
-    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
         .unwrap();
     app.select_profile(p.id).unwrap();
     let id = app.create("Saved Chat".into()).unwrap();
@@ -151,10 +151,21 @@ fn settings_key_boundary_restart_and_endpoint_consent() {
     assert!(!bytes.windows(19).any(|w| w == b"synthetic-j1-secret"));
     p.endpoint = "https://new.example.test/responses".into();
     assert_eq!(
-        app.save_profile(p.clone(), None, false),
-        Err("key_destination_changed")
+        app.save_profile(p.clone(), None),
+        Err("new_profile_required")
     );
-    app.save_profile(p.clone(), None, true).unwrap();
+    assert_eq!(
+        app.save_profile(p.clone(), Some("synthetic-new-key".into())),
+        Err("new_profile_required")
+    );
+    let orphan = profile("https://orphan.example.test/responses");
+    store
+        .set(
+            &orphan.reference(),
+            &Secret::new("synthetic-orphan-key").unwrap(),
+        )
+        .unwrap();
+    assert_eq!(app.save_profile(orphan, None), Err("new_profile_required"));
     drop(app);
     let app = Desktop::open(&root.0, store).unwrap();
     let boot = app.bootstrap().unwrap();
@@ -220,7 +231,7 @@ fn invalid_endpoints_and_each_existing_adapter_constructs_without_network() {
         "https://example.test/responses?key=secret",
         "file:///tmp/key",
     ] {
-        assert!(app.save_profile(profile(endpoint), None, false).is_err());
+        assert!(app.save_profile(profile(endpoint), None).is_err());
     }
     for kind in [
         ProviderKind::Openai,
@@ -244,7 +255,7 @@ fn invalid_endpoints_and_each_existing_adapter_constructs_without_network() {
         if kind == ProviderKind::Google {
             p.model = "models/synthetic".into();
         }
-        app.save_profile(p, None, false)
+        app.save_profile(p, None)
             .unwrap_or_else(|error| panic!("{kind:?}: {error}"));
     }
     assert_eq!(app.bootstrap().unwrap().profiles.len(), 9);
@@ -263,7 +274,7 @@ async fn actual_stream_progress_completion_restart_and_branch_history() {
     let app = Arc::new(Desktop::open(&root.0, store.clone()).unwrap());
     let (endpoint, server) = fixture("Synthetic reply", Duration::from_millis(350)).await;
     let p = profile(&endpoint);
-    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
         .unwrap();
     app.select_profile(p.id).unwrap();
     let id = app.create("Stream".into()).unwrap();
@@ -311,7 +322,7 @@ async fn cancellation_finalizes_partial_output_without_replay() {
     let app = Arc::new(Desktop::open(&root.0, Store::default()).unwrap());
     let (endpoint, server) = fixture("Partial reply", Duration::from_secs(2)).await;
     let p = profile(&endpoint);
-    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
         .unwrap();
     app.select_profile(p.id).unwrap();
     let id = app.create("Cancel".into()).unwrap();
@@ -342,7 +353,7 @@ async fn provider_key_echo_is_rejected_before_cache_checkpoint() {
     let app = Desktop::open(&root.0, Store::default()).unwrap();
     let (endpoint, server) = fixture("synthetic-j1-secret", Duration::ZERO).await;
     let p = profile(&endpoint);
-    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
         .unwrap();
     app.select_profile(p.id).unwrap();
     let id = app.create("Guard".into()).unwrap();
@@ -360,7 +371,7 @@ async fn harmless_credential_configuration_prose_is_still_valid_chat() {
     let app = Desktop::open(&root.0, Store::default()).unwrap();
     let (endpoint, server) = fixture("API Key: configured locally", Duration::ZERO).await;
     let p = profile(&endpoint);
-    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
         .unwrap();
     app.select_profile(p.id).unwrap();
     let id = app.create("Configuration help".into()).unwrap();
@@ -399,7 +410,7 @@ fn windows_native_store_roundtrip_remove_and_no_secret_in_bootstrap() {
     let root = Root::new();
     let app = Desktop::open(&root.0, caidex_credentials::SystemStore).unwrap();
     let p = profile("https://example.test/v1/responses");
-    app.save_profile(p.clone(), Some("synthetic-native-j1-key".into()), false)
+    app.save_profile(p.clone(), Some("synthetic-native-j1-key".into()))
         .unwrap();
     assert!(app.bootstrap().unwrap().profiles[0].configured);
     assert!(

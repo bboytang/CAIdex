@@ -23,22 +23,29 @@
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #faf9f6;
-  --sidebar: #eeede9;
-  --panel: #fff;
-  --composer: #fff;
-  --bubble: #f4f4f4;
-  --field: #fff;
-  --text: #292824;
-  --muted: #737373;
-  --hover: #ececec;
-  --selected: #e8e8e8;
-  --border: #dedede;
-  --subtle: #eee;
-  --disabled: #dfdfdf;
-  --scroll: #ccc;
-  --focus: #555;
-  --shadow: 0 12px 40px #0002;
+  --shell-background:
+    radial-gradient(ellipse at 4% 4%, #d8edf5 0, transparent 52%),
+    radial-gradient(ellipse at 98% 12%, #e7def7 0, transparent 52%),
+    radial-gradient(ellipse at 45% 100%, #d9eee7 0, transparent 60%),
+    linear-gradient(135deg, #edf4f8, #f3f0f8 55%, #edf6f1);
+  --glass-filter: blur(22px) saturate(135%);
+  --modal-backdrop: #29405726;
+  --bg: #ffffff80;
+  --sidebar: #ffffff26;
+  --panel: #ffffffb8;
+  --composer: #ffffffbd;
+  --bubble: #ffffff80;
+  --field: #ffffffa6;
+  --text: #273449;
+  --muted: #5f6f82;
+  --hover: #ffffff70;
+  --selected: #ffffff9c;
+  --border: #ffffffa8;
+  --subtle: #ffffffdb;
+  --disabled: #cbd6df;
+  --scroll: #b3c2d0;
+  --focus: #617b9b;
+  --shadow: 0 18px 60px #3a52651a;
   --error: #a73131;
   --error-bg: #fff1f1;
   --error-border: #f1c9c9;
@@ -47,22 +54,29 @@
 @media (prefers-color-scheme: light) {
   :root[data-theme="system"] {
     color-scheme: light;
-    --bg: #faf9f6;
-    --sidebar: #eeede9;
-    --panel: #fff;
-    --composer: #fff;
-    --bubble: #f4f4f4;
-    --field: #fff;
-    --text: #292824;
-    --muted: #737373;
-    --hover: #ececec;
-    --selected: #e8e8e8;
-    --border: #dedede;
-    --subtle: #eee;
-    --disabled: #dfdfdf;
-    --scroll: #ccc;
-    --focus: #555;
-    --shadow: 0 12px 40px #0002;
+    --shell-background:
+      radial-gradient(ellipse at 4% 4%, #d8edf5 0, transparent 52%),
+      radial-gradient(ellipse at 98% 12%, #e7def7 0, transparent 52%),
+      radial-gradient(ellipse at 45% 100%, #d9eee7 0, transparent 60%),
+      linear-gradient(135deg, #edf4f8, #f3f0f8 55%, #edf6f1);
+    --glass-filter: blur(22px) saturate(135%);
+    --modal-backdrop: #29405726;
+    --bg: #ffffff80;
+    --sidebar: #ffffff26;
+    --panel: #ffffffb8;
+    --composer: #ffffffbd;
+    --bubble: #ffffff80;
+    --field: #ffffffa6;
+    --text: #273449;
+    --muted: #5f6f82;
+    --hover: #ffffff70;
+    --selected: #ffffff9c;
+    --border: #ffffffa8;
+    --subtle: #ffffffdb;
+    --disabled: #cbd6df;
+    --scroll: #b3c2d0;
+    --focus: #617b9b;
+    --shadow: 0 18px 60px #3a52651a;
     --error: #a73131;
     --error-bg: #fff1f1;
     --error-border: #f1c9c9;

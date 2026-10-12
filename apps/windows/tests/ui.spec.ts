@@ -106,6 +106,11 @@ test("professional shell, persisted appearance/language and modal keyboard focus
   await expect(
     page.getByRole("heading", { name: "Ready when you are." }),
   ).toBeVisible();
+  expect(
+    await page
+      .locator(".main")
+      .evaluate((node) => getComputedStyle(node).backdropFilter),
+  ).toContain("blur");
   await page.screenshot({ path: "test-results/en-light-welcome.png" });
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
