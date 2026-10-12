@@ -133,6 +133,10 @@ def run(args):
         driver = Driver(binary)
         driver.wait("return document.querySelector('textarea') && document.body.textContent.includes('有什么可以帮忙的')")
         check("real_release_webview_started", True)
+        driver.click("button[aria-label='设置']")
+        driver.select("select[aria-label='主题']", "dark")
+        driver.wait("return document.documentElement.dataset.theme==='dark'")
+        driver.click("button[aria-label='关闭']")
         driver.screenshot(output.parent / "native-zh-dark.png")
         driver.click("button[aria-label='设置']")
         driver.select("select[aria-label='主题']", "light")
@@ -213,6 +217,11 @@ def run(args):
             check("nsis_uninstaller_exists", len(uninstaller) == 1)
             code = subprocess.run([str(uninstaller[0]), "/S"], timeout=120).returncode
             check("nsis_uninstaller_completed", code == 0)
+            for _ in range(100):
+                if not installed[0].exists():
+                    break
+                time.sleep(0.1)
+            check("nsis_uninstaller_removed_installed_executable", not installed[0].exists())
             installer_result = {"nsis_install_exit": 0, "nsis_uninstall_exit": 0, "msi": "built; interactive installation not exercised"}
         # No secret-bearing diagnostics, production endpoints, or real model requests.
         check("synthetic_requests_only", len(Model.requests) == 3)

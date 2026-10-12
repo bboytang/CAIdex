@@ -48,25 +48,32 @@ test.beforeEach(async ({ page }, info) => {
                 draft: null,
               };
             if (cmd === "send") {
-              messages[args.conversation] = [
-                {
-                  id: "user-1",
-                  parent: null,
-                  sequence: 1,
-                  role: "user",
-                  content: { text: args.text, attachments: [] },
-                  end: "complete",
+              const existing = messages[args.conversation] ?? [];
+              const index = existing.length / 2 + 1;
+              const user = {
+                id: `${args.operation}-user`,
+                parent: args.parent,
+                sequence: existing.length + 1,
+                role: "user",
+                content: { text: args.text, attachments: [] },
+                end: "complete",
+              };
+              const reply = {
+                id: `${args.operation}-reply`,
+                parent: user.id,
+                sequence: existing.length + 2,
+                role: "assistant",
+                content: {
+                  text:
+                    index === 1
+                      ? "Synthetic UI response"
+                      : `Synthetic UI response ${index}`,
+                  attachments: [],
                 },
-                {
-                  id: "reply-1",
-                  parent: "user-1",
-                  sequence: 2,
-                  role: "assistant",
-                  content: { text: "Synthetic UI response", attachments: [] },
-                  end: "complete",
-                },
-              ];
-              return messages[args.conversation][1];
+                end: "complete",
+              };
+              messages[args.conversation] = [...existing, user, reply];
+              return reply;
             }
             return null;
           },
@@ -144,6 +151,55 @@ test("model/key form is masked, IME does not submit, ordinary Chat does", async 
           .length,
     ),
   ).toBe(1);
+});
+test("selecting an earlier reply creates a branch and switching shows its complete history", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "配置模型", exact: true }).click();
+  await page.getByRole("button", { name: "添加模型" }).click();
+  await page.getByLabel("模型 ID").fill("synthetic");
+  await page.getByLabel("API Key", { exact: true }).fill("synthetic-ui-secret");
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page.getByText("密钥已配置", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.locator(".model-button").click();
+  await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
+  const input = page.getByRole("textbox", { name: "向 CAIdex 发送消息" });
+  await input.fill("first");
+  await input.press("Enter");
+  await expect(
+    page.getByText("Synthetic UI response", { exact: true }),
+  ).toBeVisible();
+  await input.fill("second");
+  await input.press("Enter");
+  await expect(
+    page.getByText("Synthetic UI response 2", { exact: true }),
+  ).toBeVisible();
+  await page.locator(".assistant .branch-button").first().click();
+  await input.fill("third");
+  await input.press("Enter");
+  await expect(
+    page.getByText("Synthetic UI response 3", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Synthetic UI response 2", { exact: true }),
+  ).toHaveCount(0);
+  await page.locator(".user .branch-button").click();
+  await expect(
+    page.getByText("Synthetic UI response 2", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Synthetic UI response 3", { exact: true }),
+  ).toHaveCount(0);
+  const calls = await page.evaluate(() =>
+    (window as any).__TEST_CALLS__
+      .filter((c: any) => c.cmd === "send")
+      .map((c: any) => ({
+        operation: c.args.operation,
+        parent: c.args.parent,
+      })),
+  );
+  expect(calls[2].parent).toBe(`${calls[0].operation}-reply`);
 });
 test("new-chat navigation retains drafts, search and Codex boundary are explicit", async ({
   page,

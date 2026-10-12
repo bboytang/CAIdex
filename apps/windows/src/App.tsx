@@ -599,7 +599,23 @@ export function App() {
                           other.role === message.role &&
                           other.parent === message.parent,
                       )}
-                      choose={setHead}
+                      choose={(id, continueHere) => {
+                        let target = id;
+                        if (!continueHere) {
+                          for (
+                            let depth = 0;
+                            depth < messages.length;
+                            depth++
+                          ) {
+                            const next = messages
+                              .filter((row) => row.parent === target)
+                              .at(-1);
+                            if (!next) break;
+                            target = next.id;
+                          }
+                        }
+                        setHead(target);
+                      }}
                       fail={fail}
                     />
                   ))}
@@ -793,7 +809,7 @@ function MessageView({
   message: Message;
   t: Text;
   siblings: Message[];
-  choose: (id: string) => void;
+  choose: (id: string, continueHere?: boolean) => void;
   fail: (reason: unknown) => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -834,7 +850,7 @@ function MessageView({
           <button
             className="branch-button"
             title={t.branchHint}
-            onClick={() => choose(message.id)}
+            onClick={() => choose(message.id, true)}
           >
             {t.branch}
           </button>
