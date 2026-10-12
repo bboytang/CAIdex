@@ -903,9 +903,18 @@ button:hover kbd {
 }
 
 .messages-scroll:has(.welcome) {
-  flex: 0;
+  flex: 0 0 auto;
+  display: flow-root;
   overflow: visible;
 }
 .messages-scroll .welcome {
   margin-top: clamp(65px, 24vh, 190px);
+}
+@media (max-height: 700px) {
+  .messages-scroll .welcome {
+    margin-top: 35px;
+  }
+  .empty-composer {
+    margin-bottom: 25px;
+  }
 }

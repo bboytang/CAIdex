@@ -83,6 +83,9 @@ test("professional shell, persisted appearance/language and modal keyboard focus
   await expect(
     page.getByRole("heading", { name: "有什么可以帮忙的？" }),
   ).toBeVisible();
+  const greeting = await page.locator(".welcome h1").boundingBox();
+  const composer = await page.locator(".composer").boundingBox();
+  expect(composer!.y).toBeGreaterThan(greeting!.y + greeting!.height);
   await page.screenshot({ path: "test-results/zh-dark-welcome.png" });
   await page.getByRole("button", { name: "设置", exact: true }).click();
   const dialog = page.getByRole("dialog");

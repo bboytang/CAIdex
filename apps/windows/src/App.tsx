@@ -224,6 +224,7 @@ export function App() {
     const text = inputRef.current;
     const files = [...attachments];
     const parent = head;
+    const after = currentRef.current ? (messages.at(-1)?.sequence ?? 0) : 0;
     const op = crypto.randomUUID();
     setOperation(op);
     setError("");
@@ -249,7 +250,7 @@ export function App() {
         accepted = true;
       } catch (reason) {
         // A lost reply can follow a committed turn: inspect history, never retry the POST.
-        const snapshot = await api.snapshot(id);
+        const snapshot = await api.snapshot(id, after);
         accepted = snapshot.messages.some(
           (message) =>
             message.role === "user" &&
