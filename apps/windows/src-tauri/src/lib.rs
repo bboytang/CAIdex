@@ -159,12 +159,8 @@ impl<S: SecretStore + 'static> Desktop<S> {
             .map_err(chat_error)
     }
     pub fn bootstrap(&self) -> Result<Bootstrap> {
+        let preferences = self.preference_values()?;
         let db = lock(&self.db)?;
-        let preferences: String = storage(db.query_row(
-            "SELECT preferences FROM settings WHERE id=1",
-            [],
-            |r| r.get(0),
-        ))?;
         let mut query = storage(db.prepare("SELECT body FROM profiles ORDER BY id LIMIT 65"))?;
         let rows = storage(query.query_map([], |r| r.get::<_, String>(0)))?;
         let mut profiles = Vec::new();
@@ -188,7 +184,7 @@ impl<S: SecretStore + 'static> Desktop<S> {
             return Err("profile_limit");
         }
         Ok(Bootstrap {
-            preferences: serde_json::from_str(&preferences).map_err(|_| "invalid_configuration")?,
+            preferences,
             profiles,
             selected: self.selected()?,
             conversations: self.conversations(None)?,
@@ -196,6 +192,14 @@ impl<S: SecretStore + 'static> Desktop<S> {
     }
     pub fn conversations(&self, after: Option<Uuid>) -> Result<Vec<Conversation>> {
         self.chat.conversations(after, 128).map_err(chat_error)
+    }
+    pub fn preference_values(&self) -> Result<Preferences> {
+        let body: String = storage(lock(&self.db)?.query_row(
+            "SELECT preferences FROM settings WHERE id=1",
+            [],
+            |row| row.get(0),
+        ))?;
+        serde_json::from_str(&body).map_err(|_| "invalid_configuration")
     }
     pub fn preferences(&self, preferences: Preferences) -> Result<()> {
         if !matches!(preferences.language.as_str(), "zh" | "en")

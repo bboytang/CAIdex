@@ -131,7 +131,7 @@ def run(args):
             except Exception:
                 time.sleep(0.2)
         driver = Driver(binary)
-        driver.wait("return document.querySelector('textarea') && document.body.textContent.includes('有什么可以帮忙的')")
+        driver.wait("return document.querySelector('textarea') && document.body.textContent.includes('随时可以开始')")
         check("real_release_webview_started", True)
         driver.click("button[aria-label='设置']")
         driver.select("select[aria-label='主题']", "dark")

@@ -88,7 +88,7 @@ test("professional shell, persisted appearance/language and modal keyboard focus
   page,
 }) => {
   await expect(
-    page.getByRole("heading", { name: "有什么可以帮忙的？" }),
+    page.getByRole("heading", { name: "随时可以开始。" }),
   ).toBeVisible();
   const greeting = await page.locator(".welcome h1").boundingBox();
   const composer = await page.locator(".composer").boundingBox();
@@ -104,12 +104,27 @@ test("professional shell, persisted appearance/language and modal keyboard focus
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "What can I help with?" }),
+    page.getByRole("heading", { name: "Ready when you are." }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close sidebar" }).click();
+  await page.screenshot({ path: "test-results/en-light-welcome.png" });
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Language", { exact: true })
+    .selectOption("zh");
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.setViewportSize({ width: 1148, height: 860 });
+  await page.screenshot({ path: "test-results/reference-4-zh-light.png" });
   await expect(
-    page.getByRole("button", { name: "Open sidebar" }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "工作", exact: true }),
+  ).toBeDisabled();
+  await page.setViewportSize({ width: 760, height: 560 });
+  const compact = await page.locator(".composer").boundingBox();
+  expect(compact!.y + compact!.height).toBeLessThanOrEqual(560);
+  await page.screenshot({ path: "test-results/minimum-window-zh-light.png" });
+  await page.getByRole("button", { name: "收起侧栏" }).click();
+
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
 });
 test("model/key form is masked, IME does not submit, ordinary Chat does", async ({
   page,
@@ -127,6 +142,16 @@ test("model/key form is masked, IME does not submit, ordinary Chat does", async 
   await page.locator(".model-button").click();
   await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
   const input = page.getByRole("textbox", { name: "向 CAIdex 发送消息" });
+  await input.fill("picker draft");
+  await page.locator(".model-button").click();
+  await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as any).__TEST_CALLS__.filter((c: any) => c.cmd === "send")
+          .length,
+    ),
+  ).toBe(0);
   await input.fill("你好");
   await input.dispatchEvent("compositionstart");
   await input.press("Enter");
@@ -218,7 +243,8 @@ test("new-chat navigation retains drafts, search and Codex boundary are explicit
   await page.getByRole("button", { name: "搜索聊天", exact: true }).click();
   await page.getByRole("textbox", { name: "搜索聊天" }).fill("missing");
   await expect(page.getByText("没有匹配的聊天")).toBeVisible();
-  await page.getByRole("button", { name: "Codex", exact: true }).click();
+  await page.getByRole("button", { name: "切换模式" }).click();
+  await page.getByRole("menuitem", { name: "Codex", exact: true }).click();
   await expect(page.getByText("Codex 将在后续阶段接入")).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "向 CAIdex 发送消息" }),

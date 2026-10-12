@@ -6,6 +6,7 @@ import {
   type RefObject,
 } from "react";
 import Markdown from "react-markdown";
+import { listen } from "@tauri-apps/api/event";
 import {
   ArrowDown,
   ArrowUp,
@@ -16,7 +17,6 @@ import {
   FileText,
   Globe,
   KeyRound,
-  MessageSquare,
   Monitor,
   Moon,
   PanelLeft,
@@ -342,6 +342,36 @@ export function App() {
       fail(reason);
     }
   };
+  const menuActions = useRef({
+    newChat: () => {},
+    sidebar: () => {},
+    settings: () => {},
+    about: () => {},
+  });
+  menuActions.current = {
+    newChat: () => {
+      setMode("chat");
+      void create().catch(fail);
+    },
+    sidebar: () => setSidebar((old) => !old),
+    settings: () => setSettings(true),
+    about: () => {
+      setSettingsTab("about");
+      setSettings(true);
+    },
+  };
+  useEffect(() => {
+    const pending = listen<string>("desktop-action", (event) => {
+      if (event.payload === "new-chat") menuActions.current.newChat();
+      else if (event.payload === "sidebar") menuActions.current.sidebar();
+      else if (event.payload === "settings") menuActions.current.settings();
+      else if (event.payload === "about") menuActions.current.about();
+    });
+    void pending.catch(() => {});
+    return () => {
+      void pending.then((unlisten) => unlisten()).catch(() => {});
+    };
+  }, []);
   const selected = boot?.profiles.find(
     (row) => row.profile.id === boot.selected,
   );
@@ -373,17 +403,24 @@ export function App() {
       </main>
     );
   return (
-    <div className={`app ${sidebar ? "" : "sidebar-closed"}`}>
+    <div className={`app mode-${mode} ${sidebar ? "" : "sidebar-closed"}`}>
       {sidebar && (
         <aside className="sidebar" aria-label={t.chats}>
           <div className="sidebar-top">
-            <img className="brand" src="/caidex-symbol.png" alt="CAIdex" />
+            <ProductSwitcher mode={mode} choose={setMode} t={t} />
+            <button
+              className="icon"
+              aria-label={t.search}
+              onClick={() => setSearching((old) => !old)}
+            >
+              <Search size={17} />
+            </button>
             <button
               className="icon"
               aria-label={t.collapse}
               onClick={() => setSidebar(false)}
             >
-              <PanelLeft size={20} />
+              <PanelLeft size={17} />
             </button>
           </div>
           <button
@@ -393,13 +430,6 @@ export function App() {
             <Plus size={19} />
             {t.newChat}
             <kbd>Ctrl N</kbd>
-          </button>
-          <button
-            className="nav-item"
-            onClick={() => setSearching((old) => !old)}
-          >
-            <Search size={19} />
-            {t.search}
           </button>
           {searching && (
             <input
@@ -411,22 +441,6 @@ export function App() {
               onChange={(event) => setQuery(event.target.value)}
             />
           )}
-          <div className="mode-nav">
-            <button
-              className={mode === "chat" ? "active" : ""}
-              onClick={() => setMode("chat")}
-            >
-              <MessageSquare size={17} />
-              Chat
-            </button>
-            <button
-              className={mode === "codex" ? "active" : ""}
-              aria-label="Codex"
-              onClick={() => setMode("codex")}
-            >
-              <span className="code-icon">&lt;/&gt;</span>Codex
-            </button>
-          </div>
           <div className="history">
             <h2>{t.chats}</h2>
             {conversations.length ? (
@@ -461,7 +475,9 @@ export function App() {
           </button>
         </aside>
       )}
-      <main className="main">
+      <main
+        className={`main ${!messages.length && !operation && mode === "chat" ? "start-view" : ""}`}
+      >
         <header className="topbar">
           <div className="header-left">
             {!sidebar && (
@@ -473,55 +489,17 @@ export function App() {
                 <PanelLeft size={20} />
               </button>
             )}
-            <div className="model-menu">
-              <button
-                className="model-button"
-                aria-label={t.model}
-                onClick={() => setModelMenu((old) => !old)}
-              >
-                CAIdex <span>{selected?.profile.name ?? "Chat"}</span>
-                <ChevronDown size={17} />
-              </button>
-              {modelMenu && (
-                <>
-                  <button
-                    className="menu-dismiss"
-                    aria-label={t.close}
-                    onClick={() => setModelMenu(false)}
-                  />
-                  <div className="dropdown" role="menu">
-                    {boot.profiles.map((row) => (
-                      <button
-                        key={row.profile.id}
-                        role="menuitem"
-                        disabled={!!operation}
-                        onClick={() => void chooseModel(row.profile.id)}
-                      >
-                        <span>
-                          {row.profile.name}
-                          <small>{row.profile.model}</small>
-                        </span>
-                        {boot.selected === row.profile.id && (
-                          <Check size={16} />
-                        )}
-                      </button>
-                    ))}
-                    <button
-                      role="menuitem"
-                      onClick={() => {
-                        setModelMenu(false);
-                        setSettingsTab("models");
-                        setSettings(true);
-                      }}
-                    >
-                      <Plus size={16} />
-                      {t.configure}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
+          {mode === "chat" && (
+            <div className="workspace-tabs" aria-label={t.workspace}>
+              <button className="current" type="button">
+                {t.chatTab}
+              </button>
+              <button type="button" disabled title={t.workUnavailable}>
+                {t.workTab}
+              </button>
+            </div>
+          )}
           <div className="header-right">
             <span className="local-badge">
               <span />
@@ -568,24 +546,6 @@ export function App() {
               {!messages.length && !operation ? (
                 <div className="welcome">
                   <h1>{t.greeting}</h1>
-                  {!selected && (
-                    <div className="setup-card">
-                      <KeyRound size={20} />
-                      <div>
-                        <strong>{t.noModel}</strong>
-                        <p>{t.modelHint}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setSettingsTab("models");
-                          setSettings(true);
-                        }}
-                      >
-                        <Plus size={17} />
-                        {t.configure}
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="message-list">
@@ -666,7 +626,10 @@ export function App() {
                   </button>
                 </div>
               )}
-              <form className="composer" onSubmit={(event) => void send(event)}>
+              <form
+                className={`composer ${!input && !attachments.length ? "compact" : ""}`}
+                onSubmit={(event) => void send(event)}
+              >
                 {!!attachments.length && (
                   <div className="attachments">
                     {attachments.map((file) => (
@@ -733,18 +696,60 @@ export function App() {
                       }}
                     />
                   </label>
-                  <button
-                    className="composer-model"
-                    type="button"
-                    onClick={() => {
-                      setSettingsTab("models");
-                      setSettings(true);
-                    }}
-                  >
-                    {selected?.profile.name ?? t.model}
-                    <ChevronDown size={13} />
-                  </button>
                   <span className="spacer" />
+                  <div className="model-menu">
+                    <button
+                      type="button"
+                      className="model-button"
+                      aria-label={t.model}
+                      onClick={() => setModelMenu((old) => !old)}
+                    >
+                      <span>{selected?.profile.name ?? t.model}</span>
+                      <ChevronDown size={17} />
+                    </button>
+                    {modelMenu && (
+                      <>
+                        <button
+                          className="menu-dismiss"
+                          type="button"
+                          aria-label={t.close}
+                          onClick={() => setModelMenu(false)}
+                        />
+                        <div className="dropdown" role="menu">
+                          {boot.profiles.map((row) => (
+                            <button
+                              key={row.profile.id}
+                              role="menuitem"
+                              type="button"
+                              disabled={!!operation}
+                              onClick={() => void chooseModel(row.profile.id)}
+                            >
+                              <span>
+                                {row.profile.name}
+                                <small>{row.profile.model}</small>
+                              </span>
+                              {boot.selected === row.profile.id && (
+                                <Check size={16} />
+                              )}
+                            </button>
+                          ))}
+                          <button
+                            role="menuitem"
+                            type="button"
+                            onClick={() => {
+                              setModelMenu(false);
+                              setSettingsTab("models");
+                              setSettings(true);
+                            }}
+                          >
+                            <Plus size={16} />
+                            {t.configure}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   {operation ? (
                     <button
                       type="button"
@@ -768,6 +773,24 @@ export function App() {
                   )}
                 </div>
               </form>
+              {!selected && (
+                <div className="setup-card">
+                  <KeyRound size={20} />
+                  <div>
+                    <strong>{t.noModel}</strong>
+                    <p>{t.modelHint}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSettingsTab("models");
+                      setSettings(true);
+                    }}
+                  >
+                    <Plus size={17} />
+                    {t.configure}
+                  </button>
+                </div>
+              )}
               <p className="disclaimer">{t.disclaimer}</p>
             </div>
           </>
@@ -795,6 +818,78 @@ export function App() {
         }}
         textarea={textarea}
       />
+    </div>
+  );
+}
+
+function ProductSwitcher({
+  mode,
+  choose,
+  t,
+}: {
+  mode: "chat" | "codex";
+  choose: (mode: "chat" | "codex") => void;
+  t: Text;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, []);
+  return (
+    <div className="product-selector">
+      <button
+        className="product-button"
+        type="button"
+        aria-label={t.switchMode}
+        aria-expanded={open}
+        onClick={() => setOpen((old) => !old)}
+      >
+        {mode === "chat" ? "CAIdex" : "Codex"}
+        <ChevronDown size={15} />
+      </button>
+      {open && (
+        <>
+          <button
+            className="menu-dismiss"
+            type="button"
+            aria-label={t.close}
+            onClick={() => setOpen(false)}
+          />
+          <div className="dropdown product-dropdown" role="menu">
+            <button
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                choose("chat");
+                setOpen(false);
+              }}
+            >
+              <span>
+                CAIdex Chat<small>{t.chatDescription}</small>
+              </span>
+              {mode === "chat" && <Check size={15} />}
+            </button>
+            <button
+              role="menuitem"
+              type="button"
+              aria-label="Codex"
+              onClick={() => {
+                choose("codex");
+                setOpen(false);
+              }}
+            >
+              <span>
+                Codex<small>{t.codex}</small>
+              </span>
+              {mode === "codex" && <Check size={15} />}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,12 +1,19 @@
 const zh = {
+  switchMode: "切换模式",
+  workspace: "工作区",
+  chatTab: "聊天",
+  workTab: "工作",
+  workUnavailable: "工作暂不可用",
+  chatDescription: "聊天、学习与探索",
+
   newChat: "新建聊天",
   search: "搜索聊天",
-  chats: "你的聊天",
+  chats: "最近",
   local: "此设备",
   settings: "设置",
   collapse: "收起侧栏",
   expand: "展开侧栏",
-  greeting: "有什么可以帮忙的？",
+  greeting: "随时可以开始。",
   placeholder: "向 CAIdex 发送消息",
   disclaimer: "CAIdex 的回答可能有误。请核查重要信息。",
   model: "选择模型",
@@ -78,14 +85,21 @@ const zh = {
   keyDestination: "此设备 · 本地 Chat",
 };
 const en: typeof zh = {
+  switchMode: "Switch mode",
+  workspace: "Workspace",
+  chatTab: "Chat",
+  workTab: "Work",
+  workUnavailable: "Work is currently unavailable",
+  chatDescription: "Chat, learn and explore",
+
   newChat: "New chat",
   search: "Search chats",
-  chats: "Your chats",
+  chats: "Recents",
   local: "This device",
   settings: "Settings",
   collapse: "Close sidebar",
   expand: "Open sidebar",
-  greeting: "What can I help with?",
+  greeting: "Ready when you are.",
   placeholder: "Message CAIdex",
   disclaimer: "CAIdex can make mistakes. Check important information.",
   model: "Choose a model",
@@ -163,6 +177,11 @@ const en: typeof zh = {
 export const translations = { zh, en };
 export type Text = typeof zh;
 const errors: Record<string, [string, string]> = {
+  desktop_unavailable: [
+    "桌面外观更新未完成，请重新打开应用。",
+    "The desktop appearance update failed. Reopen the app.",
+  ],
+
   invalid_or_sensitive_input: [
     "输入过长、无效或含有敏感凭据，请检查。",
     "Input is too large, invalid or contains credentials.",

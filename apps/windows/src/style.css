@@ -918,3 +918,263 @@ button:hover kbd {
     margin-bottom: 25px;
   }
 }
+
+/* Desktop layout follows the user-provided ChatGPT/Codex screenshots. */
+.app {
+  background: var(--sidebar);
+}
+.sidebar {
+  width: 270px;
+  padding: 7px 8px 0;
+  border-right: 0;
+}
+.sidebar-top {
+  height: 42px;
+  padding: 0 5px;
+  margin-bottom: 3px;
+  gap: 1px;
+}
+.sidebar-top .icon {
+  width: 29px;
+  height: 29px;
+  color: var(--muted);
+}
+.product-selector {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.product-button {
+  border: 0;
+  padding: 5px 4px;
+  font-size: 17px;
+  font-weight: 600;
+  gap: 5px;
+}
+.product-dropdown {
+  top: 36px;
+  left: 0;
+  min-width: 235px;
+}
+.product-dropdown small {
+  font-size: 11px;
+}
+.nav-item {
+  padding: 8px 11px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: var(--selected);
+}
+.history {
+  padding-top: 25px;
+}
+.history h2 {
+  font-size: 12px;
+  padding: 4px 10px 11px;
+}
+.account-menu {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  margin-top: 0;
+  padding: 10px 7px;
+}
+.account-menu .avatar {
+  width: 26px;
+  height: 26px;
+}
+.account-menu small {
+  font-size: 10px;
+}
+.main {
+  background: var(--bg);
+  margin-top: 4px;
+  border-top-left-radius: 17px;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-right: 0;
+  overflow: hidden;
+  box-shadow: -1px -1px 7px #00000005;
+}
+.topbar {
+  height: 54px;
+  padding: 10px 15px;
+  position: relative;
+}
+.header-left {
+  min-width: 32px;
+}
+.workspace-tabs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 8px;
+  border-radius: 24px;
+  padding: 3px;
+  background: var(--hover);
+  display: flex;
+  min-width: 190px;
+  height: 35px;
+}
+.workspace-tabs button {
+  border: 0;
+  flex: 1;
+  padding: 3px 24px;
+  font-size: 12px;
+  border-radius: 22px;
+}
+.workspace-tabs button.current {
+  background: var(--panel);
+  box-shadow: 0 1px 5px #0000000c;
+}
+.workspace-tabs button:disabled {
+  opacity: 0.55;
+}
+.local-badge {
+  font-size: 11px;
+}
+.main.start-view {
+  display: grid;
+  grid-template-rows: 54px minmax(20px, 1fr) auto auto minmax(35px, 1.3fr);
+}
+.start-view .topbar {
+  grid-row: 1;
+}
+.start-view .messages-scroll {
+  grid-row: 3;
+  overflow: visible;
+  display: flow-root;
+}
+.start-view .welcome {
+  width: calc(100% - 60px);
+  margin: 0 auto;
+}
+.welcome h1 {
+  font-size: 28px;
+  letter-spacing: -0.4px;
+  font-weight: 500;
+  margin-bottom: 23px;
+}
+.start-view .composer-area {
+  grid-row: 4;
+  width: calc(100% - 80px);
+  max-width: 640px;
+  padding-top: 0;
+  margin: 0 auto;
+}
+.composer {
+  position: relative;
+  border-radius: 23px;
+  background: var(--composer);
+  border-color: var(--subtle);
+  box-shadow: 0 2px 12px #00000008;
+}
+.composer textarea {
+  font-size: 14px;
+}
+.composer-tools {
+  padding: 6px 11px 9px;
+}
+.composer-tools .model-menu {
+  flex-shrink: 1;
+  min-width: 0;
+}
+.composer-tools .model-button {
+  font-size: 12px;
+  font-weight: 400;
+  padding: 5px 7px;
+}
+.composer-tools .model-button > span {
+  font-size: 12px;
+  max-width: 160px;
+}
+.composer-tools .dropdown {
+  bottom: 43px;
+  top: auto;
+  right: 0;
+  left: auto;
+}
+.composer.compact {
+  min-height: 53px;
+}
+.composer.compact textarea {
+  min-height: 51px;
+  height: 51px;
+  padding: 14px 225px 13px 44px;
+  line-height: 24px;
+}
+.composer.compact .composer-tools {
+  position: absolute;
+  inset: 0;
+  padding: 8px 9px;
+  pointer-events: none;
+}
+.composer.compact .composer-tools > *:not(.spacer) {
+  pointer-events: auto;
+}
+.send-button {
+  width: 29px;
+  height: 29px;
+}
+.setup-card {
+  border: 0;
+  background: transparent;
+  padding: 12px 5px 0;
+  gap: 9px;
+  box-shadow: none;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.setup-card > svg {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+.setup-card strong {
+  display: none;
+}
+.setup-card p {
+  font-size: 11px;
+  margin: 0;
+}
+.setup-card button {
+  border: 0;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 3px 5px;
+}
+.disclaimer {
+  padding: 9px 5px 11px;
+  font-size: 10px;
+}
+.mode-codex .welcome {
+  margin-top: clamp(60px, 25vh, 220px);
+}
+@media (max-width: 920px) {
+  .sidebar {
+    width: 220px;
+  }
+  .start-view .composer-area {
+    width: calc(100% - 40px);
+  }
+  .workspace-tabs {
+    min-width: 160px;
+  }
+  .workspace-tabs button {
+    padding: 3px 17px;
+  }
+  .composer.compact textarea {
+    padding-right: 175px;
+  }
+  .composer-tools .model-button > span {
+    max-width: 120px;
+  }
+}
+@media (max-height: 620px) {
+  .main.start-view {
+    grid-template-rows: 48px minmax(10px, 1fr) auto auto minmax(15px, 1fr);
+  }
+  .welcome h1 {
+    font-size: 24px;
+    margin-bottom: 18px;
+  }
+}

@@ -3,7 +3,7 @@
 mod native {
     use caidex_credentials::SystemStore;
     use caidex_desktop::{Bootstrap, Desktop, Preferences, Profile, Snapshot};
-    use tauri::{Manager, State};
+    use tauri::{Emitter, Manager, State};
     use uuid::Uuid;
     type App = Desktop<SystemStore>;
     type Reply<T> = std::result::Result<T, &'static str>;
@@ -12,8 +12,13 @@ mod native {
         app.bootstrap()
     }
     #[tauri::command]
-    fn preferences(app: State<App>, preferences: Preferences) -> Reply<()> {
-        app.preferences(preferences)
+    fn preferences(
+        app: State<App>,
+        handle: tauri::AppHandle,
+        preferences: Preferences,
+    ) -> Reply<()> {
+        app.preferences(preferences.clone())?;
+        appearance(&handle, &preferences).map_err(|_| "desktop_unavailable")
     }
     #[tauri::command]
     fn save_profile(
@@ -87,13 +92,61 @@ mod native {
     fn export_chat(app: State<App>, conversation: Uuid) -> Reply<String> {
         app.export(conversation)
     }
+    fn appearance(app: &tauri::AppHandle, preferences: &Preferences) -> tauri::Result<()> {
+        use tauri::menu::{MenuBuilder, SubmenuBuilder};
+        let zh = preferences.language == "zh";
+        let file = SubmenuBuilder::new(app, if zh { "文件" } else { "File" })
+            .text("new-chat", if zh { "新建聊天" } else { "New chat" })
+            .separator()
+            .quit_with_text(if zh { "退出" } else { "Exit" })
+            .build()?;
+        let edit = SubmenuBuilder::new(app, if zh { "编辑" } else { "Edit" })
+            .undo_with_text(if zh { "撤销" } else { "Undo" })
+            .redo_with_text(if zh { "重做" } else { "Redo" })
+            .separator()
+            .cut_with_text(if zh { "剪切" } else { "Cut" })
+            .copy_with_text(if zh { "复制" } else { "Copy" })
+            .paste_with_text(if zh { "粘贴" } else { "Paste" })
+            .select_all_with_text(if zh { "全选" } else { "Select all" })
+            .build()?;
+        let view = SubmenuBuilder::new(app, if zh { "视图" } else { "View" })
+            .text("sidebar", if zh { "切换侧栏" } else { "Toggle sidebar" })
+            .text("settings", if zh { "设置" } else { "Settings" })
+            .build()?;
+        let help = SubmenuBuilder::new(app, if zh { "帮助" } else { "Help" })
+            .text("about", if zh { "关于 CAIdex" } else { "About CAIdex" })
+            .build()?;
+        app.set_menu(
+            MenuBuilder::new(app)
+                .items(&[&file, &edit, &view, &help])
+                .build()?,
+        )?;
+        if let Some(window) = app.get_webview_window("main") {
+            window.set_theme(match preferences.theme.as_str() {
+                "dark" => Some(tauri::Theme::Dark),
+                "light" => Some(tauri::Theme::Light),
+                _ => None,
+            })?;
+        }
+        Ok(())
+    }
     pub fn run() {
         let result = tauri::Builder::default()
             .setup(|app| {
                 let root = app.path().app_local_data_dir()?;
                 let service = App::open(&root, SystemStore).map_err(std::io::Error::other)?;
+                appearance(
+                    app.handle(),
+                    &service.preference_values().map_err(std::io::Error::other)?,
+                )?;
                 app.manage(service);
                 Ok(())
+            })
+            .on_menu_event(|app, event| {
+                let id = event.id().0.as_str();
+                if matches!(id, "new-chat" | "sidebar" | "settings" | "about") {
+                    let _ = app.emit("desktop-action", id);
+                }
             })
             .invoke_handler(tauri::generate_handler![
                 bootstrap,

@@ -25,16 +25,16 @@
 
 本地根为 Windows `AppLocalData/org.caidex.desktop`（实际路径由 Tauri 解析）；`desktop.sqlite3` 只保存非秘密模型配置、外观/语言和输入草稿，`chat/guest` 复用 Chat 私有目录与独占锁。凭据保存到 Windows Credential Manager 服务 `org.caidex.credentials.v1`，owner=`chat-guest`、每个模型 profile 为独立 UUID；不进入两个 SQLite 库、日志或导出。本机数据明文，由 OS 用户目录权限保护，不能防同一 OS 用户或管理员读取。
 
-共享 Chat 仅增加 `draft(operation)` 只读接口供 UI 观察，以及持久化前拒绝当前 Broker 已登记的凭据输出；不新增 HTTP/认证/邮件接口，不改云 schema/生产迁移或 Runtime。应用 IPC 逐命令 allow，仅本地 main 窗口；CSP 阻止任意页面网络、脚本/远程 frame，模型网络在 Rust Adapter 内完成，HTTPS/回环 HTTP、无嵌入凭据/查询参数、无隐式环境 Key。Markdown 不执行原始 HTML，不加载模型给出的远程图片；外链只显示文本与地址，不在 WebView 导航。
+共享 Chat 仅增加 `draft(operation)` 只读接口供 UI 观察，以及持久化前拒绝当前 Broker 已登记的凭据输出；不新增 HTTP/认证/邮件接口，不改云 schema/生产迁移或 Runtime。应用 IPC 13项逐命令 allow、仅开放原生菜单事件的listen/unlisten，仅本地 main 窗口；CSP 阻止任意页面网络、脚本/远程 frame，模型网络在 Rust Adapter 内完成，HTTPS/回环 HTTP、无嵌入凭据/查询参数、无隐式环境 Key。Markdown 不执行原始 HTML，不加载模型给出的远程图片；外链只显示文本与地址，不在 WebView 导航。
 
 ## 视觉参考与来源清单
 
-参考核对日期 2026-10-12，客户端版本未知，不声称逐像素完美复刻。实际截图在本轮 CI 中生成并逐图检查；截图证明对应合成状态的实现，不能替代其他页面或真实模型兼容性。
+参考核对日期 2026-10-12，用户随后提供四张桌面截图：照片1/4作为Windows Chat左上模式下拉、Chat/Work顶部位置、暖灰侧栏/圆角主面板/居中欢迎语与输入区的直接基准；照片2补Codex壳，照片3仅参考下拉和会话层级，不新增macOS客户端。客户端版本未知，不声称逐像素完美复刻。截图中的图片/定时任务/插件/Work/审批等不扩为J-1功能；Work显示不可用，Codex仍不执行。原图仅作为用户提供的参考，不把水印、账户姓名、桌面壁纸或官方品牌复制进CAIdex。实际截图在本轮 CI 中生成并逐图检查；截图证明对应合成状态的实现，不能替代其他页面或真实模型兼容性。
 
 | 页面/状态 | 参考来源 | 实现性质 |
 | --- | --- | --- |
-| 窄侧栏/历史/顶部模型与会话 Composer | [ChatGPT Windows 官方资料](https://learn.chatgpt.com/docs/windows/windows-app)及既定 UI 规范 | 官方文档行为/布局参考，CAIdex 补齐本地模式、模型与 Key 设置入口 |
-| 浅深主题、圆角设置弹窗/分类导航、输入/错误状态 | 同上及既定 UI 状态矩阵 | 按相同视觉语法实现，非已识别特定版本截图的逐像素对照 |
+| 窄侧栏/历史/顶部模型与会话 Composer | [ChatGPT Windows 官方资料](https://learn.chatgpt.com/docs/windows/windows-app)及既定 UI 规范 | 用户照片1/4直接布局参考，CAIdex 补齐本地模型/Key配置提示；模型选择放Composer右侧 |
+| 浅深主题、圆角设置弹窗/分类导航、输入/错误状态 | 同上及既定 UI 状态矩阵 | 沿用截图视觉语法；原生文件/编辑/视图/帮助菜单与窗口主题随语言/外观变化；灰度/字体/DPI差别按实际Windows截图记录 |
 | 品牌符号与 Windows 图标 | `assets/brand/CAIDEX_symbol_color_transparent_1024.png`、`CAIDEX_app_icon_windows.ico` | 原文件复制，没有生成或重画 Logo |
 | Key 与模型、账户/Host 分离 | UI 规范的“配置归属必须可见” | CAIdex 既定授权模型；本轮仅此设备 Chat |
 
