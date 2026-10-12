@@ -72,3 +72,7 @@
 完成开发验证后提交本文件、精确证据与下载入口，进入独立只读审计。实施会话的 diff 检查和测试均不代替独立审计。
 
 2026-10-12 用户补充浅色主题采用简约毛玻璃渐变：冰蓝/淡紫/薄荷色背景、半透明面板/输入框/菜单/设置、低强度阴影；深色布局保留。玻璃效果在 WebView 内实现，不依赖系统 Acrylic，也不新增权限。
+
+### 安装文件一致性
+
+锁定 Tauri CLI 2.12.2 的 bundler 默认对每类安装包改写 bundle-type 标记，打包后恢复原始 release 文件，因此安装后的程序与恢复后的 release 哈希不同；改打包顺序无效。J-1 没有自动更新插件，采用官方 `--no-binary-patching` 构建参数，保持 NSIS/MSI 内程序与已驱动测试的 release 字节相同，不放宽安装文件 SHA256 断言。将来接自动更新须重新评估多包类型识别。[锁定版本 bundler 源码](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.2/crates/tauri-bundler/src/bundle.rs)、[CLI 参数](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.2/crates/tauri-cli/src/build.rs)。

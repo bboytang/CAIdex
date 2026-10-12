@@ -60,7 +60,7 @@ jobs:
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
       - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
       - name: Build actual release executable and NSIS/MSI installers
-        run: npm run tauri -- build -- --locked
+        run: npm run tauri -- build --no-binary-patching -- --locked
       - name: Install pinned native WebDriver tools
         run: |
           cargo install tauri-driver --version 2.1.0 --locked

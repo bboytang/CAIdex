@@ -13,7 +13,7 @@ npm run build
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --locked
-npm run tauri -- build -- --locked
+npm run tauri -- build --no-binary-patching -- --locked
 ```
 
 `npm run tauri -- dev` runs the native development app. `npm test` runs renderer tests against mocked IPC; it is not native application verification. The Windows workflow separately drives the actual release WebView and installs/starts/uninstalls the NSIS package using a synthetic loopback model.
