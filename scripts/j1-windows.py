@@ -143,7 +143,10 @@ def run(args):
         driver.click(".setup-card button")
         driver.click(".section-heading button")
         driver.select("select[aria-label='Provider']", "custom_responses")
-        driver.execute("const labels=document.querySelectorAll('.profile-form label'); const set=(e,v)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));};set(labels[1].querySelector('input'),'Native fixture');set(labels[2].querySelector('input'),'synthetic');set(labels[3].querySelector('input'),arguments[0]);set(labels[4].querySelector('input'),arguments[1]);", [f"http://127.0.0.1:{model.server_port}/responses", SECRET])
+        driver.fill(".profile-form label:nth-of-type(2) input", "Native fixture")
+        driver.fill(".profile-form label:nth-of-type(3) input", "synthetic")
+        driver.fill(".profile-form label:nth-of-type(4) input", f"http://127.0.0.1:{model.server_port}/responses")
+        driver.fill(".profile-form label:nth-of-type(5) input", SECRET)
         check("key_input_masked", driver.execute("return document.querySelector('.profile-form input[type=password]')!==null"))
         driver.click(".profile-form button[type=submit]")
         driver.wait("return document.body.textContent.includes('Key configured')")
@@ -177,6 +180,21 @@ def run(args):
         driver.wait("return document.body.textContent.includes('Stopped')")
         time.sleep(1)
         check("restart_never_replays_cancelled_model_post", len(Model.requests) == 2)
+        driver.fill("textarea", "crash-test")
+        driver.click("button[aria-label='Send message']")
+        driver.wait("return document.querySelector('.streaming .message-content')?.textContent.includes('Actual native')")
+        code = subprocess.run(["taskkill", "/F", "/IM", "CAIdex.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20).returncode
+        check("actual_process_killed_during_stream", code == 0)
+        try:
+            driver.close()
+        except Exception:
+            driver.session = None
+        driver = Driver(binary)
+        driver.wait("return document.querySelector('.history-item')")
+        driver.click(".history-item")
+        driver.wait("return document.body.textContent.includes('Output interrupted')")
+        time.sleep(1)
+        check("crash_restart_seals_unknown_turn_without_replay", len(Model.requests) == 3)
         driver.close()
         with tempfile.TemporaryDirectory(prefix="caidex-j1-install-") as temporary:
             install = Path(temporary) / "nsis"
@@ -197,7 +215,7 @@ def run(args):
             check("nsis_uninstaller_completed", code == 0)
             installer_result = {"nsis_install_exit": 0, "nsis_uninstall_exit": 0, "msi": "built; interactive installation not exercised"}
         # No secret-bearing diagnostics, production endpoints, or real model requests.
-        check("synthetic_requests_only", len(Model.requests) == 2)
+        check("synthetic_requests_only", len(Model.requests) == 3)
         source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         output.write_text(json.dumps({"source_sha": source, "passed": len(checks), "failed": 0, "checks": checks, "synthetic_model_posts": len(Model.requests), "installers": installer_result, "environment": "GitHub windows-2022 / real WebView2 / real native Broker and SQLite", "limits": ["Not Windows 11 human interaction or UAC/SmartScreen acceptance", "Unsigned installers", "No commercial model or production account traffic"]}, indent=2), encoding="utf-8")
     finally:

@@ -55,6 +55,8 @@ export const api = {
   selectProfile: (id: string) => invoke<void>("select_profile", { id }),
   removeKey: (id: string) => invoke<void>("remove_key", { id }),
   create: (title: string) => invoke<string>("create", { title }),
+  conversations: (after: string) =>
+    invoke<Conversation[]>("conversations", { after }),
   snapshot: (conversation: string, after = 0) =>
     invoke<Snapshot>("snapshot", { conversation, after }),
   draft: (conversation: string, body: string | null = null) =>

@@ -114,7 +114,7 @@ test("model/key form is masked, IME does not submit, ordinary Chat does", async 
   await expect(page.getByText("密钥已配置", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("synthetic-ui-secret");
   await page.getByRole("button", { name: "关闭", exact: true }).click();
-  await page.getByRole("button", { name: "选择模型", exact: true }).click();
+  await page.locator(".model-button").click();
   await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
   const input = page.getByRole("textbox", { name: "向 CAIdex 发送消息" });
   await input.fill("你好");

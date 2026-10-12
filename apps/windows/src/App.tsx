@@ -84,6 +84,11 @@ export function App() {
     setError(errorText(reason, preferences.language));
   const refresh = async () => {
     const state = await api.bootstrap();
+    let page = state.conversations;
+    while (page.length === 128) {
+      page = await api.conversations(page.at(-1)!.id);
+      state.conversations.push(...page);
+    }
     setBoot(state);
     setPreferences(state.preferences);
     return state;
@@ -415,6 +420,7 @@ export function App() {
             </button>
             <button
               className={mode === "codex" ? "active" : ""}
+              aria-label="Codex"
               onClick={() => setMode("codex")}
             >
               <span className="code-icon">&lt;/&gt;</span>Codex
@@ -823,6 +829,15 @@ function MessageView({
         </small>
       )}
       <div className="message-actions">
+        {message.role === "assistant" && (
+          <button
+            className="branch-button"
+            title={t.branchHint}
+            onClick={() => choose(message.id)}
+          >
+            {t.branch}
+          </button>
+        )}
         {message.role === "assistant" && (
           <button
             className="icon"

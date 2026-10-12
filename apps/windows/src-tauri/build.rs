@@ -8,6 +8,7 @@ fn main() {
             "select_profile",
             "remove_key",
             "create",
+            "conversations",
             "snapshot",
             "draft",
             "attach",

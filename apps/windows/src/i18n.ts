@@ -51,7 +51,7 @@ const zh = {
   saved: "配置已保存",
   basicOnly: "文本聊天 · 其他能力尚未验证",
   codex: "Codex 将在后续阶段接入",
-  localNotice: "本轮仅提供此设备的 Chat。账户、记忆与云同步尚未接入。",
+  localNotice: "聊天与配置保存在此设备。账户、记忆与云同步暂不可用。",
   export: "导出聊天",
   copy: "复制",
   copied: "已复制",
@@ -133,7 +133,7 @@ const en: typeof zh = {
   basicOnly: "Text chat · other capabilities unverified",
   codex: "Codex will be connected in a later milestone",
   localNotice:
-    "This milestone provides local Chat. Account, Memory and cloud sync are not connected.",
+    "Chats and configuration stay on this device. Account, Memory and cloud sync are currently unavailable.",
   export: "Export chat",
   copy: "Copy",
   copied: "Copied",

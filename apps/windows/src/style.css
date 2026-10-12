@@ -901,3 +901,11 @@ button:hover kbd {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.messages-scroll:has(.welcome) {
+  flex: 0;
+  overflow: visible;
+}
+.messages-scroll .welcome {
+  margin-top: clamp(65px, 24vh, 190px);
+}

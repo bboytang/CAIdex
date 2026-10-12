@@ -37,6 +37,13 @@ mod native {
         app.create(title)
     }
     #[tauri::command]
+    fn conversations(
+        app: State<App>,
+        after: Option<Uuid>,
+    ) -> Reply<Vec<caidex_chat::Conversation>> {
+        app.conversations(after)
+    }
+    #[tauri::command]
     fn snapshot(app: State<App>, conversation: Uuid, after: i64) -> Reply<Snapshot> {
         app.snapshot(conversation, after)
     }
@@ -95,6 +102,7 @@ mod native {
                 select_profile,
                 remove_key,
                 create,
+                conversations,
                 snapshot,
                 draft,
                 attach,

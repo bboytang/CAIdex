@@ -191,11 +191,11 @@ impl<S: SecretStore + 'static> Desktop<S> {
             preferences: serde_json::from_str(&preferences).map_err(|_| "invalid_configuration")?,
             profiles,
             selected: self.selected()?,
-            conversations: self.conversations()?,
+            conversations: self.conversations(None)?,
         })
     }
-    pub fn conversations(&self) -> Result<Vec<Conversation>> {
-        self.chat.conversations(None, 128).map_err(chat_error)
+    pub fn conversations(&self, after: Option<Uuid>) -> Result<Vec<Conversation>> {
+        self.chat.conversations(after, 128).map_err(chat_error)
     }
     pub fn preferences(&self, preferences: Preferences) -> Result<()> {
         if !matches!(preferences.language.as_str(), "zh" | "en")
