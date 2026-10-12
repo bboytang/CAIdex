@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 // Renderer checks deliberately mock IPC. Native Windows tests cover the real bridge separately.
 test.beforeEach(async ({ page }, info) => {
   await page.addInitScript(
-    ({ failure }) => {
+    ({ failure, priority }) => {
       let preferences = { language: "zh", theme: "dark" };
       const profiles: { profile: any; configured: boolean; models: any[] }[] =
         [];
@@ -37,12 +37,14 @@ test.beforeEach(async ({ page }, info) => {
               const ids =
                 row.profile.kind === "deepseek"
                   ? ["deepseek-flash", "deepseek-v4-pro"]
-                  : ["synthetic", "synthetic-fast"];
+                  : priority
+                    ? ["gpt-5.4"]
+                    : ["synthetic", "synthetic-fast"];
               row.models = ids.map((id) => ({
                 id,
                 name: `${row.profile.name} ${id}`,
                 efforts: ["none", "low", "high", "max"],
-                tiers: [],
+                tiers: priority ? ["default", "priority"] : [],
               }));
               return row.models;
             }
@@ -107,7 +109,10 @@ test.beforeEach(async ({ page }, info) => {
         },
       });
     },
-    { failure: info.title.includes("unavailable native bridge") },
+    {
+      failure: info.title.includes("unavailable native bridge"),
+      priority: info.title.includes("priority speed"),
+    },
   );
   await page.goto("/");
 });
@@ -339,4 +344,25 @@ test("provider key loads the catalog, composer selects models and effort without
   ).toMatchObject({ model: "deepseek-v4-pro", effort: "high" });
   expect(calls.filter((c: any) => c.cmd === "send")).toHaveLength(0);
   await page.screenshot({ path: "test-results/composer-model-effort.png" });
+});
+
+test("priority speed is selected through declared composer options", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "配置模型", exact: true }).click();
+  await page.getByRole("button", { name: "添加供应商" }).click();
+  await page.getByLabel("API Key", { exact: true }).fill("synthetic-ui-secret");
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.locator(".model-button").click();
+  await page.getByRole("menuitem").filter({ hasText: "gpt-5.4" }).click();
+  await page.getByLabel("响应速度", { exact: true }).selectOption("priority");
+  await expect(page.getByLabel("响应速度", { exact: true })).toHaveValue(
+    "priority",
+  );
+  const calls = await page.evaluate(() => (window as any).__TEST_CALLS__);
+  expect(
+    calls.filter((c: any) => c.cmd === "select_profile").at(-1).args,
+  ).toMatchObject({ model: "gpt-5.4", tier: "priority" });
+  expect(calls.filter((c: any) => c.cmd === "send")).toHaveLength(0);
 });

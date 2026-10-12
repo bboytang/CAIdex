@@ -678,3 +678,45 @@ async fn catalog_fetched_with_removed_key_is_not_committed() {
     assert!(!boot.profiles[0].configured);
     assert!(boot.profiles[0].models.is_empty());
 }
+
+#[tokio::test]
+async fn declared_openai_effort_and_priority_tier_enter_actual_request() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}/v1", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let (headers, body) = read_http(&mut socket).await;
+        assert!(headers.starts_with("POST /v1/responses "));
+        assert_eq!(body["model"], "gpt-5.4");
+        assert_eq!(body["reasoning"]["effort"], "low");
+        assert_eq!(body["service_tier"], "priority");
+        assert!(!body.to_string().contains("synthetic-j1-secret"));
+        socket
+            .write_all(
+                b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n",
+            )
+            .await
+            .unwrap();
+        socket
+            .write_all(response("Priority fixture").as_bytes())
+            .await
+            .unwrap();
+    });
+    let root = Root::new();
+    let app = Desktop::open(&root.0, Store::default()).unwrap();
+    let mut p = profile(&endpoint);
+    p.kind = ProviderKind::Openai;
+    p.model = "gpt-5.4".into();
+    p.effort = Some("low".into());
+    p.tier = Some("priority".into());
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
+        .unwrap();
+    app.select_profile(p.id).unwrap();
+    let id = app.create("Priority".into()).unwrap();
+    let reply = app
+        .send(request(Uuid::new_v4(), id, None, "Hello".into(), vec![]))
+        .await
+        .unwrap();
+    assert_eq!(reply.end, End::Complete);
+    server.await.unwrap();
+}
