@@ -59,7 +59,8 @@ class Model(http.server.BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
         text = "Actual native Chat reply"
-        slow = "cancel-test" in json.dumps(request["input"])
+        current_input = request["input"][-1] if isinstance(request["input"], list) else request["input"]
+        slow = any(marker in json.dumps(current_input) for marker in ("cancel-test", "crash-test"))
         frames = [
             {"type": "response.output_text.delta", "delta": "Actual native "},
             {"type": "response.output_text.delta", "delta": "Chat reply"},
@@ -139,6 +140,7 @@ class Driver:
         self.execute("const e=document.querySelector(arguments[0]); const p=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,arguments[1]);e.dispatchEvent(new Event('input',{bubbles:true}));", [css, text])
 
     def select(self, css, value):
+        self.wait("const e=document.querySelector(" + json.dumps(css) + ");return e && !e.disabled;")
         self.execute("const e=document.querySelector(arguments[0]);e.value=arguments[1];e.dispatchEvent(new Event('change',{bubbles:true}));", [css, value])
 
     def screenshot(self, path):
@@ -251,9 +253,9 @@ def run(args):
             driver.click(".model-button")
             driver.fill(".model-search", name)
             driver.click("[role=menuitem]")
-            driver.wait("return document.querySelector('select[aria-label=\"Reasoning effort\"]')!==null")
+            driver.wait("const e=document.querySelector('select[aria-label=\"Reasoning effort\"]');return e && !e.disabled && document.querySelector('.model-button').textContent.includes(" + json.dumps(name) + ");")
             driver.select("select[aria-label='Reasoning effort']", effort)
-            driver.wait("return !document.querySelector('.model-button').textContent.includes('Loading')")
+            driver.wait("const e=document.querySelector('select[aria-label=\"Reasoning effort\"]');return e && !e.disabled && e.value===" + json.dumps(effort) + ";")
             driver.fill("textarea", f"test {name}")
             driver.click("button[aria-label='Send message']")
             expected = 4 if name=="deepseek-flash" else 5
