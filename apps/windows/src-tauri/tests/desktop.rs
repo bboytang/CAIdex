@@ -109,9 +109,9 @@ async fn fixture(text: &str, delay: Duration) -> (String, tokio::task::JoinHandl
             .await
             .unwrap();
         let first = output.find("\n\n").unwrap() + 2;
-        let _ = socket.write_all(output[..first].as_bytes()).await;
+        let _ = socket.write_all(&output.as_bytes()[..first]).await;
         tokio::time::sleep(delay).await;
-        let _ = socket.write_all(output[first..].as_bytes()).await;
+        let _ = socket.write_all(&output.as_bytes()[first..]).await;
     });
     (endpoint, task)
 }
