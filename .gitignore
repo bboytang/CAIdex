@@ -1,5 +1,9 @@
 /target/
 **/node_modules/
+apps/windows/dist/
+apps/windows/test-results/
+apps/windows/playwright-report/
+apps/windows/src-tauri/target/
 /.caidex/
 /.tools/
 .env

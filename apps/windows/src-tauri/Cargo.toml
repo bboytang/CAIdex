@@ -1,0 +1,48 @@
+[package]
+name = "caidex-windows"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+
+[lib]
+name = "caidex_desktop"
+
+[[bin]]
+name = "CAIdex"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+default = ["desktop"]
+desktop = ["dep:tauri", "dep:tauri-build"]
+
+[dependencies]
+caidex-chat = { path = "../../../chat/core" }
+caidex-credentials = { path = "../../../credentials/core", default-features = false }
+caidex-model-core = { path = "../../../model/core" }
+caidex-provider-custom = { path = "../../../model/providers/custom" }
+caidex-provider-chat-completions = { path = "../../../model/providers/chat-completions" }
+caidex-provider-openai = { path = "../../../model/providers/openai" }
+caidex-provider-anthropic = { path = "../../../model/providers/anthropic" }
+caidex-provider-google = { path = "../../../model/providers/google" }
+caidex-provider-deepseek = { path = "../../../model/providers/deepseek" }
+caidex-provider-qwen = { path = "../../../model/providers/qwen" }
+caidex-provider-openrouter = { path = "../../../model/providers/openrouter" }
+caidex-provider-ollama = { path = "../../../model/providers/ollama" }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+rusqlite = { version = "=0.38.0", default-features = false, features = ["bundled"] }
+uuid = { version = "=1.23.0", features = ["v4", "serde"] }
+tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread", "time", "net", "sync"] }
+
+[target.'cfg(windows)'.dependencies]
+tauri = { version = "=2.12.3", optional = true }
+windows-sys = { version = "=0.61.2", features = ["Win32_UI_WindowsAndMessaging"] }
+
+[target.'cfg(windows)'.build-dependencies]
+tauri-build = { version = "=2.7.2", optional = true }
+
+[profile.release]
+strip = true
+codegen-units = 1
+lto = "thin"

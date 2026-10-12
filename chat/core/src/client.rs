@@ -135,6 +135,20 @@ impl Chat {
     pub fn outbox(&self, after: i64, limit: usize) -> Result<Vec<OutboxEntry>> {
         self.state()?.cache.outbox(after, limit)
     }
+    /// Read only this partition's in-progress output; never resumes inference.
+    pub fn draft(&self, operation: Uuid) -> Result<Option<String>> {
+        use rusqlite::OptionalExtension;
+        Ok(self
+            .state()?
+            .cache
+            .db
+            .query_row(
+                "SELECT draft FROM turns WHERE operation=?1 AND status='pending'",
+                [operation.to_string()],
+                |row| row.get(0),
+            )
+            .optional()?)
+    }
     /// A portable local snapshot of one explicitly selected Chat, never credentials or sync queues.
     pub fn export_conversation(&self, conversation: Uuid) -> Result<String> {
         use base64::{Engine, engine::general_purpose::STANDARD};
@@ -348,6 +362,10 @@ impl Chat {
         let mut state = self.state()?;
         if state.generation != generation || !state.pending.contains_key(&operation) {
             return Err(Error::Cancelled);
+        }
+        // Provider output cannot persist credentials registered by this local Broker.
+        if !state.memory.safe(text) {
+            return Err(Error::Invalid);
         }
         state.cache.checkpoint(operation, text)
     }
