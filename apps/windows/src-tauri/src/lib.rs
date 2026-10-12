@@ -220,6 +220,16 @@ impl<S: SecretStore + 'static> Desktop<S> {
             return Err("turn_active");
         }
         profile.validate()?;
+        let key = key
+            .map(Secret::new)
+            .transpose()
+            .map_err(|_| "invalid_key")?;
+        if let Some(secret) = &key {
+            self.broker
+                .redactor()
+                .register(secret)
+                .map_err(|_| "credential_unavailable")?;
+        }
         self.safe(&serde_json::to_string(&profile).map_err(|_| "invalid_configuration")?)?;
         // Validate adapter construction before persisting anything or replacing a key.
         profiles::model(&profile, self.broker.clone())?;
@@ -264,10 +274,7 @@ impl<S: SecretStore + 'static> Desktop<S> {
         ))?;
         if let Some(key) = key {
             self.broker
-                .set(
-                    &profile.reference(),
-                    Secret::new(key).map_err(|_| "invalid_key")?,
-                )
+                .set(&profile.reference(), key)
                 .map_err(|_| "credential_unavailable")?;
         }
         // A database failure leaves any newly stored key at the same explicit profile; it is never exported.

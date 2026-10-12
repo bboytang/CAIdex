@@ -132,7 +132,7 @@ test("model/key form is masked, IME does not submit, ordinary Chat does", async 
   await expect(
     page.getByText("Synthetic UI response", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("你好", { exact: true })).toBeVisible();
+  await expect(page.locator(".user .message-content")).toHaveText("你好");
   await page.screenshot({ path: "test-results/zh-dark-chat.png" });
   expect(
     await page.evaluate(

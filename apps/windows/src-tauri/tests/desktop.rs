@@ -121,6 +121,12 @@ fn settings_key_boundary_restart_and_endpoint_consent() {
     let store = Store::default();
     let app = Desktop::open(&root.0, store.clone()).unwrap();
     let mut p = profile("https://example.test/v1/responses");
+    let mut accidental = p.clone();
+    accidental.name = "synthetic-j1-secret".into();
+    assert_eq!(
+        app.save_profile(accidental, Some("synthetic-j1-secret".into()), false),
+        Err("invalid_or_sensitive_input")
+    );
     app.save_profile(p.clone(), Some("synthetic-j1-secret".into()), false)
         .unwrap();
     app.select_profile(p.id).unwrap();
@@ -159,6 +165,50 @@ fn settings_key_boundary_restart_and_endpoint_consent() {
     assert_eq!(boot.conversations.len(), 1);
     app.remove_key(p.id).unwrap();
     assert!(!app.bootstrap().unwrap().profiles[0].configured);
+}
+#[test]
+fn every_history_page_is_reachable_and_attachment_limits_are_enforced() {
+    let root = Root::new();
+    let app = Desktop::open(&root.0, Store::default()).unwrap();
+    let mut ids = Vec::new();
+    for i in 0..140 {
+        ids.push(app.create(format!("Chat {i}")).unwrap());
+    }
+    let first = app.conversations(None).unwrap();
+    assert_eq!(first.len(), 128);
+    let next = app.conversations(first.last().map(|c| c.id)).unwrap();
+    assert_eq!(next.len(), 12);
+    assert!(next.iter().all(|c| !first.iter().any(|old| old.id == c.id)));
+    let id = ids[0];
+    assert!(
+        app.attach(id, "../key".into(), "text/plain".into(), b"safe".to_vec())
+            .is_err()
+    );
+    assert!(
+        app.attach(
+            id,
+            "bad.exe".into(),
+            "application/octet-stream".into(),
+            b"safe".to_vec()
+        )
+        .is_err()
+    );
+    assert!(
+        app.attach(id, "empty.txt".into(), "text/plain".into(), vec![])
+            .is_err()
+    );
+    let attachment = app
+        .attach(
+            id,
+            "note.txt".into(),
+            "text/plain".into(),
+            b"safe attachment".to_vec(),
+        )
+        .unwrap();
+    assert_eq!(
+        app.chat.attachment(id, attachment).unwrap().bytes,
+        b"safe attachment"
+    );
 }
 #[test]
 fn invalid_endpoints_and_each_existing_adapter_constructs_without_network() {
