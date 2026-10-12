@@ -30,15 +30,34 @@ class Model(http.server.BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
+    def do_GET(self):
+        assert self.path in ("/models", "/deepseek/models")
+        assert self.headers.get("Authorization") == f"Bearer {SECRET}"
+        ids = ["deepseek-flash", "deepseek-v4-pro"] if self.path.startswith("/deepseek/") else ["synthetic", "synthetic-fast"]
+        body = json.dumps({"object":"list","data":[{"id":model,"object":"model","owned_by":"fixture","created":1} for model in ids]}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_POST(self):
         request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        assert self.path == "/responses"
+        assert self.path in ("/responses", "/deepseek/responses")
         assert self.headers.get("Authorization") == f"Bearer {SECRET}"
-        assert request["model"] == "synthetic"
+        assert request["model"] in ("synthetic", "synthetic-fast", "deepseek-flash", "deepseek-v4-pro")
         assert request["tools"] == [] and request["tool_choice"] == "none"
         assert request["store"] is False and request["stream"] is True
         assert SECRET not in json.dumps(request)
         self.requests.append(request)
+        if "auth-failure" in json.dumps(request["input"]):
+            body = json.dumps({"error":{"message":SECRET}}).encode()
+            self.send_response(401)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         text = "Actual native Chat reply"
         slow = "cancel-test" in json.dumps(request["input"])
         frames = [
@@ -46,6 +65,20 @@ class Model(http.server.BaseHTTPRequestHandler):
             {"type": "response.output_text.delta", "delta": "Chat reply"},
             {"type": "response.completed", "response": {"id": "j1-response", "status": "completed", "output": [{"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": text}]}]}},
         ]
+        if self.path.startswith("/deepseek/"):
+            item = {"id":"message","type":"message","status":"completed","role":"assistant","content":[{"type":"output_text","text":text,"annotations":[]}]}
+            frames = [
+                {"type":"response.created","response":{"id":"fixture","status":"in_progress","output":[]}},
+                {"type":"response.output_item.added","output_index":0,"item":{"id":"message","type":"message","status":"in_progress","role":"assistant","content":[]}},
+                {"type":"response.content_part.added","output_index":0,"item_id":"message","content_index":0,"part":{"type":"output_text","text":"","annotations":[]}},
+                {"type":"response.output_text.delta","output_index":0,"item_id":"message","content_index":0,"delta":text},
+                {"type":"response.output_text.done","output_index":0,"item_id":"message","content_index":0,"text":text},
+                {"type":"response.content_part.done","output_index":0,"item_id":"message","content_index":0,"part":item["content"][0]},
+                {"type":"response.output_item.done","output_index":0,"item":item},
+                {"type":"response.completed","response":{"id":"fixture","object":"response","model":request["model"],"created_at":1,"status":"completed","store":False,"output":[item]}},
+            ]
+            for sequence,frame in enumerate(frames):
+                frame["sequence_number"] = sequence
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
@@ -154,9 +187,8 @@ def run(args):
         driver.click(".section-heading button")
         driver.select("select[aria-label='Provider']", "custom_responses")
         driver.fill(".profile-form label:nth-of-type(2) input", "Native fixture")
-        driver.fill(".profile-form label:nth-of-type(3) input", "synthetic")
-        driver.fill(".profile-form label:nth-of-type(4) input", f"http://127.0.0.1:{model.server_port}/responses")
-        driver.fill(".profile-form label:nth-of-type(5) input", SECRET)
+        driver.fill(".profile-form > label:nth-of-type(3) input", f"http://127.0.0.1:{model.server_port}/responses")
+        driver.fill(".profile-form > label:nth-of-type(4) input", SECRET)
         check("key_input_masked", driver.execute("return document.querySelector('.profile-form input[type=password]')!==null"))
         driver.click(".profile-form button[type=submit]")
         driver.wait("return document.body.textContent.includes('Key configured')")
@@ -205,6 +237,33 @@ def run(args):
         driver.wait("return document.body.textContent.includes('Output interrupted')")
         time.sleep(1)
         check("crash_restart_seals_unknown_turn_without_replay", len(Model.requests) == 3)
+        driver.click("button[aria-label='Settings']")
+        driver.click(".settings-nav button:nth-of-type(4)")
+        driver.click(".section-heading button")
+        driver.select("select[aria-label='Provider']", "deepseek")
+        driver.fill(".profile-form > label:nth-of-type(3) input", f"http://127.0.0.1:{model.server_port}/deepseek")
+        driver.fill(".profile-form > label:nth-of-type(4) input", SECRET)
+        driver.click(".profile-form button[type=submit]")
+        driver.wait("return !document.querySelector('.profile-form') && document.body.textContent.includes('2 models')")
+        check("native_provider_key_discovers_catalog_without_manual_model_id", True)
+        driver.click("button[aria-label='Close']")
+        for name,effort in [("deepseek-flash","low"),("deepseek-v4-pro","high")]:
+            driver.click(".model-button")
+            driver.fill(".model-search", name)
+            driver.click("[role=menuitem]")
+            driver.wait("return document.querySelector('select[aria-label=\"Reasoning effort\"]')!==null")
+            driver.select("select[aria-label='Reasoning effort']", effort)
+            driver.wait("return !document.querySelector('.model-button').textContent.includes('Loading')")
+            driver.fill("textarea", f"test {name}")
+            driver.click("button[aria-label='Send message']")
+            expected = 4 if name=="deepseek-flash" else 5
+            driver.wait(f"return document.querySelectorAll('.assistant .message-content').length>={expected} && !document.querySelector('.streaming')")
+            check(f"native_{name}_composer_effort_reaches_real_provider", len(Model.requests)==expected and Model.requests[-1]['model']==name and Model.requests[-1]['reasoning']['effort']==effort)
+        driver.screenshot(output.parent / "native-provider-catalog-effort.png")
+        driver.fill("textarea", "auth-failure")
+        driver.click("button[aria-label='Send message']")
+        driver.wait("return document.body.textContent.includes('Provider authentication failed') && !document.querySelector('.streaming')")
+        check("native_http_authentication_failure_is_visible_without_secret_echo", len(Model.requests)==6 and not driver.execute("return document.body.textContent.includes(arguments[0])", [SECRET]))
         driver.close()
         with tempfile.TemporaryDirectory(prefix="caidex-j1-install-") as temporary:
             install = Path(temporary) / "nsis"
@@ -230,7 +289,7 @@ def run(args):
             check("nsis_uninstaller_removed_installed_executable", not installed[0].exists())
             installer_result = {"nsis_install_exit": 0, "nsis_uninstall_exit": 0, "msi": "built; interactive installation not exercised"}
         # No secret-bearing diagnostics, production endpoints, or real model requests.
-        check("synthetic_requests_only", len(Model.requests) == 3)
+        check("synthetic_requests_only", len(Model.requests) == 6)
         source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         output.write_text(json.dumps({"source_sha": source, "passed": len(checks), "failed": 0, "checks": checks, "synthetic_model_posts": len(Model.requests), "installers": installer_result, "environment": "GitHub windows-2022 / real WebView2 / real native Broker and SQLite", "limits": ["Not Windows 11 human interaction or UAC/SmartScreen acceptance", "Unsigned installers", "No commercial model or production account traffic"]}, indent=2), encoding="utf-8")
     finally:

@@ -20,6 +20,7 @@ import {
   Monitor,
   Moon,
   PanelLeft,
+  RefreshCw,
   Plus,
   Search,
   Settings as SettingsIcon,
@@ -72,6 +73,8 @@ export function App() {
   const [settingsTab, setSettingsTab] = useState("general");
   const [mode, setMode] = useState<"chat" | "codex">("chat");
   const [modelMenu, setModelMenu] = useState(false);
+  const [modelQuery, setModelQuery] = useState("");
+  const [modelBusy, setModelBusy] = useState(false);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
       if (
@@ -107,7 +110,25 @@ export function App() {
   const start = async () => {
     setFatal(false);
     try {
-      await refresh();
+      const state = await refresh();
+      const selected = state.profiles.find(
+        (row) => row.profile.id === state.selected,
+      );
+      if (
+        selected &&
+        !selected.models?.length &&
+        (selected.configured || selected.profile.kind === "ollama")
+      ) {
+        setModelBusy(true);
+        try {
+          await api.discoverModels(selected.profile.id);
+          await refresh();
+        } catch (reason) {
+          fail(reason);
+        } finally {
+          setModelBusy(false);
+        }
+      }
     } catch {
       setFatal(true);
     }
@@ -225,7 +246,13 @@ export function App() {
   }, [operation, activeConversation]);
   const send = async (event?: FormEvent) => {
     event?.preventDefault();
-    if (operation || (!input.trim() && !attachments.length) || mode !== "chat")
+    if (
+      operation ||
+      modelBusy ||
+      (event && modelMenu) ||
+      (!input.trim() && !attachments.length) ||
+      mode !== "chat"
+    )
       return;
     if (!boot?.selected) {
       setSettingsTab("models");
@@ -335,13 +362,36 @@ export function App() {
       fail(reason);
     }
   };
-  const chooseModel = async (id: string) => {
+  const chooseModel = async (
+    id: string,
+    model: string,
+    effort: string | null = null,
+    tier: string | null = null,
+  ) => {
+    if (modelBusy || operation) return;
+    setModelBusy(true);
     try {
-      await api.selectProfile(id);
+      await api.selectProfile(id, model, effort, tier);
       await refresh();
       setModelMenu(false);
+      setError("");
     } catch (reason) {
       fail(reason);
+    } finally {
+      setModelBusy(false);
+    }
+  };
+  const refreshModels = async (id: string) => {
+    if (modelBusy || operation) return;
+    setModelBusy(true);
+    try {
+      await api.discoverModels(id);
+      await refresh();
+      setError("");
+    } catch (reason) {
+      fail(reason);
+    } finally {
+      setModelBusy(false);
     }
   };
   const preferenceWrites = useRef<Promise<void>>(Promise.resolve());
@@ -392,6 +442,23 @@ export function App() {
   const selected = boot?.profiles.find(
     (row) => row.profile.id === boot.selected,
   );
+  const selectedModel = selected?.models?.find(
+    (model) => model.id === selected.profile.model,
+  );
+  const levelText = (level: string) =>
+    (
+      ({
+        none: t.noThinking,
+        minimal: t.minimal,
+        low: t.low,
+        medium: t.medium,
+        high: t.high,
+        xhigh: t.xhigh,
+        max: t.maximum,
+        default: t.standard,
+        priority: t.priority,
+      }) as Record<string, string>
+    )[level] ?? level;
   const byId = new Map(messages.map((message) => [message.id, message]));
   const lineage: Message[] = [];
   let node = head && byId.get(head);
@@ -644,7 +711,7 @@ export function App() {
                 </div>
               )}
               <form
-                className={`composer ${!input && !attachments.length ? "compact" : ""}`}
+                className={`composer ${!input && !attachments.length && !selectedModel?.efforts.length && !selectedModel?.tiers.length ? "compact" : ""}`}
                 onSubmit={(event) => void send(event)}
               >
                 {!!attachments.length && (
@@ -721,7 +788,11 @@ export function App() {
                       aria-label={t.model}
                       onClick={() => setModelMenu((old) => !old)}
                     >
-                      <span>{selected?.profile.name ?? t.model}</span>
+                      <span>
+                        {modelBusy
+                          ? t.loadingModels
+                          : selected?.profile.model || t.model}
+                      </span>
                       <ChevronDown size={17} />
                     </button>
                     {modelMenu && (
@@ -733,23 +804,99 @@ export function App() {
                           onClick={() => setModelMenu(false)}
                         />
                         <div className="dropdown" role="menu">
-                          {boot.profiles.map((row) => (
-                            <button
-                              key={row.profile.id}
-                              role="menuitem"
-                              type="button"
-                              disabled={!!operation}
-                              onClick={() => void chooseModel(row.profile.id)}
-                            >
-                              <span>
-                                {row.profile.name}
-                                <small>{row.profile.model}</small>
-                              </span>
-                              {boot.selected === row.profile.id && (
-                                <Check size={16} />
-                              )}
-                            </button>
-                          ))}
+                          <input
+                            className="model-search"
+                            type="search"
+                            aria-label={t.searchModels}
+                            placeholder={t.searchModels}
+                            value={modelQuery}
+                            onChange={(event) =>
+                              setModelQuery(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") event.preventDefault();
+                            }}
+                          />
+                          {boot.profiles.map((row) => {
+                            const catalog = row.models?.length
+                              ? row.models
+                              : row.profile.model
+                                ? [
+                                    {
+                                      id: row.profile.model,
+                                      name: row.profile.model,
+                                      efforts: [],
+                                      tiers: [],
+                                    },
+                                  ]
+                                : [];
+                            const matches = catalog.filter((model) =>
+                              `${model.id} ${model.name} ${row.profile.name}`
+                                .toLowerCase()
+                                .includes(modelQuery.toLowerCase()),
+                            );
+                            return (
+                              <div
+                                className="catalog-group"
+                                key={row.profile.id}
+                              >
+                                <div className="catalog-heading">
+                                  <span>
+                                    {row.profile.name}
+                                    <small>
+                                      {catalog.length} {t.availableModels}
+                                    </small>
+                                  </span>
+                                  <button
+                                    className="icon"
+                                    type="button"
+                                    disabled={
+                                      modelBusy ||
+                                      !!operation ||
+                                      (!row.configured &&
+                                        row.profile.kind !== "ollama")
+                                    }
+                                    aria-label={`${t.refreshModels} ${row.profile.name}`}
+                                    onClick={() =>
+                                      void refreshModels(row.profile.id)
+                                    }
+                                  >
+                                    <RefreshCw size={15} />
+                                  </button>
+                                </div>
+                                {matches.slice(0, 150).map((model) => (
+                                  <button
+                                    key={model.id}
+                                    role="menuitem"
+                                    type="button"
+                                    disabled={modelBusy || !!operation}
+                                    onClick={() =>
+                                      void chooseModel(row.profile.id, model.id)
+                                    }
+                                  >
+                                    <span>
+                                      {model.name}
+                                      <small>{model.id}</small>
+                                    </span>
+                                    {boot.selected === row.profile.id &&
+                                      row.profile.model === model.id && (
+                                        <Check size={16} />
+                                      )}
+                                  </button>
+                                ))}
+                                {matches.length > 150 && (
+                                  <small className="catalog-hint">
+                                    {t.refineSearch}
+                                  </small>
+                                )}
+                                {!catalog.length && (
+                                  <small className="catalog-hint">
+                                    {t.refreshToChoose}
+                                  </small>
+                                )}
+                              </div>
+                            );
+                          })}
                           <button
                             role="menuitem"
                             type="button"
@@ -767,6 +914,56 @@ export function App() {
                     )}
                   </div>
 
+                  {selectedModel && selectedModel.efforts.length > 0 && (
+                    <select
+                      className="inference-control"
+                      aria-label={t.reasoning}
+                      title={t.reasoningHint}
+                      disabled={modelBusy || !!operation}
+                      value={selected?.profile.effort ?? ""}
+                      onChange={(event) => {
+                        if (selected)
+                          void chooseModel(
+                            selected.profile.id,
+                            selected.profile.model,
+                            event.target.value || null,
+                            selected.profile.tier ?? null,
+                          );
+                      }}
+                    >
+                      <option value="">{t.autoReasoning}</option>
+                      {selectedModel.efforts.map((level) => (
+                        <option value={level} key={level}>
+                          {levelText(level)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedModel && selectedModel.tiers.length > 0 && (
+                    <select
+                      className="inference-control"
+                      aria-label={t.speed}
+                      title={t.speedHint}
+                      disabled={modelBusy || !!operation}
+                      value={selected?.profile.tier ?? ""}
+                      onChange={(event) => {
+                        if (selected)
+                          void chooseModel(
+                            selected.profile.id,
+                            selected.profile.model,
+                            selected.profile.effort ?? null,
+                            event.target.value || null,
+                          );
+                      }}
+                    >
+                      <option value="">{t.autoSpeed}</option>
+                      {selectedModel.tiers.map((level) => (
+                        <option value={level} key={level}>
+                          {levelText(level)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {operation ? (
                     <button
                       type="button"
@@ -783,7 +980,9 @@ export function App() {
                       className="send-button"
                       type="submit"
                       aria-label={t.send}
-                      disabled={!input.trim() && !attachments.length}
+                      disabled={
+                        modelBusy || (!input.trim() && !attachments.length)
+                      }
                     >
                       <ArrowUp size={20} />
                     </button>
@@ -1130,9 +1329,15 @@ function SettingsDialog({
     try {
       await api.saveProfile(editing, key || null);
       setKey("");
+      try {
+        await api.discoverModels(editing.id);
+        setNotice(t.saved);
+      } catch (reason) {
+        setNotice(t.savedKey);
+        report(reason);
+      }
       await refresh();
       setEditing(null);
-      setNotice(t.saved);
     } catch (reason) {
       report(reason);
     } finally {
@@ -1314,21 +1519,6 @@ function SettingsDialog({
                     />
                   </label>
                   <label>
-                    {t.nativeModel}
-                    <input
-                      required
-                      maxLength={256}
-                      placeholder={
-                        providers.find((item) => item.kind === editing.kind)
-                          ?.example
-                      }
-                      value={editing.model}
-                      onChange={(event) =>
-                        setEditing({ ...editing, model: event.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
                     {t.endpoint}
                     <input
                       required
@@ -1355,12 +1545,35 @@ function SettingsDialog({
                       onChange={(event) => setKey(event.target.value)}
                     />
                   </label>
+                  <details className="manual-model">
+                    <summary>{t.manualModel}</summary>
+                    <label>
+                      {t.nativeModel}
+                      <input
+                        maxLength={256}
+                        value={editing.model}
+                        placeholder={
+                          providers.find((item) => item.kind === editing.kind)
+                            ?.example
+                        }
+                        onChange={(event) =>
+                          setEditing({
+                            ...editing,
+                            model: event.target.value,
+                            effort: null,
+                            tier: null,
+                          })
+                        }
+                      />
+                    </label>
+                    <p className="field-help">{t.manualModelHelp}</p>
+                  </details>
                   <p className="field-help">
                     <KeyRound size={14} />
                     {t.keyHelp}
                   </p>
                   <p className="field-help">{t.endpointHelp}</p>
-                  <p className="field-help">{t.basicOnly}</p>
+                  <p className="field-help">{t.catalogHelp}</p>
                   <div className="form-actions">
                     <button
                       type="button"
@@ -1391,7 +1604,11 @@ function SettingsDialog({
                       </span>
                       <div>
                         <strong>{row.profile.name}</strong>
-                        <small>{row.profile.model}</small>
+                        <small>
+                          {row.models?.length
+                            ? `${row.models.length} ${t.availableModels}`
+                            : t.refreshToChoose}
+                        </small>
                         <small
                           className={
                             row.configured ? "key-configured" : "muted"
@@ -1405,7 +1622,30 @@ function SettingsDialog({
                         </small>
                       </div>
                       <button
-                        disabled={!!operation}
+                        type="button"
+                        disabled={
+                          busy ||
+                          !!operation ||
+                          (!row.configured && row.profile.kind !== "ollama")
+                        }
+                        aria-label={`${t.refreshModels} ${row.profile.name}`}
+                        onClick={async () => {
+                          setBusy(true);
+                          try {
+                            await api.discoverModels(row.profile.id);
+                            await refresh();
+                            setNotice(t.saved);
+                          } catch (reason) {
+                            report(reason);
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                      <button
+                        disabled={busy || !!operation}
                         onClick={() => edit(row.profile)}
                       >
                         {t.edit}
@@ -1430,7 +1670,7 @@ function SettingsDialog({
             <div className="about">
               <img src="/caidex-symbol.png" alt="CAIdex" />
               <h3>CAIdex</h3>
-              <p>{t.version} 0.1.0 · J-1</p>
+              <p>{t.version} 0.1.1 · J-1</p>
               <p>{t.localNotice}</p>
               <p className="muted">{t.privacy}</p>
               <details>

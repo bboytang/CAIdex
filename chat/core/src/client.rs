@@ -5,7 +5,7 @@ use caidex_auth::ConfirmedSession;
 use caidex_cloud_core::Id;
 use caidex_model_core::{
     CancellationToken, CanonicalRequest, CanonicalResponse, CredentialRequirement, ModelProvider,
-    ProviderStreamEvent, RequestContext, ResponsesDialect, StreamState,
+    ProviderError, ProviderStreamEvent, RequestContext, ResponsesDialect, StreamState,
 };
 use futures_util::StreamExt;
 use serde_json::json;
@@ -28,6 +28,16 @@ pub struct Send {
     pub conversation: Uuid,
     pub parent: Option<Uuid>,
     pub content: Content,
+}
+#[derive(Clone, Default)]
+pub struct SendOptions {
+    pub reasoning_effort: Option<String>,
+    pub service_tier: Option<String>,
+}
+pub struct SendOutcome {
+    pub message: Message,
+    /// Static provider classification only; never a raw response, URL or key.
+    pub error: Option<ProviderError>,
 }
 pub(crate) struct State {
     pub(crate) cache: Cache,
@@ -227,6 +237,24 @@ impl Chat {
     }
     /// Callers choose a parent explicitly; concurrent sends produce sibling branches.
     pub async fn send(&self, send: Send) -> Result<Message> {
+        Ok(self
+            .send_with_options(send, SendOptions::default())
+            .await?
+            .message)
+    }
+    pub async fn send_with_options(&self, send: Send, options: SendOptions) -> Result<SendOutcome> {
+        if options.reasoning_effort.as_deref().is_some_and(|v| {
+            !matches!(
+                v,
+                "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
+            )
+        }) || options
+            .service_tier
+            .as_deref()
+            .is_some_and(|v| !matches!(v, "auto" | "default" | "priority" | "flex"))
+        {
+            return Err(Error::Invalid);
+        }
         let (provider, request, cancel, generation, has_memory) = {
             let mut state = self.state()?;
             if state.pending.len() >= 16 {
@@ -260,7 +288,15 @@ impl Chat {
                     .ok_or(Error::Invalid)?
                     .insert(0, memory);
             }
-            let request=CanonicalRequest::new(json!({"model":model,"input":input,"stream":true,"store":false,"tools":[],"tool_choice":"none"}),ResponsesDialect::Classic).map_err(|_|Error::Invalid)?;
+            let mut wire = json!({"model":model,"input":input,"stream":true,"store":false,"tools":[],"tool_choice":"none"});
+            if let Some(effort) = options.reasoning_effort {
+                wire["reasoning"] = json!({"effort":effort});
+            }
+            if let Some(tier) = options.service_tier {
+                wire["service_tier"] = tier.into();
+            }
+            let request = CanonicalRequest::new(wire, ResponsesDialect::Classic)
+                .map_err(|_| Error::Invalid)?;
             let cancel = CancellationToken::new();
             state.pending.insert(send.operation, cancel.clone());
             if has_memory {
@@ -275,11 +311,11 @@ impl Chat {
             ..RequestContext::default()
         };
         let work = self.receive(provider, request, context, send.operation, generation);
-        let end = tokio::select! {
+        let (end, error) = tokio::select! {
             biased;
-            _=cancel.cancelled()=>End::Cancelled,
-            _=tokio::time::sleep(Duration::from_secs(120))=>End::Interrupted,
-            result=work=>match result { Ok(end)=>end, Err(Error::Invalid)=>End::Invalid, Err(error)=>return Err(error) },
+            _=cancel.cancelled()=>(End::Cancelled, None),
+            _=tokio::time::sleep(Duration::from_secs(120))=>(End::Interrupted, Some(ProviderError::new(504, "provider_timeout"))),
+            result=work=>match result { Ok(end)=>end, Err(Error::Invalid)=>(End::Invalid, None), Err(error)=>return Err(error) },
         };
         cancel.cancel();
         let mut state = self.state()?;
@@ -292,7 +328,7 @@ impl Chat {
         if end == End::Complete {
             crate::memory::automatic_chat_sources(&mut state, &message)?;
         }
-        Ok(message)
+        Ok(SendOutcome { message, error })
     }
     async fn receive(
         &self,
@@ -301,32 +337,32 @@ impl Chat {
         context: RequestContext,
         operation: Uuid,
         generation: u64,
-    ) -> Result<End> {
+    ) -> Result<(End, Option<ProviderError>)> {
         let mut stream = match provider.stream_response(request, context).await {
             Ok(s) => s.events,
-            Err(_) => return Ok(End::Failed),
+            Err(error) => return Ok((End::Failed, Some(error))),
         };
         let mut text = String::new();
         while let Some(event) = stream.next().await {
             let event = match event {
                 Ok(ProviderStreamEvent::Model(e)) => e.response,
                 Ok(ProviderStreamEvent::Heartbeat) => continue,
-                Err(_) => return Ok(End::Failed),
+                Err(error) => return Ok((End::Failed, Some(error))),
             };
             if let Some(delta) = event.text_delta() {
                 if text.len().saturating_add(delta.len()) > MAX_TEXT {
-                    return Ok(End::Invalid);
+                    return Ok((End::Invalid, None));
                 }
                 text.push_str(delta);
                 self.checkpoint(operation, generation, &text)?;
             }
             if event.item().is_err() {
-                return Ok(End::Invalid);
+                return Ok((End::Invalid, None));
             }
             if let Ok(Some(item)) = event.item()
                 && !matches!(item.kind(), "message" | "reasoning")
             {
-                return Ok(End::Invalid);
+                return Ok((End::Invalid, None));
             }
             if let Some(end) = event.terminal() {
                 if matches!(
@@ -337,26 +373,32 @@ impl Chat {
                     if wire.get("output").is_some() {
                         let response = match CanonicalResponse::new(wire) {
                             Ok(r) => r,
-                            Err(_) => return Ok(End::Invalid),
+                            Err(_) => return Ok((End::Invalid, None)),
                         };
                         let final_text = match visible_text(&response) {
                             Ok(t) => t,
-                            Err(_) => return Ok(End::Invalid),
+                            Err(_) => return Ok((End::Invalid, None)),
                         };
                         self.checkpoint(operation, generation, &final_text)?;
                     } else if end == StreamState::Completed {
-                        return Ok(End::Invalid);
+                        return Ok((End::Invalid, None));
                     }
                 }
-                return Ok(match end {
+                let end = match end {
                     StreamState::Completed => End::Complete,
                     StreamState::Incomplete => End::Incomplete,
                     StreamState::Interrupted => End::Interrupted,
                     _ => End::Failed,
-                });
+                };
+                let error = (end == End::Failed)
+                    .then(|| ProviderError::new(502, "provider_generation_failed"));
+                return Ok((end, error));
             }
         }
-        Ok(End::Truncated)
+        Ok((
+            End::Truncated,
+            Some(ProviderError::new(502, "provider_stream_truncated")),
+        ))
     }
     fn checkpoint(&self, operation: Uuid, generation: u64, text: &str) -> Result<()> {
         let mut state = self.state()?;

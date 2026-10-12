@@ -5,7 +5,8 @@ test.beforeEach(async ({ page }, info) => {
   await page.addInitScript(
     ({ failure }) => {
       let preferences = { language: "zh", theme: "dark" };
-      const profiles: { profile: unknown; configured: boolean }[] = [];
+      const profiles: { profile: any; configured: boolean; models: any[] }[] =
+        [];
       let selected: string | null = null;
       const chats: { id: string; title: string; project_id: null }[] = [];
       const drafts: Record<string, string> = {};
@@ -24,11 +25,37 @@ test.beforeEach(async ({ page }, info) => {
               return;
             }
             if (cmd === "save_profile") {
-              profiles.push({ profile: args.profile, configured: !!args.key });
+              profiles.push({
+                profile: args.profile,
+                configured: !!args.key,
+                models: [],
+              });
               return;
+            }
+            if (cmd === "discover_models") {
+              const row = profiles.find((row) => row.profile.id === args.id)!;
+              const ids =
+                row.profile.kind === "deepseek"
+                  ? ["deepseek-flash", "deepseek-v4-pro"]
+                  : ["synthetic", "synthetic-fast"];
+              row.models = ids.map((id) => ({
+                id,
+                name: `${row.profile.name} ${id}`,
+                efforts: ["none", "low", "high", "max"],
+                tiers: [],
+              }));
+              return row.models;
             }
             if (cmd === "select_profile") {
               selected = args.id;
+              const row = profiles.find((row) => row.profile.id === args.id)!;
+              if (args.model)
+                row.profile = {
+                  ...row.profile,
+                  model: args.model,
+                  effort: args.effort,
+                  tier: args.tier,
+                };
               return;
             }
             if (cmd === "create") {
@@ -135,8 +162,7 @@ test("model/key form is masked, IME does not submit, ordinary Chat does", async 
   page,
 }) => {
   await page.getByRole("button", { name: "配置模型", exact: true }).click();
-  await page.getByRole("button", { name: "添加模型" }).click();
-  await page.getByLabel("模型 ID").fill("synthetic");
+  await page.getByRole("button", { name: "添加供应商" }).click();
   const key = page.getByLabel("API Key", { exact: true });
   await expect(key).toHaveAttribute("type", "password");
   await key.fill("synthetic-ui-secret");
@@ -145,11 +171,19 @@ test("model/key form is masked, IME does not submit, ordinary Chat does", async 
   await expect(page.locator("body")).not.toContainText("synthetic-ui-secret");
   await page.getByRole("button", { name: "关闭", exact: true }).click();
   await page.locator(".model-button").click();
-  await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
+  await page
+    .getByRole("menuitem")
+    .filter({ hasText: "OpenAI synthetic" })
+    .first()
+    .click();
   const input = page.getByRole("textbox", { name: "向 CAIdex 发送消息" });
   await input.fill("picker draft");
   await page.locator(".model-button").click();
-  await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
+  await page
+    .getByRole("menuitem")
+    .filter({ hasText: "OpenAI synthetic" })
+    .first()
+    .click();
   expect(
     await page.evaluate(
       () =>
@@ -186,14 +220,17 @@ test("selecting an earlier reply creates a branch and switching shows its comple
   page,
 }) => {
   await page.getByRole("button", { name: "配置模型", exact: true }).click();
-  await page.getByRole("button", { name: "添加模型" }).click();
-  await page.getByLabel("模型 ID").fill("synthetic");
+  await page.getByRole("button", { name: "添加供应商" }).click();
   await page.getByLabel("API Key", { exact: true }).fill("synthetic-ui-secret");
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByText("密钥已配置", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭", exact: true }).click();
   await page.locator(".model-button").click();
-  await page.getByRole("menuitem").filter({ hasText: "OpenAI" }).click();
+  await page
+    .getByRole("menuitem")
+    .filter({ hasText: "OpenAI synthetic" })
+    .first()
+    .click();
   const input = page.getByRole("textbox", { name: "向 CAIdex 发送消息" });
   await input.fill("first");
   await input.press("Enter");
@@ -265,4 +302,41 @@ test("unavailable native bridge shows a safe recoverable startup error", async (
     "secret-bearing-platform-error",
   );
   await expect(page.getByRole("button", { name: "重试加载" })).toBeVisible();
+});
+
+test("provider key loads the catalog, composer selects models and effort without entering IDs", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "配置模型", exact: true }).click();
+  await page.getByRole("button", { name: "添加供应商" }).click();
+  await page.getByLabel("提供商", { exact: true }).selectOption("deepseek");
+  await expect(page.getByLabel("模型 ID")).not.toBeVisible();
+  await page.getByLabel("API Key", { exact: true }).fill("synthetic-ui-secret");
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page.getByText("2 个模型", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.locator(".model-button").click();
+  await page
+    .getByRole("menuitem")
+    .filter({ hasText: "deepseek-flash" })
+    .click();
+  await page.getByLabel("推理强度", { exact: true }).selectOption("low");
+  await expect(page.getByLabel("推理强度", { exact: true })).toHaveValue("low");
+  await page.locator(".model-button").click();
+  await page.getByLabel("搜索模型", { exact: true }).fill("v4-pro");
+  await page
+    .getByRole("menuitem")
+    .filter({ hasText: "deepseek-v4-pro" })
+    .click();
+  await expect(page.locator(".model-button")).toContainText("deepseek-v4-pro");
+  await expect(page.getByLabel("推理强度", { exact: true })).toHaveValue("");
+  await page.getByLabel("推理强度", { exact: true }).selectOption("high");
+  const calls = await page.evaluate(() => (window as any).__TEST_CALLS__);
+  expect(calls.filter((c: any) => c.cmd === "save_profile")).toHaveLength(1);
+  expect(calls.filter((c: any) => c.cmd === "discover_models")).toHaveLength(1);
+  expect(
+    calls.filter((c: any) => c.cmd === "select_profile").at(-1).args,
+  ).toMatchObject({ model: "deepseek-v4-pro", effort: "high" });
+  expect(calls.filter((c: any) => c.cmd === "send")).toHaveLength(0);
+  await page.screenshot({ path: "test-results/composer-model-effort.png" });
 });

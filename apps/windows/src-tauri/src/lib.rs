@@ -2,12 +2,15 @@
 mod profiles;
 use caidex_chat::{Chat, Content, Conversation, LocalModel, Message, Namespace, Send};
 use caidex_credentials::{Broker, Secret, SecretStore};
-pub use profiles::{Profile, ProviderKind};
+pub use profiles::{CatalogModel, Profile, ProviderKind};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::{
     path::Path,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{
+        Arc, Mutex, MutexGuard,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 use uuid::Uuid;
 
@@ -30,6 +33,23 @@ fn chat_error(error: caidex_chat::Error) -> &'static str {
     }
 }
 
+fn provider_error(error: caidex_model_core::ProviderError) -> &'static str {
+    match (error.http_status, error.code) {
+        (_, "provider_timeout" | "provider_header_timeout" | "provider_idle_timeout")
+        | (504, _) => "provider_timeout",
+        (401 | 403, _) => "provider_authentication_failed",
+        (402, _) => "provider_quota_exhausted",
+        (404, _) => "provider_endpoint_missing",
+        (429, _) => "provider_rate_limited",
+        (400, _) => "provider_rejected_request",
+        (_, "provider_connection_failed" | "provider_transport_error") => {
+            "provider_connection_failed"
+        }
+        (500..=599, "provider_unavailable") => "provider_unavailable",
+        _ => "provider_protocol_error",
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Preferences {
@@ -48,6 +68,7 @@ impl Default for Preferences {
 pub struct ProfileStatus {
     pub profile: Profile,
     pub configured: bool,
+    pub models: Vec<CatalogModel>,
 }
 #[derive(Serialize)]
 pub struct Bootstrap {
@@ -69,6 +90,7 @@ pub struct Desktop<S: SecretStore> {
     db: Mutex<Connection>,
     // Locks configuration and send reservation together; changing a key mid-turn is refused.
     active: Mutex<Option<Active>>,
+    credential_version: AtomicU64,
 }
 struct Active {
     operation: Uuid,
@@ -102,7 +124,7 @@ impl<S: SecretStore + 'static> Desktop<S> {
         let namespace = Namespace::guest();
         let chat = Chat::open(&root.join("chat"), namespace.clone()).map_err(chat_error)?;
         let db = storage(Connection::open(settings))?;
-        storage(db.execute_batch("PRAGMA journal_mode=DELETE; PRAGMA foreign_keys=ON; CREATE TABLE IF NOT EXISTS settings(id INTEGER PRIMARY KEY CHECK(id=1),preferences TEXT NOT NULL,selected TEXT); CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY,body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS drafts(conversation TEXT PRIMARY KEY,body TEXT NOT NULL);"))?;
+        storage(db.execute_batch("PRAGMA journal_mode=DELETE; PRAGMA foreign_keys=ON; CREATE TABLE IF NOT EXISTS settings(id INTEGER PRIMARY KEY CHECK(id=1),preferences TEXT NOT NULL,selected TEXT); CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY,body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS drafts(conversation TEXT PRIMARY KEY,body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS catalogs(profile TEXT PRIMARY KEY,body TEXT NOT NULL);"))?;
         storage(
             db.execute(
                 "INSERT OR IGNORE INTO settings VALUES(1,?1,NULL)",
@@ -115,6 +137,7 @@ impl<S: SecretStore + 'static> Desktop<S> {
             broker: Arc::new(Broker::new(namespace.credential_owner(), store)),
             db: Mutex::new(db),
             active: Mutex::new(None),
+            credential_version: AtomicU64::new(0),
         };
         if let Some(id) = app.selected()? {
             // An unavailable system key never silently falls back to a different model.
@@ -173,9 +196,28 @@ impl<S: SecretStore + 'static> Desktop<S> {
                 .status(&profile.reference())
                 .map_err(|_| "credential_unavailable")?
                 .configured;
+            let catalog: Option<String> = storage(
+                db.query_row(
+                    "SELECT body FROM catalogs WHERE profile=?1",
+                    [profile.id.to_string()],
+                    |row| row.get(0),
+                )
+                .optional(),
+            )?;
+            let models: Vec<CatalogModel> = catalog
+                .map(|body| serde_json::from_str(&body).map_err(|_| "invalid_catalog"))
+                .transpose()?
+                .unwrap_or_default();
+            if models.len() > 4096 {
+                return Err("catalog_limit");
+            }
+            for model in &models {
+                model.validate()?;
+            }
             profiles.push(ProfileStatus {
                 profile,
                 configured,
+                models,
             });
         }
         drop(query);
@@ -231,7 +273,12 @@ impl<S: SecretStore + 'static> Desktop<S> {
         }
         self.safe(&serde_json::to_string(&profile).map_err(|_| "invalid_configuration")?)?;
         // Validate adapter construction before persisting anything or replacing a key.
-        profiles::model(&profile, self.broker.clone())?;
+        let mut validation = profile.clone();
+        if validation.model.is_empty() {
+            validation.model = "models/catalog".into();
+        }
+        profiles::model(&validation, self.broker.clone())?;
+        self.controls(&profile)?;
         let mut db = lock(&self.db)?;
         let old: Option<String> = storage(
             db.query_row(
@@ -270,6 +317,11 @@ impl<S: SecretStore + 'static> Desktop<S> {
             ],
         ))?;
         if let Some(key) = key {
+            self.credential_version.fetch_add(1, Ordering::SeqCst);
+            storage(tx.execute(
+                "DELETE FROM catalogs WHERE profile=?1",
+                [profile.id.to_string()],
+            ))?;
             self.broker
                 .set(&profile.reference(), key)
                 .map_err(|_| "credential_unavailable")?;
@@ -282,12 +334,111 @@ impl<S: SecretStore + 'static> Desktop<S> {
         }
         Ok(())
     }
-    pub fn select_profile(&self, id: Uuid) -> Result<()> {
+    fn catalog(&self, id: Uuid) -> Result<Vec<CatalogModel>> {
+        let body: Option<String> = storage(
+            lock(&self.db)?
+                .query_row(
+                    "SELECT body FROM catalogs WHERE profile=?1",
+                    [id.to_string()],
+                    |row| row.get(0),
+                )
+                .optional(),
+        )?;
+        let models: Vec<CatalogModel> = body
+            .map(|v| serde_json::from_str(&v).map_err(|_| "invalid_catalog"))
+            .transpose()?
+            .unwrap_or_default();
+        if models.len() > 4096 {
+            return Err("catalog_limit");
+        }
+        for model in &models {
+            model.validate()?;
+        }
+        Ok(models)
+    }
+    fn controls(&self, profile: &Profile) -> Result<()> {
+        if profile.model.is_empty() {
+            if profile.effort.is_some() || profile.tier.is_some() {
+                return Err("unsupported_controls");
+            }
+            return Ok(());
+        }
+        let models = self.catalog(profile.id)?;
+        let fallback = profiles::choice(profile.kind, &profile.model, &serde_json::Value::Null)?;
+        let model = models
+            .iter()
+            .find(|m| m.id == profile.model)
+            .unwrap_or(&fallback);
+        if profile
+            .effort
+            .as_ref()
+            .is_some_and(|v| !model.efforts.contains(v))
+            || profile
+                .tier
+                .as_ref()
+                .is_some_and(|v| !model.tiers.contains(v))
+        {
+            return Err("unsupported_controls");
+        }
+        Ok(())
+    }
+    pub async fn discover_models(&self, id: Uuid) -> Result<Vec<CatalogModel>> {
+        let (profile, version) = {
+            let active = lock(&self.active)?;
+            if active.is_some() {
+                return Err("turn_active");
+            }
+            let profile = self.profile(id)?;
+            if profile.kind != ProviderKind::Ollama
+                && !self
+                    .broker
+                    .status(&profile.reference())
+                    .map_err(|_| "credential_unavailable")?
+                    .configured
+            {
+                return Err("key_missing");
+            }
+            (profile, self.credential_version.load(Ordering::SeqCst))
+        };
+        let models = profiles::discover(&profile, self.broker.clone()).await?;
+        let body = serde_json::to_string(&models).map_err(|_| "invalid_catalog")?;
+        self.safe(&body)?;
         let active = lock(&self.active)?;
         if active.is_some() {
             return Err("turn_active");
         }
+        if version != self.credential_version.load(Ordering::SeqCst) {
+            return Err("configuration_changed");
+        }
+        storage(lock(&self.db)?.execute("INSERT INTO catalogs VALUES(?1,?2) ON CONFLICT(profile) DO UPDATE SET body=excluded.body", params![id.to_string(), body]))?;
+        Ok(models)
+    }
+    pub fn select_profile(&self, id: Uuid) -> Result<()> {
         let profile = self.profile(id)?;
+        self.select_model(id, profile.model, profile.effort, profile.tier)
+    }
+    pub fn select_model(
+        &self,
+        id: Uuid,
+        model: String,
+        effort: Option<String>,
+        tier: Option<String>,
+    ) -> Result<()> {
+        let active = lock(&self.active)?;
+        if active.is_some() {
+            return Err("turn_active");
+        }
+        let mut profile = self.profile(id)?;
+        profile.model = model;
+        profile.effort = effort;
+        profile.tier = tier;
+        profile.validate()?;
+        self.safe(&serde_json::to_string(&profile).map_err(|_| "invalid_configuration")?)?;
+        let models = self.catalog(id)?;
+        if !models.is_empty() && !models.iter().any(|m| m.id == profile.model) {
+            return Err("model_unavailable");
+        }
+        self.controls(&profile)?;
         if profile.kind != ProviderKind::Ollama
             && !self
                 .broker
@@ -298,10 +449,20 @@ impl<S: SecretStore + 'static> Desktop<S> {
             return Err("key_missing");
         }
         self.configure(&profile)?;
-        storage(lock(&self.db)?.execute(
+        let mut db = lock(&self.db)?;
+        let tx = storage(db.transaction())?;
+        storage(tx.execute(
+            "UPDATE profiles SET body=?1 WHERE id=?2",
+            params![
+                serde_json::to_string(&profile).map_err(|_| "invalid_configuration")?,
+                id.to_string()
+            ],
+        ))?;
+        storage(tx.execute(
             "UPDATE settings SET selected=?1 WHERE id=1",
             [id.to_string()],
         ))?;
+        storage(tx.commit())?;
         Ok(())
     }
     pub fn remove_key(&self, id: Uuid) -> Result<()> {
@@ -309,6 +470,10 @@ impl<S: SecretStore + 'static> Desktop<S> {
         if active.is_some() {
             return Err("turn_active");
         }
+        self.credential_version.fetch_add(1, Ordering::SeqCst);
+        storage(
+            lock(&self.db)?.execute("DELETE FROM catalogs WHERE profile=?1", [id.to_string()]),
+        )?;
         self.broker
             .remove(&self.profile(id)?.reference())
             .map_err(|_| "credential_unavailable")?;
@@ -378,7 +543,7 @@ impl<S: SecretStore + 'static> Desktop<S> {
         self.safe(&request.content.text)?;
         let cancel = caidex_model_core::CancellationToken::new();
         let operation = request.operation;
-        {
+        let options = {
             let mut active = lock(&self.active)?;
             if active.is_some() {
                 return Err("turn_active");
@@ -394,17 +559,31 @@ impl<S: SecretStore + 'static> Desktop<S> {
             {
                 return Err("key_missing");
             }
+            self.controls(&profile)?;
+            let catalog = self.catalog(profile.id)?;
+            if !catalog.is_empty() && !catalog.iter().any(|m| m.id == profile.model) {
+                return Err("model_unavailable");
+            }
             self.configure(&profile)?;
             *active = Some(Active {
                 operation,
                 conversation: request.conversation,
                 cancel: cancel.clone(),
             });
-        }
+            caidex_chat::SendOptions {
+                reasoning_effort: profile.effort,
+                service_tier: profile.tier,
+            }
+        };
         let result = tokio::select! {
             biased;
             _ = cancel.cancelled() => { let _ = self.chat.cancel(operation); Err("cancelled") },
-            result = self.chat.send(request) => result.map_err(chat_error),
+            result = self.chat.send_with_options(request, options) => {
+                match result.map_err(chat_error) {
+                    Ok(outcome) => if let Some(error) = outcome.error { Err(provider_error(error)) } else if matches!(outcome.message.end, caidex_chat::End::Invalid | caidex_chat::End::Failed) { Err("provider_protocol_error") } else { Ok(outcome.message) },
+                    Err(error) => Err(error),
+                }
+            },
         };
         *lock(&self.active)? = None;
         result

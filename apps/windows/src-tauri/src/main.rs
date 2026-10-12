@@ -25,8 +25,25 @@ mod native {
         app.save_profile(profile, key)
     }
     #[tauri::command]
-    fn select_profile(app: State<App>, id: Uuid) -> Reply<()> {
-        app.select_profile(id)
+    fn select_profile(
+        app: State<App>,
+        id: Uuid,
+        model: Option<String>,
+        effort: Option<String>,
+        tier: Option<String>,
+    ) -> Reply<()> {
+        if let Some(model) = model {
+            app.select_model(id, model, effort, tier)
+        } else {
+            app.select_profile(id)
+        }
+    }
+    #[tauri::command]
+    async fn discover_models(
+        app: State<'_, App>,
+        id: Uuid,
+    ) -> Reply<Vec<caidex_desktop::CatalogModel>> {
+        app.discover_models(id).await
     }
     #[tauri::command]
     fn remove_key(app: State<App>, id: Uuid) -> Reply<()> {
@@ -149,6 +166,7 @@ mod native {
                 preferences,
                 save_profile,
                 select_profile,
+                discover_models,
                 remove_key,
                 create,
                 conversations,

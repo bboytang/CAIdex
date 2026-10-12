@@ -1,6 +1,8 @@
 # CAIdex Windows · J-1
 
-Windows 11 x64 Tauri 2 application using the existing local Chat, model adapters and Windows credential Broker. It provides local conversations, model/key settings, light/dark/system themes and Chinese/English. Account, cloud Memory/sync and Codex execution are outside this milestone.
+Windows 11 x64 Tauri 2 application using the existing local Chat, model adapters and Windows credential Broker. Version 0.1.1 adds provider model catalogs and composer model/effort/speed selection while retaining local conversations, Windows key storage, light/dark/system themes and Chinese/English. Account, cloud Memory/sync and Codex execution are outside this milestone.
+
+User trial correction: [catalogs and reasoning controls](../../docs/CAIdex-J1-试用修正-模型目录与推理控制-V1.md). Provider catalogs are fetched after key save; manual IDs are an advanced fallback. Declared controls send actual API parameters; unknown controls stay at provider defaults.
 
 Source and acceptance boundaries: [J-1 design and verification](../../docs/CAIdex-J1-Windows-设计与验收-V1.md).
 

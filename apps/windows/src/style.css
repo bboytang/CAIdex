@@ -1187,3 +1187,71 @@ button:hover kbd {
     margin-bottom: 18px;
   }
 }
+
+/* Catalog rows keep the composer usable with large provider inventories. */
+.composer-tools .dropdown {
+  max-height: min(420px, calc(100dvh - 170px));
+  overflow-y: auto;
+  min-width: 320px;
+}
+.model-search {
+  width: calc(100% - 12px);
+  margin: 6px;
+  font-size: 13px;
+}
+.catalog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 10px 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.catalog-heading small {
+  font-size: 10px;
+  margin-left: 7px;
+}
+.catalog-heading .icon {
+  width: 28px;
+  height: 28px;
+}
+.catalog-group {
+  border-bottom: 1px solid var(--border);
+}
+.catalog-hint {
+  display: block;
+  padding: 8px 12px;
+  color: var(--muted);
+}
+.inference-control {
+  border: 0;
+  background: transparent;
+  width: auto;
+  max-width: 115px;
+  padding: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.manual-model {
+  color: var(--muted);
+  font-size: 12px;
+}
+.manual-model summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.manual-model label {
+  margin-top: 9px;
+}
+@media (max-width: 850px) {
+  .inference-control {
+    max-width: 90px;
+  }
+  .composer-tools .model-button > span {
+    max-width: 115px;
+  }
+}
+
+.start-view .composer-tools .dropdown {
+  max-height: min(290px, calc(50dvh - 85px));
+}

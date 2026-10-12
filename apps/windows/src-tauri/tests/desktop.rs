@@ -55,6 +55,8 @@ fn profile(endpoint: &str) -> Profile {
         kind: ProviderKind::CustomResponses,
         endpoint: endpoint.into(),
         model: "synthetic".into(),
+        effort: None,
+        tier: None,
     }
 }
 fn response(text: &str) -> String {
@@ -357,11 +359,13 @@ async fn provider_key_echo_is_rejected_before_cache_checkpoint() {
         .unwrap();
     app.select_profile(p.id).unwrap();
     let id = app.create("Guard".into()).unwrap();
-    let reply = app
+    let error = app
         .send(request(Uuid::new_v4(), id, None, "Hello".into(), vec![]))
         .await
+        .err()
         .unwrap();
-    assert_eq!(reply.end, End::Invalid);
+    assert_eq!(error, "provider_protocol_error");
+    assert_eq!(app.snapshot(id, 0).unwrap().messages[1].end, End::Invalid);
     server.await.unwrap();
     assert!(!app.export(id).unwrap().contains("synthetic-j1-secret"));
 }
@@ -420,4 +424,257 @@ fn windows_native_store_roundtrip_remove_and_no_secret_in_bootstrap() {
     );
     app.remove_key(p.id).unwrap();
     assert!(!app.bootstrap().unwrap().profiles[0].configured);
+}
+
+async fn read_http(socket: &mut tokio::net::TcpStream) -> (String, serde_json::Value) {
+    let mut bytes = Vec::new();
+    loop {
+        let mut chunk = [0; 4096];
+        let n = socket.read(&mut chunk).await.unwrap();
+        assert!(n > 0);
+        bytes.extend_from_slice(&chunk[..n]);
+        if let Some(index) = bytes.windows(4).position(|w| w == b"\r\n\r\n") {
+            let headers = String::from_utf8(bytes[..index].to_vec()).unwrap();
+            let length: usize = headers
+                .lines()
+                .find_map(|line| {
+                    line.to_lowercase()
+                        .strip_prefix("content-length:")
+                        .map(|v| v.trim().parse().unwrap())
+                })
+                .unwrap_or(0);
+            if bytes.len() >= index + 4 + length {
+                let body = if length == 0 {
+                    serde_json::Value::Null
+                } else {
+                    serde_json::from_slice(&bytes[index + 4..index + 4 + length]).unwrap()
+                };
+                return (headers, body);
+            }
+        }
+    }
+}
+fn deepseek_stream(model: &str, text: &str) -> String {
+    let item = json!({"id":"message","type":"message","status":"completed","role":"assistant","content":[{"type":"output_text","text":text,"annotations":[]}]});
+    let frames = vec![
+        json!({"type":"response.created","response":{"id":"fixture","status":"in_progress","output":[]}}),
+        json!({"type":"response.output_item.added","output_index":0,"item":{"id":"message","type":"message","status":"in_progress","role":"assistant","content":[]}}),
+        json!({"type":"response.content_part.added","output_index":0,"item_id":"message","content_index":0,"part":{"type":"output_text","text":"","annotations":[]}}),
+        json!({"type":"response.output_text.delta","output_index":0,"item_id":"message","content_index":0,"delta":text}),
+        json!({"type":"response.output_text.done","output_index":0,"item_id":"message","content_index":0,"text":text}),
+        json!({"type":"response.content_part.done","output_index":0,"item_id":"message","content_index":0,"part":item["content"][0]}),
+        json!({"type":"response.output_item.done","output_index":0,"item":item}),
+        json!({"type":"response.completed","response":{"id":"fixture","object":"response","model":model,"created_at":1,"status":"completed","store":false,"output":[item]}}),
+    ];
+    frames
+        .into_iter()
+        .enumerate()
+        .map(|(sequence, mut frame)| {
+            frame["sequence_number"] = sequence.into();
+            format!(
+                "event: {}\ndata: {}\n\n",
+                frame["type"].as_str().unwrap(),
+                frame
+            )
+        })
+        .collect()
+}
+#[tokio::test]
+async fn deepseek_catalog_two_models_share_one_key_and_actual_reasoning_wire() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        for index in 0..3 {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let (headers, body) = read_http(&mut socket).await;
+            assert!(
+                headers
+                    .to_lowercase()
+                    .contains("authorization: bearer synthetic-j1-secret")
+            );
+            if index == 0 {
+                assert!(headers.starts_with("GET /models "));
+                let body=json!({"object":"list","data":[{"id":"deepseek-flash","object":"model","owned_by":"deepseek"},{"id":"deepseek-v4-pro","object":"model","owned_by":"deepseek"}]}).to_string();
+                socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",body.len(),body).as_bytes()).await.unwrap();
+            } else {
+                assert!(headers.starts_with("POST /responses "));
+                let (model, effort) = if index == 1 {
+                    ("deepseek-flash", "low")
+                } else {
+                    ("deepseek-v4-pro", "high")
+                };
+                assert_eq!(body["model"], model);
+                assert_eq!(body["reasoning"]["effort"], effort);
+                assert_eq!(body["tools"], json!([]));
+                assert_eq!(body["tool_choice"], "none");
+                assert!(!body.to_string().contains("synthetic-j1-secret"));
+                socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n").await.unwrap();
+                socket
+                    .write_all(deepseek_stream(model, "DeepSeek fixture reply").as_bytes())
+                    .await
+                    .unwrap();
+            }
+        }
+    });
+    let root = Root::new();
+    let store = Store::default();
+    let app = Desktop::open(&root.0, store.clone()).unwrap();
+    let mut p = profile(&endpoint);
+    p.kind = ProviderKind::Deepseek;
+    p.model.clear();
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
+        .unwrap();
+    // Reproduce the shipped rejection using its original adapter policy before the fixed GUI path.
+    let old_broker = Arc::new(caidex_credentials::Broker::new(
+        caidex_chat::Namespace::guest().credential_owner(),
+        store.clone(),
+    ));
+    let old = caidex_provider_deepseek::DeepSeekProvider::new(
+        caidex_provider_deepseek::DeepSeekConfig::new(p.reference())
+            .unwrap()
+            .with_base_url(&endpoint)
+            .unwrap(),
+        vec![caidex_model_core::ModelMetadata::configured(
+            p.id.to_string(),
+            "deepseek-flash".into(),
+            vec![caidex_model_core::ResponsesDialect::Classic],
+        )],
+        old_broker,
+        caidex_provider_custom::Limits::default(),
+    )
+    .unwrap();
+    let wire = caidex_model_core::CanonicalRequest::new(json!({"model":p.id.to_string(),"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Hello"}]}],"stream":true,"store":false,"tools":[],"tool_choice":"none"}),caidex_model_core::ResponsesDialect::Classic).unwrap();
+    let rejected =
+        caidex_model_core::ModelProvider::stream_response(&old, wire, Default::default())
+            .await
+            .err()
+            .unwrap();
+    assert_eq!(
+        (rejected.http_status, rejected.code),
+        (400, "deepseek_unsupported_request")
+    );
+    let models = app.discover_models(p.id).await.unwrap();
+    assert_eq!(models.len(), 2);
+    assert_eq!(models[0].efforts, vec!["none", "low", "high", "max"]);
+    assert_eq!(
+        app.select_model(p.id, "missing".into(), None, None),
+        Err("model_unavailable")
+    );
+    assert_eq!(
+        app.select_model(p.id, "deepseek-flash".into(), Some("medium".into()), None),
+        Err("unsupported_controls")
+    );
+    let id = app.create("DeepSeek".into()).unwrap();
+    let mut parent = None;
+    for (model, effort) in [("deepseek-flash", "low"), ("deepseek-v4-pro", "high")] {
+        app.select_model(p.id, model.into(), Some(effort.into()), None)
+            .unwrap();
+        let reply = tokio::time::timeout(
+            Duration::from_secs(5),
+            app.send(request(Uuid::new_v4(), id, parent, "Hello".into(), vec![])),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(reply.end, End::Complete);
+        assert_eq!(reply.content.text, "DeepSeek fixture reply");
+        parent = Some(reply.id);
+    }
+    server.await.unwrap();
+    assert_eq!(store.0.lock().unwrap().len(), 1);
+    drop(app);
+    let app = Desktop::open(&root.0, store).unwrap();
+    let boot = app.bootstrap().unwrap();
+    assert_eq!(boot.profiles[0].models.len(), 2);
+    assert_eq!(boot.profiles[0].profile.model, "deepseek-v4-pro");
+    assert_eq!(boot.profiles[0].profile.effort.as_deref(), Some("high"));
+    app.remove_key(p.id).unwrap();
+    assert!(app.bootstrap().unwrap().profiles[0].models.is_empty());
+}
+#[tokio::test]
+async fn safe_http_failure_is_visible_and_committed_turn_is_never_replayed() {
+    for (status, code) in [
+        (401, "provider_authentication_failed"),
+        (402, "provider_quota_exhausted"),
+        (404, "provider_endpoint_missing"),
+        (429, "provider_rate_limited"),
+    ] {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!("http://{}/responses", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            read_http(&mut socket).await;
+            let body =
+                json!({"error":{"message":"synthetic-j1-secret","code":"fixture_secret_echo"}})
+                    .to_string();
+            socket.write_all(format!("HTTP/1.1 {status} Refused\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",body.len(),body).as_bytes()).await.unwrap();
+        });
+        let root = Root::new();
+        let app = Desktop::open(&root.0, Store::default()).unwrap();
+        let p = profile(&endpoint);
+        app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
+            .unwrap();
+        app.select_profile(p.id).unwrap();
+        let id = app.create("Failure".into()).unwrap();
+        let op = Uuid::new_v4();
+        assert_eq!(
+            app.send(request(op, id, None, "Hello".into(), vec![]))
+                .await
+                .err(),
+            Some(code)
+        );
+        server.await.unwrap();
+        let snapshot = app.snapshot(id, 0).unwrap();
+        assert_eq!(snapshot.messages.len(), 2);
+        assert_eq!(snapshot.messages[1].end, End::Failed);
+        assert_eq!(
+            app.send(request(op, id, None, "Hello".into(), vec![]))
+                .await
+                .err(),
+            Some("already_submitted")
+        );
+        assert!(!app.export(id).unwrap().contains("synthetic-j1-secret"));
+    }
+}
+#[test]
+fn original_profile_json_loads_without_reentering_key_or_model() {
+    let p = profile("https://api.deepseek.com");
+    let old = json!({"id":p.id,"name":"DeepSeek","kind":"deepseek","endpoint":p.endpoint,"model":"deepseek-flash"});
+    let p: Profile = serde_json::from_value(old).unwrap();
+    assert!(p.effort.is_none() && p.tier.is_none());
+    p.validate().unwrap();
+}
+
+#[tokio::test]
+async fn catalog_fetched_with_removed_key_is_not_committed() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}/responses", listener.local_addr().unwrap());
+    let (started, ready) = tokio::sync::oneshot::channel();
+    let (release, wait) = tokio::sync::oneshot::channel();
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let (headers, _) = read_http(&mut socket).await;
+        assert!(headers.starts_with("GET /models "));
+        started.send(()).unwrap();
+        wait.await.unwrap();
+        let body=json!({"object":"list","data":[{"id":"synthetic","object":"model","created":1,"owned_by":"fixture"}]}).to_string();
+        socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",body.len(),body).as_bytes()).await.unwrap();
+    });
+    let root = Root::new();
+    let app = Arc::new(Desktop::open(&root.0, Store::default()).unwrap());
+    let p = profile(&endpoint);
+    app.save_profile(p.clone(), Some("synthetic-j1-secret".into()))
+        .unwrap();
+    let worker = {
+        let app = app.clone();
+        tokio::spawn(async move { app.discover_models(p.id).await })
+    };
+    ready.await.unwrap();
+    app.remove_key(p.id).unwrap();
+    release.send(()).unwrap();
+    assert_eq!(worker.await.unwrap().err(), Some("configuration_changed"));
+    server.await.unwrap();
+    let boot = app.bootstrap().unwrap();
+    assert!(!boot.profiles[0].configured);
+    assert!(boot.profiles[0].models.is_empty());
 }

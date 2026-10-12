@@ -8,7 +8,7 @@ pub use cache::{Attachment, Cache, Conversation, Message, OutboxEntry};
 use caidex_auth::{ConfirmedSession, Trust};
 use caidex_cloud_core::Id;
 use caidex_credentials::Id as CredentialOwner;
-pub use client::{Chat, LocalModel, Send};
+pub use client::{Chat, LocalModel, Send, SendOptions, SendOutcome};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;

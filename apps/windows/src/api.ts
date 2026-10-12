@@ -19,8 +19,20 @@ export type Profile = {
   kind: Kind;
   endpoint: string;
   model: string;
+  effort?: string | null;
+  tier?: string | null;
 };
-export type ProfileStatus = { profile: Profile; configured: boolean };
+export type CatalogModel = {
+  id: string;
+  name: string;
+  efforts: string[];
+  tiers: string[];
+};
+export type ProfileStatus = {
+  profile: Profile;
+  configured: boolean;
+  models: CatalogModel[];
+};
 export type Conversation = {
   id: string;
   title: string;
@@ -52,7 +64,15 @@ export const api = {
     invoke<void>("preferences", { preferences }),
   saveProfile: (profile: Profile, key: string | null) =>
     invoke<void>("save_profile", { profile, key }),
-  selectProfile: (id: string) => invoke<void>("select_profile", { id }),
+  selectProfile: (
+    id: string,
+    model?: string,
+    effort: string | null = null,
+    tier: string | null = null,
+  ) =>
+    invoke<void>("select_profile", { id, model: model ?? null, effort, tier }),
+  discoverModels: (id: string) =>
+    invoke<CatalogModel[]>("discover_models", { id }),
   removeKey: (id: string) => invoke<void>("remove_key", { id }),
   create: (title: string) => invoke<string>("create", { title }),
   conversations: (after: string) =>

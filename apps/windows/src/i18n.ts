@@ -1,4 +1,31 @@
 const zh = {
+  searchModels: "搜索模型",
+  loadingModels: "正在获取模型…",
+  availableModels: "个模型",
+  refreshModels: "刷新模型目录",
+  refineSearch: "结果较多，请输入名称搜索完整目录。",
+  refreshToChoose: "刷新目录后选择模型",
+  manualModel: "高级：手动模型 ID",
+  manualModelHelp: "仅用于供应商不提供目录的自定义接口；通常不需要填写。",
+  catalogHelp:
+    "保存供应商和 Key 后获取目录，在输入框选择模型。目录可用不代表所有模型都支持文本聊天。",
+  savedKey: "供应商和密钥已保存，但目录获取失败；可刷新或使用高级配置。",
+  reasoning: "推理强度",
+  reasoningHint: "较低强度通常响应更快；仅显示此模型已声明支持的选项。",
+  autoReasoning: "自动思考",
+  noThinking: "不思考",
+  minimal: "极低",
+  low: "低",
+  medium: "中",
+  high: "高",
+  xhigh: "极高",
+  maximum: "最高",
+  speed: "响应速度",
+  speedHint: "优先处理可能增加 API 费用；实际速度与是否降级由供应商决定。",
+  autoSpeed: "自动速度",
+  standard: "标准",
+  priority: "优先处理",
+
   switchMode: "切换模式",
   workspace: "工作区",
   chatTab: "聊天",
@@ -37,7 +64,7 @@ const zh = {
   dark: "深色",
   zh: "简体中文",
   en: "English",
-  addModel: "添加模型",
+  addModel: "添加供应商",
   edit: "编辑",
   name: "显示名称",
   provider: "提供商",
@@ -85,6 +112,37 @@ const zh = {
   keyDestination: "此设备 · 本地 Chat",
 };
 const en: typeof zh = {
+  searchModels: "Search models",
+  loadingModels: "Loading models…",
+  availableModels: "models",
+  refreshModels: "Refresh model catalog",
+  refineSearch: "Search by name to browse the complete catalog.",
+  refreshToChoose: "Refresh the catalog to choose a model",
+  manualModel: "Advanced: manual model ID",
+  manualModelHelp:
+    "Only for custom endpoints without a catalog; usually leave blank.",
+  catalogHelp:
+    "Save the provider and key, then choose a model in the composer. A listed model may not support text chat.",
+  savedKey:
+    "Provider and key saved; catalog unavailable. Refresh or use advanced configuration.",
+  reasoning: "Reasoning effort",
+  reasoningHint:
+    "Lower effort usually responds sooner. Only declared options are shown.",
+  autoReasoning: "Auto reasoning",
+  noThinking: "No reasoning",
+  minimal: "Minimal",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "Extra high",
+  maximum: "Maximum",
+  speed: "Response speed",
+  speedHint:
+    "Priority processing may cost more. Latency and downgrades depend on the provider.",
+  autoSpeed: "Auto speed",
+  standard: "Standard",
+  priority: "Priority",
+
   switchMode: "Switch mode",
   workspace: "Workspace",
   chatTab: "Chat",
@@ -123,7 +181,7 @@ const en: typeof zh = {
   dark: "Dark",
   zh: "简体中文",
   en: "English",
-  addModel: "Add model",
+  addModel: "Add provider",
   edit: "Edit",
   name: "Display name",
   provider: "Provider",
@@ -176,6 +234,63 @@ const en: typeof zh = {
 export const translations = { zh, en };
 export type Text = typeof zh;
 const errors: Record<string, [string, string]> = {
+  provider_unavailable: [
+    "供应商服务暂不可用（5xx）。此请求未自动重发。",
+    "Provider service unavailable (5xx). This request was not resent.",
+  ],
+  provider_authentication_failed: [
+    "供应商拒绝认证（401/403）。请检查此供应商的 Key 和权限。",
+    "Provider authentication failed (401/403). Check this provider’s key and permissions.",
+  ],
+  provider_quota_exhausted: [
+    "供应商余额或额度不足（402）。",
+    "Provider balance or quota exhausted (402).",
+  ],
+  provider_endpoint_missing: [
+    "供应商接口或模型不存在（404）。请检查 API 地址和模型。",
+    "Provider endpoint or model unavailable (404). Check the API URL and model.",
+  ],
+  provider_rate_limited: [
+    "供应商限流（429）。请稍后手动发送，未自动重发。",
+    "Provider rate limit (429). Send manually later; no automatic retry.",
+  ],
+  provider_rejected_request: [
+    "供应商适配器或接口拒绝模型/参数（400）。请更换受支持的选项。",
+    "Provider adapter or API rejected the model/parameters (400). Choose supported options.",
+  ],
+  provider_timeout: [
+    "等待供应商响应超时。此请求未自动重发。",
+    "Provider response timed out. This request was not resent.",
+  ],
+  provider_connection_failed: [
+    "无法连接供应商。请检查网络和 API 地址。",
+    "Unable to connect to the provider. Check the network and API URL.",
+  ],
+  provider_protocol_error: [
+    "供应商返回的内容或流协议无效，未自动重发。",
+    "Provider output or stream protocol was invalid. No automatic retry.",
+  ],
+  unsupported_controls: [
+    "此模型不支持选择的推理强度或速度。",
+    "This model does not support the selected effort or speed.",
+  ],
+  empty_catalog: [
+    "供应商没有返回可用模型。",
+    "The provider returned no available models.",
+  ],
+  invalid_catalog: [
+    "供应商模型目录格式不正确。",
+    "The provider model catalog was invalid.",
+  ],
+  catalog_limit: [
+    "模型目录超出本机安全上限。",
+    "The model catalog exceeds the local safety limit.",
+  ],
+  configuration_changed: [
+    "密钥或配置在获取目录时改变，请重新刷新。",
+    "Credentials or configuration changed during discovery. Refresh again.",
+  ],
+
   desktop_unavailable: [
     "桌面外观更新未完成，请重新打开应用。",
     "The desktop appearance update failed. Reopen the app.",

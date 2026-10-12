@@ -6,6 +6,7 @@ fn main() {
             "preferences",
             "save_profile",
             "select_profile",
+            "discover_models",
             "remove_key",
             "create",
             "conversations",
