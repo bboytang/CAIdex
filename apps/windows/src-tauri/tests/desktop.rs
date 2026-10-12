@@ -162,7 +162,7 @@ fn settings_key_boundary_restart_and_immutable_endpoint() {
     store
         .set(
             &orphan.reference(),
-            &Secret::new("synthetic-orphan-key").unwrap(),
+            &Secret::new("synthetic-orphan-key".into()).unwrap(),
         )
         .unwrap();
     assert_eq!(app.save_profile(orphan, None), Err("new_profile_required"));
