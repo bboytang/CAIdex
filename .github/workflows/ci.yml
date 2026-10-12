@@ -59,6 +59,9 @@ jobs:
       - name: I-7 synthetic email, 2CPU/2GiB operations, physical disk failure and isolated restore
         run: python3 scripts/i7-operations.py --output i7-operations.json
 
+      - name: Production account service release without test SMTP endpoints
+        run: cargo build --release -p caidex-auth --features server --bin caidex-auth-service --locked
+
   runtime:
     name: Runtime (${{ matrix.os }})
     strategy:
