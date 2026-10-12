@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: c1f6cf45f82173f33b3281d14c410663105d44c2
+          ref: 045d4ce7cb89a3af73f802813e3697027d2f6de2
           persist-credentials: false
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.0 --profile minimal
@@ -24,21 +24,21 @@ jobs:
         run: cargo build --release -p caidex-auth --features server --bin caidex-auth-service --locked
       - name: Package immutable source and production binary
         run: |
-          test "$(git rev-parse HEAD)" = c1f6cf45f82173f33b3281d14c410663105d44c2
+          test "$(git rev-parse HEAD)" = 045d4ce7cb89a3af73f802813e3697027d2f6de2
           git clone --depth 1 --no-hardlinks "file://$PWD" "$RUNNER_TEMP/caidex-release"
           git -C "$RUNNER_TEMP/caidex-release" remote set-url origin https://github.com/bboytang/CAIdex.git
           mkdir "$RUNNER_TEMP/caidex-release/bin"
           install -m 0755 target/release/caidex-auth-service "$RUNNER_TEMP/caidex-release/bin/caidex-auth-service"
           cd "$RUNNER_TEMP/caidex-release"
           sha256sum bin/caidex-auth-service > BINARY_SHA256SUMS
-          tar -czf "$RUNNER_TEMP/caidex-cloud-c1f6cf4.tar.gz" .
+          tar -czf "$RUNNER_TEMP/caidex-cloud-045d4ce.tar.gz" .
           cd "$RUNNER_TEMP"
-          sha256sum caidex-cloud-c1f6cf4.tar.gz > caidex-cloud-c1f6cf4.tar.gz.sha256
+          sha256sum caidex-cloud-045d4ce.tar.gz > caidex-cloud-045d4ce.tar.gz.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: caidex-cloud-c1f6cf4
+          name: caidex-cloud-045d4ce
           path: |
-            ${{ runner.temp }}/caidex-cloud-c1f6cf4.tar.gz
-            ${{ runner.temp }}/caidex-cloud-c1f6cf4.tar.gz.sha256
+            ${{ runner.temp }}/caidex-cloud-045d4ce.tar.gz
+            ${{ runner.temp }}/caidex-cloud-045d4ce.tar.gz.sha256
           if-no-files-found: error
           retention-days: 7
