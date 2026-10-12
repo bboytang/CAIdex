@@ -1,10 +1,42 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CAIdex", "version": "0.1.0", "identifier": "org.caidex.desktop",
-  "build": { "beforeDevCommand": "npm run dev", "devUrl": "http://localhost:1420", "beforeBuildCommand": "npm run build", "frontendDist": "../dist" },
-  "app": {
-    "windows": [{ "label": "main", "title": "CAIdex", "width": 1180, "height": 800, "minWidth": 760, "minHeight": 560, "backgroundColor": "#212121" }],
-    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'none'", "capabilities": ["main"] }
+  "productName": "CAIdex",
+  "version": "0.1.0",
+  "identifier": "org.caidex.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
   },
-  "bundle": { "active": true, "targets": ["nsis", "msi"], "icon": ["icons/icon.ico"], "windows": { "nsis": { "installMode": "currentUser", "languages": ["SimpChinese", "English"], "displayLanguageSelector": true }, "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true } } }
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "CAIdex",
+        "width": 1180,
+        "height": 800,
+        "minWidth": 760,
+        "minHeight": 560,
+        "backgroundColor": "#212121"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'none'",
+      "capabilities": ["main"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": ["icons/icon.ico"],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["SimpChinese", "English"],
+        "displayLanguageSelector": true
+      },
+      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true }
+    }
+  }
 }

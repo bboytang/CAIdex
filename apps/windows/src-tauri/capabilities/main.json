@@ -1,1 +1,19 @@
-{ "identifier": "main", "description": "Local CAIdex main window; no shell, filesystem, HTTP or remote page access", "windows": ["main"], "permissions": ["allow-bootstrap", "allow-preferences", "allow-save-profile", "allow-select-profile", "allow-remove-key", "allow-create", "allow-snapshot", "allow-draft", "allow-attach", "allow-send", "allow-cancel", "allow-export-chat"] }
+{
+  "identifier": "main",
+  "description": "Local CAIdex main window; no shell, filesystem, HTTP or remote page access",
+  "windows": ["main"],
+  "permissions": [
+    "allow-bootstrap",
+    "allow-preferences",
+    "allow-save-profile",
+    "allow-select-profile",
+    "allow-remove-key",
+    "allow-create",
+    "allow-snapshot",
+    "allow-draft",
+    "allow-attach",
+    "allow-send",
+    "allow-cancel",
+    "allow-export-chat"
+  ]
+}
