@@ -148,7 +148,7 @@ async fn real_http_memory_sync_and_isolation() {
             "verify",
             None,
             "fixture",
-            json!({"token":token,"purpose":"register"}),
+            json!({"email":"i6-owner@example.test","token":token,"purpose":"register"}),
         )
         .await
         .unwrap();
